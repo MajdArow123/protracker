@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProTracker", "ProTracker.csproj", "{A7622268-5E45-D55D-6A01-D68CB9077762}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A7622268-5E45-D55D-6A01-D68CB9077762}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7622268-5E45-D55D-6A01-D68CB9077762}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7622268-5E45-D55D-6A01-D68CB9077762}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7622268-5E45-D55D-6A01-D68CB9077762}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {EEAD7185-2597-49F1-B4E2-E95D26337747}
+	EndGlobalSection
+EndGlobal
