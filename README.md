@@ -78,11 +78,14 @@ dotnet run
 ### 🏠 Home Page
 ![Home](docs/screenshots/home.png)
 
-### 🔐 Register Page
-![Register](docs/screenshots/register.png)
-
 ### 📋 Training Plans
 ![Training Plans](docs/screenshots/training-plans.png)
+
+### ✅ Task Management
+![Tasks](docs/screenshots/tasks.png)
+
+### ➕ Create Training Plan
+![Create Plan](docs/screenshots/create-plan.png)
 ---
 
 ## 🔮 Planned Features
