@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Data;
 using ProTracker.Models;
-
+using TaskStatus = ProTracker.Models.TaskStatus;
 namespace ProTracker.Controllers;
 
 public class HomeController : Controller
@@ -19,21 +19,38 @@ public class HomeController : Controller
     }
 
     public async Task<IActionResult> Index()
+{
+    if (User.Identity != null && User.Identity.IsAuthenticated)
     {
-        if (User.Identity != null && User.Identity.IsAuthenticated)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            var assignedPlans = await _context.TrainingPlans
-                .Where(p => p.AthleteId == userId)
-                .OrderBy(p => p.StartDate)
-                .ToListAsync();
+        var assignedPlans = await _context.TrainingPlans
+            .Where(p => p.AthleteId == userId)
+            .OrderBy(p => p.StartDate)
+            .ToListAsync();
 
-            ViewBag.AssignedPlans = assignedPlans;
-        }
+        var myPlans = await _context.TrainingPlans
+            .Where(p => p.CoachId == userId)
+            .Include(p => p.Tasks)
+            .ToListAsync();
 
-        return View();
+        var completedTasks = myPlans
+            .SelectMany(p => p.Tasks)
+            .Count(t => t.Status == TaskStatus.Completed);
+
+        var totalAthletes = myPlans
+            .Select(p => p.AthleteId)
+            .Distinct()
+            .Count();
+
+        ViewBag.AssignedPlans = assignedPlans;
+        ViewBag.TotalPlans = myPlans.Count;
+        ViewBag.CompletedTasks = completedTasks;
+        ViewBag.TotalAthletes = totalAthletes;
     }
+
+    return View();
+}
 
     public IActionResult Privacy()
     {

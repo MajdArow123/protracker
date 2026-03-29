@@ -4,32 +4,76 @@
     var assignedPlans = ViewBag.AssignedPlans as List<TrainingPlan> ?? new List<TrainingPlan>();
 }
 
-<div class="text-center mt-5">
-    <h1 class="display-4 fw-bold">ProTracker</h1>
-    <p class="lead mt-3">A platform for coaches and athletes to manage training plans, track tasks, and stay organized.</p>
-
-    @if (User.Identity != null && User.Identity.IsAuthenticated)
-    {
-        <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
-            <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-primary btn-lg">View Training Plans</a>
-            <a asp-controller="TrainingPlans" asp-action="Create" class="btn btn-success btn-lg">Create Training Plan</a>
+@if (User.Identity != null && User.Identity.IsAuthenticated)
+{
+    <!-- Logged in hero -->
+    <div class="px-4 py-5 text-center" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 16px; color: white; margin-bottom: 2rem;">
+        <h1 class="display-4 fw-bold mb-2">Welcome back </h1>
+        <p class="lead mb-4" style="color: #a0aec0;">Ready to crush today's training?</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-light btn-lg px-4">📋 My Training Plans</a>
+            <a asp-controller="TrainingPlans" asp-action="Create" class="btn btn-success btn-lg px-4">+ Create New Plan</a>
         </div>
+    </div>
 
-        <div class="mt-5">
-            <p class="text-muted">Welcome back. Use ProTracker to create plans, assign athletes, and manage tasks efficiently.</p>
+    <!-- Stats cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #4299e1 !important;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <span style="font-size: 2rem;">📋</span>
+                        <div>
+                            <div class="text-muted small">Total Plans</div>
+                            <div class="fw-bold fs-4">@ViewBag.TotalPlans</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #48bb78 !important;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <span style="font-size: 2rem;">✅</span>
+                        <div>
+                            <div class="text-muted small">Completed Tasks</div>
+                            <div class="fw-bold fs-4">@ViewBag.CompletedTasks</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #ed8936 !important;">
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-3">
+                        <span style="font-size: 2rem;">🏃</span>
+                        <div>
+                            <div class="text-muted small">Assigned Athletes</div>
+                            <div class="fw-bold fs-4">@ViewBag.TotalAthletes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <div class="mt-5 text-start">
-            <h2 class="mb-3">My Assigned Plans</h2>
-
+    <!-- Assigned plans section -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+            <h4 class="fw-bold mb-0">🏋️ My Assigned Plans</h4>
+            <p class="text-muted small mb-0">Plans assigned to you as an athlete</p>
+        </div>
+        <div class="card-body px-4">
             @if (!assignedPlans.Any())
             {
-                <p>No plans have been assigned to you yet.</p>
+                <div class="alert alert-info">No plans have been assigned to you yet.</div>
             }
             else
             {
-                <table class="table">
-                    <thead>
+                <table class="table table-hover">
+                    <thead class="table-dark">
                         <tr>
                             <th>Title</th>
                             <th>Goal</th>
@@ -41,26 +85,58 @@
                         @foreach (var plan in assignedPlans)
                         {
                             <tr>
-                                <td>@plan.Title</td>
+                                <td><strong>@plan.Title</strong></td>
                                 <td>@plan.Goal</td>
-                                <td>@plan.StartDate.ToString("yyyy-MM-dd")</td>
-                                <td>@plan.EndDate.ToString("yyyy-MM-dd")</td>
+                                <td>@plan.StartDate.ToString("MMM dd, yyyy")</td>
+                                <td>@plan.EndDate.ToString("MMM dd, yyyy")</td>
                             </tr>
                         }
                     </tbody>
                 </table>
             }
         </div>
-    }
-    else
-    {
-        <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
-            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg">Get Started</a>
-            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-secondary btn-lg">Log In</a>
+    </div>
+}
+else
+{
+    <!-- Logged out landing -->
+    <div class="px-4 py-5 text-center" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 16px; color: white; margin-bottom: 2rem;">
+        <h1 class="display-3 fw-bold mb-3">ProTracker 🏋️</h1>
+        <p class="lead mb-4" style="color: #a0aec0; font-size: 1.3rem;">A platform for coaches and athletes to manage training plans, track tasks, and stay organized.</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-light btn-lg px-5">Get Started →</a>
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-light btn-lg px-5">Log In</a>
         </div>
+    </div>
 
-        <div class="mt-5">
-            <p class="text-muted">Create an account to start building training plans and tracking athlete progress.</p>
+    <!-- Feature cards -->
+    <div class="row g-4 mt-2">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="card-body">
+                    <div style="font-size: 3rem;">📋</div>
+                    <h5 class="fw-bold mt-3">Training Plans</h5>
+                    <p class="text-muted">Coaches can create structured training programs and assign them to athletes.</p>
+                </div>
+            </div>
         </div>
-    }
-</div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="card-body">
+                    <div style="font-size: 3rem;">✅</div>
+                    <h5 class="fw-bold mt-3">Task Tracking</h5>
+                    <p class="text-muted">Track tasks with real-time status updates and progress bars.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="card-body">
+                    <div style="font-size: 3rem;">📊</div>
+                    <h5 class="fw-bold mt-3">Progress Tracking</h5>
+                    <p class="text-muted">Visual progress indicators help coaches and athletes stay on track.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
