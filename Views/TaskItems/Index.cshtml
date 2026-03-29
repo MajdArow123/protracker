@@ -14,16 +14,17 @@
 
 @if (!Model.Any())
 {
-    <p>No tasks yet.</p>
+    <div class="alert alert-info">No tasks yet. Create your first task above!</div>
 }
 else
 {
-    <table class="table">
-        <thead>
+    <table class="table table-hover">
+        <thead class="table-dark">
             <tr>
                 <th>Title</th>
                 <th>Status</th>
                 <th>Due Date</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -31,8 +32,21 @@ else
             {
                 <tr>
                     <td>@t.Title</td>
-                    <td>@t.Status</td>
-                    <td>@(t.DueDate?.ToString("yyyy-MM-dd"))</td>
+                    <td>
+                        @{
+                            var badgeClass = t.Status switch {
+                                "Done" => "badge bg-success",
+                                "In Progress" => "badge bg-warning text-dark",
+                                _ => "badge bg-primary"
+                            };
+                        }
+                        <span class="@badgeClass">@t.Status</span>
+                    </td>
+                    <td>@(t.DueDate?.ToString("MMM dd, yyyy") ?? "No due date")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@t.TaskItemId" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <a asp-action="Delete" asp-route-id="@t.TaskItemId" class="btn btn-sm btn-outline-danger">Delete</a>
+                    </td>
                 </tr>
             }
         </tbody>
