@@ -5,16 +5,17 @@
     var trainingPlanId = (int)ViewBag.TrainingPlanId;
 }
 
-<h1>Tasks</h1>
-
-<p>
-    <a asp-action="Create" asp-route-trainingPlanId="@trainingPlanId" class="btn btn-success">Create New Task</a>
-    <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-secondary">Back to Plans</a>
-</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Tasks</h1>
+    <div>
+        <a asp-action="Create" asp-route-trainingPlanId="@trainingPlanId" class="btn btn-success">+ Add Task</a>
+        <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-secondary">← Back to Plans</a>
+    </div>
+</div>
 
 @if (!Model.Any())
 {
-    <div class="alert alert-info">No tasks yet. Create your first task above!</div>
+    <div class="alert alert-info">No tasks yet. Click <strong>Add Task</strong> to get started!</div>
 }
 else
 {
@@ -30,21 +31,34 @@ else
         <tbody>
             @foreach (var t in Model)
             {
-                <tr>
+                var badgeClass = t.Status switch {
+                    ProTracker.Models.TaskStatus.Completed => "badge bg-success",
+                    ProTracker.Models.TaskStatus.InProgress => "badge bg-warning text-dark",
+                    _ => "badge bg-secondary"
+                };
+
+                var rowClass = t.Status == ProTracker.Models.TaskStatus.Completed ? "table-success" : "";
+
+                <tr class="@rowClass">
                     <td>@t.Title</td>
-                    <td>
-                        @{
-                            var badgeClass = t.Status switch {
-                                "Done" => "badge bg-success",
-                                "In Progress" => "badge bg-warning text-dark",
-                                _ => "badge bg-primary"
-                            };
-                        }
-                        <span class="@badgeClass">@t.Status</span>
-                    </td>
+                    <td><span class="@badgeClass">@t.Status</span></td>
                     <td>@(t.DueDate?.ToString("MMM dd, yyyy") ?? "No due date")</td>
                     <td>
-                        <a asp-action="Edit" asp-route-id="@t.TaskItemId" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form asp-action="ToggleStatus" asp-route-id="@t.TaskItemId" method="post" style="display:inline">
+                            @Html.AntiForgeryToken()
+                            @if (t.Status == ProTracker.Models.TaskStatus.Completed)
+                            {
+                                <button type="submit" class="btn btn-sm btn-success">✅ Completed</button>
+                            }
+                            else if (t.Status == ProTracker.Models.TaskStatus.InProgress)
+                            {
+                                <button type="submit" class="btn btn-sm btn-warning">🔄 In Progress</button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-sm btn-outline-secondary">⬜ Not Started</button>
+                            }
+                        </form>
                         <a asp-action="Delete" asp-route-id="@t.TaskItemId" class="btn btn-sm btn-outline-danger">Delete</a>
                     </td>
                 </tr>

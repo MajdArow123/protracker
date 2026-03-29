@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Data;
 using ProTracker.Models;
+using TaskStatus = ProTracker.Models.TaskStatus;
 
 namespace ProTracker.Controllers;
 
@@ -62,4 +63,32 @@ public class TaskItemsController : Controller
         await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index), new { trainingPlanId = taskItem.TrainingPlanId });
     }
+
+    [HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> ToggleStatus(int id)
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    var task = await _context.TaskItems
+        .Include(t => t.TrainingPlan)
+        .FirstOrDefaultAsync(t => t.TaskItemId == id);
+
+    if (task == null) return NotFound();
+
+    // Make sure only the coach of this plan can toggle
+    if (task.TrainingPlan.CoachId != userId) return Forbid();
+
+    // Cycle through statuses: NotStarted → InProgress → Completed → NotStarted
+    task.Status = task.Status switch
+    {
+        TaskStatus.NotStarted => TaskStatus.InProgress,
+        TaskStatus.InProgress => TaskStatus.Completed,
+        TaskStatus.Completed => TaskStatus.NotStarted,
+        _ => TaskStatus.NotStarted
+    };
+
+    await _context.SaveChangesAsync();
+    return RedirectToAction(nameof(Index), new { trainingPlanId = task.TrainingPlanId });
+}
 }
