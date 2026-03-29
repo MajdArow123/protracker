@@ -1,8 +1,66 @@
-﻿@{
+﻿@using ProTracker.Models
+@{
     ViewData["Title"] = "Home Page";
+    var assignedPlans = ViewBag.AssignedPlans as List<TrainingPlan> ?? new List<TrainingPlan>();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mt-5">
+    <h1 class="display-4 fw-bold">ProTracker</h1>
+    <p class="lead mt-3">A platform for coaches and athletes to manage training plans, track tasks, and stay organized.</p>
+
+    @if (User.Identity != null && User.Identity.IsAuthenticated)
+    {
+        <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
+            <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-primary btn-lg">View Training Plans</a>
+            <a asp-controller="TrainingPlans" asp-action="Create" class="btn btn-success btn-lg">Create Training Plan</a>
+        </div>
+
+        <div class="mt-5">
+            <p class="text-muted">Welcome back. Use ProTracker to create plans, assign athletes, and manage tasks efficiently.</p>
+        </div>
+
+        <div class="mt-5 text-start">
+            <h2 class="mb-3">My Assigned Plans</h2>
+
+            @if (!assignedPlans.Any())
+            {
+                <p>No plans have been assigned to you yet.</p>
+            }
+            else
+            {
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Goal</th>
+                            <th>Start</th>
+                            <th>End</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var plan in assignedPlans)
+                        {
+                            <tr>
+                                <td>@plan.Title</td>
+                                <td>@plan.Goal</td>
+                                <td>@plan.StartDate.ToString("yyyy-MM-dd")</td>
+                                <td>@plan.EndDate.ToString("yyyy-MM-dd")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
+            <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg">Get Started</a>
+            <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-secondary btn-lg">Log In</a>
+        </div>
+
+        <div class="mt-5">
+            <p class="text-muted">Create an account to start building training plans and tracking athlete progress.</p>
+        </div>
+    }
 </div>

@@ -1,0 +1,40 @@
+@model IEnumerable<ProTracker.Models.TaskItem>
+
+@{
+    ViewData["Title"] = "Tasks";
+    var trainingPlanId = (int)ViewBag.TrainingPlanId;
+}
+
+<h1>Tasks</h1>
+
+<p>
+    <a asp-action="Create" asp-route-trainingPlanId="@trainingPlanId" class="btn btn-success">Create New Task</a>
+    <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-secondary">Back to Plans</a>
+</p>
+
+@if (!Model.Any())
+{
+    <p>No tasks yet.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Status</th>
+                <th>Due Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td>@t.Title</td>
+                    <td>@t.Status</td>
+                    <td>@(t.DueDate?.ToString("yyyy-MM-dd"))</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
