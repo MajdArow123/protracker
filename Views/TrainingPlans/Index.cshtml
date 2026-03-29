@@ -4,44 +4,56 @@
     ViewData["Title"] = "Training Plans";
 }
 
-<h1>Training Plans</h1>
-
-<p>
-    <a asp-action="Create" class="btn btn-success">Create New Training Plan</a>
-</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Training Plans</h1>
+    <a asp-action="Create" class="btn btn-success">+ Create New Plan</a>
+</div>
 
 @if (!Model.Any())
 {
-    <p>No training plans yet.</p>
+    <div class="alert alert-info">
+        No training plans yet. Click <strong>Create New Plan</strong> to get started!
+    </div>
 }
 else
 {
-    <table class="table">
-        <thead>
+    <table class="table table-hover">
+        <thead class="table-dark">
             <tr>
                 <th>Title</th>
                 <th>Goal</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Athlete</th>
-                <th></th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
         @foreach (var p in Model)
         {
+            var today = DateTime.Today;
+            var statusLabel = today < p.StartDate ? "Upcoming" :
+                              today > p.EndDate ? "Completed" : "Active";
+            var statusClass = statusLabel == "Active" ? "badge bg-success" :
+                              statusLabel == "Upcoming" ? "badge bg-warning text-dark" :
+                              "badge bg-secondary";
             <tr>
-                <td>@p.Title</td>
+                <td><strong>@p.Title</strong></td>
                 <td>@p.Goal</td>
-                <td>@p.StartDate.ToString("yyyy-MM-dd")</td>
-                <td>@p.EndDate.ToString("yyyy-MM-dd")</td>
-                <td>@p.AthleteId</td>
+                <td>@p.StartDate.ToString("MMM dd, yyyy")</td>
+                <td>@p.EndDate.ToString("MMM dd, yyyy")</td>
+                <td><span class="@statusClass">@statusLabel</span></td>
                 <td>
                     <a asp-controller="TaskItems"
                        asp-action="Index"
                        asp-route-trainingPlanId="@p.TrainingPlanId"
                        class="btn btn-sm btn-primary">
                         View Tasks
+                    </a>
+                    <a asp-action="Delete"
+                       asp-route-id="@p.TrainingPlanId"
+                       class="btn btn-sm btn-outline-danger">
+                        Delete
                     </a>
                 </td>
             </tr>
