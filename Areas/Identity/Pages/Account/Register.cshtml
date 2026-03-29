@@ -1,0 +1,96 @@
+@page
+@model ProTracker.Areas.Identity.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="fw-bold mb-1 text-center">Create Account</h2>
+                <p class="text-muted text-center mb-4">Join ProTracker as a Coach or Athlete</p>
+
+                <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+                    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+    }
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Email" class="form-label fw-semibold">Email</label>
+                        <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="you@example.com" />
+                        <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.Password" class="form-label fw-semibold">Password</label>
+                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" placeholder="Min. 6 characters" />
+                        <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold">Confirm Password</label>
+                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="Repeat your password" />
+                        <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
+                    </div>
+
+                    <!-- ✅ NEW: Role selection -->
+                    <div class="mb-4">
+                        <label asp-for="Input.Role" class="form-label fw-semibold">I am a...</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check flex-fill border rounded p-3 text-center" style="cursor:pointer;">
+                                <input class="form-check-input visually-hidden" type="radio"
+                                       asp-for="Input.Role" value="Athlete" id="roleAthlete" checked />
+                                <label class="form-check-label w-100" for="roleAthlete" style="cursor:pointer;">
+                                    <div style="font-size:2rem;">🏃</div>
+                                    <div class="fw-semibold">Athlete</div>
+                                    <div class="text-muted small">Track my training</div>
+                                </label>
+                            </div>
+                            <div class="form-check flex-fill border rounded p-3 text-center" style="cursor:pointer;">
+                                <input class="form-check-input visually-hidden" type="radio"
+                                       asp-for="Input.Role" value="Coach" id="roleCoach" />
+                                <label class="form-check-label w-100" for="roleCoach" style="cursor:pointer;">
+                                    <div style="font-size:2rem;">🏆</div>
+                                    <div class="fw-semibold">Coach</div>
+                                    <div class="text-muted small">Manage my athletes</div>
+                                </label>
+                            </div>
+                        </div>
+                        <span asp-validation-for="Input.Role" class="text-danger small"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 btn-lg">Create Account</button>
+                </form>
+
+                <hr class="my-3" />
+                <p class="text-center text-muted small mb-0">
+                    Already have an account?
+                    <a asp-page="/Account/Login" asp-area="Identity">Log in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Highlight selected role card
+        document.querySelectorAll('input[name="Input.Role"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                document.querySelectorAll('.form-check').forEach(card => {
+                    card.classList.remove('border-primary', 'bg-light');
+                });
+                if (this.checked) {
+                    this.closest('.form-check').classList.add('border-primary', 'bg-light');
+                }
+            });
+            // Set initial highlight
+            if (radio.checked) {
+                radio.closest('.form-check').classList.add('border-primary', 'bg-light');
+            }
+        });
+    </script>
+}

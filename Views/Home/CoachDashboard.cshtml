@@ -1,0 +1,182 @@
+@using ProTracker.Models
+@using ProTracker.Controllers
+@using TaskStatus = ProTracker.Models.TaskStatus
+@{
+    ViewData["Title"] = "Coach Dashboard";
+    var athleteSummaries = ViewBag.AthleteSummaries as List<AthleteSummary> ?? new();
+    var recentPlans = ViewBag.RecentPlans as List<TrainingPlan> ?? new();
+}
+
+<!-- Hero -->
+<div class="px-4 py-5 text-center mb-4"
+     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border-radius: 16px; color: white;">
+    <h1 class="display-5 fw-bold mb-2">🏆 Coach Dashboard</h1>
+    <p class="lead mb-4" style="color: #a0aec0;">Manage your athletes and track their progress</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a asp-controller="TrainingPlans" asp-action="Index" class="btn btn-light btn-lg px-4">📋 All Training Plans</a>
+        <a asp-controller="TrainingPlans" asp-action="Create" class="btn btn-success btn-lg px-4">+ Create New Plan</a>
+    </div>
+</div>
+
+<!-- Stats cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #4299e1 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size: 2rem;">📋</span>
+                    <div>
+                        <div class="text-muted small">Total Plans Created</div>
+                        <div class="fw-bold fs-4">@ViewBag.TotalPlans</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #48bb78 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size: 2rem;">✅</span>
+                    <div>
+                        <div class="text-muted small">Tasks Completed (All Athletes)</div>
+                        <div class="fw-bold fs-4">@ViewBag.CompletedTasks</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm h-100" style="border-left: 4px solid #ed8936 !important;">
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-3">
+                    <span style="font-size: 2rem;">🏃</span>
+                    <div>
+                        <div class="text-muted small">Active Athletes</div>
+                        <div class="fw-bold fs-4">@ViewBag.TotalAthletes</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Athlete Progress Overview -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-header bg-white border-0 pt-4 px-4">
+        <h4 class="fw-bold mb-0">🏃 Athlete Progress Overview</h4>
+        <p class="text-muted small mb-0">Completion rate across all assigned plans</p>
+    </div>
+    <div class="card-body px-4">
+        @if (!athleteSummaries.Any())
+        {
+            <div class="alert alert-info">
+                No athletes yet. <a asp-controller="TrainingPlans" asp-action="Create">Create a plan</a> and assign it to an athlete to get started.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Athlete</th>
+                            <th>Plans</th>
+                            <th>Tasks Done</th>
+                            <th style="min-width: 200px;">Overall Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var athlete in athleteSummaries)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                             style="width:36px; height:36px; font-size:0.85rem; font-weight:600;">
+                                            @athlete.AthleteName[0].ToString().ToUpper()
+                                        </div>
+                                        <span class="fw-semibold">@athlete.AthleteName</span>
+                                    </div>
+                                </td>
+                                <td><span class="badge bg-secondary">@athlete.TotalPlans</span></td>
+                                <td>
+                                    <span class="text-success fw-semibold">@athlete.CompletedTasks</span>
+                                    <span class="text-muted"> / @athlete.TotalTasks</span>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 10px;">
+                                            <div class="progress-bar
+                                                @(athlete.CompletionPercent == 100 ? "bg-success" :
+                                                  athlete.CompletionPercent >= 50 ? "bg-primary" : "bg-warning")"
+                                                 role="progressbar"
+                                                 style="width: @athlete.CompletionPercent%"
+                                                 aria-valuenow="@athlete.CompletionPercent"
+                                                 aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <span class="small fw-semibold" style="min-width:36px;">@athlete.CompletionPercent%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Recent Plans -->
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-0 pt-4 px-4">
+        <h4 class="fw-bold mb-0">📋 Recent Training Plans</h4>
+        <p class="text-muted small mb-0">Your 5 most recently started plans</p>
+    </div>
+    <div class="card-body px-4">
+        @if (!recentPlans.Any())
+        {
+            <div class="alert alert-info">No plans yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Title</th>
+                            <th>Goal</th>
+                            <th>Start</th>
+                            <th>End</th>
+                            <th>Tasks</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var plan in recentPlans)
+                        {
+                            var done = plan.Tasks.Count(t => t.Status == TaskStatus.Completed);
+                            var total = plan.Tasks.Count;
+                            <tr>
+                                <td><strong>@plan.Title</strong></td>
+                                <td class="text-muted">@plan.Goal</td>
+                                <td>@plan.StartDate.ToString("MMM dd, yyyy")</td>
+                                <td>@plan.EndDate.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <span class="text-success">@done</span>
+                                    <span class="text-muted">/ @total</span>
+                                </td>
+                                <td>
+                                    <a asp-controller="TrainingPlans" asp-action="Details"
+                                       asp-route-id="@plan.TrainingPlanId"
+                                       class="btn btn-sm btn-outline-primary">View</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
