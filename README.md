@@ -75,8 +75,14 @@ dotnet run
 
 ## 📸 Screenshots
 
-> Coming soon
+### 🏠 Home Page
+![Home](docs/screenshots/home.png)
 
+### 🔐 Register Page
+![Register](docs/screenshots/register.png)
+
+### 📋 Training Plans
+![Training Plans](docs/screenshots/training-plans.png)
 ---
 
 ## 🔮 Planned Features
