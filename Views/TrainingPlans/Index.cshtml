@@ -25,6 +25,7 @@ else
                 <th>Start Date</th>
                 <th>End Date</th>
                 <th>Status</th>
+                <th>Progress</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -37,12 +38,39 @@ else
             var statusClass = statusLabel == "Active" ? "badge bg-success" :
                               statusLabel == "Upcoming" ? "badge bg-warning text-dark" :
                               "badge bg-secondary";
+
+            var totalTasks = p.Tasks.Count;
+            var completedTasks = p.Tasks.Count(t => t.Status == ProTracker.Models.TaskStatus.Completed);
+            var progressPercent = totalTasks > 0 ? (int)((double)completedTasks / totalTasks * 100) : 0;
+            var progressBarClass = progressPercent == 100 ? "bg-success" :
+                                   progressPercent >= 50 ? "bg-warning" : "bg-danger";
+
             <tr>
                 <td><strong>@p.Title</strong></td>
                 <td>@p.Goal</td>
                 <td>@p.StartDate.ToString("MMM dd, yyyy")</td>
                 <td>@p.EndDate.ToString("MMM dd, yyyy")</td>
                 <td><span class="@statusClass">@statusLabel</span></td>
+                <td style="min-width: 150px;">
+                    @if (totalTasks == 0)
+                    {
+                        <span class="text-muted small">No tasks yet</span>
+                    }
+                    else
+                    {
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar @progressBarClass"
+                                 role="progressbar"
+                                 style="width: @progressPercent%"
+                                 aria-valuenow="@progressPercent"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                                @progressPercent%
+                            </div>
+                        </div>
+                        <small class="text-muted">@completedTasks / @totalTasks tasks done</small>
+                    }
+                </td>
                 <td>
                     <a asp-controller="TaskItems"
                        asp-action="Index"

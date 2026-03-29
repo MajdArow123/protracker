@@ -19,15 +19,16 @@ public class TrainingPlansController : Controller
     }
 
     public async Task<IActionResult> Index()
-    {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+{
+    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        var plans = await _context.TrainingPlans
-            .Where(p => p.CoachId == userId)
-            .ToListAsync();
+    var plans = await _context.TrainingPlans
+        .Where(p => p.CoachId == userId)
+        .Include(p => p.Tasks)
+        .ToListAsync();
 
-        return View(plans);
-    }
+    return View(plans);
+}
 
     public IActionResult Create()
 {
