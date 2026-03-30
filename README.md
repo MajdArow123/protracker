@@ -1,6 +1,6 @@
 # 🏋️‍♂️ ProTracker
 A full-stack athlete and training management system built with ASP.NET Core MVC.  
-Coaches can create and assign training plans, while athletes can track their tasks and progress.
+Coaches can create and assign training plans with tasks, while athletes can track their progress in real time.
 
 🌐 **Live Demo:** [protracker-production.up.railway.app](https://protracker-production.up.railway.app)
 
@@ -12,13 +12,15 @@ Coaches can create and assign training plans, while athletes can track their tas
 ---
 
 ## 🚀 Features
-- 👤 User authentication & role-based access (Coach / Athlete)
+- 👤 User authentication with custom display names & role-based access (Coach / Athlete)
 - 🏆 Separate Coach and Athlete dashboards based on role
-- 📋 Coaches can create and manage training plans
+- 📋 Coaches can create, edit, and delete training plans
 - 📌 Coaches can assign training plans to specific athletes
-- 🏃 Athletes can view their assigned plans and track progress
-- ✅ Task tracking with status updates and progress bars
-- 🗂 Clean MVC architecture with authorization
+- ✅ Coaches can add tasks to training plans with due dates
+- 🏃 Athletes can view assigned plans and track task progress
+- 📊 Real-time progress bars showing task completion
+- 🔒 Role-based authorization throughout the app
+- 🗂 Clean MVC architecture
 
 ---
 
@@ -38,12 +40,22 @@ Coaches can create and assign training plans, while athletes can track their tas
 ```
 ProTracker/
 ├── Controllers/        → Handles HTTP requests & business logic
-├── Models/             → Data models (TrainingPlan, TaskItem, etc.)
+├── Models/             → Data models (TrainingPlan, TaskItem, ApplicationUser)
 ├── Views/              → Razor UI pages
 ├── Data/               → EF Core DbContext & migrations
-├── Areas/Identity/     → Authentication pages
+├── Areas/Identity/     → Authentication & registration pages
 └── wwwroot/            → Static files (CSS, JS)
 ```
+
+---
+
+## 🧪 Test Accounts
+You can try the live demo using these credentials:
+
+| Role | Email | Password |
+|---|---|---|
+| Coach | coach@test.com | Coach123! |
+| Athlete | athlete@test.com | Athlete123! |
 
 ---
 
@@ -96,15 +108,6 @@ dotnet run
 
 ### 📄 Plan Details
 ![Plan Details](docs/screenshots/plan-details.png)
-
----
-
-## 🔮 Planned Features
-- [ ] Edit training plan
-- [ ] Delete confirmation page
-- [ ] Task due date reminders
-- [ ] Athlete performance history
-- [ ] Mobile-responsive UI improvements
 
 ---
 
