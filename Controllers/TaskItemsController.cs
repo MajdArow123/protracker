@@ -61,34 +61,103 @@ public class TaskItemsController : Controller
 
         _context.TaskItems.Add(taskItem);
         await _context.SaveChangesAsync();
-        return RedirectToAction(nameof(Index), new { trainingPlanId = taskItem.TrainingPlanId });
+        return RedirectToAction("Details", "TrainingPlans", new { id = taskItem.TrainingPlanId });
+    }
+
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var task = await _context.TaskItems
+            .Include(t => t.TrainingPlan)
+            .FirstOrDefaultAsync(t => t.TaskItemId == id && t.TrainingPlan.CoachId == userId);
+
+        if (task == null) return NotFound();
+        return View(task);
     }
 
     [HttpPost]
-[ValidateAntiForgeryToken]
-public async Task<IActionResult> ToggleStatus(int id)
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-    var task = await _context.TaskItems
-        .Include(t => t.TrainingPlan)
-        .FirstOrDefaultAsync(t => t.TaskItemId == id);
-
-    if (task == null) return NotFound();
-
-    // Make sure only the coach of this plan can toggle
-    if (task.TrainingPlan.CoachId != userId) return Forbid();
-
-    // Cycle through statuses: NotStarted → InProgress → Completed → NotStarted
-    task.Status = task.Status switch
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Edit(int id, TaskItem taskItem)
     {
-        TaskStatus.NotStarted => TaskStatus.InProgress,
-        TaskStatus.InProgress => TaskStatus.Completed,
-        TaskStatus.Completed => TaskStatus.NotStarted,
-        _ => TaskStatus.NotStarted
-    };
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        ModelState.Remove(nameof(TaskItem.TrainingPlan));
 
-    await _context.SaveChangesAsync();
-    return RedirectToAction(nameof(Index), new { trainingPlanId = task.TrainingPlanId });
-}
+        if (!ModelState.IsValid)
+            return View(taskItem);
+
+        var existing = await _context.TaskItems
+            .Include(t => t.TrainingPlan)
+            .FirstOrDefaultAsync(t => t.TaskItemId == id && t.TrainingPlan.CoachId == userId);
+
+        if (existing == null) return NotFound();
+
+        existing.Title = taskItem.Title;
+        existing.Description = taskItem.Description;
+        existing.Status = taskItem.Status;
+        existing.DueDate = taskItem.DueDate;
+
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Details", "TrainingPlans", new { id = existing.TrainingPlanId });
+    }
+
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var task = await _context.TaskItems
+            .Include(t => t.TrainingPlan)
+            .FirstOrDefaultAsync(t => t.TaskItemId == id && t.TrainingPlan.CoachId == userId);
+
+        if (task == null) return NotFound();
+        return View(task);
+    }
+
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var task = await _context.TaskItems
+            .Include(t => t.TrainingPlan)
+            .FirstOrDefaultAsync(t => t.TaskItemId == id && t.TrainingPlan.CoachId == userId);
+
+        if (task != null)
+        {
+            var planId = task.TrainingPlanId;
+            _context.TaskItems.Remove(task);
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Details", "TrainingPlans", new { id = planId });
+        }
+
+        return RedirectToAction("CoachDashboard", "Dashboard");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleStatus(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var task = await _context.TaskItems
+            .Include(t => t.TrainingPlan)
+            .FirstOrDefaultAsync(t => t.TaskItemId == id);
+
+        if (task == null) return NotFound();
+
+        if (task.TrainingPlan.CoachId != userId) return Forbid();
+
+        task.Status = task.Status switch
+        {
+            TaskStatus.NotStarted => TaskStatus.InProgress,
+            TaskStatus.InProgress => TaskStatus.Completed,
+            TaskStatus.Completed => TaskStatus.NotStarted,
+            _ => TaskStatus.NotStarted
+        };
+
+        await _context.SaveChangesAsync();
+        return RedirectToAction("Details", "TrainingPlans", new { id = task.TrainingPlanId });
+    }
 }
