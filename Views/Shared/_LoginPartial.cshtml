@@ -1,13 +1,16 @@
 ﻿@using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
-@inject UserManager<IdentityUser> UserManager
+@using ProTracker.Models
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
 
 <ul class="navbar-nav align-items-center gap-2">
 @if (SignInManager.IsSignedIn(User))
 {
     var currentUser = await UserManager.GetUserAsync(User);
-    var email = currentUser?.Email ?? "";
-    var username = email.Contains("@") ? email.Split("@")[0] : email;
+    var appUser = currentUser as ApplicationUser;
+    var username = !string.IsNullOrEmpty(appUser?.DisplayName)
+        ? appUser.DisplayName
+        : currentUser?.Email?.Split("@")[0] ?? "User";
     var initial = username.Length > 0 ? username[0].ToString().ToUpper() : "U";
 
     <li class="nav-item d-flex align-items-center gap-2">

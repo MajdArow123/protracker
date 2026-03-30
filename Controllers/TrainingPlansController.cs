@@ -13,9 +13,9 @@ namespace ProTracker.Controllers;
 public class TrainingPlansController : Controller
 {
     private readonly ApplicationDbContext _context;
-    private readonly UserManager<IdentityUser> _userManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public TrainingPlansController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
+    public TrainingPlansController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
     {
         _context = context;
         _userManager = userManager;
@@ -45,64 +45,65 @@ public class TrainingPlansController : Controller
 
         return View(plan);
     }
-     [Authorize(Roles = "Coach")]
-public async Task<IActionResult> Edit(int id)
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    var plan = await _context.TrainingPlans
-        .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
-
-    if (plan == null)
-        return NotFound();
-
-    var athletes = await _userManager.GetUsersInRoleAsync("Athlete");
-    ViewBag.Athletes = athletes.Select(a => new SelectListItem
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Edit(int id)
     {
-        Value = a.Id,
-        Text = a.Email
-    }).ToList();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    return View(plan);
-}
+        var plan = await _context.TrainingPlans
+            .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
 
-[HttpPost]
-[ValidateAntiForgeryToken]
-[Authorize(Roles = "Coach")]
-public async Task<IActionResult> Edit(int id, TrainingPlan trainingPlan)
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (plan == null)
+            return NotFound();
 
-    trainingPlan.CoachId = userId!;
-    ModelState.Remove(nameof(TrainingPlan.CoachId));
-
-    if (!ModelState.IsValid)
-    {
         var athletes = await _userManager.GetUsersInRoleAsync("Athlete");
         ViewBag.Athletes = athletes.Select(a => new SelectListItem
         {
             Value = a.Id,
             Text = a.Email
         }).ToList();
-        return View(trainingPlan);
+
+        return View(plan);
     }
 
-    var existing = await _context.TrainingPlans
-        .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Edit(int id, TrainingPlan trainingPlan)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    if (existing == null)
-        return NotFound();
+        trainingPlan.CoachId = userId!;
+        ModelState.Remove(nameof(TrainingPlan.CoachId));
 
-    existing.Title = trainingPlan.Title;
-    existing.Goal = trainingPlan.Goal;
-    existing.StartDate = trainingPlan.StartDate;
-    existing.EndDate = trainingPlan.EndDate;
-    existing.AthleteId = trainingPlan.AthleteId;
+        if (!ModelState.IsValid)
+        {
+            var athletes = await _userManager.GetUsersInRoleAsync("Athlete");
+            ViewBag.Athletes = athletes.Select(a => new SelectListItem
+            {
+                Value = a.Id,
+                Text = a.Email
+            }).ToList();
+            return View(trainingPlan);
+        }
 
-    await _context.SaveChangesAsync();
+        var existing = await _context.TrainingPlans
+            .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
 
-    return RedirectToAction("CoachDashboard", "Dashboard");
-}
+        if (existing == null)
+            return NotFound();
+
+        existing.Title = trainingPlan.Title;
+        existing.Goal = trainingPlan.Goal;
+        existing.StartDate = trainingPlan.StartDate;
+        existing.EndDate = trainingPlan.EndDate;
+        existing.AthleteId = trainingPlan.AthleteId;
+
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction("CoachDashboard", "Dashboard");
+    }
 
     [Authorize(Roles = "Coach")]
     public async Task<IActionResult> Create()
@@ -143,35 +144,35 @@ public async Task<IActionResult> Edit(int id, TrainingPlan trainingPlan)
     }
 
     [Authorize(Roles = "Coach")]
-public async Task<IActionResult> Delete(int id)
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-    var plan = await _context.TrainingPlans
-        .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
-
-    if (plan == null)
-        return NotFound();
-
-    return View(plan);
-}
-
-[HttpPost, ActionName("Delete")]
-[ValidateAntiForgeryToken]
-[Authorize(Roles = "Coach")]
-public async Task<IActionResult> DeleteConfirmed(int id)
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-    var plan = await _context.TrainingPlans
-        .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
-
-    if (plan != null)
+    public async Task<IActionResult> Delete(int id)
     {
-        _context.TrainingPlans.Remove(plan);
-        await _context.SaveChangesAsync();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var plan = await _context.TrainingPlans
+            .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
+
+        if (plan == null)
+            return NotFound();
+
+        return View(plan);
     }
 
-    return RedirectToAction("CoachDashboard", "Dashboard");
-}
+    [HttpPost, ActionName("Delete")]
+    [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> DeleteConfirmed(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var plan = await _context.TrainingPlans
+            .FirstOrDefaultAsync(p => p.TrainingPlanId == id && p.CoachId == userId);
+
+        if (plan != null)
+        {
+            _context.TrainingPlans.Remove(plan);
+            await _context.SaveChangesAsync();
+        }
+
+        return RedirectToAction("CoachDashboard", "Dashboard");
+    }
 }

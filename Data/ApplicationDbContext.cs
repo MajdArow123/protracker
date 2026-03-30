@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ProTracker.Data;
 
-public class ApplicationDbContext : IdentityDbContext
+public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
@@ -12,5 +12,5 @@ public class ApplicationDbContext : IdentityDbContext
     }
 
     public DbSet<TrainingPlan> TrainingPlans => Set<TrainingPlan>();
-public DbSet<TaskItem> TaskItems => Set<TaskItem>();
+    public DbSet<TaskItem> TaskItems => Set<TaskItem>();
 }
