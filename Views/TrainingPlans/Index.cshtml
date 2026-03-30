@@ -72,18 +72,23 @@ else
                     }
                 </td>
                 <td>
-                    <a asp-controller="TaskItems"
-                       asp-action="Index"
-                       asp-route-trainingPlanId="@p.TrainingPlanId"
-                       class="btn btn-sm btn-primary">
-                        View Tasks
-                    </a>
-                    <a asp-action="Delete"
-                       asp-route-id="@p.TrainingPlanId"
-                       class="btn btn-sm btn-outline-danger">
-                        Delete
-                    </a>
-                </td>
+    <a asp-controller="TaskItems"
+       asp-action="Index"
+       asp-route-trainingPlanId="@p.TrainingPlanId"
+       class="btn btn-sm btn-primary">
+        View Tasks
+    </a>
+    <a asp-action="Edit"
+       asp-route-id="@p.TrainingPlanId"
+       class="btn btn-sm btn-outline-secondary">
+        Edit
+    </a>
+    <a asp-action="Delete"
+       asp-route-id="@p.TrainingPlanId"
+       class="btn btn-sm btn-outline-danger">
+        Delete
+    </a>
+</td>
             </tr>
         }
         </tbody>

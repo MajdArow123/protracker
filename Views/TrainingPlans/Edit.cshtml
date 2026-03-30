@@ -1,0 +1,72 @@
+@using Microsoft.AspNetCore.Mvc.Rendering
+@model ProTracker.Models.TrainingPlan
+
+@{
+    ViewData["Title"] = "Edit Training Plan";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold mb-1">✏️ Edit Training Plan</h2>
+                    <p class="text-muted mb-4">Update the details for this plan</p>
+
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" name="TrainingPlanId" value="@Model.TrainingPlanId" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Plan Title</label>
+                            <input type="text" name="Title" value="@Model.Title" class="form-control" placeholder="e.g. 8-Week Strength Program" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Goal</label>
+                            <input type="text" name="Goal" value="@Model.Goal" class="form-control" placeholder="e.g. Build upper body strength" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">Start Date</label>
+                                <input type="date" name="StartDate" value="@Model.StartDate.ToString("yyyy-MM-dd")" class="form-control" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold">End Date</label>
+                                <input type="date" name="EndDate" value="@Model.EndDate.ToString("yyyy-MM-dd")" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+    <label class="form-label fw-semibold">Assign to Athlete</label>
+    <select name="AthleteId" class="form-select">
+        @foreach (var athlete in (IEnumerable<SelectListItem>)ViewBag.Athletes)
+        {
+            if (athlete.Value == Model.AthleteId)
+            {
+                <option value="@athlete.Value" selected>@athlete.Text</option>
+            }
+            else
+            {
+                <option value="@athlete.Value">@athlete.Text</option>
+            }
+        }
+    </select>
+</div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">Save Changes</button>
+                            <a asp-controller="Dashboard" asp-action="CoachDashboard"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
