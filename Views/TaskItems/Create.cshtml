@@ -3,49 +3,65 @@
 @using ModelTaskStatus = ProTracker.Models.TaskStatus
 
 @{
-    ViewData["Title"] = "Create Task";
+    ViewData["Title"] = "Add Task";
     var trainingPlanId = (int)ViewBag.TrainingPlanId;
 }
 
-<h1>Create Task</h1>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold mb-1">✅ Add Task</h2>
+                    <p class="text-muted mb-4">Add a task to this training plan</p>
 
-<form asp-action="Create" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <form asp-action="Create" method="post">
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
 
-    <input type="hidden" asp-for="TrainingPlanId" value="@trainingPlanId" />
+                        <input type="hidden" asp-for="TrainingPlanId" value="@trainingPlanId" />
 
-    <div class="mb-3">
-        <label asp-for="Title" class="form-label"></label>
-        <input asp-for="Title" class="form-control" />
-        <span asp-validation-for="Title" class="text-danger"></span>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Task Title</label>
+                            <input asp-for="Title" class="form-control" placeholder="e.g. Run 5km" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Description</label>
+                            <input asp-for="Description" class="form-control" placeholder="Optional details" />
+                            <span asp-validation-for="Description" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select asp-for="Status" class="form-select">
+                                @foreach (ModelTaskStatus s in Enum.GetValues(typeof(ModelTaskStatus)))
+                                {
+                                    <option value="@s">@s</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Status" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Due Date <span class="text-muted fw-normal">(optional)</span></label>
+                            <input asp-for="DueDate" type="date" class="form-control" />
+                            <span asp-validation-for="DueDate" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">Add Task</button>
+                            <a asp-controller="TrainingPlans" asp-action="Details"
+                               asp-route-id="@trainingPlanId"
+                               class="btn btn-outline-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div class="mb-3">
-        <label asp-for="Description" class="form-label"></label>
-        <input asp-for="Description" class="form-control" />
-        <span asp-validation-for="Description" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="Status" class="form-label"></label>
-        <select asp-for="Status" class="form-select">
-            @foreach (ModelTaskStatus s in Enum.GetValues(typeof(ModelTaskStatus)))
-            {
-                <option value="@s">@s</option>
-            }
-        </select>
-        <span asp-validation-for="Status" class="text-danger"></span>
-    </div>
-
-    <div class="mb-3">
-        <label asp-for="DueDate" class="form-label"></label>
-        <input asp-for="DueDate" type="date" class="form-control" />
-        <span asp-validation-for="DueDate" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Save</button>
-
-    <a asp-action="Index"
-       asp-route-trainingPlanId="@trainingPlanId"
-       class="btn btn-secondary">Cancel</a>
-</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

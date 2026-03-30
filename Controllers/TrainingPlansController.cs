@@ -61,7 +61,7 @@ public class TrainingPlansController : Controller
         ViewBag.Athletes = athletes.Select(a => new SelectListItem
         {
             Value = a.Id,
-            Text = a.Email
+            Text = !string.IsNullOrEmpty(a.DisplayName) ? a.DisplayName : a.Email
         }).ToList();
 
         return View(plan);
@@ -83,7 +83,7 @@ public class TrainingPlansController : Controller
             ViewBag.Athletes = athletes.Select(a => new SelectListItem
             {
                 Value = a.Id,
-                Text = a.Email
+                Text = !string.IsNullOrEmpty(a.DisplayName) ? a.DisplayName : a.Email
             }).ToList();
             return View(trainingPlan);
         }
@@ -112,7 +112,7 @@ public class TrainingPlansController : Controller
         ViewBag.Athletes = athletes.Select(a => new SelectListItem
         {
             Value = a.Id,
-            Text = a.Email
+            Text = !string.IsNullOrEmpty(a.DisplayName) ? a.DisplayName : a.Email
         }).ToList();
         return View();
     }
@@ -132,7 +132,7 @@ public class TrainingPlansController : Controller
             ViewBag.Athletes = athletes.Select(a => new SelectListItem
             {
                 Value = a.Id,
-                Text = a.Email
+                Text = !string.IsNullOrEmpty(a.DisplayName) ? a.DisplayName : a.Email
             }).ToList();
             return View(trainingPlan);
         }
