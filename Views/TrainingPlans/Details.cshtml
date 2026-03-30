@@ -1,0 +1,52 @@
+@model ProTracker.Models.TrainingPlan
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">📋 @Model.Title</h2>
+            <p class="text-muted mb-0">@Model.StartDate.ToString("MMM d") – @Model.EndDate.ToString("MMM d, yyyy")</p>
+        </div>
+        <a asp-controller="Dashboard" asp-action="@(User.IsInRole("Coach") ? "CoachDashboard" : "AthleteDashboard")"
+           class="btn btn-outline-secondary">← Back</a>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.Goal))
+    {
+        <div class="alert alert-info">🎯 <strong>Goal:</strong> @Model.Goal</div>
+    }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white fw-semibold">
+            Tasks (@Model.Tasks.Count)
+        </div>
+        <div class="card-body p-0">
+            @if (!Model.Tasks.Any())
+            {
+                <p class="text-muted p-3 mb-0">No tasks added yet.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var task in Model.Tasks)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">@task.Title</div>
+                                @if (!string.IsNullOrEmpty(task.Description))
+                                {
+                                    <div class="text-muted small">@task.Description</div>
+                                }
+                            </div>
+                            <span class="badge @(task.Status.ToString() == "Completed" ? "bg-success" : task.Status.ToString() == "InProgress" ? "bg-warning text-dark" : "bg-secondary")">
+                                @task.Status
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>

@@ -12,36 +12,36 @@
                 <p class="text-muted text-center mb-4">Join ProTracker as a Coach or Athlete</p>
 
                 <form id="registerForm" asp-route-returnUrl="@Model.ReturnUrl" method="post">
+
                     @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
-    {
-        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
-    }
+                    {
+                        <div asp-validation-summary="All" class="alert alert-danger" role="alert"></div>
+                    }
 
                     <div class="mb-3">
-                        <label asp-for="Input.Email" class="form-label fw-semibold">Email</label>
-                        <input asp-for="Input.Email" class="form-control" autocomplete="username" placeholder="you@example.com" />
+                        <label class="form-label fw-semibold">Email</label>
+                        <input type="email" name="Input.Email" class="form-control" placeholder="you@example.com" />
                         <span asp-validation-for="Input.Email" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Input.Password" class="form-label fw-semibold">Password</label>
-                        <input asp-for="Input.Password" class="form-control" autocomplete="new-password" placeholder="Min. 6 characters" />
+                        <label class="form-label fw-semibold">Password</label>
+                        <input type="password" name="Input.Password" class="form-control" placeholder="Min. 6 characters" />
                         <span asp-validation-for="Input.Password" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Input.ConfirmPassword" class="form-label fw-semibold">Confirm Password</label>
-                        <input asp-for="Input.ConfirmPassword" class="form-control" autocomplete="new-password" placeholder="Repeat your password" />
+                        <label class="form-label fw-semibold">Confirm Password</label>
+                        <input type="password" name="Input.ConfirmPassword" class="form-control" placeholder="Repeat your password" />
                         <span asp-validation-for="Input.ConfirmPassword" class="text-danger small"></span>
                     </div>
 
-                    <!-- ✅ NEW: Role selection -->
                     <div class="mb-4">
-                        <label asp-for="Input.Role" class="form-label fw-semibold">I am a...</label>
+                        <label class="form-label fw-semibold">I am a...</label>
                         <div class="d-flex gap-3">
                             <div class="form-check flex-fill border rounded p-3 text-center" style="cursor:pointer;">
-                                <input class="form-check-input visually-hidden" type="radio"
-                                       asp-for="Input.Role" value="Athlete" id="roleAthlete" checked />
+                                <input class="form-check-input" type="radio"
+                                       name="Input.Role" value="Athlete" id="roleAthlete" checked />
                                 <label class="form-check-label w-100" for="roleAthlete" style="cursor:pointer;">
                                     <div style="font-size:2rem;">🏃</div>
                                     <div class="fw-semibold">Athlete</div>
@@ -49,8 +49,8 @@
                                 </label>
                             </div>
                             <div class="form-check flex-fill border rounded p-3 text-center" style="cursor:pointer;">
-                                <input class="form-check-input visually-hidden" type="radio"
-                                       asp-for="Input.Role" value="Coach" id="roleCoach" />
+                                <input class="form-check-input" type="radio"
+                                       name="Input.Role" value="Coach" id="roleCoach" />
                                 <label class="form-check-label w-100" for="roleCoach" style="cursor:pointer;">
                                     <div style="font-size:2rem;">🏆</div>
                                     <div class="fw-semibold">Coach</div>
@@ -58,7 +58,6 @@
                                 </label>
                             </div>
                         </div>
-                        <span asp-validation-for="Input.Role" class="text-danger small"></span>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 btn-lg">Create Account</button>
@@ -77,7 +76,6 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
-        // Highlight selected role card
         document.querySelectorAll('input[name="Input.Role"]').forEach(radio => {
             radio.addEventListener('change', function () {
                 document.querySelectorAll('.form-check').forEach(card => {
@@ -87,7 +85,6 @@
                     this.closest('.form-check').classList.add('border-primary', 'bg-light');
                 }
             });
-            // Set initial highlight
             if (radio.checked) {
                 radio.closest('.form-check').classList.add('border-primary', 'bg-light');
             }

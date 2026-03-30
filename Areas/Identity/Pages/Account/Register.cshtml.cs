@@ -1,20 +1,15 @@
-// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file under the MIT license.
 #nullable disable
-
+using Microsoft.AspNetCore.Mvc.Filters;
 using System.ComponentModel.DataAnnotations;
-using System.Text;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.AspNetCore.WebUtilities;
 
 namespace ProTracker.Areas.Identity.Pages.Account
 {
-    public class RegisterModel : PageModel
+    [IgnoreAntiforgeryToken]
+public class RegisterModel : PageModel
     {
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
@@ -63,7 +58,6 @@ namespace ProTracker.Areas.Identity.Pages.Account
             [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
             public string ConfirmPassword { get; set; }
 
-            // ✅ NEW: Role selection
             [Required]
             [Display(Name = "I am a...")]
             public string Role { get; set; } = "Athlete";
@@ -75,40 +69,56 @@ namespace ProTracker.Areas.Identity.Pages.Account
             ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
         }
 
+
+        
         public async Task<IActionResult> OnPostAsync(string returnUrl = null)
+{
+    returnUrl ??= Url.Content("~/");
+    ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
+
+    _logger.LogInformation("=== REGISTER POST CALLED ===");
+    _logger.LogInformation("Email: {Email}", Input?.Email);
+    _logger.LogInformation("Role: {Role}", Input?.Role);
+    _logger.LogInformation("ModelState valid: {Valid}", ModelState.IsValid);
+
+    if (!ModelState.IsValid)
+    {
+        foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
         {
-            returnUrl ??= Url.Content("~/");
-            ExternalLogins = (await _signInManager.GetExternalAuthenticationSchemesAsync()).ToList();
-
-            if (ModelState.IsValid)
-            {
-                var user = CreateUser();
-
-                await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-                await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-                var result = await _userManager.CreateAsync(user, Input.Password);
-
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation("User created a new account with password.");
-
-                    // ✅ NEW: Assign the selected role to the new user
-                    var role = Input.Role == "Coach" ? "Coach" : "Athlete";
-                    await _userManager.AddToRoleAsync(user, role);
-
-                    var userId = await _userManager.GetUserIdAsync(user);
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return LocalRedirect(returnUrl);
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
-
-            return Page();
+            _logger.LogInformation("ModelState error: {Error}", error.ErrorMessage);
         }
+        return Page();
+    }
+
+    var user = CreateUser();
+    await _userStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
+    await _emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
+    var result = await _userManager.CreateAsync(user, Input.Password);
+
+    _logger.LogInformation("CreateAsync result: {Success}", result.Succeeded);
+
+    if (result.Succeeded)
+    {
+        var role = Input.Role == "Coach" ? "Coach" : "Athlete";
+        await _userManager.AddToRoleAsync(user, role);
+        await _signInManager.SignInAsync(user, isPersistent: false);
+
+        _logger.LogInformation("Redirecting to: {Role}Dashboard", role);
+
+        if (role == "Coach")
+            return RedirectToAction("CoachDashboard", "Dashboard");
+        else
+            return RedirectToAction("AthleteDashboard", "Dashboard");
+    }
+
+    foreach (var error in result.Errors)
+    {
+        _logger.LogInformation("Identity error: {Error}", error.Description);
+        ModelState.AddModelError(string.Empty, error.Description);
+    }
+
+    return Page();
+}
 
         private IdentityUser CreateUser()
         {

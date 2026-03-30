@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Data;
@@ -12,44 +13,54 @@ namespace ProTracker.Controllers;
 public class TrainingPlansController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<IdentityUser> _userManager;
 
-    public TrainingPlansController(ApplicationDbContext context)
+    public TrainingPlansController(ApplicationDbContext context, UserManager<IdentityUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index()
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var plans = await _context.TrainingPlans
+            .Where(p => p.CoachId == userId)
+            .Include(p => p.Tasks)
+            .ToListAsync();
+        return View(plans);
+    }
 
-    var plans = await _context.TrainingPlans
-        .Where(p => p.CoachId == userId)
-        .Include(p => p.Tasks)
-        .ToListAsync();
+    public async Task<IActionResult> Details(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    return View(plans);
-}
+        var plan = await _context.TrainingPlans
+            .Include(p => p.Tasks)
+            .FirstOrDefaultAsync(p => p.TrainingPlanId == id &&
+                (p.CoachId == userId || p.AthleteId == userId));
 
-    public IActionResult Create()
-{
-    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (plan == null)
+            return NotFound();
 
-    var athletes = _context.Users
-        .Where(u => u.Id != userId)
-        .Select(u => new SelectListItem
+        return View(plan);
+    }
+
+    [Authorize(Roles = "Coach")]
+    public async Task<IActionResult> Create()
+    {
+        var athletes = await _userManager.GetUsersInRoleAsync("Athlete");
+        ViewBag.Athletes = athletes.Select(a => new SelectListItem
         {
-            Value = u.Id,
-            Text = u.Email
-        })
-        .ToList();
-
-    ViewBag.Athletes = athletes;
-
-    return View();
-}
+            Value = a.Id,
+            Text = a.Email
+        }).ToList();
+        return View();
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [Authorize(Roles = "Coach")]
     public async Task<IActionResult> Create(TrainingPlan trainingPlan)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -58,12 +69,18 @@ public class TrainingPlansController : Controller
 
         if (!ModelState.IsValid)
         {
+            var athletes = await _userManager.GetUsersInRoleAsync("Athlete");
+            ViewBag.Athletes = athletes.Select(a => new SelectListItem
+            {
+                Value = a.Id,
+                Text = a.Email
+            }).ToList();
             return View(trainingPlan);
         }
 
         _context.TrainingPlans.Add(trainingPlan);
         await _context.SaveChangesAsync();
 
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction("CoachDashboard", "Dashboard");
     }
 }
