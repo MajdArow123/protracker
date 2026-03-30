@@ -1,7 +1,8 @@
 # 🏋️‍♂️ ProTracker
-
 A full-stack athlete and training management system built with ASP.NET Core MVC.  
 Coaches can create and assign training plans, while athletes can track their tasks and progress.
+
+🌐 **Live Demo:** [protracker-production.up.railway.app](https://protracker-production.up.railway.app)
 
 ![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-512BD4?style=flat&logo=dotnet&logoColor=white)
 ![C#](https://img.shields.io/badge/C%23-239120?style=flat&logo=c-sharp&logoColor=white)
@@ -11,25 +12,25 @@ Coaches can create and assign training plans, while athletes can track their tas
 ---
 
 ## 🚀 Features
-
 - 👤 User authentication & role-based access (Coach / Athlete)
+- 🏆 Separate Coach and Athlete dashboards based on role
 - 📋 Coaches can create and manage training plans
-- 📌 Assign training plans to specific athletes
-- 🏃 Athletes can view their assigned plans and tasks
-- ✅ Task tracking with status updates
-- 🗂 Clean MVC architecture
+- 📌 Coaches can assign training plans to specific athletes
+- 🏃 Athletes can view their assigned plans and track progress
+- ✅ Task tracking with status updates and progress bars
+- 🗂 Clean MVC architecture with authorization
 
 ---
 
 ## 🛠 Tech Stack
-
 | Layer | Technology |
 |---|---|
 | Backend | ASP.NET Core MVC, C# |
 | Database | SQLite (Code-First with EF Core) |
-| Auth | ASP.NET Core Identity |
+| Auth | ASP.NET Core Identity + Roles |
 | Frontend | Razor Views, Bootstrap, HTML/CSS |
 | ORM | Entity Framework Core |
+| Deployment | Railway |
 
 ---
 
@@ -69,7 +70,7 @@ dotnet ef database update
 dotnet run
 ```
 
-5. Open your browser at `https://localhost:5001`
+5. Open your browser at `http://localhost:8080`
 
 ---
 
@@ -78,19 +79,29 @@ dotnet run
 ### 🏠 Home Page
 ![Home](docs/screenshots/home.png)
 
-### 📋 Training Plans
-![Training Plans](docs/screenshots/training-plans.png)
+### 📝 Register
+![Register](docs/screenshots/register.png)
 
-### ✅ Task Management
-![Tasks](docs/screenshots/tasks.png)
+### 🔐 Login
+![Login](docs/screenshots/login.png)
+
+### 🏆 Coach Dashboard
+![Coach Dashboard](docs/screenshots/coach-dashboard.png)
+
+### 🏃 Athlete Dashboard
+![Athlete Dashboard](docs/screenshots/athlete-dashboard.png)
 
 ### ➕ Create Training Plan
 ![Create Plan](docs/screenshots/create-plan.png)
+
+### 📄 Plan Details
+![Plan Details](docs/screenshots/plan-details.png)
+
 ---
 
 ## 🔮 Planned Features
-
-- [ ] Coach dashboard with athlete progress overview
+- [ ] Edit training plan
+- [ ] Delete confirmation page
 - [ ] Task due date reminders
 - [ ] Athlete performance history
 - [ ] Mobile-responsive UI improvements
@@ -98,6 +109,5 @@ dotnet run
 ---
 
 ## 👨‍💻 Authors
-
 - [@MajdArow123](https://github.com/MajdArow123)
 - [@Majd205](https://github.com/Majd205)
