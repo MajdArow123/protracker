@@ -84,6 +84,7 @@
                             <th>Plans</th>
                             <th>Tasks Done</th>
                             <th style="min-width: 200px;">Overall Progress</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -118,6 +119,11 @@
                                         </div>
                                         <span class="small fw-semibold" style="min-width:36px;">@athlete.CompletionPercent%</span>
                                     </div>
+                                </td>
+                                <td>
+                                    <a asp-controller="Coach" asp-action="AthleteProgress"
+                                       asp-route-athleteId="@athlete.AthleteId"
+                                       class="btn btn-sm btn-outline-primary">View Progress</a>
                                 </td>
                             </tr>
                         }

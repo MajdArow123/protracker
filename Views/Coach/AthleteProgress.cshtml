@@ -1,0 +1,76 @@
+@model List<ProTracker.Models.TrainingPlan>
+@using TaskStatus = ProTracker.Models.TaskStatus
+@{
+    ViewData["Title"] = ViewBag.AthleteName + "'s Progress";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">🏃 @ViewBag.AthleteName's Progress</h2>
+            <p class="text-muted mb-0">All training plans assigned to this athlete</p>
+        </div>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">← Back to Dashboard</a>
+    </div>
+
+    @foreach (var plan in Model)
+    {
+        var completed = plan.Tasks.Count(t => t.Status == TaskStatus.Completed);
+        var total = plan.Tasks.Count;
+        var percent = total > 0 ? (int)((double)completed / total * 100) : 0;
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0">@plan.Title</h5>
+                    <p class="text-muted small mb-0">@plan.StartDate.ToString("MMM d") – @plan.EndDate.ToString("MMM d, yyyy")</p>
+                </div>
+                <a asp-controller="TrainingPlans" asp-action="Details"
+                   asp-route-id="@plan.TrainingPlanId"
+                   class="btn btn-sm btn-outline-primary">View Plan</a>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(plan.Goal))
+                {
+                    <p class="mb-3">🎯 <strong>Goal:</strong> @plan.Goal</p>
+                }
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Progress</span>
+                        <span>@completed / @total tasks completed</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar @(percent == 100 ? "bg-success" : percent >= 50 ? "bg-primary" : "bg-warning")"
+                             style="width: @percent%"></div>
+                    </div>
+                </div>
+
+                @if (plan.Tasks.Any())
+                {
+                    <ul class="list-group list-group-flush">
+                        @foreach (var task in plan.Tasks)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <div>
+                                    <div class="fw-semibold">@task.Title</div>
+                                    @if (!string.IsNullOrEmpty(task.Description))
+                                    {
+                                        <div class="text-muted small">@task.Description</div>
+                                    }
+                                    @if (task.DueDate.HasValue)
+                                    {
+                                        <div class="text-muted small">📅 Due: @task.DueDate.Value.ToString("MMM d, yyyy")</div>
+                                    }
+                                </div>
+                                <span class="badge @(task.Status == TaskStatus.Completed ? "bg-success" : task.Status == TaskStatus.InProgress ? "bg-warning text-dark" : "bg-secondary")">
+                                    @task.Status
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    }
+</div>

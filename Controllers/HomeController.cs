@@ -22,34 +22,29 @@ public class HomeController : Controller
     public async Task<IActionResult> Index()
     {
         if (User.Identity == null || !User.Identity.IsAuthenticated)
-            return View(); // logged-out landing page
+            return View();
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        // ✅ Route to the right dashboard based on role
         if (User.IsInRole("Coach"))
             return await CoachDashboard(userId!);
 
         if (User.IsInRole("Athlete"))
             return await AthleteDashboard(userId!);
 
-        // Fallback: user registered but has no role yet
         return View();
     }
 
     private async Task<IActionResult> CoachDashboard(string coachId)
     {
-        // All plans this coach created, including tasks and athlete info
         var myPlans = await _context.TrainingPlans
             .Where(p => p.CoachId == coachId)
             .Include(p => p.Tasks)
             .OrderBy(p => p.StartDate)
             .ToListAsync();
 
-        // Unique athletes this coach has assigned plans to
         var athleteIds = myPlans.Select(p => p.AthleteId).Distinct().ToList();
 
-        // Per-athlete summary: name + their plans + completion %
         var athleteSummaries = new List<AthleteSummary>();
         foreach (var athleteId in athleteIds)
         {
@@ -58,13 +53,15 @@ public class HomeController : Controller
             var completedCount = allTasks.Count(t => t.Status == TaskStatus.Completed);
             var percent = allTasks.Count > 0 ? (int)((double)completedCount / allTasks.Count * 100) : 0;
 
-            // Try to get the athlete's username from Identity
-            var user = await _context.Users.FindAsync(athleteId);
+            var user = await _context.Users.FindAsync(athleteId) as ApplicationUser;
+            var displayName = !string.IsNullOrEmpty(user?.DisplayName)
+                ? user.DisplayName
+                : user?.Email?.Split("@")[0] ?? "Unknown Athlete";
 
             athleteSummaries.Add(new AthleteSummary
             {
                 AthleteId = athleteId,
-                AthleteName = user?.UserName ?? "Unknown Athlete",
+                AthleteName = displayName,
                 TotalPlans = athletePlans.Count,
                 CompletedTasks = completedCount,
                 TotalTasks = allTasks.Count,
@@ -83,7 +80,6 @@ public class HomeController : Controller
 
     private async Task<IActionResult> AthleteDashboard(string athleteId)
     {
-        // All plans assigned to this athlete, with tasks
         var myPlans = await _context.TrainingPlans
             .Where(p => p.AthleteId == athleteId)
             .Include(p => p.Tasks)
@@ -97,7 +93,6 @@ public class HomeController : Controller
             ? (int)((double)completedTasks / allTasks.Count * 100)
             : 0;
 
-        // Active plan = any plan with at least one InProgress or NotStarted task
         var activePlan = myPlans.FirstOrDefault(p =>
             p.Tasks.Any(t => t.Status != TaskStatus.Completed));
 
@@ -119,7 +114,6 @@ public class HomeController : Controller
         View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 }
 
-// ✅ ViewModel for coach's per-athlete summary row
 public class AthleteSummary
 {
     public string AthleteId { get; set; } = "";
