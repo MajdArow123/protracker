@@ -19,10 +19,17 @@ public class HomeController : Controller
         _context = context;
     }
 
-    public async Task<IActionResult> Index()
+    // Home page — simple welcome for logged in, landing for logged out
+    public IActionResult Index()
+    {
+        return View();
+    }
+
+    // Dashboard — full stats and athlete overview
+    public async Task<IActionResult> Dashboard()
     {
         if (User.Identity == null || !User.Identity.IsAuthenticated)
-            return View();
+            return RedirectToAction("Index");
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -32,7 +39,7 @@ public class HomeController : Controller
         if (User.IsInRole("Athlete"))
             return await AthleteDashboard(userId!);
 
-        return View();
+        return RedirectToAction("Index");
     }
 
     private async Task<IActionResult> CoachDashboard(string coachId)

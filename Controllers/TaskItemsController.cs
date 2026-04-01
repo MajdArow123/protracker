@@ -147,7 +147,9 @@ public class TaskItemsController : Controller
 
         if (task == null) return NotFound();
 
-        if (task.TrainingPlan.CoachId != userId) return Forbid();
+        // Allow both coach and athlete to toggle
+        if (task.TrainingPlan.CoachId != userId && task.TrainingPlan.AthleteId != userId)
+            return Forbid();
 
         task.Status = task.Status switch
         {

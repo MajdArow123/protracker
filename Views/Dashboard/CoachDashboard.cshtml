@@ -1,6 +1,7 @@
 @model List<ProTracker.Models.TrainingPlan>
 @{
     ViewData["Title"] = "Coach Dashboard";
+    var grouped = Model.GroupBy(p => p.AthleteId).ToList();
 }
 
 <div class="container mt-4">
@@ -23,50 +24,109 @@
     }
     else
     {
-        <div class="row row-cols-1 row-cols-md-2 g-4">
-            @foreach (var plan in Model)
-            {
-                var total = plan.Tasks.Count;
-                var completed = plan.Tasks.Count(t => t.Status.ToString() == "Completed");
-                var percent = total > 0 ? (int)((double)completed / total * 100) : 0;
+        @foreach (var group in grouped)
+        {
+            var athleteName = ViewBag.AthleteNames != null && ((Dictionary<string, string>)ViewBag.AthleteNames).ContainsKey(group.Key)
+                ? ((Dictionary<string, string>)ViewBag.AthleteNames)[group.Key]
+                : group.Key;
 
-                <div class="col">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title fw-bold">@plan.Title</h5>
-                            <p class="text-muted small mb-2">@plan.StartDate.ToString("MMM d") – @plan.EndDate.ToString("MMM d, yyyy")</p>
-                            @if (!string.IsNullOrEmpty(plan.Goal))
-                            {
-                                <p class="card-text small">🎯 @plan.Goal</p>
-                            }
+            var totalGroupTasks = group.SelectMany(p => p.Tasks).Count();
+            var completedGroupTasks = group.SelectMany(p => p.Tasks).Count(t => t.Status == ProTracker.Models.TaskStatus.Completed);
+            var groupPercent = totalGroupTasks > 0 ? (int)((double)completedGroupTasks / totalGroupTasks * 100) : 0;
 
-                            <div class="mb-2">
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span>Progress</span>
-                                    <span>@completed / @total tasks</span>
+            <div class="card border-0 shadow-sm mb-4">
+                <!-- Athlete Header -->
+                <div class="card-header d-flex justify-content-between align-items-center py-3"
+                     style="background: linear-gradient(135deg, #0f172a, #1e3a5f); border-radius: 10px 10px 0 0;">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                             style="width:42px; height:42px; font-size:1rem; font-weight:700;">
+                            @athleteName[0].ToString().ToUpper()
+                        </div>
+                        <div>
+                            <div class="fw-bold text-white fs-5">@athleteName</div>
+                            <div class="small" style="color: #a0aec0;">@group.Count() plan(s) · @completedGroupTasks / @totalGroupTasks tasks completed</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div style="width: 120px;">
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar @(groupPercent == 100 ? "bg-success" : groupPercent >= 50 ? "bg-primary" : "bg-warning")"
+                                     style="width: @groupPercent%"></div>
+                            </div>
+                            <div class="small text-center mt-1" style="color: #a0aec0;">@groupPercent% overall</div>
+                        </div>
+                        <a asp-controller="Coach" asp-action="AthleteProgress"
+                           asp-route-athleteId="@group.Key"
+                           class="btn btn-sm btn-outline-light">View Progress</a>
+                    </div>
+                </div>
+
+                <!-- Plans -->
+                <div class="card-body p-0">
+                    @foreach (var plan in group)
+                    {
+                        var total = plan.Tasks.Count;
+                        var completed = plan.Tasks.Count(t => t.Status == ProTracker.Models.TaskStatus.Completed);
+                        var percent = total > 0 ? (int)((double)completed / total * 100) : 0;
+
+                        var today = DateTime.Today;
+                        var statusLabel = today < plan.StartDate ? "Upcoming" :
+                                         today > plan.EndDate ? "Ended" : "Active";
+                        var statusClass = statusLabel == "Active" ? "bg-success" :
+                                         statusLabel == "Upcoming" ? "bg-warning text-dark" : "bg-secondary";
+
+                        <div class="p-3 border-bottom">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <span class="fw-bold">@plan.Title</span>
+                                        <span class="badge @statusClass">@statusLabel</span>
+                                    </div>
+                                    <div class="text-muted small mb-2">
+                                        📅 @plan.StartDate.ToString("MMM d") – @plan.EndDate.ToString("MMM d, yyyy")
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(plan.Goal))
+                                    {
+                                        <div class="text-muted small mb-2">🎯 @plan.Goal</div>
+                                    }
+                                    @if (total == 0)
+                                    {
+                                        <span class="text-muted small">No tasks yet</span>
+                                    }
+                                    else
+                                    {
+                                        <div style="max-width: 300px;">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span class="text-muted">Progress</span>
+                                                <span class="text-muted">@completed / @total tasks</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar @(percent == 100 ? "bg-success" : percent >= 50 ? "bg-primary" : "bg-warning")"
+                                                     style="width: @percent%"></div>
+                                            </div>
+                                        </div>
+                                    }
                                 </div>
-                                <div class="progress" style="height: 8px;">
-                                    <div class="progress-bar bg-success" style="width: @percent%"></div>
+                                <div class="d-flex gap-2 ms-3 align-items-center">
+                                    <a asp-controller="TrainingPlans" asp-action="Details"
+                                       asp-route-id="@plan.TrainingPlanId"
+                                       class="btn btn-sm btn-outline-primary">View</a>
+                                    <a asp-controller="TaskItems" asp-action="Create"
+                                       asp-route-trainingPlanId="@plan.TrainingPlanId"
+                                       class="btn btn-sm btn-success">+ Task</a>
+                                    <a asp-controller="TrainingPlans" asp-action="Edit"
+                                       asp-route-id="@plan.TrainingPlanId"
+                                       class="btn btn-sm btn-outline-secondary">Edit</a>
+                                    <a asp-controller="TrainingPlans" asp-action="Delete"
+                                       asp-route-id="@plan.TrainingPlanId"
+                                       class="btn btn-sm btn-outline-danger">Delete</a>
                                 </div>
                             </div>
                         </div>
-                        <div class="card-footer bg-transparent d-flex gap-2">
-                            <a asp-controller="TrainingPlans" asp-action="Details"
-                               asp-route-id="@plan.TrainingPlanId" class="btn btn-sm btn-outline-primary">
-                                View
-                            </a>
-                            <a asp-controller="TrainingPlans" asp-action="Edit"
-                               asp-route-id="@plan.TrainingPlanId" class="btn btn-sm btn-outline-secondary">
-                                Edit
-                            </a>
-                            <a asp-controller="TrainingPlans" asp-action="Delete"
-                               asp-route-id="@plan.TrainingPlanId" class="btn btn-sm btn-outline-danger">
-                                Delete
-                            </a>
-                        </div>
-                    </div>
+                    }
                 </div>
-            }
-        </div>
+            </div>
+        }
     }
 </div>

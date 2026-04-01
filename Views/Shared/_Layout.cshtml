@@ -164,8 +164,20 @@
                         @if (User.Identity?.IsAuthenticated == true)
                         {
                             <li class="nav-item">
-                                <a class="nav-link" asp-controller="TrainingPlans" asp-action="Index">Training Plans</a>
+                                <a class="nav-link" asp-controller="Home" asp-action="Dashboard">Dashboard</a>
                             </li>
+                            @if (User.IsInRole("Coach"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="TrainingPlans" asp-action="Index">My Athletes</a>
+                                </li>
+                            }
+                            @if (User.IsInRole("Athlete"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link" asp-controller="Dashboard" asp-action="AthleteDashboard">My Plans</a>
+                                </li>
+                            }
                         }
                     </ul>
                     <partial name="_LoginPartial" />

@@ -1,12 +1,15 @@
 @model IEnumerable<ProTracker.Models.TrainingPlan>
-
 @{
-    ViewData["Title"] = "Training Plans";
+    ViewData["Title"] = "My Athletes";
+    var grouped = Model.GroupBy(p => p.AthleteId).ToList();
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Training Plans</h1>
-    <a asp-action="Create" class="btn btn-success">+ Create New Plan</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">👥 My Athletes</h2>
+        <p class="text-muted mb-0">Click an athlete to view their training plans</p>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">+ Create New Plan</a>
 </div>
 
 @if (!Model.Any())
@@ -17,80 +20,142 @@
 }
 else
 {
-    <table class="table table-hover">
-        <thead class="table-dark">
-            <tr>
-                <th>Title</th>
-                <th>Goal</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Status</th>
-                <th>Progress</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        @foreach (var p in Model)
+    <div class="accordion" id="athleteAccordion">
+        @for (int i = 0; i < grouped.Count; i++)
         {
-            var today = DateTime.Today;
-            var statusLabel = today < p.StartDate ? "Upcoming" :
-                              today > p.EndDate ? "Completed" : "Active";
-            var statusClass = statusLabel == "Active" ? "badge bg-success" :
-                              statusLabel == "Upcoming" ? "badge bg-warning text-dark" :
-                              "badge bg-secondary";
+            var group = grouped[i];
+            var athleteName = ViewBag.AthleteNames != null && ((Dictionary<string, string>)ViewBag.AthleteNames).ContainsKey(group.Key)
+                ? ((Dictionary<string, string>)ViewBag.AthleteNames)[group.Key]
+                : group.Key;
 
-            var totalTasks = p.Tasks.Count;
-            var completedTasks = p.Tasks.Count(t => t.Status == ProTracker.Models.TaskStatus.Completed);
-            var progressPercent = totalTasks > 0 ? (int)((double)completedTasks / totalTasks * 100) : 0;
-            var progressBarClass = progressPercent == 100 ? "bg-success" :
-                                   progressPercent >= 50 ? "bg-warning" : "bg-danger";
+            var totalGroupTasks = group.SelectMany(p => p.Tasks).Count();
+            var completedGroupTasks = group.SelectMany(p => p.Tasks).Count(t => t.Status == ProTracker.Models.TaskStatus.Completed);
+            var groupPercent = totalGroupTasks > 0 ? (int)((double)completedGroupTasks / totalGroupTasks * 100) : 0;
 
-            <tr>
-                <td><strong>@p.Title</strong></td>
-                <td>@p.Goal</td>
-                <td>@p.StartDate.ToString("MMM dd, yyyy")</td>
-                <td>@p.EndDate.ToString("MMM dd, yyyy")</td>
-                <td><span class="@statusClass">@statusLabel</span></td>
-                <td style="min-width: 150px;">
-                    @if (totalTasks == 0)
-                    {
-                        <span class="text-muted small">No tasks yet</span>
-                    }
-                    else
-                    {
-                        <div class="progress" style="height: 20px;">
-                            <div class="progress-bar @progressBarClass"
-                                 role="progressbar"
-                                 style="width: @progressPercent%"
-                                 aria-valuenow="@progressPercent"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100">
-                                @progressPercent%
+            var collapseId = $"athlete-{i}";
+            var headerId = $"header-{i}";
+
+            <div class="accordion-item border-0 shadow-sm mb-3" style="border-radius: 12px; overflow: hidden;">
+                <!-- Athlete Header -->
+                <h2 class="accordion-header" id="@headerId">
+                    <button class="accordion-button collapsed py-3 px-4"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@collapseId"
+                            aria-expanded="false"
+                            aria-controls="@collapseId"
+                            style="background: linear-gradient(135deg, #0f172a, #1e3a5f); color: white; border-radius: 12px;">
+                        <div class="d-flex align-items-center gap-3 flex-grow-1">
+                            <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center"
+                                 style="width:42px; height:42px; font-size:1rem; font-weight:700; flex-shrink:0;">
+                                @athleteName[0].ToString().ToUpper()
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold fs-5">@athleteName</div>
+                                <div class="small" style="color: #a0aec0;">
+                                    @group.Count() plan(s) · @completedGroupTasks / @totalGroupTasks tasks completed
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3 me-3">
+                                <div style="width: 120px;">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar @(groupPercent == 100 ? "bg-success" : groupPercent >= 50 ? "bg-primary" : "bg-warning")"
+                                             style="width: @groupPercent%"></div>
+                                    </div>
+                                    <div class="small text-center mt-1" style="color: #a0aec0;">@groupPercent% overall</div>
+                                </div>
+                                <a asp-controller="Coach" asp-action="AthleteProgress"
+                                   asp-route-athleteId="@group.Key"
+                                   class="btn btn-sm btn-outline-light"
+                                   onclick="event.stopPropagation();">View Progress</a>
                             </div>
                         </div>
-                        <small class="text-muted">@completedTasks / @totalTasks tasks done</small>
-                    }
-                </td>
-                <td>
-    <a asp-controller="TaskItems"
-       asp-action="Index"
-       asp-route-trainingPlanId="@p.TrainingPlanId"
-       class="btn btn-sm btn-primary">
-        View Tasks
-    </a>
-    <a asp-action="Edit"
-       asp-route-id="@p.TrainingPlanId"
-       class="btn btn-sm btn-outline-secondary">
-        Edit
-    </a>
-    <a asp-action="Delete"
-       asp-route-id="@p.TrainingPlanId"
-       class="btn btn-sm btn-outline-danger">
-        Delete
-    </a>
-</td>
-            </tr>
+                    </button>
+                </h2>
+
+                <!-- Plans (collapsed by default) -->
+                <div id="@collapseId" class="accordion-collapse collapse"
+                     aria-labelledby="@headerId"
+                     data-bs-parent="#athleteAccordion">
+                    <div class="accordion-body p-0">
+                        @foreach (var plan in group)
+                        {
+                            var today = DateTime.Today;
+                            var statusLabel = today < plan.StartDate ? "Upcoming" :
+                                             today > plan.EndDate ? "Ended" : "Active";
+                            var statusClass = statusLabel == "Active" ? "bg-success" :
+                                             statusLabel == "Upcoming" ? "bg-warning text-dark" : "bg-secondary";
+
+                            var totalTasks = plan.Tasks.Count;
+                            var completedTasks = plan.Tasks.Count(t => t.Status == ProTracker.Models.TaskStatus.Completed);
+                            var progressPercent = totalTasks > 0 ? (int)((double)completedTasks / totalTasks * 100) : 0;
+
+                            <div class="p-3 border-bottom">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <span class="fw-bold fs-6">@plan.Title</span>
+                                            <span class="badge @statusClass">@statusLabel</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(plan.Goal))
+                                        {
+                                            <div class="text-muted small mb-2">🎯 @plan.Goal</div>
+                                        }
+                                        <div class="text-muted small mb-2">
+                                            📅 @plan.StartDate.ToString("MMM d") – @plan.EndDate.ToString("MMM d, yyyy")
+                                        </div>
+                                        @if (totalTasks == 0)
+                                        {
+                                            <span class="text-muted small">No tasks yet</span>
+                                        }
+                                        else
+                                        {
+                                            <div style="max-width: 300px;">
+                                                <div class="d-flex justify-content-between small mb-1">
+                                                    <span class="text-muted">Progress</span>
+                                                    <span class="text-muted">@completedTasks / @totalTasks tasks</span>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar @(progressPercent == 100 ? "bg-success" : progressPercent >= 50 ? "bg-primary" : "bg-warning")"
+                                                         style="width: @progressPercent%"></div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="d-flex gap-2 ms-3 align-items-center">
+                                        <a asp-action="Details"
+                                           asp-route-id="@plan.TrainingPlanId"
+                                           class="btn btn-sm btn-outline-primary">View</a>
+                                        <a asp-controller="TaskItems" asp-action="Create"
+                                           asp-route-trainingPlanId="@plan.TrainingPlanId"
+                                           class="btn btn-sm btn-success">+ Task</a>
+                                        <a asp-action="Edit"
+                                           asp-route-id="@plan.TrainingPlanId"
+                                           class="btn btn-sm btn-outline-secondary">Edit</a>
+                                        <a asp-action="Delete"
+                                           asp-route-id="@plan.TrainingPlanId"
+                                           class="btn btn-sm btn-outline-danger">Delete</a>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
         }
-        </tbody>
-    </table>
+    </div>
 }
+
+<style>
+    .accordion-button::after {
+        filter: invert(1);
+    }
+    .accordion-button:not(.collapsed) {
+        background: linear-gradient(135deg, #0f172a, #1e3a5f) !important;
+        color: white !important;
+        box-shadow: none;
+    }
+    .accordion-button:focus {
+        box-shadow: none;
+    }
+</style>

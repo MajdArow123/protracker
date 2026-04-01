@@ -1,6 +1,11 @@
 @model ProTracker.Models.TrainingPlan
+@using ProTracker.Models
+@using ModelTaskStatus = ProTracker.Models.TaskStatus
 @{
     ViewData["Title"] = Model.Title;
+    var completed = Model.Tasks.Count(t => t.Status == ModelTaskStatus.Completed);
+    var total = Model.Tasks.Count;
+    var percent = total > 0 ? (int)((double)completed / total * 100) : 0;
 }
 
 <div class="container mt-4">
@@ -9,8 +14,7 @@
             <h2 class="fw-bold mb-0">📋 @Model.Title</h2>
             <p class="text-muted mb-0">@Model.StartDate.ToString("MMM d") – @Model.EndDate.ToString("MMM d, yyyy")</p>
         </div>
-        <a asp-controller="Dashboard" asp-action="@(User.IsInRole("Coach") ? "CoachDashboard" : "AthleteDashboard")"
-           class="btn btn-outline-secondary">← Back</a>
+        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary">← Back</a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.Goal))
@@ -18,9 +22,25 @@
         <div class="alert alert-info">🎯 <strong>Goal:</strong> @Model.Goal</div>
     }
 
+    @if (total > 0)
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body py-3">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="fw-semibold">Overall Progress</span>
+                    <span class="fw-bold">@completed / @total tasks completed</span>
+                </div>
+                <div class="progress" style="height: 10px; border-radius: 8px;">
+                    <div class="progress-bar @(percent == 100 ? "bg-success" : percent >= 50 ? "bg-primary" : "bg-warning")"
+                         style="width: @percent%; border-radius: 8px;"></div>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Tasks (@Model.Tasks.Count)</span>
+            <span class="fw-semibold">Tasks (@total)</span>
             @if (User.IsInRole("Coach"))
             {
                 <a asp-controller="TaskItems" asp-action="Create"
@@ -48,8 +68,10 @@
                     @foreach (var task in Model.Tasks)
                     {
                         <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                            <div>
-                                <div class="fw-semibold">@task.Title</div>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold @(task.Status == ModelTaskStatus.Completed ? "text-decoration-line-through text-muted" : "")">
+                                    @task.Title
+                                </div>
                                 @if (!string.IsNullOrEmpty(task.Description))
                                 {
                                     <div class="text-muted small">@task.Description</div>
@@ -60,9 +82,23 @@
                                 }
                             </div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge @(task.Status.ToString() == "Completed" ? "bg-success" : task.Status.ToString() == "InProgress" ? "bg-warning text-dark" : "bg-secondary")">
+                                <span class="badge @(task.Status == ModelTaskStatus.Completed ? "bg-success" : task.Status == ModelTaskStatus.InProgress ? "bg-warning text-dark" : "bg-secondary")">
                                     @task.Status
                                 </span>
+                                @if (User.IsInRole("Athlete"))
+                                {
+                                    <form asp-controller="TaskItems" asp-action="ToggleStatus"
+                                          asp-route-id="@task.TaskItemId" method="post">
+                                        <button type="submit" class="btn btn-sm
+                                            @(task.Status == ModelTaskStatus.Completed ? "btn-success" :
+                                              task.Status == ModelTaskStatus.InProgress ? "btn-warning" :
+                                              "btn-outline-secondary")">
+                                            @(task.Status == ModelTaskStatus.Completed ? "✅ Done" :
+                                              task.Status == ModelTaskStatus.InProgress ? "🔄 In Progress" :
+                                              "⬜ Not Started")
+                                        </button>
+                                    </form>
+                                }
                                 @if (User.IsInRole("Coach"))
                                 {
                                     <a asp-controller="TaskItems" asp-action="Edit"

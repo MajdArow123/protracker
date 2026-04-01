@@ -29,6 +29,18 @@ namespace ProTracker.Controllers
                 .Include(p => p.Tasks)
                 .ToListAsync();
 
+            var athleteIds = plans.Select(p => p.AthleteId).Distinct().ToList();
+            var athleteNames = new Dictionary<string, string>();
+            foreach (var id in athleteIds)
+            {
+                var athlete = await _userManager.FindByIdAsync(id) as ApplicationUser;
+                var name = !string.IsNullOrEmpty(athlete?.DisplayName)
+                    ? athlete.DisplayName
+                    : athlete?.Email?.Split("@")[0] ?? "Unknown";
+                athleteNames[id] = name;
+            }
+
+            ViewBag.AthleteNames = athleteNames;
             return View(plans);
         }
 
@@ -46,13 +58,9 @@ namespace ProTracker.Controllers
         }
 
         [Authorize]
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var user = await _userManager.GetUserAsync(User);
-            if (user != null && await _userManager.IsInRoleAsync(user, "Coach"))
-                return RedirectToAction("CoachDashboard");
-            else
-                return RedirectToAction("AthleteDashboard");
+            return RedirectToAction("Dashboard", "Home");
         }
     }
 }
