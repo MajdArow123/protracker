@@ -1,7 +1,18 @@
+using System.Security.Claims;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using ProTracker.Auth;
+using ProTracker.Common;
 using ProTracker.Data;
+using ProTracker.Middleware;
 using ProTracker.Models;
+using ProTracker.Services;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +44,95 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews()
+    .AddJsonOptions(opts =>
+        opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
+
+// --- Phase 3: Web API additions (alongside the existing MVC pipeline above) ---
+
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
+
+// Adds a "Bearer" scheme alongside Identity's existing cookie scheme (which stays the
+// default for the MVC pages). API controllers opt into this scheme explicitly via
+// [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)].
+builder.Services.AddAuthentication()
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SigningKey)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.NameIdentifier
+        };
+
+        // The access token never lives in localStorage — read it from the HttpOnly cookie instead.
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Cookies.TryGetValue(JwtSettings.AccessTokenCookieName, out var token))
+                    context.Token = token;
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+var reactOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:5173" };
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("ReactClient", policy => policy
+        .WithOrigins(reactOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials());
+});
+
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => e.ErrorMessage)
+            .ToList();
+
+        return new BadRequestObjectResult(new ApiErrorResponse
+        {
+            Message = "One or more validation errors occurred.",
+            Errors = errors
+        });
+    };
+});
+
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddFluentValidationAutoValidation();
+
+builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<IAccessControlService, AccessControlService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISportService, SportService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
+builder.Services.AddScoped<IPlayerService, PlayerService>();
+builder.Services.AddScoped<IAssessmentService, AssessmentService>();
+builder.Services.AddScoped<IStatScoreService, StatScoreService>();
+builder.Services.AddScoped<IImprovementPlanService, ImprovementPlanService>();
+builder.Services.AddScoped<INutritionGuidanceService, NutritionGuidanceService>();
+builder.Services.AddScoped<INutritionProfileService, NutritionProfileService>();
+builder.Services.AddScoped<IFoodAlternativesService, FoodAlternativesService>();
+builder.Services.AddScoped<ITrainingSessionService, TrainingSessionService>();
+builder.Services.AddScoped<IMatchPerformanceService, MatchPerformanceService>();
+builder.Services.AddScoped<IInjuryService, InjuryService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 var app = builder.Build();
 
@@ -44,12 +143,18 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in new[] { "Coach", "Athlete" })
+    foreach (var role in new[] { "Coach", "Athlete", "Admin" })
     {
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));
     }
+
+    await ProTracker.Data.DemoDataSeeder.SeedAsync(scope.ServiceProvider);
 }
+
+// Global error handling — wraps the entire pipeline so any unhandled exception (from MVC,
+// the API controllers, or middleware below) comes back as the standard {success,message,errors} envelope.
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -63,6 +168,9 @@ else
 }
 
 app.UseRouting();
+
+app.UseCors("ReactClient");
+
 app.UseAuthorization();
 app.MapStaticAssets();
 
@@ -75,3 +183,5 @@ app.MapRazorPages()
    .WithStaticAssets();
 
 app.Run();
+
+public partial class Program { }

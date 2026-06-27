@@ -12,6 +12,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- ProTracker.Tests lives in a nested folder; without this, the default **/*.cs glob
+         above would also compile the test project's files into this one. -->
+    <Compile Remove="ProTracker.Tests/**/*.cs" />
+    <Content Remove="ProTracker.Tests/**/*" />
+    <None Remove="ProTracker.Tests/**/*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="9.0.0" />
