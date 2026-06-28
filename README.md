@@ -1,117 +1,19 @@
 # ProTracker
 
-> Sports performance tracking for coaches and athletes — assessments, improvement plans, and nutrition guidance in one place.
+**Sports performance tracking for coaches and athletes — assessments, improvement plans, and nutrition guidance in one place.**
 
-![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
-![.NET](https://img.shields.io/badge/.NET_8-512BD4?style=flat-square&logo=dotnet&logoColor=white)
-![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen?style=flat-square)
+[![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org/)
+[![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen)](/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
----
+ProTracker is a full-stack sports performance platform built for coaches and athletes. Coaches manage teams, record assessments across configurable stat categories per sport, and generate improvement and nutrition plans for each player. Athletes get a personalized dashboard with a radar chart of their latest stats, progress over time, and structured guidance from their coach — all behind a JWT-authenticated REST API with a React frontend.
 
-## What is ProTracker?
+## 🔑 Seed Accounts
 
-ProTracker is a full-stack sports performance platform built for coaches and athletes. Coaches manage teams, run assessments across configurable stat categories, and generate AI-powered improvement and nutrition plans. Athletes get a personalized dashboard showing their progress over time, radar charts of their latest stats, and structured guidance from their coach.
-
----
-
-## Features
-
-- **Role-based dashboards** — separate views for Coach and Athlete roles
-- **Multi-sport data model** — sports, teams, positions, stat categories all fully configurable
-- **Player assessments** — record stat scores per assessment period and track progress over time
-- **Improvement plans** — weekly goals, drills, position focus, and coach notes (AI-assisted)
-- **Nutrition guidance** — dietary preferences, meal suggestions, hydration and recovery tips (AI-assisted)
-- **JWT authentication** — HttpOnly cookie sessions; no tokens in localStorage
-- **Dark mode** — full light/dark theme toggle
-- **Animated UI** — Framer Motion page transitions and sidebar animations
-- **Charts** — Line, Radar, and Bar charts via Recharts
-- **34 passing integration tests** — full REST API test coverage
-
----
-
-## Tech Stack
-
-### Backend
-
-| Layer | Technology |
-|---|---|
-| Framework | ASP.NET Core 8 Web API |
-| Language | C# 12 |
-| ORM | Entity Framework Core 8 |
-| Database | SQLite |
-| Auth | JWT Bearer tokens (HttpOnly cookies) |
-| Testing | xUnit + EF Core InMemory (34 tests) |
-
-### Frontend
-
-| Layer | Technology |
-|---|---|
-| Framework | React 19 + Vite 8 |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
-| State | TanStack Query v5 |
-| Routing | React Router v6 |
-| HTTP | Axios (withCredentials) |
-| Charts | Recharts |
-| Animation | Framer Motion |
-| Testing | Vitest + React Testing Library |
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Node.js 20+](https://nodejs.org/)
-
-### 1. Clone
-
-```bash
-git clone https://github.com/MajdArow123/ProTracker.git
-cd ProTracker
-```
-
-### 2. Run the backend
-
-```bash
-dotnet restore
-dotnet run
-# API available at http://localhost:8080
-```
-
-The database seeds automatically on first run with teams, players, and sample assessments.
-
-### 3. Run the frontend
-
-```bash
-cd protracker-client
-npm install
-npm run dev
-# App available at http://localhost:5173
-```
-
-### 4. Run backend tests
-
-```bash
-dotnet test
-# 34/34 passing
-```
-
-### 5. Run frontend tests
-
-```bash
-cd protracker-client
-npm test
-# 5/5 passing
-```
-
----
-
-## Seed Accounts
+The database seeds automatically on first run. Use any of these to explore both roles:
 
 | Role | Email | Password |
 |---|---|---|
@@ -121,114 +23,87 @@ npm test
 | Athlete | `aisha.torres@protracker.seed` | `SeedCoach123!` |
 | Athlete | `james.chen@protracker.seed` | `SeedCoach123!` |
 
----
+> Log in as a Coach to see the team management and player assessment views. Log in as an Athlete to see the personal dashboard, radar chart, nutrition guidance, and improvement plan.
 
-## API Endpoints
+## ✨ Key Features
 
-### Auth
+- 🏆 **Role-based dashboards** — entirely separate views and navigation for Coach and Athlete roles
+- 📊 **Player assessments** — record stat scores per assessment period; Recharts radar and line charts visualize progress
+- 📈 **Improvement plans** — weekly goals, drills, position focus, and coach notes (AI-ready structure)
+- 🥗 **Nutrition guidance** — dietary preferences, meal suggestions, hydration and recovery tips per player
+- 🔒 **JWT auth via HttpOnly cookies** — tokens never touch localStorage; React AuthContext handles role-redirect on login
+- 🌗 **Dark / light mode** — full theme toggle, persisted via Tailwind class strategy
+- ✨ **Animated UI** — Framer Motion page transitions and sidebar open/close animations
+- 🧪 **34 backend integration tests** — full REST API coverage with xUnit and EF Core InMemory
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/auth/login` | Login, returns HttpOnly JWT cookie |
-| `POST` | `/api/auth/logout` | Clear session cookie |
-| `GET` | `/api/auth/me` | Get current authenticated user |
-| `POST` | `/api/auth/register` | Register new account |
+## 🛠️ Tech Stack
 
-### Core Resources
+| Layer | Technology |
+|---|---|
+| Backend framework | ASP.NET Core 8 Web API (C# 12) |
+| Database | SQLite via Entity Framework Core 8 |
+| Auth | JWT Bearer tokens stored in HttpOnly cookies |
+| Backend testing | xUnit + EF Core InMemory (34 tests) |
+| Frontend framework | React 19 + Vite 8 + TypeScript (strict) |
+| Styling | Tailwind CSS v4 |
+| Server state | TanStack Query v5 |
+| Routing | React Router v6 |
+| HTTP client | Axios with `withCredentials: true` |
+| Charts | Recharts (Line, Radar, Bar) |
+| Animation | Framer Motion |
+| Frontend testing | Vitest + React Testing Library |
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/teams` | List teams (coach's own) |
-| `GET` | `/api/teams/{id}` | Team detail |
-| `POST` | `/api/teams` | Create team |
-| `GET` | `/api/players` | List players |
-| `GET` | `/api/players/{id}` | Player detail |
-| `POST` | `/api/players` | Create player |
-| `GET` | `/api/sports` | List sports |
-| `GET` | `/api/sports/{id}/stat-categories` | Stat categories for a sport |
+## 📸 Screenshots
 
-### Assessments & Analytics
+| Login | Coach Dashboard |
+|---|---|
+| ![Login](docs/screenshots/login.png) | ![Coach Dashboard](docs/screenshots/coach-dashboard.png) |
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/player-assessments/player/{id}` | Player's assessment history |
-| `POST` | `/api/player-assessments` | Record new assessment |
-| `GET` | `/api/dashboard/coach` | Coach summary (teams + player counts) |
-| `GET` | `/api/dashboard/player/{id}` | Athlete summary (stats + recent assessments) |
+| Players | Player Profile |
+|---|---|
+| ![Players](docs/screenshots/players.png) | ![Player Profile](docs/screenshots/player-detail.png) |
 
-### Plans & Nutrition
+| Athlete Dashboard — Radar Chart + Recent Assessments |
+|---|
+| ![Athlete Dashboard](docs/screenshots/athlete-dashboard.png) |
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/improvement-plans/player/{id}` | Player's improvement plans |
-| `POST` | `/api/improvement-plans` | Create improvement plan |
-| `GET` | `/api/nutrition-profile/player/{id}` | Player's dietary preferences |
-| `GET` | `/api/nutrition-guidance/player/{id}` | Player's nutrition guidance |
-| `POST` | `/api/nutrition-guidance` | Create nutrition guidance |
+## 💻 How to Run Locally
 
-All responses are wrapped: `{ "success": true, "data": <payload> }`
+**Prerequisites:** .NET 8 SDK, Node.js 20+
 
----
-
-## Project Structure
-
-```
-ProTracker/
-├── Controllers/                  → REST API controllers
-│   ├── AuthController.cs
-│   ├── DashboardController.cs
-│   ├── PlayersController.cs
-│   ├── TeamsController.cs
-│   ├── PlayerAssessmentsController.cs
-│   ├── ImprovementPlansController.cs
-│   └── NutritionController.cs
-├── Models/                       → EF Core entities
-├── DTOs/                         → Request/response shapes
-├── Data/                         → DbContext + seeder
-├── Services/                     → Business logic
-├── Tests/                        → 34 integration tests (xUnit)
-│
-└── protracker-client/            → React frontend
-    └── src/
-        ├── api/                  → Axios service files
-        ├── components/
-        │   ├── ui/               → Button, Card, Badge, Modal, Toast…
-        │   ├── layout/           → Sidebar, Navbar, PageWrapper
-        │   └── charts/           → Line, Radar, Bar chart wrappers
-        ├── context/              → AuthContext, ThemeContext, ToastContext
-        ├── hooks/                → TanStack Query hooks
-        ├── pages/
-        │   ├── auth/             → LoginPage
-        │   ├── dashboard/        → Coach + Athlete dashboards
-        │   ├── players/          → Players list + detail
-        │   ├── teams/            → Teams list + detail
-        │   ├── assessments/      → Assessment recording
-        │   ├── improvement/      → Improvement plans (coach)
-        │   └── nutrition/        → Nutrition guidance (coach)
-        └── types/                → TypeScript interfaces
+```bash
+git clone https://github.com/MajdArow123/ProTracker.git
+cd ProTracker
 ```
 
----
+Start the backend API (seeds the database automatically on first run):
 
-## Screenshots
+```bash
+dotnet restore
+dotnet run
+# API running at http://localhost:8080
+```
 
-### Login
-![Login](docs/screenshots/login.png)
+Start the React frontend:
 
-### Coach Dashboard
-![Coach Dashboard](docs/screenshots/coach-dashboard.png)
+```bash
+cd protracker-client
+npm install
+npm run dev
+# App running at http://localhost:5173
+```
 
-### Athlete Dashboard
-![Athlete Dashboard](docs/screenshots/athlete-dashboard.png)
+Run the backend test suite:
 
-### Players
-![Players](docs/screenshots/players.png)
-
-### Player Profile
-![Player Profile](docs/screenshots/player-detail.png)
-
----
+```bash
+dotnet test
+# 34/34 passing
+```
 
 ## License
 
-MIT © [MajdArow123](https://github.com/MajdArow123)
+Released under the [MIT License](LICENSE).
+
+## Author
+
+Majd Arow
