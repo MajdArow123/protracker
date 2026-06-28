@@ -1,4 +1,7 @@
-providers = ["dotnet"]
+providers = ["csharp"]
+
+[variables]
+NIXPACKS_DOTNET_VERSION = "9"
 
 [phases.build]
 cmds = ["dotnet publish ProTracker.csproj -c Release -o /app/publish"]
