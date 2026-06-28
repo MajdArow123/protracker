@@ -174,6 +174,8 @@ app.UseCors("ReactClient");
 app.UseAuthorization();
 app.MapStaticAssets();
 
+app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
+
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Dashboard}/{id?}")
