@@ -1,4 +1,4 @@
-import api from './axiosInstance';
+import api, { tokenStorage } from './axiosInstance';
 import type { User, Role } from '../types';
 
 interface ApiUser {
@@ -18,15 +18,22 @@ function mapUser(u: ApiUser): User {
 }
 
 export const authApi = {
-  // login returns { user: ApiUser }
   login: async (email: string, password: string): Promise<User> => {
-    const res = await api.post<{ user: ApiUser }>('/api/auth/login', { email, password });
+    const res = await api.post<{ user: ApiUser; accessToken: string; refreshToken: string }>(
+      '/api/auth/login',
+      { email, password }
+    );
+    tokenStorage.setAccess(res.data.accessToken);
+    tokenStorage.setRefresh(res.data.refreshToken);
     return mapUser(res.data.user);
   },
+
   logout: async (): Promise<void> => {
-    await api.post('/api/auth/logout');
+    const refreshToken = tokenStorage.getRefresh();
+    await api.post('/api/auth/logout', { refreshToken }).catch(() => {});
+    tokenStorage.clear();
   },
-  // getMe returns ApiUser directly
+
   getMe: async (): Promise<User> => {
     const res = await api.get<ApiUser>('/api/auth/me');
     return mapUser(res.data);

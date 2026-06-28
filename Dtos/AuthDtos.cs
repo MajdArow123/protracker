@@ -17,4 +17,17 @@ public class UserInfoDto
 public class LoginResponse
 {
     public UserInfoDto User { get; set; } = null!;
+    public string AccessToken { get; set; } = "";
+    public string RefreshToken { get; set; } = "";
+}
+
+public class RefreshRequest
+{
+    public string? RefreshToken { get; set; }
+}
+
+public class TokenResponse
+{
+    public string AccessToken { get; set; } = "";
+    public string RefreshToken { get; set; } = "";
 }

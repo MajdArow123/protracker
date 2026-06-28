@@ -21,14 +21,17 @@ public class AuthController : ApiControllerBase
     {
         var (user, accessToken, refreshToken) = await _authService.LoginAsync(request);
         WriteAuthCookies(accessToken, refreshToken);
-        return Success(new LoginResponse { User = user });
+        return Success(new LoginResponse { User = user, AccessToken = accessToken, RefreshToken = refreshToken });
     }
 
     [HttpPost("logout")]
     [AllowAnonymous]
-    public async Task<ActionResult> Logout()
+    public async Task<ActionResult> Logout([FromBody] RefreshRequest? body = null)
     {
-        Request.Cookies.TryGetValue(JwtSettings.RefreshTokenCookieName, out var refreshToken);
+        // Accept refresh token from body (cross-domain) or cookie (same-domain)
+        var refreshToken = body?.RefreshToken;
+        if (string.IsNullOrEmpty(refreshToken))
+            Request.Cookies.TryGetValue(JwtSettings.RefreshTokenCookieName, out refreshToken);
         await _authService.LogoutAsync(refreshToken);
         ClearAuthCookies();
         return Success<object?>(null);
@@ -36,12 +39,15 @@ public class AuthController : ApiControllerBase
 
     [HttpPost("refresh")]
     [AllowAnonymous]
-    public async Task<ActionResult> Refresh()
+    public async Task<ActionResult> Refresh([FromBody] RefreshRequest? body = null)
     {
-        Request.Cookies.TryGetValue(JwtSettings.RefreshTokenCookieName, out var refreshToken);
+        // Accept refresh token from body (cross-domain) or cookie (same-domain)
+        var refreshToken = body?.RefreshToken;
+        if (string.IsNullOrEmpty(refreshToken))
+            Request.Cookies.TryGetValue(JwtSettings.RefreshTokenCookieName, out refreshToken);
         var (accessToken, newRefreshToken) = await _authService.RefreshAsync(refreshToken);
         WriteAuthCookies(accessToken, newRefreshToken);
-        return Success<object?>(null);
+        return Success(new TokenResponse { AccessToken = accessToken, RefreshToken = newRefreshToken });
     }
 
     // Inherits [Authorize(AuthenticationSchemes = Bearer)] from ApiControllerBase.

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { authApi } from '../api/authApi';
+import { tokenStorage } from '../api/axiosInstance';
 import type { User } from '../types';
 
 interface AuthContextType {
@@ -17,10 +18,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // If we have a stored access token try getMe immediately; otherwise fall through to null.
+    const token = tokenStorage.getAccess();
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
     authApi
       .getMe()
       .then(setUser)
-      .catch(() => setUser(null))
+      .catch(() => {
+        tokenStorage.clear();
+        setUser(null);
+      })
       .finally(() => setIsLoading(false));
   }, []);
 
