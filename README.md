@@ -1,116 +1,234 @@
-# 🏋️‍♂️ ProTracker
-A full-stack athlete and training management system built with ASP.NET Core MVC.  
-Coaches can create and assign training plans with tasks, while athletes can track their progress in real time.
+# ProTracker
 
-🌐 **Live Demo:** [protracker-production.up.railway.app](https://protracker-production.up.railway.app)
+> Sports performance tracking for coaches and athletes — assessments, improvement plans, and nutrition guidance in one place.
 
-![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-512BD4?style=flat&logo=dotnet&logoColor=white)
-![C#](https://img.shields.io/badge/C%23-239120?style=flat&logo=c-sharp&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logo=sqlite&logoColor=white)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?style=flat&logo=bootstrap&logoColor=white)
-
----
-
-## 🚀 Features
-- 👤 User authentication with custom display names & role-based access (Coach / Athlete)
-- 🏆 Separate Coach and Athlete dashboards based on role
-- 📋 Coaches can create, edit, and delete training plans
-- 📌 Coaches can assign training plans to specific athletes
-- ✅ Coaches can add tasks to training plans with due dates
-- 🏃 Athletes can view assigned plans and track task progress
-- 📊 Real-time progress bars showing task completion
-- 🔒 Role-based authorization throughout the app
-- 🗂 Clean MVC architecture
+![Build](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square)
+![.NET](https://img.shields.io/badge/.NET_8-512BD4?style=flat-square&logo=dotnet&logoColor=white)
+![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat-square&logo=sqlite&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen?style=flat-square)
 
 ---
 
-## 🛠 Tech Stack
+## What is ProTracker?
+
+ProTracker is a full-stack sports performance platform built for coaches and athletes. Coaches manage teams, run assessments across configurable stat categories, and generate AI-powered improvement and nutrition plans. Athletes get a personalized dashboard showing their progress over time, radar charts of their latest stats, and structured guidance from their coach.
+
+---
+
+## Features
+
+- **Role-based dashboards** — separate views for Coach and Athlete roles
+- **Multi-sport data model** — sports, teams, positions, stat categories all fully configurable
+- **Player assessments** — record stat scores per assessment period and track progress over time
+- **Improvement plans** — weekly goals, drills, position focus, and coach notes (AI-assisted)
+- **Nutrition guidance** — dietary preferences, meal suggestions, hydration and recovery tips (AI-assisted)
+- **JWT authentication** — HttpOnly cookie sessions; no tokens in localStorage
+- **Dark mode** — full light/dark theme toggle
+- **Animated UI** — Framer Motion page transitions and sidebar animations
+- **Charts** — Line, Radar, and Bar charts via Recharts
+- **34 passing integration tests** — full REST API test coverage
+
+---
+
+## Tech Stack
+
+### Backend
+
 | Layer | Technology |
 |---|---|
-| Backend | ASP.NET Core MVC, C# |
-| Database | SQLite (Code-First with EF Core) |
-| Auth | ASP.NET Core Identity + Roles |
-| Frontend | Razor Views, Bootstrap, HTML/CSS |
-| ORM | Entity Framework Core |
-| Deployment | Railway |
+| Framework | ASP.NET Core 8 Web API |
+| Language | C# 12 |
+| ORM | Entity Framework Core 8 |
+| Database | SQLite |
+| Auth | JWT Bearer tokens (HttpOnly cookies) |
+| Testing | xUnit + EF Core InMemory (34 tests) |
+
+### Frontend
+
+| Layer | Technology |
+|---|---|
+| Framework | React 19 + Vite 8 |
+| Language | TypeScript (strict) |
+| Styling | Tailwind CSS v4 |
+| State | TanStack Query v5 |
+| Routing | React Router v6 |
+| HTTP | Axios (withCredentials) |
+| Charts | Recharts |
+| Animation | Framer Motion |
+| Testing | Vitest + React Testing Library |
 
 ---
 
-## 📁 Project Structure
+## Getting Started
+
+### Prerequisites
+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [Node.js 20+](https://nodejs.org/)
+
+### 1. Clone
+
+```bash
+git clone https://github.com/MajdArow123/ProTracker.git
+cd ProTracker
 ```
-ProTracker/
-├── Controllers/        → Handles HTTP requests & business logic
-├── Models/             → Data models (TrainingPlan, TaskItem, ApplicationUser)
-├── Views/              → Razor UI pages
-├── Data/               → EF Core DbContext & migrations
-├── Areas/Identity/     → Authentication & registration pages
-└── wwwroot/            → Static files (CSS, JS)
+
+### 2. Run the backend
+
+```bash
+dotnet restore
+dotnet run
+# API available at http://localhost:8080
+```
+
+The database seeds automatically on first run with teams, players, and sample assessments.
+
+### 3. Run the frontend
+
+```bash
+cd protracker-client
+npm install
+npm run dev
+# App available at http://localhost:5173
+```
+
+### 4. Run backend tests
+
+```bash
+dotnet test
+# 34/34 passing
+```
+
+### 5. Run frontend tests
+
+```bash
+cd protracker-client
+npm test
+# 5/5 passing
 ```
 
 ---
 
-## 🧪 Test Accounts
-You can try the live demo using these credentials:
+## Seed Accounts
 
 | Role | Email | Password |
 |---|---|---|
-| Coach | coach@test.com | Coach123! |
-| Athlete | athlete@test.com | Athlete123! |
+| Coach | `coach.basketball@protracker.seed` | `SeedCoach123!` |
+| Coach | `coach.soccer@protracker.seed` | `SeedCoach123!` |
+| Athlete | `marcus.bell@protracker.seed` | `SeedCoach123!` |
+| Athlete | `aisha.torres@protracker.seed` | `SeedCoach123!` |
+| Athlete | `james.chen@protracker.seed` | `SeedCoach123!` |
 
 ---
 
-## ⚙️ Setup Instructions
+## API Endpoints
 
-1. **Clone the repo**
-```bash
-git clone https://github.com/MajdArow123/protracker.git
-cd protracker
-```
+### Auth
 
-2. **Install dependencies**
-```bash
-dotnet restore
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/auth/login` | Login, returns HttpOnly JWT cookie |
+| `POST` | `/api/auth/logout` | Clear session cookie |
+| `GET` | `/api/auth/me` | Get current authenticated user |
+| `POST` | `/api/auth/register` | Register new account |
 
-3. **Apply database migrations**
-```bash
-dotnet ef database update
-```
+### Core Resources
 
-4. **Run the app**
-```bash
-dotnet run
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/teams` | List teams (coach's own) |
+| `GET` | `/api/teams/{id}` | Team detail |
+| `POST` | `/api/teams` | Create team |
+| `GET` | `/api/players` | List players |
+| `GET` | `/api/players/{id}` | Player detail |
+| `POST` | `/api/players` | Create player |
+| `GET` | `/api/sports` | List sports |
+| `GET` | `/api/sports/{id}/stat-categories` | Stat categories for a sport |
 
-5. Open your browser at `http://localhost:8080`
+### Assessments & Analytics
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/player-assessments/player/{id}` | Player's assessment history |
+| `POST` | `/api/player-assessments` | Record new assessment |
+| `GET` | `/api/dashboard/coach` | Coach summary (teams + player counts) |
+| `GET` | `/api/dashboard/player/{id}` | Athlete summary (stats + recent assessments) |
+
+### Plans & Nutrition
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/improvement-plans/player/{id}` | Player's improvement plans |
+| `POST` | `/api/improvement-plans` | Create improvement plan |
+| `GET` | `/api/nutrition-profile/player/{id}` | Player's dietary preferences |
+| `GET` | `/api/nutrition-guidance/player/{id}` | Player's nutrition guidance |
+| `POST` | `/api/nutrition-guidance` | Create nutrition guidance |
+
+All responses are wrapped: `{ "success": true, "data": <payload> }`
 
 ---
 
-## 📸 Screenshots
+## Project Structure
 
-### 🏠 Home Page
-![Home](docs/screenshots/home.png)
+```
+ProTracker/
+├── Controllers/                  → REST API controllers
+│   ├── AuthController.cs
+│   ├── DashboardController.cs
+│   ├── PlayersController.cs
+│   ├── TeamsController.cs
+│   ├── PlayerAssessmentsController.cs
+│   ├── ImprovementPlansController.cs
+│   └── NutritionController.cs
+├── Models/                       → EF Core entities
+├── DTOs/                         → Request/response shapes
+├── Data/                         → DbContext + seeder
+├── Services/                     → Business logic
+├── Tests/                        → 34 integration tests (xUnit)
+│
+└── protracker-client/            → React frontend
+    └── src/
+        ├── api/                  → Axios service files
+        ├── components/
+        │   ├── ui/               → Button, Card, Badge, Modal, Toast…
+        │   ├── layout/           → Sidebar, Navbar, PageWrapper
+        │   └── charts/           → Line, Radar, Bar chart wrappers
+        ├── context/              → AuthContext, ThemeContext, ToastContext
+        ├── hooks/                → TanStack Query hooks
+        ├── pages/
+        │   ├── auth/             → LoginPage
+        │   ├── dashboard/        → Coach + Athlete dashboards
+        │   ├── players/          → Players list + detail
+        │   ├── teams/            → Teams list + detail
+        │   ├── assessments/      → Assessment recording
+        │   ├── improvement/      → Improvement plans (coach)
+        │   └── nutrition/        → Nutrition guidance (coach)
+        └── types/                → TypeScript interfaces
+```
 
-### 📝 Register
-![Register](docs/screenshots/register.png)
+---
 
-### 🔐 Login
+## Screenshots
+
+### Login
 ![Login](docs/screenshots/login.png)
 
-### 🏆 Coach Dashboard
+### Coach Dashboard
 ![Coach Dashboard](docs/screenshots/coach-dashboard.png)
 
-### 🏃 Athlete Dashboard
+### Athlete Dashboard
 ![Athlete Dashboard](docs/screenshots/athlete-dashboard.png)
 
-### ➕ Create Training Plan
-![Create Plan](docs/screenshots/create-plan.png)
+### Players
+![Players](docs/screenshots/players.png)
 
-### 📄 Plan Details
-![Plan Details](docs/screenshots/plan-details.png)
+### Player Profile
+![Player Profile](docs/screenshots/player-detail.png)
 
 ---
 
-## 👨‍💻 Authors
-- [@MajdArow123](https://github.com/MajdArow123)
-- [@Majd205](https://github.com/Majd205)
+## License
+
+MIT © [MajdArow123](https://github.com/MajdArow123)
