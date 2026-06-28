@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ProTracker.Common;
 using ProTracker.Data;
 using ProTracker.Dtos;
+using ProTracker.Models;
 
 namespace ProTracker.Services;
 
@@ -104,15 +105,36 @@ public class ReportService : IReportService
 
         var playerIds = team.Players.Select(p => p.Id).ToList();
 
-        var scores = await _context.PlayerStatScores
-            .Include(s => s.SportStatCategory)
-            .Include(s => s.PlayerAssessment)
-            .Where(s => playerIds.Contains(s.PlayerAssessment.PlayerId))
+        var allAssessments = await _context.PlayerAssessments
+            .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
+            .Where(a => playerIds.Contains(a.PlayerId))
             .ToListAsync();
+
+        var scores = allAssessments.SelectMany(a => a.StatScores).ToList();
 
         var averages = scores
             .GroupBy(s => s.SportStatCategory.Name)
             .ToDictionary(g => g.Key, g => g.Average(s => s.Score));
+
+        var playerAverages = playerIds.Select(pid =>
+        {
+            var playerScores = allAssessments
+                .Where(a => a.PlayerId == pid)
+                .SelectMany(a => a.StatScores)
+                .ToList();
+            var player = team.Players.First(p => p.Id == pid);
+            return new PlayerAverageScoreDto
+            {
+                PlayerId = pid,
+                PlayerName = player.FullName,
+                AverageScore = playerScores.Count != 0 ? playerScores.Average(s => s.Score) : 0
+            };
+        }).OrderByDescending(p => p.AverageScore).ToList();
+
+        var activeInjuries = await _context.InjuryRecords
+            .Where(i => playerIds.Contains(i.PlayerId) && i.RecoveryStatus != RecoveryStatus.FullyRecovered)
+            .OrderByDescending(i => i.InjuryDate)
+            .ToListAsync();
 
         return new TeamReportDto
         {
@@ -127,7 +149,20 @@ public class ReportService : IReportService
             },
             PlayerCount = team.Players.Count,
             AverageScoreByCategory = averages,
-            Players = team.Players.Select(PlayerService.ToDto).ToList()
+            Players = team.Players.Select(PlayerService.ToDto).ToList(),
+            PlayerAverageScores = playerAverages,
+            ActiveInjuryCount = activeInjuries.Count(),
+            ActiveInjuries = activeInjuries.Select(i => new InjuryRecordDto
+            {
+                Id = i.Id,
+                PlayerId = i.PlayerId,
+                InjuryDate = i.InjuryDate,
+                InjuryType = i.InjuryType,
+                Severity = i.Severity,
+                RecoveryStatus = i.RecoveryStatus,
+                Notes = i.Notes,
+                ExpectedReturnDate = i.ExpectedReturnDate
+            }).ToList()
         };
     }
 }

@@ -23,6 +23,10 @@ import { AssessmentPage } from './pages/assessments/AssessmentPage';
 import { ImprovementPage } from './pages/improvement/ImprovementPage';
 import { NutritionPage } from './pages/nutrition/NutritionPage';
 import { ReportsPage } from './pages/reports/ReportsPage';
+import { PlayerReportPage } from './pages/reports/PlayerReportPage';
+import { TeamReportPage } from './pages/reports/TeamReportPage';
+import { ComparePlayersPage } from './pages/reports/ComparePlayersPage';
+import { FoodAlternativesPage } from './pages/nutrition/FoodAlternativesPage';
 import { PageSpinner } from './components/ui/Spinner';
 
 const queryClient = new QueryClient({
@@ -76,6 +80,10 @@ function AppRoutes() {
               element={<NutritionPage />}
             />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/reports/player/:id" element={<PlayerReportPage />} />
+            <Route path="/reports/team/:id" element={<TeamReportPage />} />
+            <Route path="/reports/compare" element={<ComparePlayersPage />} />
+            <Route path="/nutrition/food-alternatives" element={<FoodAlternativesPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['Athlete']} />}>
             <Route

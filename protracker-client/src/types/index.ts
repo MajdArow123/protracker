@@ -156,6 +156,43 @@ export interface TrainingSession {
   attendanceStatus: AttendanceStatus;
 }
 
+export interface FoodAlternative {
+  id: number;
+  originalFood: string;
+  alternativeFood: string;
+  proteinMatchScore: number;
+  carbMatchScore: number;
+  fatMatchScore: number;
+  calorieMatchScore: number;
+  recoveryValue: number;
+  sportPerformanceNote?: string | null;
+  reasonExplanation?: string | null;
+}
+
+export interface PlayerAverageScore {
+  playerId: number;
+  playerName: string;
+  averageScore: number;
+}
+
+export interface PlayerReport {
+  player: Player & { sportName?: string; positionName?: string; teamName?: string };
+  assessments: PlayerAssessment[];
+  averageScoreByCategory: Record<string, number>;
+  injuries: InjuryRecord[];
+  recentMatches: MatchPerformance[];
+}
+
+export interface TeamReport {
+  team: Team;
+  playerCount: number;
+  averageScoreByCategory: Record<string, number>;
+  players: Player[];
+  playerAverageScores: PlayerAverageScore[];
+  activeInjuryCount: number;
+  activeInjuries: InjuryRecord[];
+}
+
 export interface CoachDashboard {
   totalTeams: number;
   totalPlayers: number;
