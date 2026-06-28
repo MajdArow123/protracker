@@ -1,0 +1,8 @@
+protracker-client/
+bin/
+obj/
+.vs/
+*.user
+app.db
+app.db-shm
+app.db-wal
