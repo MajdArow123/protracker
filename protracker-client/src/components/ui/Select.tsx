@@ -2,14 +2,17 @@ import type { SelectHTMLAttributes } from 'react';
 import { forwardRef } from 'react';
 import { clsx } from 'clsx';
 
+interface OptionItem { value: string; label: string; }
+
 interface Props extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
   helperText?: string;
+  options?: OptionItem[];
 }
 
 export const Select = forwardRef<HTMLSelectElement, Props>(
-  ({ label, error, helperText, className, children, ...props }, ref) => (
+  ({ label, error, helperText, className, children, options, ...props }, ref) => (
     <div className="flex flex-col gap-1">
       {label && (
         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -27,7 +30,9 @@ export const Select = forwardRef<HTMLSelectElement, Props>(
           className
         )}
       >
-        {children}
+        {options
+          ? options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)
+          : children}
       </select>
       {error && (
         <p className="text-xs text-red-600 dark:text-red-400">{error}</p>

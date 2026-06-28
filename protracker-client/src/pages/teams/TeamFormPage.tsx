@@ -1,28 +1,120 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageWrapper } from '../../components/layout/PageWrapper';
+import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { PageSpinner } from '../../components/ui/Spinner';
+import { useToast } from '../../context/ToastContext';
+import { useSports } from '../../hooks/useSports';
+import { useTeam, useCreateTeam, useUpdateTeam } from '../../hooks/useTeams';
 import { ArrowLeft } from 'lucide-react';
 
+interface FormValues { name: string; sportId: string; }
+interface FormErrors { name?: string; sportId?: string; }
+
+function validate(v: FormValues): FormErrors {
+  const e: FormErrors = {};
+  if (!v.name.trim()) e.name = 'Team name is required';
+  if (!v.sportId) e.sportId = 'Sport is required';
+  return e;
+}
+
 export function TeamFormPage() {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
+  const navigate = useNavigate();
+  const { addToast: showToast } = useToast();
+
+  const { data: team, isLoading: loadingTeam } = useTeam(isEdit ? Number(id) : undefined);
+  const { data: sports = [] } = useSports();
+  const createTeam = useCreateTeam();
+  const updateTeam = useUpdateTeam();
+
+  const [values, setValues] = useState<FormValues>({ name: '', sportId: '' });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState(false);
+
+  useEffect(() => {
+    if (team && isEdit) {
+      setValues({ name: team.name, sportId: String(team.sportId) });
+    }
+  }, [team, isEdit]);
+
+  const set = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const next = { ...values, [field]: e.target.value };
+    setValues(next);
+    if (touched) setErrors(validate(next));
+  };
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setTouched(true);
+    const errs = validate(values);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    const payload = { name: values.name.trim(), sportId: Number(values.sportId) };
+
+    try {
+      if (isEdit) {
+        await updateTeam.mutateAsync({ id: Number(id), data: payload });
+        showToast('Team updated', 'success');
+        navigate(`/teams/${id}`);
+      } else {
+        const created = await createTeam.mutateAsync(payload as Parameters<typeof createTeam.mutateAsync>[0]);
+        showToast('Team created', 'success');
+        navigate(`/teams/${(created as { id: number }).id}`);
+      }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Save failed', 'error');
+    }
+  }
+
+  if (isEdit && loadingTeam) return <PageSpinner />;
+  const isLoading = createTeam.isPending || updateTeam.isPending;
+
   return (
     <PageWrapper
       title={isEdit ? 'Edit Team' : 'New Team'}
       actions={
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate('/teams')}
-        >
+        <Button variant="ghost" size="sm" onClick={() => navigate(isEdit ? `/teams/${id}` : '/teams')}>
           <ArrowLeft size={16} /> Back
         </Button>
       }
     >
-      <div className="max-w-lg text-gray-500 dark:text-gray-400">
-        Team form coming in Phase 5.
-      </div>
+      <form onSubmit={submit} className="max-w-md space-y-6">
+        <Card>
+          <div className="space-y-4">
+            <Input
+              label="Team Name *"
+              value={values.name}
+              onChange={set('name')}
+              error={errors.name}
+              placeholder="Riverside Hawks"
+            />
+            <Select
+              label="Sport *"
+              value={values.sportId}
+              onChange={set('sportId')}
+              error={errors.sportId}
+              options={[
+                { value: '', label: 'Select sport…' },
+                ...sports.map(s => ({ value: String(s.id), label: s.name })),
+              ]}
+            />
+          </div>
+        </Card>
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={() => navigate(isEdit ? `/teams/${id}` : '/teams')}>
+            Cancel
+          </Button>
+          <Button type="submit" isLoading={isLoading}>
+            {isEdit ? 'Save Changes' : 'Create Team'}
+          </Button>
+        </div>
+      </form>
     </PageWrapper>
   );
 }

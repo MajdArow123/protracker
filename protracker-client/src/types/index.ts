@@ -113,6 +113,49 @@ export interface ImprovementPlan {
   isAIGenerated: boolean;
 }
 
+export interface AssessmentPeriod {
+  id: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  teamId: number;
+}
+
+export type InjurySeverity = 'Minor' | 'Moderate' | 'Severe';
+export type RecoveryStatus = 'Active' | 'Recovering' | 'FullyRecovered';
+export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Excused';
+
+export interface InjuryRecord {
+  id: number;
+  playerId: number;
+  injuryDate: string;
+  injuryType: string;
+  severity: InjurySeverity;
+  recoveryStatus: RecoveryStatus;
+  notes?: string | null;
+  expectedReturnDate?: string | null;
+}
+
+export interface MatchPerformance {
+  id: number;
+  playerId: number;
+  matchDate: string;
+  opponent: string;
+  performanceRating: number;
+  notes?: string | null;
+  sportSpecificStats?: string | null;
+}
+
+export interface TrainingSession {
+  id: number;
+  playerId: number;
+  teamId: number;
+  date: string;
+  durationMinutes: number;
+  notes?: string | null;
+  attendanceStatus: AttendanceStatus;
+}
+
 export interface CoachDashboard {
   totalTeams: number;
   totalPlayers: number;
