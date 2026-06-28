@@ -1,0 +1,7 @@
+providers = ["dotnet"]
+
+[phases.build]
+cmds = ["dotnet publish ProTracker.csproj -c Release -o /app/publish"]
+
+[start]
+cmd = "dotnet /app/publish/ProTracker.dll"
