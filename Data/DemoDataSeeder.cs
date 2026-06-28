@@ -36,39 +36,28 @@ public static class DemoDataSeeder
         await LinkAthleteToPlayerAsync(context, carlosSantosLogin.Id, "Carlos Santos Jr");
         await LinkAthleteToPlayerAsync(context, alexWilliamsLogin.Id, "Alex Williams");
 
-        if (await context.Teams.AnyAsync())
-            return; // rest of the demo data is already seeded
-
         var today = DateTime.UtcNow.Date;
 
-        // --- Teams ---
-        var soccerTeam = new Team { Name = "City FC U18", SportId = 1, CoachId = soccerCoach.Id };
-        var basketballTeam = new Team { Name = "Riverside Hawks", SportId = 2, CoachId = basketballCoach.Id };
-        var volleyballTeam = new Team { Name = "Lakeside Spikers", SportId = 3, CoachId = volleyballCoach.Id };
-        var beachVolleyTeam = new Team { Name = "Sand Kings", SportId = 4, CoachId = beachVolleyCoach.Id };
-        var tennisTeam = new Team { Name = "Ace Academy", SportId = 5, CoachId = tennisCoach.Id };
-        context.Teams.AddRange(soccerTeam, basketballTeam, volleyballTeam, beachVolleyTeam, tennisTeam);
-        await context.SaveChangesAsync();
+        // --- Teams (get-or-create each individually so existing data is preserved) ---
+        var soccerTeam = await GetOrCreateTeamAsync(context, "City FC U18", 1, soccerCoach.Id);
+        var basketballTeam = await GetOrCreateTeamAsync(context, "Riverside Hawks", 2, basketballCoach.Id);
+        var volleyballTeam = await GetOrCreateTeamAsync(context, "Lakeside Spikers", 3, volleyballCoach.Id);
+        var beachVolleyTeam = await GetOrCreateTeamAsync(context, "Sand Kings", 4, beachVolleyCoach.Id);
+        var tennisTeam = await GetOrCreateTeamAsync(context, "Ace Academy", 5, tennisCoach.Id);
 
-        context.CoachTeamScopes.AddRange(
-            new CoachTeamScope { CoachId = soccerCoach.Id, TeamId = soccerTeam.Id },
-            new CoachTeamScope { CoachId = basketballCoach.Id, TeamId = basketballTeam.Id },
-            new CoachTeamScope { CoachId = volleyballCoach.Id, TeamId = volleyballTeam.Id },
-            new CoachTeamScope { CoachId = beachVolleyCoach.Id, TeamId = beachVolleyTeam.Id },
-            new CoachTeamScope { CoachId = tennisCoach.Id, TeamId = tennisTeam.Id }
-        );
-        await context.SaveChangesAsync();
+        // Coach-team scopes (idempotent)
+        await EnsureCoachScopeAsync(context, soccerCoach.Id, soccerTeam.Id);
+        await EnsureCoachScopeAsync(context, basketballCoach.Id, basketballTeam.Id);
+        await EnsureCoachScopeAsync(context, volleyballCoach.Id, volleyballTeam.Id);
+        await EnsureCoachScopeAsync(context, beachVolleyCoach.Id, beachVolleyTeam.Id);
+        await EnsureCoachScopeAsync(context, tennisCoach.Id, tennisTeam.Id);
 
-        // --- Assessment Periods (3 per team, weekly) ---
-        var soccerPeriods = CreateWeeklyPeriods(soccerTeam.Id, today);
-        var basketballPeriods = CreateWeeklyPeriods(basketballTeam.Id, today);
-        var volleyballPeriods = CreateWeeklyPeriods(volleyballTeam.Id, today);
-        var beachVolleyPeriods = CreateWeeklyPeriods(beachVolleyTeam.Id, today);
-        var tennisPeriods = CreateWeeklyPeriods(tennisTeam.Id, today);
-        context.AssessmentPeriods.AddRange(
-            soccerPeriods.Concat(basketballPeriods).Concat(volleyballPeriods)
-                         .Concat(beachVolleyPeriods).Concat(tennisPeriods));
-        await context.SaveChangesAsync();
+        // --- Assessment Periods (3 per team, weekly — get-or-create by name+teamId) ---
+        var soccerPeriods = await EnsureWeeklyPeriodsAsync(context, soccerTeam.Id, today);
+        var basketballPeriods = await EnsureWeeklyPeriodsAsync(context, basketballTeam.Id, today);
+        var volleyballPeriods = await EnsureWeeklyPeriodsAsync(context, volleyballTeam.Id, today);
+        var beachVolleyPeriods = await EnsureWeeklyPeriodsAsync(context, beachVolleyTeam.Id, today);
+        var tennisPeriods = await EnsureWeeklyPeriodsAsync(context, tennisTeam.Id, today);
 
         // --- Players ---
         // Soccer positions: Goalkeeper=1, Defender=2, Midfielder=3, Winger=4, Striker=5
@@ -239,6 +228,51 @@ public static class DemoDataSeeder
         if (player == null) return;
         player.UserId = userId;
         await context.SaveChangesAsync();
+    }
+
+    // ─── Get-or-create helpers (idempotent for existing Railway DB) ──────────
+
+    private static async Task<Team> GetOrCreateTeamAsync(ApplicationDbContext context, string name, int sportId, string coachId)
+    {
+        var existing = await context.Teams.FirstOrDefaultAsync(t => t.Name == name);
+        if (existing != null) return existing;
+        var team = new Team { Name = name, SportId = sportId, CoachId = coachId };
+        context.Teams.Add(team);
+        await context.SaveChangesAsync();
+        return team;
+    }
+
+    private static async Task EnsureCoachScopeAsync(ApplicationDbContext context, string coachId, int teamId)
+    {
+        var exists = await context.CoachTeamScopes.AnyAsync(s => s.CoachId == coachId && s.TeamId == teamId);
+        if (!exists)
+        {
+            context.CoachTeamScopes.Add(new CoachTeamScope { CoachId = coachId, TeamId = teamId });
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private static async Task<List<AssessmentPeriod>> EnsureWeeklyPeriodsAsync(ApplicationDbContext context, int teamId, DateTime today)
+    {
+        var periods = new List<AssessmentPeriod>();
+        var periodDefs = new[]
+        {
+            ("Week 1", today.AddDays(-21), today.AddDays(-15)),
+            ("Week 2", today.AddDays(-14), today.AddDays(-8)),
+            ("Week 3", today.AddDays(-7),  today.AddDays(-1)),
+        };
+        foreach (var (name, start, end) in periodDefs)
+        {
+            var p = await context.AssessmentPeriods.FirstOrDefaultAsync(ap => ap.Name == name && ap.TeamId == teamId);
+            if (p == null)
+            {
+                p = new AssessmentPeriod { Name = name, TeamId = teamId, StartDate = start, EndDate = end };
+                context.AssessmentPeriods.Add(p);
+                await context.SaveChangesAsync();
+            }
+            periods.Add(p);
+        }
+        return periods;
     }
 
     // ─── Periods ─────────────────────────────────────────────────────────────
