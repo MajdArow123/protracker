@@ -54,11 +54,12 @@ public class AuthController : ApiControllerBase
 
     private void WriteAuthCookies(string accessToken, string refreshToken)
     {
+        var isDev = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = !HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
+            Secure = !isDev,
+            SameSite = isDev ? SameSiteMode.Strict : SameSiteMode.None,
             Path = "/"
         };
 
