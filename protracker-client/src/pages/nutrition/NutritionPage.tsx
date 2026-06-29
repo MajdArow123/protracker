@@ -16,10 +16,11 @@ import {
 import {
   ArrowLeft, Plus, Edit2, Trash2, ShieldAlert, Salad, Droplets,
   Zap, Apple, Info, Utensils, ChevronDown, ChevronUp, Sparkles,
+  Dumbbell, Coffee, Moon,
 } from 'lucide-react';
 import { useGenerateNutritionGuidance } from '../../hooks/useAI';
 import { clsx } from 'clsx';
-import type { NutritionProfileItem, NutritionGuidance } from '../../types';
+import type { NutritionProfileItem, NutritionGuidance, StructuredMealPlan, Meal } from '../../types';
 
 type Tab = 'profile' | 'guidance';
 
@@ -61,19 +62,196 @@ const GUIDANCE_FIELDS: { key: keyof NutritionGuidance; label: string; placeholde
   { key: 'foodsToLimit', label: 'Foods to Limit', placeholder: 'Foods to avoid or minimize (comma-separated)…', icon: Apple },
 ];
 
+const MEAL_ICONS: Record<string, typeof Coffee> = {
+  Breakfast: Coffee,
+  Lunch: Utensils,
+  Snack: Apple,
+  Dinner: Moon,
+  'Post-Workout': Dumbbell,
+};
+
 function parseList(str: string | null | undefined): string[] {
   if (!str) return [];
   return str.split(',').map(s => s.trim()).filter(Boolean);
 }
 
+function parseMealPlan(json: string | null | undefined): StructuredMealPlan | null {
+  if (!json) return null;
+  try {
+    return JSON.parse(json) as StructuredMealPlan;
+  } catch {
+    return null;
+  }
+}
+
+function MacroBar({ value, max, color, label }: { value: number; max: number; color: string; label: string }) {
+  const pct = Math.min((value / max) * 100, 100);
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="text-gray-500 dark:text-gray-400">{label}</span>
+        <span className="font-semibold text-gray-700 dark:text-gray-300">{value}g</span>
+      </div>
+      <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function MealCard({ meal }: { meal: Meal }) {
+  const [open, setOpen] = useState(true);
+  const Icon = MEAL_ICONS[meal.name] ?? Utensils;
+  const totalCals = meal.items.reduce((s, i) => s + (i.calories || 0), 0);
+  const totalProtein = meal.items.reduce((s, i) => s + (i.protein || 0), 0);
+  const totalCarbs = meal.items.reduce((s, i) => s + (i.carbs || 0), 0);
+  const totalFats = meal.items.reduce((s, i) => s + (i.fats || 0), 0);
+
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer text-left"
+      >
+        <div className="w-9 h-9 rounded-xl bg-indigo-600/15 flex items-center justify-center flex-shrink-0">
+          <Icon size={17} className="text-indigo-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-bold text-gray-900 dark:text-white text-sm">{meal.name}</p>
+          <p className="text-xs text-gray-500">{meal.time}</p>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-gray-500">
+          {totalCals > 0 && <span className="font-semibold text-gray-700 dark:text-gray-300">{totalCals} kcal</span>}
+          {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {open && meal.items.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 border-t border-gray-100 dark:border-gray-800">
+              <div className="space-y-2 mt-3">
+                {meal.items.map((item, i) => (
+                  <div key={i} className="flex items-start justify-between gap-2 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{item.food}</p>
+                      <p className="text-xs text-gray-500">{item.portion}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs flex-shrink-0">
+                      <span className="text-gray-600 dark:text-gray-400">{item.calories} kcal</span>
+                      <span className="text-blue-500">P:{item.protein}g</span>
+                      <span className="text-amber-500">C:{item.carbs}g</span>
+                      <span className="text-red-400">F:{item.fats}g</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Meal totals */}
+              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs">
+                <span className="text-gray-500">Meal totals:</span>
+                <span className="font-semibold text-gray-700 dark:text-gray-300">{totalCals} kcal</span>
+                <span className="text-blue-500">P:{totalProtein}g</span>
+                <span className="text-amber-500">C:{totalCarbs}g</span>
+                <span className="text-red-400">F:{totalFats}g</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
+  const priorityFoods = parseList(plan.foodsToPrioritize);
+  const limitFoods = parseList(plan.foodsToLimit);
+
+  return (
+    <div className="space-y-4">
+      {/* Daily overview */}
+      <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10 p-5">
+        <h4 className="font-bold text-indigo-800 dark:text-indigo-300 text-sm mb-3 uppercase tracking-wide">Daily Overview</h4>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="col-span-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Daily Calories</span>
+              <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{plan.dailyCalories} kcal</span>
+            </div>
+          </div>
+          {plan.macros && (
+            <div className="col-span-2 space-y-2.5">
+              <MacroBar value={plan.macros.protein} max={250} color="#6366f1" label="Protein" />
+              <MacroBar value={plan.macros.carbs} max={500} color="#f59e0b" label="Carbs" />
+              <MacroBar value={plan.macros.fats} max={150} color="#ef4444" label="Fats" />
+              {plan.macros.fiber > 0 && <MacroBar value={plan.macros.fiber} max={50} color="#10b981" label="Fiber" />}
+            </div>
+          )}
+          {plan.hydrationMl > 0 && (
+            <div className="col-span-2 flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
+              <Droplets size={15} />
+              <span>Hydration target: <strong>{(plan.hydrationMl / 1000).toFixed(1)}L / day</strong></span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Meal schedule */}
+      {plan.meals && plan.meals.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wide">Meal Schedule</h4>
+          {plan.meals.map((meal, i) => (
+            <MealCard key={i} meal={meal} />
+          ))}
+        </div>
+      )}
+
+      {/* Foods */}
+      {(priorityFoods.length > 0 || limitFoods.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {priorityFoods.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">Prioritize</p>
+              <div className="flex flex-wrap gap-1.5">
+                {priorityFoods.map(f => (
+                  <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {limitFoods.length > 0 && (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Limit</p>
+              <div className="flex flex-wrap gap-1.5">
+                {limitFoods.map(f => (
+                  <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40">
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdit: () => void }) {
   const [expanded, setExpanded] = useState(true);
+  const mealPlan = parseMealPlan(guidance.mealPlanJson);
   const priorityFoods = parseList(guidance.foodsToPrioritize);
   const limitFoods = parseList(guidance.foodsToLimit);
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
-      {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-600/20 flex items-center justify-center">
@@ -112,18 +290,48 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
                 </div>
               )}
 
-              {/* Meal suggestions */}
-              {guidance.mealSuggestions && (
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-                    <Utensils size={11} /> Meal Suggestions
-                  </p>
-                  <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{guidance.mealSuggestions}</p>
-                </div>
+              {/* Structured meal plan (AI) or fallback text */}
+              {mealPlan ? (
+                <StructuredPlanView plan={mealPlan} />
+              ) : (
+                <>
+                  {guidance.mealSuggestions && (
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
+                        <Utensils size={11} /> Meal Suggestions
+                      </p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{guidance.mealSuggestions}</p>
+                    </div>
+                  )}
+                  {(priorityFoods.length > 0 || limitFoods.length > 0) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {priorityFoods.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">Prioritize</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {priorityFoods.map(f => (
+                              <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40">{f}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {limitFoods.length > 0 && (
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Limit</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {limitFoods.map(f => (
+                              <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40">{f}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
 
               {/* Hydration */}
-              {guidance.hydrationTips && (
+              {guidance.hydrationTips && !mealPlan && (
                 <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/20">
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-1.5">
                     <Droplets size={11} /> Hydration
@@ -139,36 +347,6 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
                     <Zap size={11} /> Recovery
                   </p>
                   <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed whitespace-pre-wrap">{guidance.recoveryTips}</p>
-                </div>
-              )}
-
-              {/* Foods dashboard */}
-              {(priorityFoods.length > 0 || limitFoods.length > 0) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {priorityFoods.length > 0 && (
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">Prioritize</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {priorityFoods.map(f => (
-                          <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40">
-                            {f}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {limitFoods.length > 0 && (
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Limit</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {limitFoods.map(f => (
-                          <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40">
-                            {f}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -248,7 +426,7 @@ export function NutritionPage() {
     setAiError(null);
     try {
       await generateAI.mutateAsync(playerId);
-      showToast('Nutrition plan generated! Review before saving.', 'success');
+      showToast('Nutrition plan generated!', 'success');
     } catch {
       setAiError('AI generation failed. Please try again.');
     }
@@ -316,13 +494,10 @@ export function NutritionPage() {
                 </div>
               </div>
 
-              {/* Severity warning */}
               {profileForm.severity === 'Hard' && (
                 <div className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30">
                   <ShieldAlert size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    Hard allergy — AI will never suggest foods containing this ingredient.
-                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400">Hard allergy — AI will never suggest foods containing this ingredient.</p>
                 </div>
               )}
 
@@ -335,7 +510,6 @@ export function NutritionPage() {
             </div>
           )}
 
-          {/* Grouped by severity */}
           {profileItems.length === 0 && !isItemFormOpen ? (
             <EmptyState
               icon={<Salad size={36} />}
@@ -411,8 +585,8 @@ export function NutritionPage() {
               {isGenerating && (
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
                   <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
-                  <span>Generating personalized nutrition plan…</span>
-                  <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~5–10 sec</span>
+                  <span>Generating personalized nutrition plan with meal schedule…</span>
+                  <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~10 sec</span>
                 </div>
               )}
 
@@ -441,9 +615,6 @@ export function NutritionPage() {
                       placeholder={f.placeholder}
                       className={TEXTAREA_CLS}
                     />
-                    {(f.key === 'foodsToPrioritize' || f.key === 'foodsToLimit') && (
-                      <p className="text-xs text-gray-400 mt-1">Comma-separated list: "Chicken, Rice, Broccoli"</p>
-                    )}
                   </div>
                 ))}
               </div>
@@ -460,7 +631,7 @@ export function NutritionPage() {
             <EmptyState
               icon={<Salad size={36} />}
               title="No nutrition guidance yet"
-              description="Generate an AI-powered plan or create one manually"
+              description="Generate an AI-powered structured meal plan or create one manually"
               action={{ label: 'Generate with AI', onClick: handleGenerateAI }}
             />
           ) : (

@@ -68,6 +68,14 @@ public class TeamService : ITeamService
         if (!await _context.Sports.AnyAsync(s => s.Id == dto.SportId))
             throw new ValidationApiException($"Sport {dto.SportId} does not exist.");
 
+        // Coaches are locked to the sport of their existing teams
+        var existingSportId = await _context.Teams
+            .Where(t => t.CoachId == coachId)
+            .Select(t => (int?)t.SportId)
+            .FirstOrDefaultAsync();
+        if (existingSportId.HasValue && existingSportId.Value != dto.SportId)
+            throw new ValidationApiException("You can only create teams in the same sport as your existing teams.");
+
         var team = new Team { Name = dto.Name, SportId = dto.SportId, CoachId = coachId };
         _context.Teams.Add(team);
         await _context.SaveChangesAsync();

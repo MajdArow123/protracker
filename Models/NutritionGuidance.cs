@@ -23,4 +23,7 @@ public class NutritionGuidance
 
     // Reserved for future AI-generated content; false for everything created by a coach today.
     public bool IsAIGenerated { get; set; } = false;
+
+    // Structured meal plan JSON returned by AI (nullable — old records won't have this)
+    public string? MealPlanJson { get; set; }
 }

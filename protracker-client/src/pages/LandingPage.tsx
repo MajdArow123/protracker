@@ -3,7 +3,7 @@ import { motion, type Variants } from 'framer-motion';
 import {
   Activity, BarChart3, Brain, Salad, ShieldAlert, FileText,
   Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
-  Target, Heart, CheckCircle,
+  Target, Heart, CheckCircle, Circle,
 } from 'lucide-react';
 
 const fadeUp: Variants = {
@@ -25,11 +25,11 @@ const FEATURES = [
 ];
 
 const SPORTS = [
-  { icon: '⚽', name: 'Football', color: 'from-green-500/20 to-emerald-500/20 border-green-500/30' },
-  { icon: '🏀', name: 'Basketball', color: 'from-orange-500/20 to-amber-500/20 border-orange-500/30' },
-  { icon: '🏐', name: 'Volleyball', color: 'from-blue-500/20 to-indigo-500/20 border-blue-500/30' },
-  { icon: '🏖', name: 'Beach Volleyball', color: 'from-yellow-500/20 to-amber-500/20 border-yellow-500/30' },
-  { icon: '🎾', name: 'Tennis', color: 'from-purple-500/20 to-violet-500/20 border-purple-500/30' },
+  { icon: Target, name: 'Football', dot: 'bg-green-500', color: 'from-green-500/20 to-emerald-500/20 border-green-500/30' },
+  { icon: Circle, name: 'Basketball', dot: 'bg-orange-500', color: 'from-orange-500/20 to-amber-500/20 border-orange-500/30' },
+  { icon: Activity, name: 'Volleyball', dot: 'bg-blue-500', color: 'from-blue-500/20 to-indigo-500/20 border-blue-500/30' },
+  { icon: Zap, name: 'Beach Volleyball', dot: 'bg-yellow-500', color: 'from-yellow-500/20 to-amber-500/20 border-yellow-500/30' },
+  { icon: TrendingUp, name: 'Tennis', dot: 'bg-purple-500', color: 'from-purple-500/20 to-violet-500/20 border-purple-500/30' },
 ];
 
 const STATS = [
@@ -285,7 +285,9 @@ export function LandingPage() {
                 variants={fadeUp}
                 className={`flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-br ${s.color} border cursor-default hover:scale-105 transition-transform`}
               >
-                <span className="text-2xl">{s.icon}</span>
+                <div className={`w-6 h-6 rounded-full ${s.dot} flex items-center justify-center`}>
+                  <s.icon size={13} className="text-white" />
+                </div>
                 <span className="font-semibold text-white">{s.name}</span>
               </motion.div>
             ))}

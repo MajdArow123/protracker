@@ -83,6 +83,7 @@ public class NutritionGuidanceService : INutritionGuidanceService
         FoodsToPrioritize = g.FoodsToPrioritize,
         FoodsToLimit = g.FoodsToLimit,
         Disclaimer = g.Disclaimer,
-        IsAIGenerated = g.IsAIGenerated
+        IsAIGenerated = g.IsAIGenerated,
+        MealPlanJson = g.MealPlanJson,
     };
 }

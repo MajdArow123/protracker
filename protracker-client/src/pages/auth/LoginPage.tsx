@@ -5,33 +5,44 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import {
   Activity, AlertCircle, Mail, Lock, Eye, EyeOff,
-  User, ArrowRight, CheckCircle,
+  User, ArrowRight, CheckCircle, Trophy, Dumbbell,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 type AuthTab = 'signin' | 'register';
 type Role = 'Coach' | 'Athlete';
 
-const FLOATING_ICONS = [
-  { emoji: '⚽', x: '8%', y: '15%', dur: 6, delay: 0 },
-  { emoji: '🏀', x: '88%', y: '10%', dur: 7, delay: 1.2 },
-  { emoji: '🏐', x: '5%', y: '72%', dur: 8, delay: 0.5 },
-  { emoji: '🎾', x: '92%', y: '65%', dur: 6.5, delay: 2 },
-  { emoji: '🏋️', x: '50%', y: '5%', dur: 9, delay: 0.8 },
-  { emoji: '🏃', x: '75%', y: '85%', dur: 7.5, delay: 1.5 },
+// Geometric shapes instead of emojis — more professional
+const FLOATING_SHAPES = [
+  { shape: 'circle', size: 64, x: '8%', y: '15%', dur: 6, delay: 0, opacity: 0.06 },
+  { shape: 'hexagon', size: 48, x: '88%', y: '10%', dur: 7, delay: 1.2, opacity: 0.07 },
+  { shape: 'circle', size: 80, x: '5%', y: '72%', dur: 8, delay: 0.5, opacity: 0.05 },
+  { shape: 'circle', size: 40, x: '92%', y: '65%', dur: 6.5, delay: 2, opacity: 0.08 },
+  { shape: 'hexagon', size: 56, x: '50%', y: '5%', dur: 9, delay: 0.8, opacity: 0.06 },
+  { shape: 'circle', size: 32, x: '75%', y: '85%', dur: 7.5, delay: 1.5, opacity: 0.07 },
+  { shape: 'hexagon', size: 72, x: '20%', y: '55%', dur: 8.5, delay: 3, opacity: 0.04 },
 ];
 
-function FloatingIcon({ emoji, x, y, dur, delay }: typeof FLOATING_ICONS[0]) {
+function FloatingShape({ shape, size, x, y, dur, delay, opacity }: typeof FLOATING_SHAPES[0]) {
   return (
     <motion.div
-      className="fixed text-4xl select-none pointer-events-none"
+      className="fixed select-none pointer-events-none"
       style={{ left: x, top: y }}
-      animate={{ y: [0, -20, 0], rotate: [0, 8, -8, 0] }}
+      animate={{ y: [0, -16, 0], rotate: shape === 'hexagon' ? [0, 30, 0] : [0, 8, -8, 0] }}
       transition={{ duration: dur, delay, repeat: Infinity, ease: 'easeInOut' }}
       initial={{ opacity: 0 }}
-      whileInView={{ opacity: 0.12 }}
+      whileInView={{ opacity }}
     >
-      {emoji}
+      {shape === 'circle' ? (
+        <div
+          style={{ width: size, height: size }}
+          className="rounded-full bg-indigo-400 dark:bg-indigo-500"
+        />
+      ) : (
+        <svg width={size} height={size} viewBox="0 0 100 100" fill="rgba(99,102,241,0.9)">
+          <polygon points="50,5 95,27.5 95,72.5 50,95 5,72.5 5,27.5" />
+        </svg>
+      )}
     </motion.div>
   );
 }
@@ -65,14 +76,12 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<AuthTab>('signin');
 
-  // Sign in state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Register state
   const [regName, setRegName] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
@@ -119,15 +128,13 @@ export function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#080b14]">
-      {/* Animated background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/50 via-[#080b14] to-purple-950/40" />
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-3xl" />
 
-      {/* Floating sport emojis */}
-      {FLOATING_ICONS.map((icon, i) => <FloatingIcon key={i} {...icon} />)}
+      {/* Floating geometric shapes (no emojis) */}
+      {FLOATING_SHAPES.map((s, i) => <FloatingShape key={i} {...s} />)}
 
-      {/* Glass card */}
       <motion.div
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -179,61 +186,28 @@ export function LoginPage() {
               >
                 <div className="relative">
                   <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder="Email address"
-                    autoComplete="email"
-                    required
-                    className={inputCls}
-                  />
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" autoComplete="email" required className={inputCls} />
                 </div>
 
                 <div className="relative">
                   <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    placeholder="Password"
-                    autoComplete="current-password"
-                    required
-                    className={clsx(inputCls, 'pr-10')}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(v => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
-                  >
+                  <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" autoComplete="current-password" required className={clsx(inputCls, 'pr-10')} />
+                  <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
                     {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                   </button>
                 </div>
 
                 {error && (
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/40 text-red-400 text-sm">
-                    <AlertCircle size={14} className="flex-shrink-0" />
-                    {error}
+                    <AlertCircle size={14} className="flex-shrink-0" /> {error}
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2"
-                >
-                  {isLoading ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>Sign In <ArrowRight size={15} /></>
-                  )}
+                <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2">
+                  {isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Sign In <ArrowRight size={15} /></>}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setTab('register')}
-                  className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer mt-2"
-                >
+                <button type="button" onClick={() => setTab('register')} className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer mt-2">
                   Don't have an account? <span className="text-indigo-400 font-semibold">Sign up free</span>
                 </button>
               </motion.form>
@@ -249,47 +223,19 @@ export function LoginPage() {
               >
                 <div className="relative">
                   <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="text"
-                    value={regName}
-                    onChange={e => setRegName(e.target.value)}
-                    placeholder="Display name"
-                    autoComplete="name"
-                    required
-                    className={inputCls}
-                  />
+                  <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Display name" autoComplete="name" required className={inputCls} />
                 </div>
 
                 <div className="relative">
                   <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="email"
-                    value={regEmail}
-                    onChange={e => setRegEmail(e.target.value)}
-                    placeholder="Email address"
-                    autoComplete="email"
-                    required
-                    className={inputCls}
-                  />
+                  <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="Email address" autoComplete="email" required className={inputCls} />
                 </div>
 
                 <div>
                   <div className="relative">
                     <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input
-                      type={showRegPassword ? 'text' : 'password'}
-                      value={regPassword}
-                      onChange={e => setRegPassword(e.target.value)}
-                      placeholder="Password"
-                      autoComplete="new-password"
-                      required
-                      className={clsx(inputCls, 'pr-10')}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowRegPassword(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
-                    >
+                    <input type={showRegPassword ? 'text' : 'password'} value={regPassword} onChange={e => setRegPassword(e.target.value)} placeholder="Password" autoComplete="new-password" required className={clsx(inputCls, 'pr-10')} />
+                    <button type="button" onClick={() => setShowRegPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
                       {showRegPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
                   </div>
@@ -298,38 +244,32 @@ export function LoginPage() {
 
                 <div className="relative">
                   <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="password"
-                    value={regConfirm}
-                    onChange={e => setRegConfirm(e.target.value)}
-                    placeholder="Confirm password"
-                    autoComplete="new-password"
-                    required
-                    className={clsx(inputCls, regConfirm && (regConfirm === regPassword ? 'border-green-500/50' : 'border-red-500/50'))}
-                  />
-                  {regConfirm && regConfirm === regPassword && (
-                    <CheckCircle size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400" />
-                  )}
+                  <input type="password" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} placeholder="Confirm password" autoComplete="new-password" required className={clsx(inputCls, regConfirm && (regConfirm === regPassword ? 'border-green-500/50' : 'border-red-500/50'))} />
+                  {regConfirm && regConfirm === regPassword && <CheckCircle size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400" />}
                 </div>
 
-                {/* Role selector */}
+                {/* Role selector — Lucide icons instead of emojis */}
                 <div>
                   <p className="text-xs text-gray-400 mb-2 font-medium">I am a…</p>
                   <div className="grid grid-cols-2 gap-2">
-                    {(['Coach', 'Athlete'] as Role[]).map(role => (
+                    {([
+                      { role: 'Coach' as Role, icon: Trophy, desc: 'I manage athletes & teams' },
+                      { role: 'Athlete' as Role, icon: Dumbbell, desc: 'I track my performance' },
+                    ]).map(({ role, icon: Icon, desc }) => (
                       <button
                         key={role}
                         type="button"
                         onClick={() => setRegRole(role)}
                         className={clsx(
-                          'flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all cursor-pointer',
+                          'flex flex-col items-center gap-2 p-3.5 rounded-xl border transition-all cursor-pointer',
                           regRole === role
                             ? 'border-indigo-500 bg-indigo-600/20 text-white'
                             : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white'
                         )}
                       >
-                        <span className="text-2xl">{role === 'Coach' ? '🏋️' : '🏃'}</span>
+                        <Icon size={22} className={regRole === role ? 'text-indigo-400' : 'text-gray-500'} />
                         <span className="text-xs font-semibold">{role}</span>
+                        <span className="text-[10px] text-gray-500 text-center leading-tight">{desc}</span>
                         {regRole === role && <CheckCircle size={12} className="text-indigo-400" />}
                       </button>
                     ))}
@@ -338,28 +278,18 @@ export function LoginPage() {
 
                 {regError && (
                   <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/40 text-red-400 text-sm">
-                    <AlertCircle size={14} className="flex-shrink-0" />
-                    {regError}
+                    <AlertCircle size={14} className="flex-shrink-0" /> {regError}
                   </div>
                 )}
 
-                <button
-                  type="submit"
-                  disabled={isRegistering}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2"
-                >
-                  {isRegistering ? (
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <>Create Account <ArrowRight size={15} /></>
-                  )}
+                <button type="submit" disabled={isRegistering} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2">
+                  {isRegistering ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Create Account <ArrowRight size={15} /></>}
                 </button>
               </motion.form>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Bottom stats bar */}
         <p className="text-center text-xs text-gray-600 mt-6 flex items-center justify-center gap-3">
           <span>5 Sports</span>
           <span className="w-1 h-1 rounded-full bg-gray-700" />
@@ -371,4 +301,3 @@ export function LoginPage() {
     </div>
   );
 }
-

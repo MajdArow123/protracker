@@ -15,6 +15,7 @@ public class NutritionGuidanceDto
     public string? FoodsToLimit { get; set; }
     public string Disclaimer { get; set; } = "";
     public bool IsAIGenerated { get; set; }
+    public string? MealPlanJson { get; set; }
 }
 
 public class CreateNutritionGuidanceDto

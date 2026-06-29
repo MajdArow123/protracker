@@ -8,8 +8,8 @@ import { Select } from '../../components/ui/Select';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { useToast } from '../../context/ToastContext';
 import { useSports } from '../../hooks/useSports';
-import { useTeam, useCreateTeam, useUpdateTeam } from '../../hooks/useTeams';
-import { ArrowLeft } from 'lucide-react';
+import { useTeam, useTeams, useCreateTeam, useUpdateTeam } from '../../hooks/useTeams';
+import { ArrowLeft, Lock } from 'lucide-react';
 
 interface FormValues { name: string; sportId: string; }
 interface FormErrors { name?: string; sportId?: string; }
@@ -29,6 +29,7 @@ export function TeamFormPage() {
 
   const { data: team, isLoading: loadingTeam } = useTeam(isEdit ? Number(id) : undefined);
   const { data: sports = [] } = useSports();
+  const { data: existingTeams = [] } = useTeams();
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
 
@@ -36,11 +37,18 @@ export function TeamFormPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState(false);
 
+  // Determine locked sport from existing teams (sport locking per coach)
+  const lockedSport = existingTeams.length > 0
+    ? { id: String(existingTeams[0].sportId), name: existingTeams[0].sportName }
+    : null;
+
   useEffect(() => {
     if (team && isEdit) {
       setValues({ name: team.name, sportId: String(team.sportId) });
+    } else if (!isEdit && lockedSport && !values.sportId) {
+      setValues(v => ({ ...v, sportId: lockedSport.id }));
     }
-  }, [team, isEdit]);
+  }, [team, isEdit, lockedSport?.id]);
 
   const set = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const next = { ...values, [field]: e.target.value };
@@ -94,16 +102,36 @@ export function TeamFormPage() {
               error={errors.name}
               placeholder="Riverside Hawks"
             />
-            <Select
-              label="Sport *"
-              value={values.sportId}
-              onChange={set('sportId')}
-              error={errors.sportId}
-              options={[
-                { value: '', label: 'Select sport…' },
-                ...sports.map(s => ({ value: String(s.id), label: s.name })),
-              ]}
-            />
+
+            {/* Sport field — locked if coach already has teams */}
+            {lockedSport && !isEdit ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Sport
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800">
+                  <Lock size={14} className="text-indigo-500 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                    {lockedSport.name}
+                  </span>
+                  <span className="ml-auto text-xs text-indigo-500">Locked to your sport</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  All your teams must be in the same sport.
+                </p>
+              </div>
+            ) : (
+              <Select
+                label="Sport *"
+                value={values.sportId}
+                onChange={set('sportId')}
+                error={errors.sportId}
+                options={[
+                  { value: '', label: 'Select sport…' },
+                  ...sports.map(s => ({ value: String(s.id), label: s.name })),
+                ]}
+              />
+            )}
           </div>
         </Card>
         <div className="flex justify-end gap-3">

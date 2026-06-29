@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -13,12 +14,106 @@ import { useAssessmentPeriods, useCreateAssessmentPeriod } from '../../hooks/use
 import { useCreateAssessment, usePlayerAssessments } from '../../hooks/useAssessments';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { ConfirmModal } from '../../components/ui/Modal';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 import { assessmentsApi } from '../../api/assessmentsApi';
 import { useQueryClient } from '@tanstack/react-query';
+import { clsx } from 'clsx';
 import type { PlayerAssessment } from '../../types';
 
 type Tab = 'new' | 'history';
+
+function scoreColor(score: number) {
+  if (score > 7) return '#10b981';
+  if (score >= 5) return '#f59e0b';
+  return '#ef4444';
+}
+
+function scoreLabel(score: number) {
+  if (score > 7) return { text: 'Good', cls: 'text-green-500 bg-green-500/10' };
+  if (score >= 5) return { text: 'Fair', cls: 'text-amber-500 bg-amber-500/10' };
+  return { text: 'Low', cls: 'text-red-500 bg-red-500/10' };
+}
+
+function pct(from: number, to: number) {
+  if (from === 0) return null;
+  return ((to - from) / from) * 100;
+}
+
+interface ScoreSliderProps {
+  name: string;
+  value: number;
+  onChange: (v: number) => void;
+}
+
+function ScoreSlider({ name, value, onChange }: ScoreSliderProps) {
+  const color = scoreColor(value);
+  const pctFill = ((value - 1) / 9) * 100;
+  const label = scoreLabel(value);
+
+  return (
+    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">{name}</span>
+        <div className="flex items-center gap-2">
+          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', label.cls)}>{label.text}</span>
+          <span className="text-xl font-black" style={{ color }}>{value}</span>
+          <span className="text-xs text-gray-400">/10</span>
+        </div>
+      </div>
+      <div className="relative">
+        <input
+          type="range"
+          min={1}
+          max={10}
+          step={1}
+          value={value}
+          onChange={e => onChange(Number(e.target.value))}
+          className="w-full h-2 rounded-full appearance-none cursor-pointer"
+          style={{
+            background: `linear-gradient(to right, ${color} 0%, ${color} ${pctFill}%, #e5e7eb ${pctFill}%, #e5e7eb 100%)`,
+          }}
+        />
+      </div>
+      <div className="flex justify-between text-[10px] text-gray-400 mt-1.5">
+        <span>1 — Poor</span>
+        <span>10 — Excellent</span>
+      </div>
+    </div>
+  );
+}
+
+function OverallScoreRing({ scores, total }: { scores: Record<number, number>; total: number }) {
+  if (total === 0) return null;
+  const vals = Object.values(scores);
+  const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+  const color = scoreColor(avg);
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const dash = (avg / 10) * circumference;
+
+  return (
+    <div className="flex flex-col items-center justify-center py-4">
+      <div className="relative w-24 h-24">
+        <svg width="96" height="96" viewBox="0 0 96 96">
+          <circle cx="48" cy="48" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="8" className="dark:stroke-gray-700" />
+          <circle
+            cx="48" cy="48" r={radius} fill="none"
+            stroke={color} strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circumference}`}
+            strokeDashoffset={circumference / 4}
+            style={{ transition: 'stroke-dasharray 0.4s ease' }}
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-xl font-black" style={{ color }}>{avg.toFixed(1)}</span>
+          <span className="text-[10px] text-gray-400">avg</span>
+        </div>
+      </div>
+      <p className="text-xs text-gray-500 mt-2">{vals.length}/{total} scored</p>
+    </div>
+  );
+}
 
 export function AssessmentPage() {
   const { id } = useParams<{ id: string }>();
@@ -41,6 +136,7 @@ export function AssessmentPage() {
   const [scores, setScores] = useState<Record<number, number>>({});
   const [deleteTarget, setDeleteTarget] = useState<PlayerAssessment | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const [showPeriodModal, setShowPeriodModal] = useState(false);
   const [periodName, setPeriodName] = useState('');
@@ -125,6 +221,12 @@ export function AssessmentPage() {
     }
   }
 
+  // Sort assessments oldest→newest for trend calcs
+  const sorted = useMemo(() =>
+    [...existingAssessments].sort((a, b) =>
+      new Date(a.dateRecorded).getTime() - new Date(b.dateRecorded).getTime()
+    ), [existingAssessments]);
+
   if (loadingPlayer) return <PageSpinner />;
 
   return (
@@ -141,19 +243,19 @@ export function AssessmentPage() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
               tab === t
                 ? 'bg-indigo-600 text-white'
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
-            {t === 'new' ? 'New Assessment' : 'History'}
+            {t === 'new' ? 'New Assessment' : `History (${existingAssessments.length})`}
           </button>
         ))}
       </div>
 
       {tab === 'new' && (
-        <form onSubmit={submitAssessment} className="max-w-2xl space-y-6">
+        <form onSubmit={submitAssessment} className="max-w-2xl space-y-4">
           <Card header="Assessment Period">
             {loadingPeriods ? (
               <Spinner />
@@ -174,7 +276,7 @@ export function AssessmentPage() {
                 <button
                   type="button"
                   onClick={() => setShowPeriodModal(true)}
-                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                  className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <Plus size={14} /> Create new period
                 </button>
@@ -182,7 +284,7 @@ export function AssessmentPage() {
             )}
           </Card>
 
-          <Card header="Details">
+          <Card header="Date & Notes">
             <div className="space-y-4">
               <Input
                 label="Date"
@@ -195,7 +297,7 @@ export function AssessmentPage() {
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  rows={3}
+                  rows={2}
                   placeholder="Observations…"
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
@@ -203,36 +305,36 @@ export function AssessmentPage() {
             </div>
           </Card>
 
-          <Card header="Stat Scores">
+          {/* Live overall score ring */}
+          {!loadingStats && statCategories.length > 0 && (
+            <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10 p-4">
+              <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1 text-center">Overall Score</h3>
+              <OverallScoreRing scores={scores} total={statCategories.length} />
+            </div>
+          )}
+
+          {/* Stat score cards */}
+          <div>
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+              Stat Scores
+            </h3>
             {loadingStats ? (
               <Spinner />
             ) : statCategories.length === 0 ? (
               <p className="text-sm text-gray-500 dark:text-gray-400">No stat categories for this sport.</p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {statCategories.map(cat => (
-                  <div key={cat.id}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="font-medium text-gray-700 dark:text-gray-300">{cat.name}</span>
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold">{scores[cat.id] ?? 5}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min={1}
-                      max={10}
-                      step={1}
-                      value={scores[cat.id] ?? 5}
-                      onChange={e => setScores(prev => ({ ...prev, [cat.id]: Number(e.target.value) }))}
-                      className="w-full accent-indigo-600"
-                    />
-                    <div className="flex justify-between text-xs text-gray-400 mt-0.5">
-                      <span>1</span><span>10</span>
-                    </div>
-                  </div>
+                  <ScoreSlider
+                    key={cat.id}
+                    name={cat.name}
+                    value={scores[cat.id] ?? 5}
+                    onChange={v => setScores(prev => ({ ...prev, [cat.id]: v }))}
+                  />
                 ))}
               </div>
             )}
-          </Card>
+          </div>
 
           <div className="flex justify-end">
             <Button type="submit" isLoading={createAssessment.isPending}>
@@ -243,36 +345,145 @@ export function AssessmentPage() {
       )}
 
       {tab === 'history' && (
-        <div className="max-w-3xl space-y-4">
+        <div className="max-w-3xl space-y-3">
+          {existingAssessments.length > 0 && (
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+              {existingAssessments.length} assessment{existingAssessments.length !== 1 ? 's' : ''} recorded
+              {sorted.length >= 2 && (() => {
+                const firstAvg = sorted[0].statScores.reduce((s, x) => s + x.score, 0) / (sorted[0].statScores.length || 1);
+                const lastAvg = sorted[sorted.length - 1].statScores.reduce((s, x) => s + x.score, 0) / (sorted[sorted.length - 1].statScores.length || 1);
+                const change = pct(firstAvg, lastAvg);
+                if (change === null) return null;
+                return (
+                  <span className={change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                    {' · '}{change >= 0 ? '+' : ''}{change.toFixed(0)}% since first assessment
+                  </span>
+                );
+              })()}
+            </p>
+          )}
+
           {existingAssessments.length === 0 ? (
-            <div className="text-gray-500 dark:text-gray-400 py-8 text-center">
-              No assessments yet.
+            <div className="text-gray-500 dark:text-gray-400 py-12 text-center">
+              <Calendar size={32} className="mx-auto mb-3 text-gray-400" />
+              <p className="font-medium">No assessments yet</p>
+              <p className="text-sm mt-1">Switch to "New Assessment" to record the first one.</p>
             </div>
           ) : (
-            existingAssessments.map(a => (
-              <Card key={a.id}>
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{a.assessmentPeriodName}</p>
-                    <p className="text-sm text-gray-500">{a.dateRecorded}</p>
-                    {a.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{a.notes}</p>}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteTarget(a)}
-                    className="text-red-500 hover:text-red-600"
+            [...existingAssessments]
+              .sort((a, b) => new Date(b.dateRecorded).getTime() - new Date(a.dateRecorded).getTime())
+              .map((a, idx) => {
+                // Find previous assessment for trend
+                const sortedIdx = sorted.findIndex(s => s.id === a.id);
+                const prev = sortedIdx > 0 ? sorted[sortedIdx - 1] : null;
+                const avgCurr = a.statScores.length
+                  ? a.statScores.reduce((s, x) => s + x.score, 0) / a.statScores.length
+                  : null;
+                const avgPrev = prev?.statScores.length
+                  ? prev.statScores.reduce((s, x) => s + x.score, 0) / prev.statScores.length
+                  : null;
+                const trend = avgCurr !== null && avgPrev !== null ? pct(avgPrev, avgCurr) : null;
+                const isExpanded = expandedId === a.id;
+
+                return (
+                  <div
+                    key={a.id}
+                    className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden"
                   >
-                    <Trash2 size={16} />
-                  </Button>
-                </div>
-                {a.statScores.length > 0 && (
-                  <RadarChartWrapper
-                    data={a.statScores.map(s => ({ subject: s.statCategoryName, value: s.score }))}
-                  />
-                )}
-              </Card>
-            ))
+                    {/* Timeline header */}
+                    <div className="flex items-start justify-between gap-3 p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Timeline dot */}
+                        <div className="mt-0.5 flex-shrink-0">
+                          <div className={clsx(
+                            'w-3 h-3 rounded-full border-2',
+                            idx === 0 ? 'bg-indigo-600 border-indigo-600' : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600'
+                          )} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900 dark:text-white text-sm">{a.assessmentPeriodName}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {new Date(a.dateRecorded).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
+                          {a.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{a.notes}</p>}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {avgCurr !== null && (
+                          <span
+                            className="text-lg font-black"
+                            style={{ color: scoreColor(avgCurr) }}
+                          >
+                            {avgCurr.toFixed(1)}
+                          </span>
+                        )}
+                        {trend !== null && (
+                          <span className={clsx(
+                            'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-full',
+                            trend > 0 ? 'text-green-600 bg-green-100 dark:bg-green-900/30' : trend < 0 ? 'text-red-600 bg-red-100 dark:bg-red-900/30' : 'text-gray-500 bg-gray-100 dark:bg-gray-800'
+                          )}>
+                            {trend > 0 ? <TrendingUp size={11} /> : trend < 0 ? <TrendingDown size={11} /> : <Minus size={11} />}
+                            {trend > 0 ? '+' : ''}{trend.toFixed(0)}%
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setExpandedId(isExpanded ? null : a.id)}
+                          className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        >
+                          {isExpanded ? 'Collapse' : 'Expand'}
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(a)}
+                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Score bars */}
+                    {a.statScores.length > 0 && (
+                      <div className="px-4 pb-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {a.statScores.map(s => (
+                            <div key={s.id} className="flex items-center gap-1.5">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">{s.statCategoryName}</span>
+                              <span
+                                className="text-xs font-bold px-1.5 py-0.5 rounded-full"
+                                style={{ color: scoreColor(s.score), background: `${scoreColor(s.score)}20` }}
+                              >
+                                {s.score}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <AnimatePresence>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden border-t border-gray-100 dark:border-gray-800"
+                        >
+                          <div className="p-4">
+                            {a.statScores.length > 0 && (
+                              <RadarChartWrapper
+                                data={a.statScores.map(s => ({ subject: s.statCategoryName, value: s.score }))}
+                                height={220}
+                              />
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })
           )}
         </div>
       )}
@@ -288,12 +499,7 @@ export function AssessmentPage() {
           >
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">New Assessment Period</h2>
             <div className="space-y-3">
-              <Input
-                label="Period Name"
-                value={periodName}
-                onChange={e => setPeriodName(e.target.value)}
-                placeholder="Spring 2026"
-              />
+              <Input label="Period Name" value={periodName} onChange={e => setPeriodName(e.target.value)} placeholder="Spring 2026" />
               <Input label="Start Date" type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} />
               <Input label="End Date" type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} />
             </div>

@@ -138,11 +138,16 @@ public class AIController : ApiControllerBase
             var hardKeywords = profile
                 .Where(r => r.Severity == NutritionSeverity.Hard && r.SpecificItem != null)
                 .Select(r => r.SpecificItem!.ToLowerInvariant());
-            var outputText = $"{mealSuggestions} {foodsToPrioritize}".ToLowerInvariant();
+            var outputText = $"{mealSuggestions} {foodsToPrioritize} {raw}".ToLowerInvariant();
             var flagged = hardKeywords.Where(k => outputText.Contains(k)).ToList();
             var extraNote = flagged.Any()
-                ? $"\n\n⚠️ Coach review required: AI output may reference restricted items ({string.Join(", ", flagged)}). Please verify before using."
+                ? $"\n\nCoach review required: AI output may reference restricted items ({string.Join(", ", flagged)}). Please verify before using."
                 : "";
+
+            // Store the full structured JSON for rich frontend display
+            string? mealPlanJson = null;
+            if (root.TryGetProperty("meals", out var mealsEl) && mealsEl.ValueKind == JsonValueKind.Array)
+                mealPlanJson = raw;
 
             var guidance = new NutritionGuidance
             {
@@ -155,6 +160,7 @@ public class AIController : ApiControllerBase
                 FoodsToPrioritize = foodsToPrioritize,
                 FoodsToLimit = GetStr(root, "foodsToLimit"),
                 Disclaimer = NutritionGuidance.StandardDisclaimer + extraNote,
+                MealPlanJson = mealPlanJson,
             };
             _context.NutritionGuidances.Add(guidance);
             await _context.SaveChangesAsync();
@@ -334,24 +340,41 @@ public class AIController : ApiControllerBase
 
     private static string BuildNutritionPrompt(Player p, string restrictionBlock)
     {
-        return "You are a professional sports nutritionist. Generate personalized nutrition guidance for this athlete.\n\n"
+        return "You are a professional sports nutritionist. Generate a detailed, structured daily meal plan for this athlete.\n\n"
             + $"Athlete: {p.FullName}\n"
             + $"Sport: {p.Sport.Name}\n"
             + $"Position: {p.Position.Name}\n"
             + $"Age: {p.Age}\n\n"
             + "DIETARY RESTRICTIONS (MUST BE RESPECTED):\n"
             + restrictionBlock + "\n\n"
-            + "Generate personalized nutrition guidance. Return ONLY a JSON object with exactly these fields, no other text:\n"
+            + "Generate a complete structured nutrition plan. Return ONLY valid JSON with NO other text, comments, or markdown:\n"
             + "{\n"
-            + "  \"goal\": \"primary nutrition goal for this athlete...\",\n"
-            + "  \"mealSuggestions\": \"specific meal ideas for breakfast, lunch, dinner...\",\n"
-            + "  \"hydrationTips\": \"specific hydration recommendations...\",\n"
-            + "  \"recoveryTips\": \"post-training recovery nutrition...\",\n"
-            + "  \"foodsToPrioritize\": \"comma-separated list of recommended foods...\",\n"
-            + "  \"foodsToLimit\": \"comma-separated list of foods to avoid...\"\n"
+            + "  \"goal\": \"primary nutrition goal for this athlete\",\n"
+            + "  \"dailyCalories\": 2800,\n"
+            + "  \"macros\": {\"protein\": 160, \"carbs\": 320, \"fats\": 80, \"fiber\": 30},\n"
+            + "  \"hydrationMl\": 3000,\n"
+            + "  \"mealSuggestions\": \"brief overall meal approach description\",\n"
+            + "  \"hydrationTips\": \"specific hydration recommendations\",\n"
+            + "  \"recoveryTips\": \"post-training recovery nutrition advice\",\n"
+            + "  \"foodsToPrioritize\": \"Chicken,Rice,Broccoli,Sweet Potato,Eggs\",\n"
+            + "  \"foodsToLimit\": \"Processed foods,Sugary drinks,Fried foods\",\n"
+            + "  \"meals\": [\n"
+            + "    {\n"
+            + "      \"name\": \"Breakfast\",\n"
+            + "      \"time\": \"7:00 AM\",\n"
+            + "      \"items\": [\n"
+            + "        {\"food\": \"Oats\", \"portion\": \"100g\", \"calories\": 370, \"protein\": 13, \"carbs\": 67, \"fats\": 7}\n"
+            + "      ]\n"
+            + "    },\n"
+            + "    {\"name\": \"Lunch\", \"time\": \"12:30 PM\", \"items\": []},\n"
+            + "    {\"name\": \"Snack\", \"time\": \"3:30 PM\", \"items\": []},\n"
+            + "    {\"name\": \"Dinner\", \"time\": \"7:00 PM\", \"items\": []},\n"
+            + "    {\"name\": \"Post-Workout\", \"time\": \"Within 30 min of training\", \"items\": []}\n"
+            + "  ]\n"
             + "}\n\n"
-            + "CRITICAL: Never suggest foods that conflict with the hard allergies or lifestyle restrictions listed above.\n"
-            + $"Write specific, practical advice for a {p.Sport.Name} athlete.";
+            + "CRITICAL: Never include foods that conflict with the hard allergies or lifestyle restrictions listed above.\n"
+            + "Include 3-5 realistic food items per meal with accurate macros for a {p.Sport.Name} athlete.\n"
+            + "All numbers must be integers. Return ONLY the JSON object, nothing else.";
     }
 
     private static string BuildInsightsPrompt(
@@ -425,5 +448,6 @@ public class AIController : ApiControllerBase
         FoodsToLimit = g.FoodsToLimit,
         Disclaimer = g.Disclaimer,
         IsAIGenerated = g.IsAIGenerated,
+        MealPlanJson = g.MealPlanJson,
     };
 }

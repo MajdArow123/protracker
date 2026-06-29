@@ -98,6 +98,35 @@ export interface NutritionGuidance {
   foodsToLimit?: string | null;
   disclaimer: string;
   isAIGenerated: boolean;
+  mealPlanJson?: string | null;
+}
+
+export interface MealItem {
+  food: string;
+  portion: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+}
+
+export interface Meal {
+  name: string;
+  time: string;
+  items: MealItem[];
+}
+
+export interface StructuredMealPlan {
+  goal: string;
+  dailyCalories: number;
+  macros: { protein: number; carbs: number; fats: number; fiber: number };
+  hydrationMl: number;
+  meals: Meal[];
+  mealSuggestions?: string;
+  hydrationTips?: string;
+  recoveryTips?: string;
+  foodsToPrioritize?: string;
+  foodsToLimit?: string;
 }
 
 export interface ImprovementPlan {
