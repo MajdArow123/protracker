@@ -44,7 +44,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     };
 });
 
-builder.Services.AddControllersWithViews()
+builder.Services.AddControllers()
     .AddJsonOptions(opts =>
         opts.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
@@ -171,17 +171,11 @@ app.UseRouting();
 app.UseCors("ReactClient");
 
 app.UseAuthorization();
-app.MapStaticAssets();
-
 app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
 
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Dashboard}/{id?}")
-    .WithStaticAssets();
+app.MapGet("/", () => Results.Json(new { message = "ProTracker API", version = "1.0", docs = "/api" }));
 
-app.MapRazorPages()
-   .WithStaticAssets();
+app.MapControllers();
 
 app.Run();
 
