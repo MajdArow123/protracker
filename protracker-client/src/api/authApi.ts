@@ -18,6 +18,16 @@ function mapUser(u: ApiUser): User {
 }
 
 export const authApi = {
+  register: async (displayName: string, email: string, password: string, role: string): Promise<User> => {
+    const res = await api.post<{ user: ApiUser; accessToken: string; refreshToken: string }>(
+      '/api/auth/register',
+      { displayName, email, password, role }
+    );
+    tokenStorage.setAccess(res.data.accessToken);
+    tokenStorage.setRefresh(res.data.refreshToken);
+    return mapUser(res.data.user);
+  },
+
   login: async (email: string, password: string): Promise<User> => {
     const res = await api.post<{ user: ApiUser; accessToken: string; refreshToken: string }>(
       '/api/auth/login',

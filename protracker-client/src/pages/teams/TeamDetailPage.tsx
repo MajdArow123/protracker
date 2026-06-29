@@ -1,16 +1,40 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { useTeam, useDeleteTeam } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
-import { PageWrapper } from '../../components/layout/PageWrapper';
-import { Card } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Avatar } from '../../components/ui/Avatar';
-import { Badge } from '../../components/ui/Badge';
+import { useTeamReport } from '../../hooks/useReports';
+import { useAssessmentPeriods } from '../../hooks/useAssessmentPeriods';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { ConfirmModal } from '../../components/ui/Modal';
+import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
-import { ArrowLeft, Edit, Trash2, Plus, User } from 'lucide-react';
+import { clsx } from 'clsx';
+import {
+  ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
+  Trophy, Medal, AlertTriangle, Calendar, BarChart3,
+} from 'lucide-react';
+
+const SPORT_HEADER_COLORS: Record<string, string> = {
+  Football: 'from-green-600 via-emerald-600 to-green-700',
+  Soccer: 'from-green-600 via-emerald-600 to-green-700',
+  'Football / Soccer': 'from-green-600 via-emerald-600 to-green-700',
+  Basketball: 'from-orange-500 via-orange-600 to-amber-600',
+  Volleyball: 'from-blue-600 via-blue-700 to-indigo-700',
+  'Beach Volleyball': 'from-yellow-500 via-amber-500 to-orange-500',
+  Tennis: 'from-purple-600 via-violet-600 to-purple-700',
+};
+
+function getInitials(name: string) {
+  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function scoreColor(score: number) {
+  if (score > 7) return 'bg-green-500/20 text-green-400 border border-green-500/30';
+  if (score >= 5) return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+  return 'bg-red-500/20 text-red-400 border border-red-500/30';
+}
 
 export function TeamDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,78 +44,230 @@ export function TeamDetailPage() {
 
   const { data: team, isLoading } = useTeam(teamId);
   const { data: allPlayers = [] } = usePlayers();
+  const { data: report } = useTeamReport(teamId);
+  const { data: periods = [] } = useAssessmentPeriods();
   const deleteTeam = useDeleteTeam();
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const teamPlayers = allPlayers.filter(p => p.teamId === teamId);
+  const teamPeriods = periods.filter(p => p.teamId === teamId);
 
   if (isLoading) return <PageSpinner />;
-  if (!team) return <PageWrapper><p className="text-red-500">Team not found.</p></PageWrapper>;
+  if (!team) return (
+    <div className="flex-1 p-6">
+      <p className="text-red-500">Team not found.</p>
+    </div>
+  );
+
+  const headerGrad = SPORT_HEADER_COLORS[team.sportName] ?? 'from-indigo-600 to-violet-700';
+  const radarData = report?.averageScoreByCategory
+    ? Object.entries(report.averageScoreByCategory).map(([subject, value]) => ({ subject, value }))
+    : [];
+  const topPerformers = (report?.playerAverageScores ?? []).slice().sort((a, b) => b.averageScore - a.averageScore).slice(0, 3);
+  const needsAttention = (report?.playerAverageScores ?? []).slice().sort((a, b) => a.averageScore - b.averageScore).slice(0, 3);
+  const injuredIds = new Set((report?.activeInjuries ?? []).map(i => i.playerId));
+  const medalIcons = [Trophy, Medal, Medal];
+  const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600'];
+
+  const statCards = [
+    { label: 'Total Players', value: teamPlayers.length, icon: Users },
+    {
+      label: 'Avg Team Score',
+      value: radarData.length ? (radarData.reduce((s, d) => s + d.value, 0) / radarData.length).toFixed(1) : '—',
+      icon: BarChart3,
+    },
+    { label: 'Active Injuries', value: report?.activeInjuryCount ?? '—', icon: ShieldAlert },
+    { label: 'Periods', value: teamPeriods.length || periods.length || '—', icon: Calendar },
+  ];
 
   return (
-    <PageWrapper
-      title={team.name}
-      actions={
-        <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/teams')}>
-            <ArrowLeft size={16} /> Back
-          </Button>
-          <Button variant="secondary" size="sm" onClick={() => navigate(`/teams/${id}/edit`)}>
-            <Edit size={16} /> Edit
-          </Button>
-          <Button variant="danger" size="sm" onClick={() => setConfirmDelete(true)}>
-            <Trash2 size={16} /> Delete
-          </Button>
-        </div>
-      }
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-1">
-          <dl className="space-y-4">
-            <div>
-              <dt className="text-xs text-gray-500 dark:text-gray-400">Sport</dt>
-              <dd className="font-medium text-gray-800 dark:text-gray-200 mt-1">{team.sportName}</dd>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 overflow-y-auto">
+      {/* Hero header */}
+      <div className={clsx('relative overflow-hidden bg-gradient-to-br', headerGrad)}>
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="relative z-10 p-4 lg:p-6">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={() => navigate('/teams')}
+              className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} /> Teams
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigate(`/teams/${id}/edit`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
+              >
+                <Edit size={14} /> Edit
+              </button>
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
+              >
+                <Trash2 size={14} /> Delete
+              </button>
             </div>
-            <div>
-              <dt className="text-xs text-gray-500 dark:text-gray-400">Players</dt>
-              <dd className="mt-1"><Badge variant="info">{teamPlayers.length}</Badge></dd>
-            </div>
-          </dl>
-        </Card>
-
-        <div className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-gray-900 dark:text-white">Roster</h3>
-            <Button size="sm" onClick={() => navigate('/players/new')}>
-              <Plus size={16} /> Add Player
-            </Button>
           </div>
 
-          {teamPlayers.length === 0 ? (
-            <div className="text-center py-10 text-gray-500 dark:text-gray-400 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl">
-              <User size={28} className="mx-auto mb-2 opacity-40" />
-              <p className="text-sm">No players on this team yet.</p>
+          <div>
+            <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{team.sportName}</span>
+              <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{teamPlayers.length} players</span>
+              {report?.activeInjuryCount ? (
+                <span className="px-2.5 py-1 rounded-full bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1">
+                  <ShieldAlert size={11} /> {report.activeInjuryCount} injured
+                </span>
+              ) : null}
             </div>
-          ) : (
-            <div className="space-y-2">
-              {teamPlayers.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => navigate(`/players/${p.id}`)}
-                  className="w-full flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-left"
-                >
-                  <Avatar name={p.fullName} size="sm" />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-white text-sm truncate">{p.fullName}</p>
-                    {p.positionName && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400">{p.positionName}</p>
-                    )}
-                  </div>
-                  {p.fitnessLevel != null && (
-                    <Badge variant="info" className="shrink-0">Fit {p.fitnessLevel}/10</Badge>
-                  )}
-                </button>
-              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 p-4 lg:p-6 pb-0">
+        {statCards.map(card => (
+          <div key={card.label} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <card.icon size={15} className="text-indigo-500" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.label}</p>
+            </div>
+            <p className="text-2xl font-black text-gray-900 dark:text-white">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Main content */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 lg:p-6">
+        {/* Left: Roster */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900 dark:text-white">Roster</h3>
+              <button
+                onClick={() => navigate('/players/new')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
+              >
+                <Plus size={13} /> Add Player
+              </button>
+            </div>
+
+            {teamPlayers.length === 0 ? (
+              <EmptyState
+                icon={<Users size={32} />}
+                title="No players yet"
+                description="Add players to this team to get started"
+                action={{ label: 'Add Player', onClick: () => navigate('/players/new') }}
+                size="sm"
+              />
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {teamPlayers.map(p => {
+                  const avgScore = report?.playerAverageScores?.find(s => s.playerId === p.id)?.averageScore;
+                  const isInjured = injuredIds.has(p.id);
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => navigate(`/players/${p.id}`)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer text-left group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm font-black flex-shrink-0">
+                        {getInitials(p.fullName)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.fullName}</p>
+                          {isInjured && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{p.positionName ?? 'Player'}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        {avgScore != null && (
+                          <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(avgScore))}>
+                            {avgScore.toFixed(1)}
+                          </span>
+                        )}
+                        {p.fitnessLevel != null && (
+                          <span className="text-[10px] text-gray-400">Fit {p.fitnessLevel}/10</span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Analytics */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Team radar */}
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+            <h3 className="font-bold text-gray-900 dark:text-white mb-1">Team Skill Profile</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Average across all players</p>
+            {radarData.length > 0 ? (
+              <RadarChartWrapper data={radarData} height={220} />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-36 text-center">
+                <BarChart3 size={24} className="text-gray-400 mb-2" />
+                <p className="text-sm text-gray-500 dark:text-gray-400">No assessment data yet</p>
+              </div>
+            )}
+          </div>
+
+          {/* Top performers */}
+          {topPerformers.length > 0 && (
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+              <h3 className="font-bold text-gray-900 dark:text-white mb-3">Top Performers</h3>
+              <div className="space-y-2">
+                {topPerformers.map((p, i) => {
+                  const MedalIcon = medalIcons[i] ?? Medal;
+                  const player = teamPlayers.find(pl => pl.id === p.playerId);
+                  return (
+                    <button
+                      key={p.playerId}
+                      onClick={() => navigate(`/players/${p.playerId}`)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
+                    >
+                      <MedalIcon size={16} className={medalColors[i]} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.playerName}</p>
+                        <p className="text-xs text-gray-500">{player?.positionName ?? 'Player'}</p>
+                      </div>
+                      <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(p.averageScore))}>
+                        {p.averageScore.toFixed(1)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Needs attention */}
+          {needsAttention.length > 0 && needsAttention[0].averageScore < 7 && (
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-5">
+              <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
+                <AlertTriangle size={15} /> Needs Attention
+              </h3>
+              <div className="space-y-2">
+                {needsAttention.filter(p => p.averageScore < 7).slice(0, 3).map(p => {
+                  const isInjured = injuredIds.has(p.playerId);
+                  return (
+                    <button
+                      key={p.playerId}
+                      onClick={() => navigate(`/players/${p.playerId}`)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors cursor-pointer text-left"
+                    >
+                      <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.playerName}</p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">{isInjured ? 'Injured · ' : ''}Score {p.averageScore.toFixed(1)}/10</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -114,6 +290,6 @@ export function TeamDetailPage() {
         confirmLabel="Delete"
         isLoading={deleteTeam.isPending}
       />
-    </PageWrapper>
+    </motion.div>
   );
 }

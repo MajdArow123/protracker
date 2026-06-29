@@ -2,10 +2,9 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
-  TrendingUp, X, LogOut, User, Sun, Moon, ChevronRight,
+  TrendingUp, X, LogOut, User, ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 
@@ -49,7 +48,6 @@ interface Props {
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
   const { user, logout } = useAuth();
-  const { isDark, toggle } = useTheme();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const nav = user?.role === 'Coach' ? coachNav : athleteNav;
@@ -121,14 +119,6 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
 
       {/* Bottom section */}
       <div className="px-3 py-3 border-t border-gray-800 space-y-1">
-        <button
-          onClick={toggle}
-          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-gray-800 hover:text-white transition-all cursor-pointer"
-        >
-          {isDark ? <Sun size={17} /> : <Moon size={17} />}
-          {isDark ? 'Light Mode' : 'Dark Mode'}
-        </button>
-
         <NavLink
           to={profilePath}
           onClick={onClose}

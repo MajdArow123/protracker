@@ -7,6 +7,7 @@ import { useMatchPerformance, useCreateMatchPerformance, useUpdateMatchPerforman
 import { useTrainingSessions, useCreateTrainingSession, useUpdateTrainingSession, useDeleteTrainingSession } from '../../hooks/useTrainingSessions';
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
+import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { ConfirmModal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
@@ -15,7 +16,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { clsx } from 'clsx';
 import {
-  ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, Salad,
+  ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,
   Plus, Edit2, Activity, Dumbbell, ShieldAlert, Star,
   Calendar, Clock, ChevronRight,
 } from 'lucide-react';
@@ -319,82 +320,177 @@ export function PlayerDetailPage() {
       <div className="p-4 lg:p-6">
         <AnimatePresence mode="wait">
           {/* Overview tab */}
-          {tab === 'overview' && (
-            <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4 max-w-2xl">
-              {/* Physical stats */}
-              {(player.age || player.height || player.weight || player.fitnessLevel) && (
-                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-3">Physical Profile</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {[
-                      { label: 'Age', value: player.age, unit: 'yrs' },
-                      { label: 'Height', value: player.height, unit: 'cm' },
-                      { label: 'Weight', value: player.weight, unit: 'kg' },
-                      { label: 'Fitness', value: player.fitnessLevel, unit: '/10' },
-                    ].filter(s => s.value).map(s => (
-                      <div key={s.label} className="text-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                        <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{s.label}</p>
-                        <p className="text-xl font-black text-gray-900 dark:text-white">{s.value}<span className="text-xs font-normal text-gray-400 ml-0.5">{s.unit}</span></p>
+          {tab === 'overview' && (() => {
+            const latestAssessment = assessments[0];
+            const firstAssessment = assessments[assessments.length - 1];
+            const radarData = latestAssessment?.statScores?.map(s => ({ subject: s.statCategoryName, value: s.score })) ?? [];
+            const firstAvg = firstAssessment?.statScores?.length
+              ? firstAssessment.statScores.reduce((sum, s) => sum + s.score, 0) / firstAssessment.statScores.length
+              : null;
+            const latestAvg = latestAssessment?.statScores?.length
+              ? latestAssessment.statScores.reduce((sum, s) => sum + s.score, 0) / latestAssessment.statScores.length
+              : null;
+            const progressPct = (firstAvg && latestAvg && assessments.length > 1)
+              ? Math.round(((latestAvg - firstAvg) / firstAvg) * 100)
+              : null;
+            const bestStat = latestAssessment?.statScores?.reduce((a, b) => a.score > b.score ? a : b, latestAssessment.statScores[0]);
+            const worstStat = latestAssessment?.statScores?.reduce((a, b) => a.score < b.score ? a : b, latestAssessment.statScores[0]);
+
+            return (
+              <motion.div key="overview" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                {/* Left column */}
+                <div className="lg:col-span-3 space-y-4">
+                  {(player.age || player.height || player.weight || player.fitnessLevel) && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">Physical Profile</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        {[
+                          { label: 'Age', value: player.age, unit: 'yrs' },
+                          { label: 'Height', value: player.height, unit: 'cm' },
+                          { label: 'Weight', value: player.weight, unit: 'kg' },
+                          { label: 'Fitness', value: player.fitnessLevel, unit: '/10' },
+                        ].filter(s => s.value).map(s => (
+                          <div key={s.label} className="text-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
+                            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{s.label}</p>
+                            <p className="text-xl font-black text-gray-900 dark:text-white">{s.value}<span className="text-xs font-normal text-gray-400 ml-0.5">{s.unit}</span></p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
+                  )}
+
+                  {player.goals && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-2">Goals</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{player.goals}</p>
+                    </div>
+                  )}
+
+                  {player.coachNotes && (
+                    <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-5">
+                      <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2">Coach Notes</h3>
+                      <p className="text-sm text-amber-600 dark:text-amber-300 leading-relaxed whitespace-pre-wrap">{player.coachNotes}</p>
+                    </div>
+                  )}
+
+                  {player.injuryNotes && (
+                    <div className="rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 p-5">
+                      <h3 className="font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2"><ShieldAlert size={15} /> Injury Notes</h3>
+                      <p className="text-sm text-red-600 dark:text-red-300 leading-relaxed whitespace-pre-wrap">{player.injuryNotes}</p>
+                    </div>
+                  )}
+
+                  {assessments.length > 0 && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-gray-900 dark:text-white">Recent Assessments</h3>
+                        <button onClick={() => navigate(`/players/${id}/assessment`)} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors cursor-pointer">
+                          View all
+                        </button>
+                      </div>
+                      <div className="space-y-2">
+                        {assessments.slice(0, 3).map(a => {
+                          const avg = a.statScores?.length ? (a.statScores.reduce((s, x) => s + x.score, 0) / a.statScores.length) : null;
+                          return (
+                            <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900 dark:text-white">{a.assessmentPeriodName}</p>
+                                <p className="text-xs text-gray-500">{new Date(a.dateRecorded).toLocaleDateString()}</p>
+                              </div>
+                              {avg !== null && (
+                                <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', avg > 7 ? 'bg-green-500/20 text-green-400' : avg >= 5 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400')}>
+                                  {avg.toFixed(1)}/10
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {!player.goals && !player.coachNotes && !player.injuryNotes && assessments.length === 0 && (
+                    <EmptyState
+                      icon={<Activity size={36} />}
+                      title="No profile data yet"
+                      description="Add goals, notes, and assessments to build this player's profile"
+                      action={{ label: 'Edit Player', onClick: () => navigate(`/players/${id}/edit`) }}
+                    />
+                  )}
+                </div>
+
+                {/* Right column */}
+                <div className="lg:col-span-2 space-y-4">
+                  {/* Skill radar */}
+                  <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-1">Skill Profile</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Latest assessment</p>
+                    {radarData.length > 0 ? (
+                      <RadarChartWrapper data={radarData} height={240} />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-40 text-center">
+                        <Activity size={28} className="text-gray-400 mb-2" />
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No assessment data yet</p>
+                        <button
+                          onClick={() => navigate(`/players/${id}/assessment`)}
+                          className="mt-3 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
+                        >
+                          Add Assessment
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
 
-              {player.goals && (
-                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-2">Goals</h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{player.goals}</p>
-                </div>
-              )}
-
-              {player.coachNotes && (
-                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-5">
-                  <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2">Coach Notes</h3>
-                  <p className="text-sm text-amber-600 dark:text-amber-300 leading-relaxed whitespace-pre-wrap">{player.coachNotes}</p>
-                </div>
-              )}
-
-              {player.injuryNotes && (
-                <div className="rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 p-5">
-                  <h3 className="font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2"><ShieldAlert size={15} /> Injury Notes</h3>
-                  <p className="text-sm text-red-600 dark:text-red-300 leading-relaxed whitespace-pre-wrap">{player.injuryNotes}</p>
-                </div>
-              )}
-
-              {/* Recent assessments summary */}
-              {assessments.length > 0 && (
-                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-bold text-gray-900 dark:text-white">Recent Assessments</h3>
-                    <button onClick={() => navigate(`/players/${id}/assessment`)} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors cursor-pointer">
-                      View all
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {assessments.slice(0, 3).map(a => (
-                      <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                  {/* Performance trend */}
+                  {progressPct !== null && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">Overall Progress</h3>
+                      <div className={clsx('flex items-center gap-3 p-3 rounded-xl', progressPct >= 0 ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20')}>
+                        {progressPct >= 0
+                          ? <TrendingUp size={22} className="text-green-400 flex-shrink-0" />
+                          : <TrendingDown size={22} className="text-red-400 flex-shrink-0" />}
                         <div>
-                          <p className="text-sm font-medium text-gray-900 dark:text-white">{a.assessmentPeriodName}</p>
-                          <p className="text-xs text-gray-500">{new Date(a.dateRecorded).toLocaleDateString()}</p>
+                          <p className={clsx('text-lg font-black', progressPct >= 0 ? 'text-green-400' : 'text-red-400')}>
+                            {progressPct >= 0 ? '+' : ''}{progressPct}%
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">since first assessment</p>
                         </div>
-                        <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{a.statScores?.length ?? 0} scores</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                    </div>
+                  )}
 
-              {!player.goals && !player.coachNotes && !player.injuryNotes && assessments.length === 0 && (
-                <EmptyState
-                  icon={<Activity size={36} />}
-                  title="No profile data yet"
-                  description="Add goals, notes, and assessments to build this player's profile"
-                  action={{ label: 'Edit Player', onClick: () => navigate(`/players/${id}/edit`) }}
-                />
-              )}
-            </motion.div>
-          )}
+                  {/* Quick stats */}
+                  {latestAssessment && (
+                    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">Quick Stats</h3>
+                      <div className="space-y-2.5">
+                        {bestStat && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Best Stat</span>
+                            <span className="text-xs font-semibold text-green-400">{bestStat.statCategoryName} — {bestStat.score}/10</span>
+                          </div>
+                        )}
+                        {worstStat && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Weakest Stat</span>
+                            <span className="text-xs font-semibold text-red-400">{worstStat.statCategoryName} — {worstStat.score}/10</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Assessments</span>
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{assessments.length} recorded</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">Last Assessment</span>
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{new Date(latestAssessment.dateRecorded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })()}
 
           {/* Injuries tab */}
           {tab === 'injuries' && (

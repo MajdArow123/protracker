@@ -18,6 +18,31 @@ public class AuthService : IAuthService
         _tokenService = tokenService;
     }
 
+    public async Task<(UserInfoDto User, string AccessToken, string RefreshToken)> RegisterAsync(RegisterRequest request)
+    {
+        var allowedRoles = new[] { "Coach", "Athlete" };
+        var role = allowedRoles.Contains(request.Role) ? request.Role : "Athlete";
+
+        var user = new ApplicationUser
+        {
+            UserName = request.Email,
+            Email = request.Email,
+            DisplayName = request.DisplayName,
+        };
+
+        var result = await _userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+            throw new ValidationApiException(string.Join("; ", result.Errors.Select(e => e.Description)));
+
+        await _userManager.AddToRoleAsync(user, role);
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var accessToken = _tokenService.CreateAccessToken(user, roles);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user.Id);
+
+        return (ToUserInfo(user, roles), accessToken, refreshToken);
+    }
+
     public async Task<(UserInfoDto User, string AccessToken, string RefreshToken)> LoginAsync(LoginRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email);

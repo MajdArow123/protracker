@@ -1,5 +1,6 @@
-import { Menu, Bell } from 'lucide-react';
+import { Menu, Bell, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { useLocation, Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
 
@@ -38,6 +39,7 @@ interface Props {
 
 export function Navbar({ onMenuClick }: Props) {
   const { user } = useAuth();
+  const { isDark, toggle } = useTheme();
   const location = useLocation();
   const title = getTitle(location.pathname);
 
@@ -56,6 +58,13 @@ export function Navbar({ onMenuClick }: Props) {
       </h1>
 
       <div className="flex items-center gap-2">
+        <button
+          onClick={toggle}
+          className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+          aria-label="Toggle theme"
+        >
+          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
         <button
           className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           aria-label="Notifications"

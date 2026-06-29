@@ -59,6 +59,16 @@ public static class DemoDataSeeder
         var beachVolleyPeriods = await EnsureWeeklyPeriodsAsync(context, beachVolleyTeam.Id, today);
         var tennisPeriods = await EnsureWeeklyPeriodsAsync(context, tennisTeam.Id, today);
 
+        // Guard: players + all related data are only seeded once.
+        if (await context.Players.AnyAsync())
+        {
+            await LinkAthleteToPlayerAsync(context, lucasWardLogin.Id, "Lucas Ward");
+            await LinkAthleteToPlayerAsync(context, marcusBellLogin.Id, "Marcus Bell");
+            await LinkAthleteToPlayerAsync(context, carlosSantosLogin.Id, "Carlos Santos Jr");
+            await LinkAthleteToPlayerAsync(context, alexWilliamsLogin.Id, "Alex Williams");
+            return;
+        }
+
         // --- Players ---
         // Soccer positions: Goalkeeper=1, Defender=2, Midfielder=3, Winger=4, Striker=5
         var soccerPlayers = new[]

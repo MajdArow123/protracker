@@ -1,19 +1,88 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Activity, ArrowLeft, AlertCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { clsx } from 'clsx';
+import {
+  Activity, AlertCircle, Mail, Lock, Eye, EyeOff,
+  User, ArrowRight, CheckCircle,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
+type AuthTab = 'signin' | 'register';
+type Role = 'Coach' | 'Athlete';
+
+const FLOATING_ICONS = [
+  { emoji: '⚽', x: '8%', y: '15%', dur: 6, delay: 0 },
+  { emoji: '🏀', x: '88%', y: '10%', dur: 7, delay: 1.2 },
+  { emoji: '🏐', x: '5%', y: '72%', dur: 8, delay: 0.5 },
+  { emoji: '🎾', x: '92%', y: '65%', dur: 6.5, delay: 2 },
+  { emoji: '🏋️', x: '50%', y: '5%', dur: 9, delay: 0.8 },
+  { emoji: '🏃', x: '75%', y: '85%', dur: 7.5, delay: 1.5 },
+];
+
+function FloatingIcon({ emoji, x, y, dur, delay }: typeof FLOATING_ICONS[0]) {
+  return (
+    <motion.div
+      className="fixed text-4xl select-none pointer-events-none"
+      style={{ left: x, top: y }}
+      animate={{ y: [0, -20, 0], rotate: [0, 8, -8, 0] }}
+      transition={{ duration: dur, delay, repeat: Infinity, ease: 'easeInOut' }}
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 0.12 }}
+    >
+      {emoji}
+    </motion.div>
+  );
+}
+
+function PasswordStrength({ password }: { password: string }) {
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[0-9]/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const strength = checks.filter(Boolean).length;
+  const colors = ['bg-red-500', 'bg-orange-500', 'bg-amber-500', 'bg-green-500'];
+  const labels = ['Weak', 'Fair', 'Good', 'Strong'];
+
+  if (!password) return null;
+  return (
+    <div className="mt-2">
+      <div className="flex gap-1 mb-1">
+        {[0, 1, 2, 3].map(i => (
+          <div key={i} className={`flex-1 h-1 rounded-full transition-all duration-300 ${i < strength ? colors[strength - 1] : 'bg-gray-700'}`} />
+        ))}
+      </div>
+      <p className="text-xs text-gray-500">{labels[strength - 1] ?? ''}</p>
+    </div>
+  );
+}
+
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const navigate = useNavigate();
+  const [tab, setTab] = useState<AuthTab>('signin');
+
+  // Sign in state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
+  // Register state
+  const [regName, setRegName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirm, setRegConfirm] = useState('');
+  const [regRole, setRegRole] = useState<Role>('Coach');
+  const [showRegPassword, setShowRegPassword] = useState(false);
+  const [regError, setRegError] = useState('');
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !password) { setError('Please enter email and password'); return; }
     setError('');
@@ -28,111 +97,278 @@ export function LoginPage() {
     }
   };
 
+  const handleRegister = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!regName.trim()) { setRegError('Display name is required'); return; }
+    if (!regEmail.trim()) { setRegError('Email is required'); return; }
+    if (regPassword.length < 8) { setRegError('Password must be at least 8 characters'); return; }
+    if (regPassword !== regConfirm) { setRegError('Passwords do not match'); return; }
+    setRegError('');
+    setIsRegistering(true);
+    try {
+      await register(regName, regEmail, regPassword, regRole);
+      navigate(regRole === 'Coach' ? '/dashboard' : '/player-dashboard');
+    } catch (err: unknown) {
+      setRegError(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  const inputCls = 'w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm';
+
   return (
-    <div className="min-h-screen flex bg-gray-950">
-      {/* Left: branding panel */}
-      <div className="hidden lg:flex flex-col justify-between w-1/2 bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 p-12 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-300 rounded-full blur-2xl" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-2.5">
-            <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center border border-white/30">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-[#080b14]">
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/50 via-[#080b14] to-purple-950/40" />
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-purple-600/10 rounded-full blur-3xl" />
+
+      {/* Floating sport emojis */}
+      {FLOATING_ICONS.map((icon, i) => <FloatingIcon key={i} {...icon} />)}
+
+      {/* Glass card */}
+      <motion.div
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="relative z-10 w-full max-w-md mx-4"
+      >
+        <div className="backdrop-blur-xl bg-white/[0.04] border border-white/10 rounded-3xl shadow-2xl shadow-black/50 p-8">
+          {/* Logo */}
+          <div className="flex items-center justify-center gap-2.5 mb-8">
+            <motion.div
+              animate={{ boxShadow: ['0 0 0 0 rgba(99,102,241,0.4)', '0 0 0 8px rgba(99,102,241,0)', '0 0 0 0 rgba(99,102,241,0)'] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="h-10 w-10 rounded-xl bg-indigo-600 flex items-center justify-center"
+            >
               <Activity size={21} className="text-white" />
-            </div>
-            <span className="text-xl font-black text-white tracking-tight">ProTracker</span>
+            </motion.div>
+            <span className="text-xl font-black tracking-tight">
+              <span className="text-indigo-400">Pro</span><span className="text-white">Tracker</span>
+            </span>
           </div>
-        </div>
-        <div className="relative z-10">
-          <h2 className="text-4xl font-black text-white leading-tight tracking-tight mb-4">
-            The platform for<br />elite performance.
-          </h2>
-          <p className="text-indigo-200 text-lg leading-relaxed">
-            Track, analyze, and improve every athlete on your roster with AI-powered insights.
-          </p>
-        </div>
-        <div className="relative z-10 flex items-center gap-6 text-sm text-indigo-200">
-          <span>Multi-Sport</span>
-          <span>AI-Powered</span>
-          <span>Real-time Analytics</span>
-        </div>
-      </div>
 
-      {/* Right: login form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white mb-8 transition-colors cursor-pointer"
-          >
-            <ArrowLeft size={15} /> Back to home
-          </button>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-          >
-            {/* Mobile logo */}
-            <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-              <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <Activity size={18} className="text-white" />
-              </div>
-              <span className="text-lg font-black text-white tracking-tight">ProTracker</span>
-            </div>
-
-            <h1 className="text-2xl font-black text-white mb-1">Welcome back</h1>
-            <p className="text-gray-400 text-sm mb-8">Sign in to your account to continue</p>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="coach@example.com"
-                  autoComplete="email"
-                  required
-                  className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Password</label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete="current-password"
-                  required
-                  className="w-full px-4 py-3 rounded-xl bg-gray-900 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm"
-                />
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/40 text-red-400 text-sm">
-                  <AlertCircle size={14} className="flex-shrink-0" />
-                  {error}
-                </div>
-              )}
-
+          {/* Tab switcher */}
+          <div className="flex gap-1 p-1 bg-white/5 rounded-xl mb-6">
+            {(['signin', 'register'] as AuthTab[]).map(t => (
               <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2"
+                key={t}
+                onClick={() => { setTab(t); setError(''); setRegError(''); }}
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all cursor-pointer ${
+                  tab === t
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                    : 'text-gray-400 hover:text-white'
+                }`}
               >
-                {isLoading ? 'Signing in…' : 'Sign In'}
+                {t === 'signin' ? 'Sign In' : 'Create Account'}
               </button>
-            </form>
+            ))}
+          </div>
 
-            <p className="text-center text-xs text-gray-600 mt-6">
-              Professional Sports Performance Platform
-            </p>
-          </motion.div>
+          <AnimatePresence mode="wait">
+            {tab === 'signin' ? (
+              <motion.form
+                key="signin"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleSignIn}
+                className="space-y-4"
+              >
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="Email address"
+                    autoComplete="email"
+                    required
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Password"
+                    autoComplete="current-password"
+                    required
+                    className={clsx(inputCls, 'pr-10')}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                  </button>
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/40 text-red-400 text-sm">
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2"
+                >
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>Sign In <ArrowRight size={15} /></>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTab('register')}
+                  className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer mt-2"
+                >
+                  Don't have an account? <span className="text-indigo-400 font-semibold">Sign up free</span>
+                </button>
+              </motion.form>
+            ) : (
+              <motion.form
+                key="register"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleRegister}
+                className="space-y-4"
+              >
+                <div className="relative">
+                  <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="text"
+                    value={regName}
+                    onChange={e => setRegName(e.target.value)}
+                    placeholder="Display name"
+                    autoComplete="name"
+                    required
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="relative">
+                  <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="email"
+                    value={regEmail}
+                    onChange={e => setRegEmail(e.target.value)}
+                    placeholder="Email address"
+                    autoComplete="email"
+                    required
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <div className="relative">
+                    <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input
+                      type={showRegPassword ? 'text' : 'password'}
+                      value={regPassword}
+                      onChange={e => setRegPassword(e.target.value)}
+                      placeholder="Password"
+                      autoComplete="new-password"
+                      required
+                      className={clsx(inputCls, 'pr-10')}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegPassword(v => !v)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer"
+                    >
+                      {showRegPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                  <PasswordStrength password={regPassword} />
+                </div>
+
+                <div className="relative">
+                  <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input
+                    type="password"
+                    value={regConfirm}
+                    onChange={e => setRegConfirm(e.target.value)}
+                    placeholder="Confirm password"
+                    autoComplete="new-password"
+                    required
+                    className={clsx(inputCls, regConfirm && (regConfirm === regPassword ? 'border-green-500/50' : 'border-red-500/50'))}
+                  />
+                  {regConfirm && regConfirm === regPassword && (
+                    <CheckCircle size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400" />
+                  )}
+                </div>
+
+                {/* Role selector */}
+                <div>
+                  <p className="text-xs text-gray-400 mb-2 font-medium">I am a…</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['Coach', 'Athlete'] as Role[]).map(role => (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setRegRole(role)}
+                        className={clsx(
+                          'flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all cursor-pointer',
+                          regRole === role
+                            ? 'border-indigo-500 bg-indigo-600/20 text-white'
+                            : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:text-white'
+                        )}
+                      >
+                        <span className="text-2xl">{role === 'Coach' ? '🏋️' : '🏃'}</span>
+                        <span className="text-xs font-semibold">{role}</span>
+                        {regRole === role && <CheckCircle size={12} className="text-indigo-400" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {regError && (
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/40 text-red-400 text-sm">
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    {regError}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isRegistering}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2"
+                >
+                  {isRegistering ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <>Create Account <ArrowRight size={15} /></>
+                  )}
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+
+        {/* Bottom stats bar */}
+        <p className="text-center text-xs text-gray-600 mt-6 flex items-center justify-center gap-3">
+          <span>5 Sports</span>
+          <span className="w-1 h-1 rounded-full bg-gray-700" />
+          <span>30+ Players</span>
+          <span className="w-1 h-1 rounded-full bg-gray-700" />
+          <span>Real-time Analytics</span>
+        </p>
+      </motion.div>
     </div>
   );
 }
+

@@ -15,6 +15,15 @@ public class AuthController : ApiControllerBase
         _authService = authService;
     }
 
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<ActionResult> Register(RegisterRequest request)
+    {
+        var (user, accessToken, refreshToken) = await _authService.RegisterAsync(request);
+        WriteAuthCookies(accessToken, refreshToken);
+        return Success(new LoginResponse { User = user, AccessToken = accessToken, RefreshToken = refreshToken });
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult> Login(LoginRequest request)

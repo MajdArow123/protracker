@@ -1,5 +1,13 @@
 namespace ProTracker.Dtos;
 
+public class RegisterRequest
+{
+    public string DisplayName { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string Role { get; set; } = "Athlete"; // "Coach" or "Athlete"
+}
+
 public class LoginRequest
 {
     public string Email { get; set; } = "";
