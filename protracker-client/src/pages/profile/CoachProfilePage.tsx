@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   User, Shield, Users, ClipboardList, TrendingUp,
@@ -14,11 +14,11 @@ function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 }
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
-  show: (i = 0) => ({
+  show: (i: any) => ({
     opacity: 1, y: 0,
-    transition: { duration: 0.35, delay: i * 0.08 },
+    transition: { duration: 0.35, delay: (i ?? 0) * 0.08 },
   }),
 };
 

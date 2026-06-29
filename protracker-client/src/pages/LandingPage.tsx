@@ -1,17 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import {
   Activity, BarChart3, Brain, Salad, ShieldAlert, FileText,
   Trophy, Users, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
   Target, Heart, CheckCircle,
 } from 'lucide-react';
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
-  show: (i = 0) => ({
+  show: (i: any) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, delay: i * 0.1, ease: 'easeOut' },
+    transition: { duration: 0.5, delay: (i ?? 0) * 0.1, ease: 'easeOut' },
   }),
 };
 

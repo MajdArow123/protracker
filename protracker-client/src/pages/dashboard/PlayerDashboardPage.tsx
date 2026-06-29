@@ -1,4 +1,4 @@
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { PageWrapper } from '../../components/layout/PageWrapper';
@@ -12,11 +12,11 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
-  show: (i = 0) => ({
+  show: (i: any) => ({
     opacity: 1, y: 0,
-    transition: { duration: 0.35, delay: i * 0.07 },
+    transition: { duration: 0.35, delay: (i ?? 0) * 0.07 },
   }),
 };
 
