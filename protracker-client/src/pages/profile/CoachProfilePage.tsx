@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
-  User, Shield, Users, ClipboardList, TrendingUp,
+  Shield, Users, ClipboardList, TrendingUp,
   Mail, Calendar, Edit2, Check, X, Eye, EyeOff,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import {
   Activity, BarChart3, Brain, Salad, ShieldAlert, FileText,
-  Trophy, Users, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
+  Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
   Target, Heart, CheckCircle,
 } from 'lucide-react';
 

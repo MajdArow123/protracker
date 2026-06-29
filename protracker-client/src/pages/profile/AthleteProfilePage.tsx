@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import {
-  Activity, Calendar, User, Mail, Eye, EyeOff,
-  TrendingUp, ShieldAlert, Salad, Check, X,
+  Activity, User, Mail, Eye, EyeOff,
+  TrendingUp, ShieldAlert, Salad,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
