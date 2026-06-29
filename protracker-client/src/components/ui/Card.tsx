@@ -15,19 +15,20 @@ export function Card({ children, header, footer, className, hover, onClick }: Pr
     <div
       onClick={onClick}
       className={clsx(
-        'rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm overflow-hidden',
-        hover && 'transition-transform hover:scale-[1.01] hover:shadow-md cursor-pointer',
+        'rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-sm overflow-hidden',
+        hover && 'transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer',
+        onClick && 'cursor-pointer',
         className
       )}
     >
       {header && (
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 font-semibold text-gray-800 dark:text-gray-200">
+        <div className="px-5 py-4 border-b border-gray-100 dark:border-gray-800 font-semibold text-gray-900 dark:text-white text-sm">
           {header}
         </div>
       )}
-      <div className="px-6 py-4">{children}</div>
+      <div className="px-5 py-4">{children}</div>
       {footer && (
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+        <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
           {footer}
         </div>
       )}

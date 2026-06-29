@@ -28,6 +28,9 @@ import { TeamReportPage } from './pages/reports/TeamReportPage';
 import { ComparePlayersPage } from './pages/reports/ComparePlayersPage';
 import { FoodAlternativesPage } from './pages/nutrition/FoodAlternativesPage';
 import { PageSpinner } from './components/ui/Spinner';
+import { LandingPage } from './pages/LandingPage';
+import { CoachProfilePage } from './pages/profile/CoachProfilePage';
+import { AthleteProfilePage } from './pages/profile/AthleteProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,7 +44,7 @@ const queryClient = new QueryClient({
 function RootRedirect() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <PageSpinner />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <LandingPage />;
   return (
     <Navigate
       to={user.role === 'Coach' ? '/dashboard' : '/player-dashboard'}
@@ -84,6 +87,7 @@ function AppRoutes() {
             <Route path="/reports/team/:id" element={<TeamReportPage />} />
             <Route path="/reports/compare" element={<ComparePlayersPage />} />
             <Route path="/nutrition/food-alternatives" element={<FoodAlternativesPage />} />
+            <Route path="/profile" element={<CoachProfilePage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['Athlete']} />}>
             <Route
@@ -102,6 +106,7 @@ function AppRoutes() {
               path="/player-dashboard/improvement"
               element={<PlayerImprovementDashPage />}
             />
+            <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
           </Route>
         </Route>
       </Route>
