@@ -15,8 +15,9 @@ import {
 } from '../../hooks/useNutrition';
 import {
   ArrowLeft, Plus, Edit2, Trash2, ShieldAlert, Salad, Droplets,
-  Zap, Apple, Info, Utensils, ChevronDown, ChevronUp,
+  Zap, Apple, Info, Utensils, ChevronDown, ChevronUp, Sparkles,
 } from 'lucide-react';
+import { useGenerateNutritionGuidance } from '../../hooks/useAI';
 import { clsx } from 'clsx';
 import type { NutritionProfileItem, NutritionGuidance } from '../../types';
 
@@ -200,8 +201,10 @@ export function NutritionPage() {
   const deleteItem = useDeleteProfileItem(playerId);
   const createGuidance = useCreateGuidance();
   const updateGuidance = useUpdateGuidance();
+  const generateAI = useGenerateNutritionGuidance();
 
   const [tab, setTab] = useState<Tab>('profile');
+  const [aiError, setAiError] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<NutritionProfileItem | null>(null);
   const [showNewItem, setShowNewItem] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>(EMPTY_PROFILE);
@@ -240,6 +243,20 @@ export function NutritionPage() {
       else { await createGuidance.mutateAsync(payload); showToast('Guidance created', 'success'); setShowNewGuidance(false); }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
+
+  async function handleGenerateAI() {
+    setAiError(null);
+    try {
+      await generateAI.mutateAsync(playerId);
+      showToast('Nutrition plan generated! Review before saving.', 'success');
+    } catch {
+      setAiError('AI generation failed. Please try again.');
+    }
+  }
+
+  const isGenerating = generateAI.isPending;
+  const hardRestrictions = profileItems.filter(r => r.severity === 'Hard');
+  const consideredLabels = profileItems.map(r => r.specificItem || r.category).slice(0, 5);
 
   if (loadingPlayer || loadingProfile) return <PageSpinner />;
 
@@ -360,10 +377,51 @@ export function NutritionPage() {
       {tab === 'guidance' && (
         <div className="max-w-2xl space-y-4">
           {!isGuidanceFormOpen && (
-            <div className="flex justify-end">
-              <button onClick={openNewGuidance} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                <Plus size={15} /> New Guidance
-              </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <button
+                  onClick={handleGenerateAI}
+                  disabled={isGenerating}
+                  className={clsx(
+                    'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all cursor-pointer',
+                    'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500',
+                    'shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40',
+                    'disabled:opacity-60 disabled:cursor-not-allowed',
+                    isGenerating && 'animate-pulse'
+                  )}
+                >
+                  <Sparkles size={15} />
+                  {isGenerating
+                    ? <span className="flex items-center gap-1">Generating<span className="inline-flex gap-0.5">{[0,1,2].map(i=><span key={i} className="w-1 h-1 bg-white rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}</span></span>
+                    : 'Generate with AI'
+                  }
+                </button>
+                <button onClick={openNewGuidance} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
+                  <Plus size={15} /> New Guidance
+                </button>
+              </div>
+
+              {consideredLabels.length > 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  AI will consider: <span className="text-violet-600 dark:text-violet-400 font-medium">{consideredLabels.join(', ')}</span>
+                  {hardRestrictions.length > 0 && <span className="ml-1 text-red-500 font-semibold">({hardRestrictions.length} hard restriction{hardRestrictions.length > 1 ? 's' : ''})</span>}
+                </p>
+              )}
+
+              {isGenerating && (
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
+                  <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
+                  <span>Generating personalized nutrition plan…</span>
+                  <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~5–10 sec</span>
+                </div>
+              )}
+
+              {aiError && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+                  {aiError}
+                  <button onClick={handleGenerateAI} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+                </div>
+              )}
             </div>
           )}
 
@@ -402,8 +460,8 @@ export function NutritionPage() {
             <EmptyState
               icon={<Salad size={36} />}
               title="No nutrition guidance yet"
-              description="Create a nutrition plan to guide this player's diet and recovery"
-              action={{ label: 'Create Guidance', onClick: openNewGuidance }}
+              description="Generate an AI-powered plan or create one manually"
+              action={{ label: 'Generate with AI', onClick: handleGenerateAI }}
             />
           ) : (
             <div className="space-y-4">

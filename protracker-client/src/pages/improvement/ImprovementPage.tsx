@@ -7,7 +7,9 @@ import { PageSpinner } from '../../components/ui/Spinner';
 import { useToast } from '../../context/ToastContext';
 import { usePlayer } from '../../hooks/usePlayers';
 import { usePlayerImprovementPlans, useCreateImprovementPlan, useUpdateImprovementPlan } from '../../hooks/useImprovement';
-import { ArrowLeft, Edit2, Plus } from 'lucide-react';
+import { useGenerateImprovementPlan } from '../../hooks/useAI';
+import { ArrowLeft, Edit2, Plus, Sparkles, Lightbulb } from 'lucide-react';
+import { clsx } from 'clsx';
 import type { ImprovementPlan } from '../../types';
 
 const TEXTAREA_CLS = 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none';
@@ -23,6 +25,20 @@ const PLAN_FIELDS: { key: keyof ImprovementPlan; label: string; placeholder: str
 
 type FormValues = Partial<Record<keyof ImprovementPlan, string>>;
 
+function DotLoader() {
+  return (
+    <span className="inline-flex items-center gap-0.5 ml-1">
+      {[0, 1, 2].map(i => (
+        <span
+          key={i}
+          className="w-1 h-1 bg-current rounded-full animate-bounce"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </span>
+  );
+}
+
 export function ImprovementPage() {
   const { id } = useParams<{ id: string }>();
   const playerId = Number(id);
@@ -33,10 +49,13 @@ export function ImprovementPage() {
   const { data: plans = [], isLoading: loadingPlans } = usePlayerImprovementPlans(playerId);
   const createPlan = useCreateImprovementPlan();
   const updatePlan = useUpdateImprovementPlan();
+  const generateAI = useGenerateImprovementPlan();
 
   const [editing, setEditing] = useState<ImprovementPlan | null>(null);
   const [showNew, setShowNew] = useState(false);
   const [values, setValues] = useState<FormValues>({});
+  const [isAIForm, setIsAIForm] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
 
   useEffect(() => {
     if (editing) {
@@ -53,16 +72,29 @@ export function ImprovementPage() {
   const set = (key: keyof ImprovementPlan) => (e: React.ChangeEvent<HTMLTextAreaElement>) =>
     setValues(prev => ({ ...prev, [key]: e.target.value }));
 
+  async function handleGenerateAI() {
+    setAiError(null);
+    try {
+      const plan = await generateAI.mutateAsync(playerId);
+      setEditing(plan);
+      setShowNew(false);
+      setIsAIForm(true);
+      showToast('AI plan generated! Review and save changes.', 'success');
+    } catch {
+      setAiError('AI generation failed. Please try again.');
+    }
+  }
+
   async function save() {
     const payload = Object.fromEntries(
       PLAN_FIELDS.map(f => [f.key, values[f.key] || undefined])
     );
-
     try {
       if (editing) {
         await updatePlan.mutateAsync({ id: editing.id, data: payload });
         showToast('Plan updated', 'success');
         setEditing(null);
+        setIsAIForm(false);
       } else {
         await createPlan.mutateAsync({ ...payload, playerId } as Parameters<typeof createPlan.mutateAsync>[0]);
         showToast('Plan created', 'success');
@@ -73,7 +105,8 @@ export function ImprovementPage() {
     }
   }
 
-  const isLoading = createPlan.isPending || updatePlan.isPending;
+  const isSaving = createPlan.isPending || updatePlan.isPending;
+  const isGenerating = generateAI.isPending;
 
   if (loadingPlayer || loadingPlans) return <PageSpinner />;
 
@@ -83,11 +116,27 @@ export function ImprovementPage() {
     <PageWrapper
       title={`Improvement Plan — ${player?.fullName ?? ''}`}
       actions={
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {!isFormOpen && (
-            <Button size="sm" onClick={() => { setShowNew(true); setEditing(null); }}>
-              <Plus size={16} /> New Plan
-            </Button>
+            <>
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+                className={clsx(
+                  'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all cursor-pointer',
+                  'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500',
+                  'shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40',
+                  'disabled:opacity-60 disabled:cursor-not-allowed',
+                  isGenerating && 'animate-pulse'
+                )}
+              >
+                <Sparkles size={15} />
+                {isGenerating ? <span className="flex items-center">Claude is thinking<DotLoader /></span> : 'Generate with AI'}
+              </button>
+              <Button size="sm" onClick={() => { setShowNew(true); setEditing(null); setIsAIForm(false); }}>
+                <Plus size={16} /> New Plan
+              </Button>
+            </>
           )}
           <Button variant="ghost" size="sm" onClick={() => navigate(`/players/${id}`)}>
             <ArrowLeft size={16} /> Back
@@ -95,9 +144,39 @@ export function ImprovementPage() {
         </div>
       }
     >
+      {aiError && (
+        <div className="max-w-2xl mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+          {aiError}
+          <button onClick={handleGenerateAI} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+        </div>
+      )}
+
+      {isGenerating && (
+        <div className="max-w-2xl mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
+          <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
+          <span>Claude is analyzing player data and generating a personalized plan…</span>
+          <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~5–10 sec</span>
+        </div>
+      )}
+
       {isFormOpen && (
         <div className="max-w-2xl space-y-6 mb-8">
-          <Card header={editing ? 'Edit Improvement Plan' : 'New Improvement Plan'}>
+          <Card header={
+            <div className="flex items-center gap-2">
+              {editing ? 'Edit Improvement Plan' : 'New Improvement Plan'}
+              {isAIForm && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-semibold border border-violet-200 dark:border-violet-700">
+                  <Sparkles size={10} /> AI Generated
+                </span>
+              )}
+            </div>
+          }>
+            {isAIForm && (
+              <div className="flex items-start gap-2 mb-4 px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-700 text-xs text-violet-700 dark:text-violet-300">
+                <Lightbulb size={14} className="mt-0.5 flex-shrink-0" />
+                <span>Review the AI-generated plan below and edit any fields before saving. Clicking Save will update it with your edits.</span>
+              </div>
+            )}
             <div className="space-y-4">
               {PLAN_FIELDS.map(f => (
                 <div key={String(f.key)}>
@@ -113,13 +192,21 @@ export function ImprovementPage() {
               ))}
             </div>
           </Card>
-          <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => { setEditing(null); setShowNew(false); }}>
-              Cancel
-            </Button>
-            <Button onClick={save} isLoading={isLoading}>
-              {editing ? 'Save Changes' : 'Create Plan'}
-            </Button>
+          <div className="flex justify-between gap-3">
+            {isAIForm && (
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles size={14} />
+                {isGenerating ? 'Regenerating…' : 'Regenerate'}
+              </button>
+            )}
+            <div className="flex gap-3 ml-auto">
+              <Button variant="secondary" onClick={() => { setEditing(null); setShowNew(false); setIsAIForm(false); }}>Cancel</Button>
+              <Button onClick={save} isLoading={isSaving}>{editing ? 'Save Changes' : 'Create Plan'}</Button>
+            </div>
           </div>
         </div>
       )}
@@ -128,29 +215,36 @@ export function ImprovementPage() {
         {plans.length === 0 && !isFormOpen ? (
           <div className="text-center py-12 text-gray-500 dark:text-gray-400">
             <p className="mb-4">No improvement plan yet.</p>
-            <Button onClick={() => setShowNew(true)}>
-              <Plus size={16} /> Create First Plan
-            </Button>
+            <div className="flex justify-center gap-3">
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all shadow-lg shadow-indigo-500/25 cursor-pointer disabled:opacity-60"
+              >
+                <Sparkles size={15} /> {isGenerating ? 'Generating…' : 'Generate with AI'}
+              </button>
+              <Button onClick={() => setShowNew(true)}><Plus size={16} /> Create Manually</Button>
+            </div>
           </div>
         ) : (
           plans.map((plan, i) => (
             <Card key={plan.id}>
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">
-                    {i === 0 ? 'Latest Plan' : `Plan — ${plan.createdDate}`}
-                  </p>
-                  <p className="text-xs text-gray-500">{plan.createdDate}</p>
-                  {plan.isAIGenerated && (
-                    <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">AI Generated</span>
-                  )}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold text-gray-900 dark:text-white">
+                      {i === 0 ? 'Latest Plan' : `Plan — ${new Date(plan.createdDate).toLocaleDateString()}`}
+                    </p>
+                    {plan.isAIGenerated && (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-semibold border border-violet-200 dark:border-violet-700">
+                        <Sparkles size={9} /> AI
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500">{new Date(plan.createdDate).toLocaleDateString()}</p>
                 </div>
                 {i === 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => { setEditing(plan); setShowNew(false); }}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => { setEditing(plan); setShowNew(false); setIsAIForm(false); }}>
                     <Edit2 size={16} />
                   </Button>
                 )}

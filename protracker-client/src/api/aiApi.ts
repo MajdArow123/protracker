@@ -1,0 +1,29 @@
+import api from './axiosInstance';
+import type { ImprovementPlan, NutritionGuidance } from '../types';
+
+export interface AIInsights {
+  insights: string[];
+  generatedAt: string;
+}
+
+export const aiApi = {
+  generateImprovementPlan: async (playerId: number): Promise<ImprovementPlan> => {
+    const res = await api.post<ImprovementPlan>(`/api/ai/improvement-plan/${playerId}`);
+    return res.data;
+  },
+
+  generateNutritionGuidance: async (playerId: number): Promise<NutritionGuidance> => {
+    const res = await api.post<NutritionGuidance>(`/api/ai/nutrition-guidance/${playerId}`);
+    return res.data;
+  },
+
+  generatePerformanceInsights: async (playerId: number): Promise<AIInsights> => {
+    const res = await api.post<AIInsights>(`/api/ai/performance-insights/${playerId}`);
+    return res.data;
+  },
+
+  generateTeamInsights: async (teamId: number): Promise<AIInsights> => {
+    const res = await api.post<AIInsights>(`/api/ai/team-insights/${teamId}`);
+    return res.data;
+  },
+};

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Trophy, Zap } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Trophy, Zap, Sparkles, Lightbulb } from 'lucide-react';
+import { useGenerateTeamInsights } from '../../hooks/useAI';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -33,6 +35,22 @@ export function TeamReportPage() {
   );
 
   const { team, playerCount, averageScoreByCategory, playerAverageScores, activeInjuryCount, activeInjuries, players } = report;
+  const [aiInsights, setAiInsights] = useState<string[] | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const generateInsights = useGenerateTeamInsights();
+
+  async function handleGenerateInsights() {
+    if (!teamId) return;
+    setAiError(null);
+    try {
+      const result = await generateInsights.mutateAsync(teamId);
+      setAiInsights(result.insights);
+    } catch {
+      setAiError('AI analysis failed. Please try again.');
+    }
+  }
+
+  const isGenerating = generateInsights.isPending;
 
   const barData = playerAverageScores.map(p => ({
     name: p.playerName.split(' ')[0], // first name only for chart
@@ -193,6 +211,53 @@ export function TeamReportPage() {
             Not yet assessed:{' '}
             {playerAverageScores.filter(p => p.averageScore === 0).map(p => p.playerName).join(', ')}
           </div>
+        )}
+      </Card>
+
+      {/* AI Team Analysis */}
+      <Card header={
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <span className="flex items-center gap-2">
+            <Sparkles size={15} className="text-violet-500" />
+            AI Team Analysis
+          </span>
+          <button
+            onClick={handleGenerateInsights}
+            disabled={isGenerating}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <Sparkles size={12} />
+            {aiInsights ? 'Regenerate' : 'Generate Team Insights'}
+          </button>
+        </div>
+      }>
+        {isGenerating && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
+            <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
+            <span>Analyzing team performance data…</span>
+            <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~5–10 sec</span>
+          </div>
+        )}
+        {aiError && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+            {aiError}
+            <button onClick={handleGenerateInsights} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+          </div>
+        )}
+        {!aiInsights && !isGenerating && !aiError && (
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+            Click "Generate Team Insights" to get strategic analysis from Claude.
+          </p>
+        )}
+        {aiInsights && !isGenerating && (
+          <ul className="space-y-3">
+            {aiInsights.map((insight, i) => (
+              <li key={i} className="flex items-start gap-3 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
+                <Lightbulb size={15} className="text-violet-500 mt-0.5 flex-shrink-0" />
+                <span className="text-sm text-gray-800 dark:text-gray-200">{insight}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
 

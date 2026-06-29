@@ -134,6 +134,18 @@ builder.Services.AddScoped<IInjuryService, InjuryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 
+// AI service — reads API key from env var first, then appsettings
+var anthropicKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
+    ?? builder.Configuration["Anthropic:ApiKey"]
+    ?? "";
+builder.Services.AddHttpClient<IAIService, AIService>(client =>
+{
+    client.BaseAddress = new Uri("https://api.anthropic.com/");
+    client.DefaultRequestHeaders.Add("x-api-key", anthropicKey);
+    client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
+
 var app = builder.Build();
 
 // Auto-apply migrations and seed roles on startup
