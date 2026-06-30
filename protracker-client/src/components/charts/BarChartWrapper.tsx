@@ -41,13 +41,6 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
-function getBarColor(value: number): string {
-  if (value < 4)  return '#ef4444'; // red
-  if (value < 6)  return '#f59e0b'; // amber
-  if (value < 7.5) return '#6366f1'; // indigo (average range)
-  return '#10b981'; // emerald — strong performer
-}
-
 function getBarGradientId(value: number): string {
   if (value < 4)  return 'barGrad-red';
   if (value < 6)  return 'barGrad-amber';
