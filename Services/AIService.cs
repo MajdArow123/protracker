@@ -6,7 +6,7 @@ namespace ProTracker.Services;
 
 public interface IAIService
 {
-    Task<string> GenerateTextAsync(string prompt);
+    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null);
 }
 
 public class AIService : IAIService
@@ -24,12 +24,12 @@ public class AIService : IAIService
         _logger = logger;
     }
 
-    public async Task<string> GenerateTextAsync(string prompt)
+    public async Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null)
     {
         var body = new
         {
             model = _model,
-            max_tokens = _maxTokens,
+            max_tokens = maxTokensOverride ?? _maxTokens,
             messages = new[] { new { role = "user", content = prompt } }
         };
 
@@ -58,7 +58,14 @@ public class AIService : IAIService
     // Claude sometimes wraps the JSON in ```json ... ``` fences
     private static string StripMarkdownCodeBlock(string text)
     {
-        var match = Regex.Match(text.Trim(), @"```(?:json)?\s*([\s\S]*?)```");
-        return match.Success ? match.Groups[1].Value.Trim() : text.Trim();
+        var s = text.Trim();
+        if (!s.StartsWith("```")) return s;
+        // Remove opening fence line
+        var nl = s.IndexOf('\n');
+        if (nl >= 0) s = s[(nl + 1)..];
+        // Remove closing fence if present (may be absent if response was truncated)
+        var lastFence = s.LastIndexOf("```");
+        if (lastFence >= 0) s = s[..lastFence];
+        return s.Trim();
     }
 }
