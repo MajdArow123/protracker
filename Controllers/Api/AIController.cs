@@ -208,8 +208,9 @@ public class AIController : ApiControllerBase
             : "None recorded";
 
         var prompt = BuildWeeklyNutritionPrompt(player, restrictionBlock);
-        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 4096, modelOverride: "claude-haiku-4-5-20251001");
-        _logger.LogInformation("AI raw response (first 300 chars): {Raw}", raw.Length > 300 ? raw[..300] : raw);
+        // Prefill forces the model to begin its output with valid JSON — no preamble, no placeholders.
+        const string prefill = "{\"days\":[";
+        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 4096, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
 
         WeeklyNutritionPlanDto planDto;
         try
@@ -518,16 +519,17 @@ public class AIController : ApiControllerBase
 
     private static string BuildWeeklyNutritionPrompt(Player p, string restrictionBlock)
     {
-        return $"You are a sports nutritionist creating a weekly meal plan.\n\n"
-            + $"ATHLETE: {p.FullName}, {p.Sport.Name} {p.Position.Name}, age {p.Age}\n"
-            + $"RESTRICTIONS — never use these: {restrictionBlock}\n\n"
-            + "Create a 7-day plan (Monday through Sunday). Use DIFFERENT meals every day.\n"
-            + "Each day has exactly 4 meals: Breakfast (7:00 AM), Lunch (12:30 PM), Snack (3:30 PM), Dinner (7:00 PM).\n"
-            + "Each meal has exactly 3 food items with realistic macros.\n\n"
-            + "Respond with ONLY a JSON object — no markdown fences, no explanation.\n"
-            + "Every string and number must be a real value. Use this exact structure:\n\n"
-            + "{\"days\":[{\"dayOfWeek\":\"Monday\",\"calories\":2800,\"macros\":{\"protein\":160,\"carbs\":320,\"fats\":80},\"meals\":[{\"mealType\":\"Breakfast\",\"time\":\"7:00 AM\",\"items\":[{\"food\":\"Rolled Oats\",\"portion\":\"80g\",\"calories\":300,\"protein\":10,\"carbs\":54,\"fats\":6},{\"food\":\"Banana\",\"portion\":\"1 medium\",\"calories\":90,\"protein\":1,\"carbs\":23,\"fats\":0},{\"food\":\"Whole Milk\",\"portion\":\"200ml\",\"calories\":130,\"protein\":7,\"carbs\":10,\"fats\":7}]},{\"mealType\":\"Lunch\",\"time\":\"12:30 PM\",\"items\":[{\"food\":\"Chicken Breast\",\"portion\":\"150g grilled\",\"calories\":250,\"protein\":47,\"carbs\":0,\"fats\":5},{\"food\":\"Brown Rice\",\"portion\":\"200g cooked\",\"calories\":260,\"protein\":5,\"carbs\":54,\"fats\":2},{\"food\":\"Mixed Salad\",\"portion\":\"100g\",\"calories\":25,\"protein\":2,\"carbs\":4,\"fats\":0}]},{\"mealType\":\"Snack\",\"time\":\"3:30 PM\",\"items\":[{\"food\":\"Greek Yogurt\",\"portion\":\"150g\",\"calories\":90,\"protein\":15,\"carbs\":6,\"fats\":0},{\"food\":\"Apple\",\"portion\":\"1 medium\",\"calories\":80,\"protein\":0,\"carbs\":21,\"fats\":0},{\"food\":\"Almonds\",\"portion\":\"20g\",\"calories\":120,\"protein\":4,\"carbs\":4,\"fats\":10}]},{\"mealType\":\"Dinner\",\"time\":\"7:00 PM\",\"items\":[{\"food\":\"Salmon Fillet\",\"portion\":\"180g\",\"calories\":360,\"protein\":36,\"carbs\":0,\"fats\":22},{\"food\":\"Sweet Potato\",\"portion\":\"200g baked\",\"calories\":180,\"protein\":4,\"carbs\":42,\"fats\":0},{\"food\":\"Broccoli\",\"portion\":\"150g steamed\",\"calories\":50,\"protein\":4,\"carbs\":10,\"fats\":0}]}]},{\"dayOfWeek\":\"Tuesday\",\"calories\":2750,\"macros\":{\"protein\":155,\"carbs\":310,\"fats\":78},\"meals\":[FILL_TUESDAY_MEALS]},{\"dayOfWeek\":\"Wednesday\",\"calories\":2800,\"macros\":{\"protein\":160,\"carbs\":320,\"fats\":80},\"meals\":[FILL_WEDNESDAY_MEALS]},{\"dayOfWeek\":\"Thursday\",\"calories\":2750,\"macros\":{\"protein\":155,\"carbs\":310,\"fats\":78},\"meals\":[FILL_THURSDAY_MEALS]},{\"dayOfWeek\":\"Friday\",\"calories\":2800,\"macros\":{\"protein\":160,\"carbs\":320,\"fats\":80},\"meals\":[FILL_FRIDAY_MEALS]},{\"dayOfWeek\":\"Saturday\",\"calories\":2600,\"macros\":{\"protein\":150,\"carbs\":290,\"fats\":75},\"meals\":[FILL_SATURDAY_MEALS]},{\"dayOfWeek\":\"Sunday\",\"calories\":2600,\"macros\":{\"protein\":150,\"carbs\":290,\"fats\":75},\"meals\":[FILL_SUNDAY_MEALS]}]}\n\n"
-            + "Replace each FILL_*_MEALS with a real JSON array of 4 meal objects (same structure as Monday — each meal has mealType, time, items array with 3 items each). Use different foods from Monday. All numbers must be integers.";
+        // The assistant turn is pre-filled with {"days":[ so the model outputs a
+        // pure JSON continuation — no preamble, no markdown, no placeholders possible.
+        return $"Sports nutritionist. Generate a 7-day meal plan as JSON.\n"
+            + $"Athlete: {p.FullName}, {p.Sport.Name} {p.Position.Name}, age {p.Age}\n"
+            + $"Restrictions (never include): {restrictionBlock}\n\n"
+            + "Output: 7 days Monday-Sunday. Each day: 4 meals (Breakfast 7:00 AM, Lunch 12:30 PM, Snack 3:30 PM, Dinner 7:00 PM). Each meal: 3 food items.\n"
+            + "Vary foods every day. All numbers must be integers.\n\n"
+            + "Each day object: {\"dayOfWeek\":\"...\",\"calories\":N,\"macros\":{\"protein\":N,\"carbs\":N,\"fats\":N},\"meals\":[...]}\n"
+            + "Each meal object: {\"mealType\":\"...\",\"time\":\"...\",\"items\":[...]}\n"
+            + "Each item object: {\"food\":\"...\",\"portion\":\"...\",\"calories\":N,\"protein\":N,\"carbs\":N,\"fats\":N}\n\n"
+            + "I have pre-started the JSON with {\"days\":[ — continue from there and close with ]}";
     }
 
     private static string BuildInsightsPrompt(

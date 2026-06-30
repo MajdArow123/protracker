@@ -1,12 +1,11 @@
 using System.Text;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace ProTracker.Services;
 
 public interface IAIService
 {
-    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null);
+    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null, string? assistantPrefill = null);
 }
 
 public class AIService : IAIService
@@ -24,16 +23,33 @@ public class AIService : IAIService
         _logger = logger;
     }
 
-    public async Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null)
+    public async Task<string> GenerateTextAsync(
+        string prompt,
+        int? maxTokensOverride = null,
+        string? modelOverride = null,
+        string? assistantPrefill = null)
     {
+        // Build the messages array; optionally seed the assistant turn so the
+        // model continues from that exact text (great for guaranteed JSON output).
+        object[] messages = assistantPrefill is not null
+            ? new object[]
+              {
+                  new { role = "user",      content = prompt },
+                  new { role = "assistant", content = assistantPrefill },
+              }
+            : new object[]
+              {
+                  new { role = "user", content = prompt },
+              };
+
         var body = new
         {
-            model = modelOverride ?? _model,
+            model      = modelOverride ?? _model,
             max_tokens = maxTokensOverride ?? _maxTokens,
-            messages = new[] { new { role = "user", content = prompt } }
+            messages,
         };
 
-        var json = JsonSerializer.Serialize(body);
+        var json    = JsonSerializer.Serialize(body);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync("v1/messages", content);
@@ -52,18 +68,19 @@ public class AIService : IAIService
             .GetProperty("text")
             .GetString() ?? "";
 
-        return StripMarkdownCodeBlock(text);
+        // When a prefill was used the model's output is the continuation;
+        // restore the full string by prepending the prefill.
+        var full = assistantPrefill is not null ? assistantPrefill + text : text;
+
+        return StripMarkdownCodeBlock(full);
     }
 
-    // Claude sometimes wraps the JSON in ```json ... ``` fences
     private static string StripMarkdownCodeBlock(string text)
     {
         var s = text.Trim();
         if (!s.StartsWith("```")) return s;
-        // Remove opening fence line
         var nl = s.IndexOf('\n');
         if (nl >= 0) s = s[(nl + 1)..];
-        // Remove closing fence if present (may be absent if response was truncated)
         var lastFence = s.LastIndexOf("```");
         if (lastFence >= 0) s = s[..lastFence];
         return s.Trim();
