@@ -150,7 +150,7 @@ builder.Services.AddHttpClient<IAIService, AIService>(client =>
     client.BaseAddress = new Uri("https://api.anthropic.com/");
     client.DefaultRequestHeaders.Add("x-api-key", anthropicKey);
     client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
-    client.Timeout = TimeSpan.FromSeconds(60);
+    client.Timeout = TimeSpan.FromSeconds(300);
 });
 
 var app = builder.Build();
