@@ -39,7 +39,7 @@ export function PlayerReportPage() {
   const navigate = useNavigate();
   const playerId = id ? parseInt(id) : undefined;
   const { data: report, isLoading, isError } = usePlayerReport(playerId);
-  const [hiddenCategories, setHiddenCategories] = useState<Set<string>>(new Set());
+  const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function PlayerReportPage() {
   );
 
   const allCategories = [...new Set(sorted.flatMap(a => a.statScores?.map(s => s.statCategoryName) ?? []))];
-  const visibleCategories = allCategories.filter(c => !hiddenCategories.has(c));
+  const visibleCategories = allCategories;
 
   const lineData: Array<{ name: string; [key: string]: string | number }> = sorted.map(a => {
     const point: { name: string; [key: string]: string | number } = {
@@ -260,7 +260,14 @@ export function PlayerReportPage() {
       </Card>
 
       {/* Performance over time */}
-      <Card header="Performance Over Time">
+      <Card header={
+        <div>
+          <p className="font-semibold text-gray-800 dark:text-gray-100">Performance Over Time</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal">
+            Score per stat across assessment periods (0–10) · click a stat to focus it
+          </p>
+        </div>
+      }>
         {sorted.length < 2 ? (
           <EmptyState
             title="Not enough data"
@@ -269,24 +276,40 @@ export function PlayerReportPage() {
           />
         ) : (
           <>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {allCategories.map(cat => (
+            {/* Stat focus pills */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              {allCategories.map((cat, i) => {
+                const color = COLORS[i % COLORS.length];
+                const isFocused = focusedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setFocusedCategory(prev => prev === cat ? null : cat)}
+                    className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-medium transition-all cursor-pointer ${
+                      isFocused
+                        ? 'border-transparent text-white shadow-sm'
+                        : focusedCategory
+                          ? 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 bg-transparent opacity-50'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                    style={isFocused ? { backgroundColor: color, borderColor: color } : {}}
+                  >
+                    <span
+                      className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: isFocused ? 'rgba(255,255,255,0.8)' : color }}
+                    />
+                    {cat}
+                  </button>
+                );
+              })}
+              {focusedCategory && (
                 <button
-                  key={cat}
-                  onClick={() => setHiddenCategories(prev => {
-                    const next = new Set(prev);
-                    next.has(cat) ? next.delete(cat) : next.add(cat);
-                    return next;
-                  })}
-                  className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                    hiddenCategories.has(cat)
-                      ? 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 bg-transparent'
-                      : 'border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30'
-                  }`}
+                  onClick={() => setFocusedCategory(null)}
+                  className="text-xs px-3 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-gray-400 transition-colors cursor-pointer"
                 >
-                  {cat}
+                  Show all
                 </button>
-              ))}
+              )}
             </div>
             <LineChartWrapper
               data={lineData}
@@ -295,7 +318,9 @@ export function PlayerReportPage() {
                 name: cat,
                 color: COLORS[i % COLORS.length],
               }))}
-              height={280}
+              height={300}
+              focusedKey={focusedCategory}
+              yAxisLabel="Score / 10"
             />
           </>
         )}
