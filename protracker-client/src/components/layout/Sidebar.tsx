@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { useTeams } from '../../hooks/useTeams';
 import { clsx } from 'clsx';
 
 interface NavItem {
@@ -39,6 +40,18 @@ const SPORT_COLORS: Record<string, string> = {
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+}
+
+function CoachSportBadge() {
+  const { data: teams = [] } = useTeams();
+  if (teams.length === 0) return null;
+  const sport = teams[0].sportName;
+  const colorClass = SPORT_COLORS[sport] ?? 'text-indigo-400';
+  return (
+    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/10', colorClass)}>
+      {sport}
+    </span>
+  );
 }
 
 interface Props {
@@ -150,7 +163,10 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-gray-200 truncate">{user?.fullName}</p>
-            <p className="text-[10px] text-gray-500 truncate">{user?.role}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <p className="text-[10px] text-gray-500">{user?.role}</p>
+              {user?.role === 'Coach' && <CoachSportBadge />}
+            </div>
           </div>
         </div>
       </div>
