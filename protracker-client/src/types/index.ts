@@ -129,6 +129,61 @@ export interface StructuredMealPlan {
   foodsToLimit?: string;
 }
 
+// ── Weekly Nutrition Plan types ──────────────────────────────────────────────
+
+export interface PlannedMealItem {
+  id: number;
+  plannedMealId: number;
+  foodName: string;
+  portion: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  isSwapped: boolean;
+  originalFoodName?: string | null;
+}
+
+export interface PlannedMeal {
+  id: number;
+  dailyMealPlanId: number;
+  mealType: string;
+  time: string;
+  plannedMealItems: PlannedMealItem[];
+}
+
+export interface DailyMealPlan {
+  id: number;
+  weeklyNutritionPlanId: number;
+  dayNumber: number;
+  dayName: string;
+  dailyCalories: number;
+  dailyProtein: number;
+  dailyCarbs: number;
+  dailyFats: number;
+  plannedMeals: PlannedMeal[];
+}
+
+export interface WeeklyNutritionPlan {
+  id: number;
+  playerId: number;
+  createdDate: string;
+  weekStartDate: string;
+  isAIGenerated: boolean;
+  dailyMealPlans: DailyMealPlan[];
+}
+
+export interface SwapMealItemRequest {
+  newFoodName: string;
+  newPortion: string;
+  newCalories: number;
+  newProtein: number;
+  newCarbs: number;
+  newFats: number;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+
 export interface ImprovementPlan {
   id: number;
   playerId: number;

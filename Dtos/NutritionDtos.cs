@@ -62,3 +62,61 @@ public class FoodAlternativeDto
     public string? SportPerformanceNote { get; set; }
     public string? ReasonExplanation { get; set; }
 }
+
+// ── Weekly Nutrition Plan DTOs ───────────────────────────────────────────────
+
+public class PlannedMealItemDto
+{
+    public int Id { get; set; }
+    public int PlannedMealId { get; set; }
+    public string FoodName { get; set; } = "";
+    public string Portion { get; set; } = "";
+    public int Calories { get; set; }
+    public int Protein { get; set; }
+    public int Carbs { get; set; }
+    public int Fats { get; set; }
+    public bool IsSwapped { get; set; }
+    public string? OriginalFoodName { get; set; }
+}
+
+public class PlannedMealDto
+{
+    public int Id { get; set; }
+    public int DailyMealPlanId { get; set; }
+    public string MealType { get; set; } = "";
+    public string Time { get; set; } = "";
+    public List<PlannedMealItemDto> PlannedMealItems { get; set; } = new();
+}
+
+public class DailyMealPlanDto
+{
+    public int Id { get; set; }
+    public int WeeklyNutritionPlanId { get; set; }
+    public int DayNumber { get; set; }
+    public string DayName { get; set; } = "";
+    public int DailyCalories { get; set; }
+    public int DailyProtein { get; set; }
+    public int DailyCarbs { get; set; }
+    public int DailyFats { get; set; }
+    public List<PlannedMealDto> PlannedMeals { get; set; } = new();
+}
+
+public class WeeklyNutritionPlanDto
+{
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public DateTime WeekStartDate { get; set; }
+    public bool IsAIGenerated { get; set; }
+    public List<DailyMealPlanDto> DailyMealPlans { get; set; } = new();
+}
+
+public class SwapMealItemDto
+{
+    public string NewFoodName { get; set; } = "";
+    public string NewPortion { get; set; } = "";
+    public int NewCalories { get; set; }
+    public int NewProtein { get; set; }
+    public int NewCarbs { get; set; }
+    public int NewFats { get; set; }
+}

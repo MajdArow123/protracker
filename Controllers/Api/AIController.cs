@@ -18,17 +18,20 @@ public class AIController : ApiControllerBase
     private readonly ApplicationDbContext _context;
     private readonly IAIService _ai;
     private readonly IAccessControlService _access;
+    private readonly IWeeklyNutritionPlanService _weeklyPlanService;
     private readonly ILogger<AIController> _logger;
 
     public AIController(
         ApplicationDbContext context,
         IAIService ai,
         IAccessControlService access,
+        IWeeklyNutritionPlanService weeklyPlanService,
         ILogger<AIController> logger)
     {
         _context = context;
         _ai = ai;
         _access = access;
+        _weeklyPlanService = weeklyPlanService;
         _logger = logger;
     }
 
@@ -173,6 +176,142 @@ public class AIController : ApiControllerBase
         }
 
         return Success(dto);
+    }
+
+    // ─── Weekly Nutrition Plan ────────────────────────────────────────────────
+
+    [HttpPost("weekly-nutrition-plan/{playerId}")]
+    public async Task<ActionResult> GenerateWeeklyNutritionPlan(int playerId)
+    {
+        await _access.EnsureCanAccessPlayerAsync(User, playerId);
+
+        var player = await _context.Players
+            .Include(p => p.Sport)
+            .Include(p => p.Position)
+            .FirstOrDefaultAsync(p => p.Id == playerId)
+            ?? throw new NotFoundApiException($"Player {playerId} not found.");
+
+        var profile = await _context.PlayerNutritionProfiles
+            .Where(n => n.PlayerId == playerId)
+            .ToListAsync();
+
+        var restrictionBlock = profile.Any()
+            ? string.Join("\n", profile.Select(r => r.Severity switch
+            {
+                NutritionSeverity.Hard =>
+                    $"HARD ALLERGY/RULE: {r.Category} - {r.SpecificItem ?? r.Category.ToString()} - NEVER include this under any circumstances",
+                NutritionSeverity.Lifestyle =>
+                    $"LIFESTYLE: {r.Category} - always respect this",
+                _ =>
+                    $"PREFERENCE: {r.Category} - suggest alternatives when possible",
+            }))
+            : "None recorded";
+
+        var prompt = BuildWeeklyNutritionPrompt(player, restrictionBlock);
+        var raw = await _ai.GenerateTextAsync(prompt);
+        _logger.LogInformation("AI weekly nutrition plan generated for player {PlayerId}", playerId);
+
+        WeeklyNutritionPlanDto planDto;
+        try
+        {
+            var root = JsonDocument.Parse(raw).RootElement;
+            var weekStart = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek + 1);
+
+            planDto = new WeeklyNutritionPlanDto
+            {
+                PlayerId = playerId,
+                IsAIGenerated = true,
+                WeekStartDate = weekStart,
+                DailyMealPlans = new List<DailyMealPlanDto>()
+            };
+
+            if (!root.TryGetProperty("days", out var daysEl) || daysEl.ValueKind != JsonValueKind.Array)
+                throw new JsonException("Missing 'days' array in AI response.");
+
+            int dayIndex = 1;
+            foreach (var dayEl in daysEl.EnumerateArray())
+            {
+                var dayName = dayEl.TryGetProperty("dayOfWeek", out var d) ? d.GetString() ?? "" : "";
+                var calories = dayEl.TryGetProperty("calories", out var c) ? c.GetInt32() : 0;
+                var protein = 0; var carbs = 0; var fats = 0;
+                if (dayEl.TryGetProperty("macros", out var macros))
+                {
+                    if (macros.TryGetProperty("protein", out var p)) protein = p.GetInt32();
+                    if (macros.TryGetProperty("carbs", out var ca)) carbs = ca.GetInt32();
+                    if (macros.TryGetProperty("fats", out var f)) fats = f.GetInt32();
+                }
+
+                var dayDto = new DailyMealPlanDto
+                {
+                    DayNumber = dayIndex++,
+                    DayName = dayName,
+                    DailyCalories = calories,
+                    DailyProtein = protein,
+                    DailyCarbs = carbs,
+                    DailyFats = fats,
+                    PlannedMeals = new List<PlannedMealDto>()
+                };
+
+                if (dayEl.TryGetProperty("meals", out var mealsEl) && mealsEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var mealEl in mealsEl.EnumerateArray())
+                    {
+                        var mealType = mealEl.TryGetProperty("mealType", out var mt) ? mt.GetString() ?? "" : "";
+                        var time = mealEl.TryGetProperty("time", out var t) ? t.GetString() ?? "" : "";
+                        var mealDto = new PlannedMealDto
+                        {
+                            MealType = mealType,
+                            Time = time,
+                            PlannedMealItems = new List<PlannedMealItemDto>()
+                        };
+
+                        if (mealEl.TryGetProperty("items", out var itemsEl) && itemsEl.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var itemEl in itemsEl.EnumerateArray())
+                            {
+                                mealDto.PlannedMealItems.Add(new PlannedMealItemDto
+                                {
+                                    FoodName = itemEl.TryGetProperty("food", out var fn) ? fn.GetString() ?? "" : "",
+                                    Portion = itemEl.TryGetProperty("portion", out var po) ? po.GetString() ?? "" : "",
+                                    Calories = itemEl.TryGetProperty("calories", out var ic) ? ic.GetInt32() : 0,
+                                    Protein = itemEl.TryGetProperty("protein", out var ip) ? ip.GetInt32() : 0,
+                                    Carbs = itemEl.TryGetProperty("carbs", out var icar) ? icar.GetInt32() : 0,
+                                    Fats = itemEl.TryGetProperty("fats", out var ifa) ? ifa.GetInt32() : 0,
+                                });
+                            }
+                        }
+                        dayDto.PlannedMeals.Add(mealDto);
+                    }
+                }
+                planDto.DailyMealPlans.Add(dayDto);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse AI weekly nutrition plan: {Raw}", raw);
+            return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
+        }
+
+        // Safety check: scan all food names for hard allergy keywords
+        var hardKeywords = profile
+            .Where(r => r.Severity == NutritionSeverity.Hard && r.SpecificItem != null)
+            .Select(r => r.SpecificItem!.ToLowerInvariant())
+            .ToList();
+
+        if (hardKeywords.Any())
+        {
+            var allFoods = planDto.DailyMealPlans
+                .SelectMany(d => d.PlannedMeals)
+                .SelectMany(m => m.PlannedMealItems)
+                .Select(i => i.FoodName.ToLowerInvariant())
+                .ToList();
+            var flagged = hardKeywords.Where(k => allFoods.Any(f => f.Contains(k))).ToList();
+            if (flagged.Any())
+                _logger.LogWarning("Weekly plan for player {PlayerId} may contain restricted items: {Items}", playerId, string.Join(", ", flagged));
+        }
+
+        var saved = await _weeklyPlanService.SavePlanAsync(User, playerId, planDto);
+        return Success(saved);
     }
 
     // ─── Performance Insights ─────────────────────────────────────────────────
@@ -375,6 +514,48 @@ public class AIController : ApiControllerBase
             + "CRITICAL: Never include foods that conflict with the hard allergies or lifestyle restrictions listed above.\n"
             + "Include 3-5 realistic food items per meal with accurate macros for a {p.Sport.Name} athlete.\n"
             + "All numbers must be integers. Return ONLY the JSON object, nothing else.";
+    }
+
+    private static string BuildWeeklyNutritionPrompt(Player p, string restrictionBlock)
+    {
+        return "You are a professional sports nutritionist. Generate a complete 7-day nutrition plan for this athlete.\n\n"
+            + $"Athlete: {p.FullName}\n"
+            + $"Sport: {p.Sport.Name}\n"
+            + $"Position: {p.Position.Name}\n"
+            + $"Age: {p.Age}\n\n"
+            + "DIETARY RESTRICTIONS (MUST BE RESPECTED - CRITICAL):\n"
+            + restrictionBlock + "\n\n"
+            + "CRITICAL MEAL VARIETY RULES:\n"
+            + "- Each day MUST have DIFFERENT meals. Do NOT repeat the same breakfast, lunch, or dinner across the week.\n"
+            + "- Vary the protein sources each day (e.g. chicken, fish, beef, eggs, legumes across different days).\n"
+            + "- Vary the carb sources each day (rice, pasta, potatoes, oats, quinoa across different days).\n"
+            + "- Each day should feel distinct and appealing, not a copy of another day.\n\n"
+            + "Return ONLY valid JSON, no markdown or other text:\n"
+            + "{\n"
+            + "  \"days\": [\n"
+            + "    {\n"
+            + "      \"dayOfWeek\": \"Monday\",\n"
+            + "      \"calories\": 2800,\n"
+            + "      \"macros\": {\"protein\": 160, \"carbs\": 320, \"fats\": 80},\n"
+            + "      \"meals\": [\n"
+            + "        {\n"
+            + "          \"mealType\": \"Breakfast\",\n"
+            + "          \"time\": \"7:00 AM\",\n"
+            + "          \"items\": [\n"
+            + "            {\"food\": \"Oats\", \"portion\": \"100g\", \"calories\": 370, \"protein\": 13, \"carbs\": 67, \"fats\": 7}\n"
+            + "          ]\n"
+            + "        },\n"
+            + "        {\"mealType\": \"Lunch\", \"time\": \"12:30 PM\", \"items\": []},\n"
+            + "        {\"mealType\": \"Snack\", \"time\": \"3:30 PM\", \"items\": []},\n"
+            + "        {\"mealType\": \"Dinner\", \"time\": \"7:00 PM\", \"items\": []},\n"
+            + "        {\"mealType\": \"PostWorkout\", \"time\": \"Within 30 min of training\", \"items\": []}\n"
+            + "      ]\n"
+            + "    }\n"
+            + "    // ... repeat for Tuesday through Sunday with DIFFERENT meals each day\n"
+            + "  ]\n"
+            + "}\n\n"
+            + "Include 3-5 food items per meal with accurate macros. All numbers must be integers. All 7 days required.\n"
+            + "Never include foods conflicting with the restrictions above. Return ONLY the JSON object.";
     }
 
     private static string BuildInsightsPrompt(

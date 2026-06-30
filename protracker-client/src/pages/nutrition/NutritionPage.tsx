@@ -12,17 +12,19 @@ import { usePlayer } from '../../hooks/usePlayers';
 import {
   usePlayerNutritionProfile, useCreateProfileItem, useUpdateProfileItem, useDeleteProfileItem,
   usePlayerNutritionGuidance, useCreateGuidance, useUpdateGuidance,
+  useWeeklyNutritionPlan, useGenerateWeeklyNutritionPlan,
 } from '../../hooks/useNutrition';
 import {
   ArrowLeft, Plus, Edit2, Trash2, ShieldAlert, Salad, Droplets,
   Zap, Apple, Info, Utensils, ChevronDown, ChevronUp, Sparkles,
-  Dumbbell, Coffee, Moon,
+  Dumbbell, Coffee, Moon, CalendarDays,
 } from 'lucide-react';
 import { useGenerateNutritionGuidance } from '../../hooks/useAI';
 import { clsx } from 'clsx';
+import { WeeklyNutritionPlanView } from '../../components/nutrition/WeeklyNutritionPlanView';
 import type { NutritionProfileItem, NutritionGuidance, StructuredMealPlan, Meal } from '../../types';
 
-type Tab = 'profile' | 'guidance';
+type Tab = 'profile' | 'guidance' | 'weekly';
 
 const PREFERENCE_TYPES = ['Allergy', 'Lifestyle', 'SoftPreference'];
 const CATEGORIES = ['Vegetarian', 'Vegan', 'Halal', 'Kosher', 'GlutenFree', 'NutAllergy', 'DairyFree', 'NoEggs', 'NoFish', 'NoRedMeat', 'LowFODMAP', 'Custom'];
@@ -374,12 +376,14 @@ export function NutritionPage() {
   const { data: player, isLoading: loadingPlayer } = usePlayer(playerId);
   const { data: profileItems = [], isLoading: loadingProfile } = usePlayerNutritionProfile(playerId);
   const { data: guidanceList = [] } = usePlayerNutritionGuidance(playerId);
+  const { data: weeklyPlan, isLoading: loadingWeekly } = useWeeklyNutritionPlan(playerId);
   const createItem = useCreateProfileItem(playerId);
   const updateItem = useUpdateProfileItem(playerId);
   const deleteItem = useDeleteProfileItem(playerId);
   const createGuidance = useCreateGuidance();
   const updateGuidance = useUpdateGuidance();
   const generateAI = useGenerateNutritionGuidance();
+  const generateWeekly = useGenerateWeeklyNutritionPlan();
 
   const [tab, setTab] = useState<Tab>('profile');
   const [aiError, setAiError] = useState<string | null>(null);
@@ -452,7 +456,7 @@ export function NutritionPage() {
     >
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800/50 rounded-2xl w-fit">
-        {([['profile', 'Dietary Profile'], ['guidance', 'Nutrition Guidance']] as [Tab, string][]).map(([t, label]) => (
+        {([['profile', 'Dietary Profile'], ['guidance', 'Nutrition Guidance'], ['weekly', 'Weekly Plan']] as [Tab, string][]).map(([t, label]) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -640,6 +644,40 @@ export function NutritionPage() {
                 <GuidanceCard key={g.id} guidance={g} onEdit={() => openEditGuidance(g)} />
               ))}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Weekly Plan tab */}
+      {tab === 'weekly' && (
+        <div className="space-y-4">
+          {loadingWeekly ? (
+            <PageSpinner />
+          ) : !weeklyPlan ? (
+            <div className="space-y-4">
+              <EmptyState
+                icon={<CalendarDays size={36} />}
+                title="No weekly plan yet"
+                description="Generate a personalized 7-day meal plan for this player using AI"
+                action={{
+                  label: generateWeekly.isPending ? 'Generating…' : 'Generate with AI',
+                  onClick: () => generateWeekly.mutateAsync(playerId).then(() => showToast('Weekly plan generated!', 'success')).catch(() => showToast('Generation failed. Please try again.', 'error')),
+                }}
+              />
+            </div>
+          ) : (
+            <WeeklyNutritionPlanView
+              plan={weeklyPlan}
+              canSwap={false}
+              isCoach={true}
+              playerId={playerId}
+              onGenerate={() =>
+                generateWeekly.mutateAsync(playerId)
+                  .then(() => showToast('New weekly plan generated!', 'success'))
+                  .catch(() => showToast('Generation failed. Please try again.', 'error'))
+              }
+              isGenerating={generateWeekly.isPending}
+            />
           )}
         </div>
       )}

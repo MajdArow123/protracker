@@ -31,6 +31,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MatchPerformance> MatchPerformances => Set<MatchPerformance>();
     public DbSet<InjuryRecord> InjuryRecords => Set<InjuryRecord>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<WeeklyNutritionPlan> WeeklyNutritionPlans => Set<WeeklyNutritionPlan>();
+    public DbSet<DailyMealPlan> DailyMealPlans => Set<DailyMealPlan>();
+    public DbSet<PlannedMeal> PlannedMeals => Set<PlannedMeal>();
+    public DbSet<PlannedMealItem> PlannedMealItems => Set<PlannedMealItem>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

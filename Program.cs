@@ -139,6 +139,7 @@ builder.Services.AddScoped<IMatchPerformanceService, MatchPerformanceService>();
 builder.Services.AddScoped<IInjuryService, InjuryService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanService>();
 
 // AI service — reads API key from env var first, then appsettings
 var anthropicKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")

@@ -12,19 +12,22 @@ public class PlayersController : ApiControllerBase
     private readonly IImprovementPlanService _improvementPlanService;
     private readonly INutritionGuidanceService _nutritionGuidanceService;
     private readonly INutritionProfileService _nutritionProfileService;
+    private readonly IWeeklyNutritionPlanService _weeklyNutritionPlanService;
 
     public PlayersController(
         IPlayerService playerService,
         IAssessmentService assessmentService,
         IImprovementPlanService improvementPlanService,
         INutritionGuidanceService nutritionGuidanceService,
-        INutritionProfileService nutritionProfileService)
+        INutritionProfileService nutritionProfileService,
+        IWeeklyNutritionPlanService weeklyNutritionPlanService)
     {
         _playerService = playerService;
         _assessmentService = assessmentService;
         _improvementPlanService = improvementPlanService;
         _nutritionGuidanceService = nutritionGuidanceService;
         _nutritionProfileService = nutritionProfileService;
+        _weeklyNutritionPlanService = weeklyNutritionPlanService;
     }
 
     [HttpGet]
@@ -65,6 +68,14 @@ public class PlayersController : ApiControllerBase
 
     [HttpGet("{id}/nutrition-profile")]
     public async Task<ActionResult> GetNutritionProfile(int id) => Success(await _nutritionProfileService.GetForPlayerAsync(User, id));
+
+    [HttpGet("{id}/weekly-nutrition-plan")]
+    public async Task<ActionResult> GetWeeklyNutritionPlan(int id)
+    {
+        var plan = await _weeklyNutritionPlanService.GetLatestForPlayerAsync(User, id);
+        if (plan == null) return NotFound(new { success = false, message = "No weekly nutrition plan found for this player." });
+        return Success(plan);
+    }
 
     [HttpPut("{id}/nutrition-profile")]
     [Authorize(Roles = "Coach,Admin")]
