@@ -40,6 +40,11 @@ public class FoodAlternativesService : IFoodAlternativesService
             CalorieMatchScore = f.CalorieMatchScore,
             RecoveryValue = f.RecoveryValue,
             SportPerformanceNote = f.SportPerformanceNote,
-            ReasonExplanation = f.ReasonExplanation
+            ReasonExplanation = f.ReasonExplanation,
+            SuggestedPortion = f.SuggestedPortion,
+            Calories = f.Calories,
+            Protein = f.Protein,
+            Carbs = f.Carbs,
+            Fats = f.Fats,
         };
 }

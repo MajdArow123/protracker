@@ -251,6 +251,11 @@ export interface FoodAlternative {
   recoveryValue: number;
   sportPerformanceNote?: string | null;
   reasonExplanation?: string | null;
+  suggestedPortion?: string | null;
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fats?: number | null;
 }
 
 export interface PlayerAverageScore {

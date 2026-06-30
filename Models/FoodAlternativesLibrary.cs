@@ -31,4 +31,11 @@ public class FoodAlternativesLibrary
 
     public string? SportPerformanceNote { get; set; }
     public string? ReasonExplanation { get; set; }
+
+    // Actual nutritional data for the alternative food (used by swap modal)
+    public string? SuggestedPortion { get; set; }
+    public int? Calories { get; set; }
+    public int? Protein { get; set; }
+    public int? Carbs { get; set; }
+    public int? Fats { get; set; }
 }

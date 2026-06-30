@@ -61,6 +61,11 @@ public class FoodAlternativeDto
     public int RecoveryValue { get; set; }
     public string? SportPerformanceNote { get; set; }
     public string? ReasonExplanation { get; set; }
+    public string? SuggestedPortion { get; set; }
+    public int? Calories { get; set; }
+    public int? Protein { get; set; }
+    public int? Carbs { get; set; }
+    public int? Fats { get; set; }
 }
 
 // ── Weekly Nutrition Plan DTOs ───────────────────────────────────────────────

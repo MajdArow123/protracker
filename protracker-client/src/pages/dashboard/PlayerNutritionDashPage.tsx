@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMyPlayerId } from '../../hooks/useDashboard';
 import {
   usePlayerNutritionProfile,
@@ -36,7 +36,9 @@ function GuidanceRow({
 }
 
 export function PlayerNutritionDashPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('weekly');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as Tab | null) ?? 'weekly';
+  const setActiveTab = (t: Tab) => setSearchParams({ tab: t }, { replace: true });
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data: profile, isLoading: loadingProfile } = usePlayerNutritionProfile(playerId);
   const { data: guidance, isLoading: loadingGuidance } = usePlayerNutritionGuidance(playerId);

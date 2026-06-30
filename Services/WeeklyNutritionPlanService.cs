@@ -91,9 +91,6 @@ public class WeeklyNutritionPlanService : IWeeklyNutritionPlanService
 
         await _access.EnsureCanAccessPlayerAsync(user, item.PlannedMeal.DailyMealPlan.WeeklyNutritionPlan.PlayerId);
 
-        // Validate nutritional equivalence
-        ValidateEquivalence(item, dto);
-
         item.OriginalFoodName = item.IsSwapped ? item.OriginalFoodName : item.FoodName;
         item.IsSwapped = true;
         item.FoodName = dto.NewFoodName;
@@ -105,23 +102,6 @@ public class WeeklyNutritionPlanService : IWeeklyNutritionPlanService
 
         await _context.SaveChangesAsync();
         return ToItemDto(item);
-    }
-
-    private static void ValidateEquivalence(PlannedMealItem original, SwapMealItemDto replacement)
-    {
-        var errors = new List<string>();
-
-        if (original.Calories > 0 && Math.Abs(replacement.NewCalories - original.Calories) > original.Calories * 0.10)
-            errors.Add($"Calories must be within 10% of original ({original.Calories} kcal).");
-        if (original.Protein > 0 && Math.Abs(replacement.NewProtein - original.Protein) > original.Protein * 0.15)
-            errors.Add($"Protein must be within 15% of original ({original.Protein}g).");
-        if (original.Carbs > 0 && Math.Abs(replacement.NewCarbs - original.Carbs) > original.Carbs * 0.15)
-            errors.Add($"Carbs must be within 15% of original ({original.Carbs}g).");
-        if (original.Fats > 0 && Math.Abs(replacement.NewFats - original.Fats) > original.Fats * 0.15)
-            errors.Add($"Fats must be within 15% of original ({original.Fats}g).");
-
-        if (errors.Any())
-            throw new ValidationApiException(string.Join(" ", errors));
     }
 
     public static WeeklyNutritionPlanDto ToDto(WeeklyNutritionPlan p) => new()

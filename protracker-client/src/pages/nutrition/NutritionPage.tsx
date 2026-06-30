@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
@@ -374,6 +374,7 @@ export function NutritionPage() {
   const { id } = useParams<{ id: string }>();
   const playerId = Number(id);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { addToast: showToast } = useToast();
 
   const { data: player, isLoading: loadingPlayer } = usePlayer(playerId);
@@ -388,7 +389,8 @@ export function NutritionPage() {
   const generateAI = useGenerateNutritionGuidance();
   const generateWeekly = useGenerateWeeklyNutritionPlan();
 
-  const [tab, setTab] = useState<Tab>('profile');
+  const tab = (searchParams.get('tab') as Tab | null) ?? 'profile';
+  const setTab = (t: Tab) => setSearchParams({ tab: t }, { replace: true });
   const [aiError, setAiError] = useState<string | null>(null);
   const [weeklyError, setWeeklyError] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<NutritionProfileItem | null>(null);
