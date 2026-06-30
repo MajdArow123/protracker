@@ -11,18 +11,14 @@ export function useCoachDashboard() {
   });
 }
 
-/** Finds the current athlete's integer player ID by matching their auth UUID against player profiles. */
+/** Resolves the current athlete's player ID via GET /api/players/me (single request, no 403 risk). */
 export function useMyPlayerId() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['myPlayerId', user?.id],
     queryFn: async () => {
-      const players = await playersApi.getPlayers();
-      for (const p of players) {
-        const detail = await playersApi.getPlayer(p.id);
-        if (detail.userId === user?.id) return p.id;
-      }
-      return null;
+      const player = await playersApi.getMyPlayer();
+      return player.id;
     },
     enabled: !!user && user.role === 'Athlete',
     staleTime: Infinity,

@@ -11,6 +11,7 @@ public interface IPlayerService
 {
     Task<List<PlayerDto>> GetAccessiblePlayersAsync(ClaimsPrincipal user);
     Task<PlayerProfileDto> GetByIdAsync(ClaimsPrincipal user, int id);
+    Task<PlayerProfileDto> GetMyPlayerAsync(ClaimsPrincipal user);
     Task<PlayerProfileDto> CreateAsync(ClaimsPrincipal user, PlayerCreateDto dto);
     Task<PlayerProfileDto> UpdateAsync(ClaimsPrincipal user, int id, PlayerUpdateDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int id);
@@ -34,6 +35,16 @@ public class PlayerService : IPlayerService
             .Include(p => p.Team).Include(p => p.Position)
             .ToListAsync();
         return players.Select(ToDto).ToList();
+    }
+
+    public async Task<PlayerProfileDto> GetMyPlayerAsync(ClaimsPrincipal user)
+    {
+        var userId = _access.RequireUserId(user);
+        var player = await _context.Players
+            .Include(p => p.Team).Include(p => p.Position)
+            .FirstOrDefaultAsync(p => p.UserId == userId)
+            ?? throw new NotFoundApiException("No player record is linked to your account.");
+        return ToProfileDto(player);
     }
 
     public async Task<PlayerProfileDto> GetByIdAsync(ClaimsPrincipal user, int id)

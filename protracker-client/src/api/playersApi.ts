@@ -6,6 +6,10 @@ export const playersApi = {
     const res = await api.get<Player[]>('/api/players');
     return res.data;
   },
+  getMyPlayer: async (): Promise<Player> => {
+    const res = await api.get<Player>('/api/players/me');
+    return res.data;
+  },
   getPlayer: async (id: number): Promise<Player> => {
     const res = await api.get<Player>(`/api/players/${id}`);
     return res.data;

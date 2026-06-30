@@ -30,7 +30,12 @@ public class PlayersController : ApiControllerBase
     [HttpGet]
     public async Task<ActionResult> GetAll() => Success(await _playerService.GetAccessiblePlayersAsync(User));
 
-    [HttpGet("{id}")]
+    /// <summary>Resolves the logged-in athlete's own player record without iterating teammates.</summary>
+    [HttpGet("me")]
+    [Authorize(Roles = "Athlete,Admin")]
+    public async Task<ActionResult> GetMe() => Success(await _playerService.GetMyPlayerAsync(User));
+
+    [HttpGet("{id:int}")]
     public async Task<ActionResult> GetById(int id) => Success(await _playerService.GetByIdAsync(User, id));
 
     [HttpPost]
