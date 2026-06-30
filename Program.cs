@@ -89,7 +89,13 @@ var reactOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<s
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactClient", policy => policy
-        .WithOrigins(reactOrigins)
+        .SetIsOriginAllowed(origin =>
+        {
+            if (reactOrigins.Contains(origin)) return true;
+            // Allow all Vercel preview deployments for this project
+            var uri = new Uri(origin);
+            return uri.Host.EndsWith("-pro-tracker.vercel.app") || uri.Host == "protracker-iota.vercel.app";
+        })
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials());
