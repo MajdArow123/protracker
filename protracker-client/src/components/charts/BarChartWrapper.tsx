@@ -139,7 +139,7 @@ export function BarChartWrapper({ data, series, height = 300, yAxisLabel, refere
               <LabelList
                 dataKey={s.key}
                 position="top"
-                formatter={(v: number) => v.toFixed(1)}
+                formatter={(v: unknown) => (typeof v === 'number' ? v.toFixed(1) : String(v ?? ''))}
                 style={{ fontSize: 11, fontWeight: 700, fill: '#e5e7eb' }}
               />
             )}
