@@ -209,8 +209,9 @@ public class AIController : ApiControllerBase
 
         var prompt = BuildWeeklyNutritionPrompt(player, restrictionBlock);
         // Prefill forces the model to begin its output with valid JSON — no preamble, no placeholders.
+        // 6000 tokens gives Haiku enough room even when it pretty-prints the full 7-day plan.
         const string prefill = "{\"days\":[";
-        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 4096, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
+        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 6000, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
 
         WeeklyNutritionPlanDto planDto;
         try
