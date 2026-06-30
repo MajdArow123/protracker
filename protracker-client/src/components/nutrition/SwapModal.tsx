@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { X, ArrowLeftRight, Loader2, CheckCircle2 } from 'lucide-react';
-import { clsx } from 'clsx';
 import type { PlannedMealItem, SwapMealItemRequest } from '../../types';
 import { useSwapMealItem } from '../../hooks/useNutrition';
 import { useToast } from '../../context/ToastContext';
