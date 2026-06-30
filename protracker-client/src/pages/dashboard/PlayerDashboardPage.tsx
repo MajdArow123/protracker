@@ -8,7 +8,7 @@ import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
-  AlertTriangle, Zap,
+  AlertTriangle, Zap, Star, Target,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -70,6 +70,14 @@ export function PlayerDashboardPage() {
 
   const avgScore = data?.latestAverageScore;
 
+  const latestScores = latestAssessment?.statScores ?? [];
+  const bestStat = latestScores.length
+    ? latestScores.reduce((best, s) => (s.score > best.score ? s : best))
+    : null;
+  const worstStat = latestScores.length
+    ? latestScores.reduce((worst, s) => (s.score < worst.score ? s : worst))
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -93,7 +101,7 @@ export function PlayerDashboardPage() {
       </motion.div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
@@ -117,11 +125,43 @@ export function PlayerDashboardPage() {
             {avgScore != null ? avgScore.toFixed(1) : '—'}
           </p>
         </motion.div>
+        <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+        >
+          <div className="inline-flex p-2 rounded-xl bg-amber-500/10 mb-3">
+            <Star size={16} className="text-amber-500" />
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Best Category</p>
+          {bestStat ? (
+            <>
+              <p className="text-xl font-black text-amber-500 mt-0.5">{bestStat.score.toFixed(1)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{bestStat.statCategoryName}</p>
+            </>
+          ) : (
+            <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
+          )}
+        </motion.div>
+        <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+        >
+          <div className="inline-flex p-2 rounded-xl bg-red-500/10 mb-3">
+            <Target size={16} className="text-red-400" />
+          </div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Needs Work</p>
+          {worstStat ? (
+            <>
+              <p className="text-xl font-black text-red-400 mt-0.5">{worstStat.score.toFixed(1)}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{worstStat.statCategoryName}</p>
+            </>
+          ) : (
+            <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
+          )}
+        </motion.div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Radar chart */}
-        <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}
+        <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
           <h2 className="font-bold text-gray-900 dark:text-white mb-4">My Performance</h2>
@@ -133,7 +173,7 @@ export function PlayerDashboardPage() {
         </motion.div>
 
         {/* Score bars */}
-        <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}
+        <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
           <div className="flex items-center justify-between mb-4">
@@ -155,7 +195,7 @@ export function PlayerDashboardPage() {
       </div>
 
       {/* Quick nav */}
-      <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
+      <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Quick Access</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[

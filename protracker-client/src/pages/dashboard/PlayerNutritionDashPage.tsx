@@ -8,6 +8,35 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { Trophy, UtensilsCrossed, Droplets, CheckCircle2, XCircle, Salad } from 'lucide-react';
+
+function GuidanceRow({
+  icon: Icon,
+  iconBg,
+  iconColor,
+  label,
+  value,
+  rowBg,
+}: {
+  icon: React.ElementType;
+  iconBg: string;
+  iconColor: string;
+  label: string;
+  value: string;
+  rowBg?: string;
+}) {
+  return (
+    <div className={`flex gap-3 rounded-xl p-3 ${rowBg ?? ''}`}>
+      <div className={`p-2 rounded-lg h-fit flex-shrink-0 ${iconBg}`}>
+        <Icon size={15} className={iconColor} />
+      </div>
+      <div>
+        <p className={`text-xs font-bold uppercase tracking-wider mb-0.5 ${iconColor}`}>{label}</p>
+        <p className="text-sm text-gray-700 dark:text-gray-200 leading-relaxed">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 export function PlayerNutritionDashPage() {
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
@@ -21,9 +50,11 @@ export function PlayerNutritionDashPage() {
   return (
     <PageWrapper title="My Nutrition">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Dietary profile */}
         <Card header="Dietary Preferences & Restrictions">
           {!profile?.length ? (
             <EmptyState
+              icon={<Salad size={32} />}
               title="No dietary profile"
               description="Your coach will set up your dietary profile"
             />
@@ -32,13 +63,13 @@ export function PlayerNutritionDashPage() {
               {profile.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-start justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                  className="flex items-start justify-between py-3 px-1 border-b border-gray-100 dark:border-gray-800 last:border-0"
                 >
                   <div>
-                    <p className="font-medium text-gray-800 dark:text-gray-200">
+                    <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">
                       {item.category}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                       {item.preferenceType}
                       {item.specificItem ? ` · ${item.specificItem}` : ''}
                     </p>
@@ -66,9 +97,11 @@ export function PlayerNutritionDashPage() {
           )}
         </Card>
 
+        {/* Nutrition guidance */}
         <Card header="Nutrition Guidance">
           {!guidance?.length ? (
             <EmptyState
+              icon={<Trophy size={32} />}
               title="No guidance yet"
               description="Your coach will add nutrition guidance here"
             />
@@ -77,46 +110,66 @@ export function PlayerNutritionDashPage() {
               {guidance.map((g) => (
                 <div
                   key={g.id}
-                  className="border-b border-gray-100 dark:border-gray-700 pb-6 last:border-0 last:pb-0"
+                  className="border-b border-gray-100 dark:border-gray-800 pb-6 last:border-0 last:pb-0"
                 >
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(g.createdDate).toLocaleDateString()}
+                      {new Date(g.createdDate).toLocaleDateString('en-US', {
+                        month: 'long', day: 'numeric', year: 'numeric',
+                      })}
                     </p>
-                    {g.isAIGenerated && (
-                      <Badge variant="info">AI Generated</Badge>
+                    {g.isAIGenerated && <Badge variant="info">AI Generated</Badge>}
+                  </div>
+
+                  <div className="space-y-2">
+                    {g.goal && (
+                      <GuidanceRow
+                        icon={Trophy}
+                        iconBg="bg-amber-500/10"
+                        iconColor="text-amber-500"
+                        label="Goal"
+                        value={g.goal}
+                      />
+                    )}
+                    {g.mealSuggestions && (
+                      <GuidanceRow
+                        icon={UtensilsCrossed}
+                        iconBg="bg-orange-500/10"
+                        iconColor="text-orange-500"
+                        label="Meals"
+                        value={g.mealSuggestions}
+                      />
+                    )}
+                    {g.hydrationTips && (
+                      <GuidanceRow
+                        icon={Droplets}
+                        iconBg="bg-cyan-500/10"
+                        iconColor="text-cyan-500"
+                        label="Hydration"
+                        value={g.hydrationTips}
+                      />
+                    )}
+                    {g.foodsToPrioritize && (
+                      <GuidanceRow
+                        icon={CheckCircle2}
+                        iconBg="bg-green-500/10"
+                        iconColor="text-green-500"
+                        label="Prioritize"
+                        value={g.foodsToPrioritize}
+                        rowBg="bg-green-500/5 rounded-xl"
+                      />
+                    )}
+                    {g.foodsToLimit && (
+                      <GuidanceRow
+                        icon={XCircle}
+                        iconBg="bg-red-500/10"
+                        iconColor="text-red-500"
+                        label="Limit"
+                        value={g.foodsToLimit}
+                        rowBg="bg-red-500/5 rounded-xl"
+                      />
                     )}
                   </div>
-                  {g.goal && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Goal</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{g.goal}</p>
-                    </div>
-                  )}
-                  {g.mealSuggestions && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Meals</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{g.mealSuggestions}</p>
-                    </div>
-                  )}
-                  {g.hydrationTips && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Hydration</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{g.hydrationTips}</p>
-                    </div>
-                  )}
-                  {g.foodsToPrioritize && (
-                    <div className="mb-2">
-                      <p className="text-xs font-semibold text-green-600 dark:text-green-400 uppercase tracking-wide">Prioritize</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{g.foodsToPrioritize}</p>
-                    </div>
-                  )}
-                  {g.foodsToLimit && (
-                    <div>
-                      <p className="text-xs font-semibold text-red-500 dark:text-red-400 uppercase tracking-wide">Limit</p>
-                      <p className="text-sm text-gray-700 dark:text-gray-300">{g.foodsToLimit}</p>
-                    </div>
-                  )}
                 </div>
               ))}
             </div>
