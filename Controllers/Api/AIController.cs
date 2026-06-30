@@ -67,10 +67,11 @@ public class AIController : ApiControllerBase
         var raw = await _ai.GenerateTextAsync(prompt);
         _logger.LogInformation("AI improvement plan generated for player {PlayerId}", playerId);
 
+        var json = StripMarkdownFences(raw);
         ImprovementPlanDto dto;
         try
         {
-            var root = JsonDocument.Parse(raw).RootElement;
+            var root = JsonDocument.Parse(json).RootElement;
             var plan = new ImprovementPlan
             {
                 PlayerId = playerId,
@@ -131,17 +132,18 @@ public class AIController : ApiControllerBase
         var raw = await _ai.GenerateTextAsync(prompt);
         _logger.LogInformation("AI nutrition guidance generated for player {PlayerId}", playerId);
 
+        var json = StripMarkdownFences(raw);
         NutritionGuidanceDto dto;
         try
         {
-            var root = JsonDocument.Parse(raw).RootElement;
+            var root = JsonDocument.Parse(json).RootElement;
             var mealSuggestions = GetStr(root, "mealSuggestions");
             var foodsToPrioritize = GetStr(root, "foodsToPrioritize");
 
             var hardKeywords = profile
                 .Where(r => r.Severity == NutritionSeverity.Hard && r.SpecificItem != null)
                 .Select(r => r.SpecificItem!.ToLowerInvariant());
-            var outputText = $"{mealSuggestions} {foodsToPrioritize} {raw}".ToLowerInvariant();
+            var outputText = $"{mealSuggestions} {foodsToPrioritize} {json}".ToLowerInvariant();
             var flagged = hardKeywords.Where(k => outputText.Contains(k)).ToList();
             var extraNote = flagged.Any()
                 ? $"\n\nCoach review required: AI output may reference restricted items ({string.Join(", ", flagged)}). Please verify before using."
@@ -211,10 +213,12 @@ public class AIController : ApiControllerBase
         var raw = await _ai.GenerateTextAsync(prompt);
         _logger.LogInformation("AI weekly nutrition plan generated for player {PlayerId}", playerId);
 
+        var json = StripMarkdownFences(raw);
+
         WeeklyNutritionPlanDto planDto;
         try
         {
-            var root = JsonDocument.Parse(raw).RootElement;
+            var root = JsonDocument.Parse(json).RootElement;
             var weekStart = DateTime.UtcNow.AddDays(-(int)DateTime.UtcNow.DayOfWeek + 1);
 
             planDto = new WeeklyNutritionPlanDto
@@ -598,6 +602,17 @@ public class AIController : ApiControllerBase
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private static string StripMarkdownFences(string raw)
+    {
+        var s = raw.Trim();
+        if (!s.StartsWith("```")) return s;
+        var nl = s.IndexOf('\n');
+        if (nl >= 0) s = s[(nl + 1)..];
+        var fence = s.LastIndexOf("```");
+        if (fence >= 0) s = s[..fence];
+        return s.Trim();
+    }
 
     private static string? GetStr(JsonElement el, string key) =>
         el.TryGetProperty(key, out var p) ? p.GetString() : null;
