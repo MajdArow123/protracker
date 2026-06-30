@@ -5,6 +5,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
+import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { useToast } from '../../context/ToastContext';
 import { usePlayer } from '../../hooks/usePlayers';
 import { usePlayerImprovementPlans, useCreateImprovementPlan, useUpdateImprovementPlan } from '../../hooks/useImprovement';
@@ -166,10 +167,18 @@ export function ImprovementPage() {
       )}
 
       {isGenerating && (
-        <div className="max-w-2xl mb-4 flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
-          <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
-          <span>Claude is analyzing player data and generating a personalized plan…</span>
-          <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~5–10 sec</span>
+        <div className="max-w-2xl mb-4">
+          <AILoadingPanel
+            compact
+            primaryText="Generating improvement plan..."
+            messages={[
+              'Analyzing player data...',
+              'Identifying key areas for growth...',
+              'Building training recommendations...',
+              'Finalizing the plan...',
+            ]}
+            estimatedSeconds={12}
+          />
         </div>
       )}
 

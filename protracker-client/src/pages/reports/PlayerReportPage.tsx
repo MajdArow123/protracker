@@ -5,6 +5,7 @@ import {
   AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb,
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
+import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -230,11 +231,17 @@ export function PlayerReportPage() {
         </div>
       }>
         {isGenerating && (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
-            <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
-            <span>Analyzing performance data…</span>
-            <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~5–10 sec</span>
-          </div>
+          <AILoadingPanel
+            compact
+            primaryText="Analyzing performance data..."
+            messages={[
+              'Reviewing assessment history...',
+              'Identifying strengths and weaknesses...',
+              'Generating data-driven insights...',
+              'Finalizing analysis...',
+            ]}
+            estimatedSeconds={10}
+          />
         )}
         {aiError && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">

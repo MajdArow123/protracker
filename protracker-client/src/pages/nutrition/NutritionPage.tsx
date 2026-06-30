@@ -8,6 +8,7 @@ import { ConfirmModal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
+import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { useToast } from '../../context/ToastContext';
 import { usePlayer } from '../../hooks/usePlayers';
@@ -389,6 +390,7 @@ export function NutritionPage() {
 
   const [tab, setTab] = useState<Tab>('profile');
   const [aiError, setAiError] = useState<string | null>(null);
+  const [weeklyError, setWeeklyError] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<NutritionProfileItem | null>(null);
   const [showNewItem, setShowNewItem] = useState(false);
   const [profileForm, setProfileForm] = useState<ProfileForm>(EMPTY_PROFILE);
@@ -460,6 +462,16 @@ export function NutritionPage() {
         setShowNewGuidance(false);
       }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
+  }
+
+  async function handleGenerateWeekly() {
+    setWeeklyError(null);
+    try {
+      await generateWeekly.mutateAsync(playerId);
+      showToast('Your weekly plan is ready!', 'success');
+    } catch {
+      setWeeklyError('Plan generation failed. Please try again.');
+    }
   }
 
   async function handleGenerateAI() {
@@ -624,11 +636,17 @@ export function NutritionPage() {
               )}
 
               {isGenerating && (
-                <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800 text-violet-700 dark:text-violet-300 text-sm">
-                  <div className="w-2 h-2 bg-violet-500 rounded-full animate-pulse flex-shrink-0" />
-                  <span>Generating personalized nutrition plan with meal schedule…</span>
-                  <span className="text-xs text-violet-500 ml-auto whitespace-nowrap">~10 sec</span>
-                </div>
+                <AILoadingPanel
+                  compact
+                  primaryText="Generating nutrition plan..."
+                  messages={[
+                    'Analyzing dietary restrictions...',
+                    'Designing a balanced meal schedule...',
+                    'Calculating macros and calories...',
+                    'Finalizing recommendations...',
+                  ]}
+                  estimatedSeconds={15}
+                />
               )}
 
               {aiError && (
@@ -691,31 +709,57 @@ export function NutritionPage() {
         <div className="space-y-4">
           {loadingWeekly ? (
             <PageSpinner />
+          ) : generateWeekly.isPending ? (
+            <AILoadingPanel
+              primaryText="Generating your weekly plan..."
+              messages={[
+                'Analyzing dietary restrictions...',
+                'Planning Monday through Wednesday...',
+                'Balancing macros across the week...',
+                'Planning Thursday through Sunday...',
+                'Finalizing nutritional values...',
+                'Almost done...',
+              ]}
+              note="This usually takes 30-60 seconds since we're planning every meal for the full week"
+              estimatedSeconds={45}
+            />
           ) : !weeklyPlan ? (
             <div className="space-y-4">
+              {weeklyError && (
+                <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+                  {weeklyError}
+                  <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+                </div>
+              )}
               <EmptyState
                 icon={<CalendarDays size={36} />}
                 title="No weekly plan yet"
                 description="Generate a personalized 7-day meal plan for this player using AI"
-                action={{
-                  label: generateWeekly.isPending ? 'Generating…' : 'Generate with AI',
-                  onClick: () => generateWeekly.mutateAsync(playerId).then(() => showToast('Weekly plan generated!', 'success')).catch(() => showToast('Generation failed. Please try again.', 'error')),
-                }}
+                action={{ label: 'Generate with AI', onClick: handleGenerateWeekly }}
               />
             </div>
           ) : (
-            <WeeklyNutritionPlanView
-              plan={weeklyPlan}
-              canSwap={false}
-              isCoach={true}
-              playerId={playerId}
-              onGenerate={() =>
-                generateWeekly.mutateAsync(playerId)
-                  .then(() => showToast('New weekly plan generated!', 'success'))
-                  .catch(() => showToast('Generation failed. Please try again.', 'error'))
-              }
-              isGenerating={generateWeekly.isPending}
-            />
+            <motion.div
+              key="weekly-plan"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+            >
+              {weeklyError && (
+                <div className="flex items-center gap-2 px-4 py-3 mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
+                  {weeklyError}
+                  <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+                </div>
+              )}
+              <WeeklyNutritionPlanView
+                plan={weeklyPlan}
+                canSwap={false}
+                isCoach={true}
+                playerId={playerId}
+                onGenerate={handleGenerateWeekly}
+                isGenerating={generateWeekly.isPending}
+              />
+            </motion.div>
           )}
         </div>
       )}
