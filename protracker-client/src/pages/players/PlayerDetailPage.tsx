@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayer, useDeletePlayer } from '../../hooks/usePlayers';
@@ -21,6 +21,8 @@ import {
   Calendar, Clock, ChevronRight,
 } from 'lucide-react';
 import type { InjuryRecord, MatchPerformance, TrainingSession } from '../../types';
+import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
+import { useAutoSave } from '../../hooks/useAutoSave';
 
 type Tab = 'overview' | 'injuries' | 'matches' | 'training';
 
@@ -147,12 +149,22 @@ export function PlayerDetailPage() {
     setInjuryForm({ injuryDate: r.injuryDate, injuryType: r.injuryType, severity: r.severity, recoveryStatus: r.recoveryStatus, notes: r.notes ?? '', expectedReturnDate: r.expectedReturnDate ?? '' });
     setShowNewInjury(false);
   }
+  function buildInjuryPayload() {
+    return { playerId, injuryDate: injuryForm.injuryDate, injuryType: injuryForm.injuryType, severity: injuryForm.severity as InjuryRecord['severity'], recoveryStatus: injuryForm.recoveryStatus as InjuryRecord['recoveryStatus'], notes: injuryForm.notes || undefined, expectedReturnDate: injuryForm.expectedReturnDate || undefined };
+  }
+
+  const autoSaveInjury = useCallback(async () => {
+    if (!editingInjury || !injuryForm.injuryType.trim()) return;
+    await updateInjury.mutateAsync({ id: editingInjury.id, data: buildInjuryPayload() });
+  }, [editingInjury, injuryForm]);
+
+  const { status: injurySaveStatus, flush: flushInjury } = useAutoSave(!!editingInjury, injuryForm, autoSaveInjury);
+
   async function saveInjury() {
     if (!injuryForm.injuryType.trim()) { showToast('Injury type required', 'error'); return; }
-    const payload = { playerId, injuryDate: injuryForm.injuryDate, injuryType: injuryForm.injuryType, severity: injuryForm.severity as InjuryRecord['severity'], recoveryStatus: injuryForm.recoveryStatus as InjuryRecord['recoveryStatus'], notes: injuryForm.notes || undefined, expectedReturnDate: injuryForm.expectedReturnDate || undefined };
     try {
-      if (editingInjury) { await updateInjury.mutateAsync({ id: editingInjury.id, data: payload }); showToast('Injury updated', 'success'); setEditingInjury(null); }
-      else { await createInjury.mutateAsync(payload as Parameters<typeof createInjury.mutateAsync>[0]); showToast('Injury recorded', 'success'); setShowNewInjury(false); }
+      if (editingInjury) { await flushInjury(); setEditingInjury(null); }
+      else { await createInjury.mutateAsync(buildInjuryPayload() as Parameters<typeof createInjury.mutateAsync>[0]); showToast('Injury recorded', 'success'); setShowNewInjury(false); }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
 
@@ -162,14 +174,27 @@ export function PlayerDetailPage() {
     setMatchForm({ matchDate: m.matchDate, opponent: m.opponent, performanceRating: String(m.performanceRating), notes: m.notes ?? '', sportSpecificStats: m.sportSpecificStats ?? '' });
     setShowNewMatch(false);
   }
+  function buildMatchPayload() {
+    const rating = Number(matchForm.performanceRating);
+    return { playerId, matchDate: matchForm.matchDate, opponent: matchForm.opponent, performanceRating: rating, notes: matchForm.notes || undefined, sportSpecificStats: matchForm.sportSpecificStats || undefined };
+  }
+
+  const autoSaveMatch = useCallback(async () => {
+    if (!editingMatch || !matchForm.opponent.trim()) return;
+    const rating = Number(matchForm.performanceRating);
+    if (isNaN(rating) || rating < 1 || rating > 10) return;
+    await updateMatch.mutateAsync({ id: editingMatch.id, data: buildMatchPayload() });
+  }, [editingMatch, matchForm]);
+
+  const { status: matchSaveStatus, flush: flushMatch } = useAutoSave(!!editingMatch, matchForm, autoSaveMatch);
+
   async function saveMatch() {
     if (!matchForm.opponent.trim()) { showToast('Opponent required', 'error'); return; }
     const rating = Number(matchForm.performanceRating);
     if (isNaN(rating) || rating < 1 || rating > 10) { showToast('Rating must be 1–10', 'error'); return; }
-    const payload = { playerId, matchDate: matchForm.matchDate, opponent: matchForm.opponent, performanceRating: rating, notes: matchForm.notes || undefined, sportSpecificStats: matchForm.sportSpecificStats || undefined };
     try {
-      if (editingMatch) { await updateMatch.mutateAsync({ id: editingMatch.id, data: payload }); showToast('Match updated', 'success'); setEditingMatch(null); }
-      else { await createMatch.mutateAsync(payload as Parameters<typeof createMatch.mutateAsync>[0]); showToast('Match recorded', 'success'); setShowNewMatch(false); }
+      if (editingMatch) { await flushMatch(); setEditingMatch(null); }
+      else { await createMatch.mutateAsync(buildMatchPayload() as Parameters<typeof createMatch.mutateAsync>[0]); showToast('Match recorded', 'success'); setShowNewMatch(false); }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
 
@@ -179,14 +204,27 @@ export function PlayerDetailPage() {
     setTrainingForm({ date: s.date, durationMinutes: String(s.durationMinutes), teamId: String(s.teamId), attendanceStatus: s.attendanceStatus, notes: s.notes ?? '' });
     setShowNewSession(false);
   }
+  function buildSessionPayload() {
+    const duration = Number(trainingForm.durationMinutes);
+    return { playerId, teamId: Number(trainingForm.teamId), date: trainingForm.date, durationMinutes: duration, attendanceStatus: trainingForm.attendanceStatus as TrainingSession['attendanceStatus'], notes: trainingForm.notes || undefined };
+  }
+
+  const autoSaveSession = useCallback(async () => {
+    if (!editingSession || !trainingForm.teamId) return;
+    const duration = Number(trainingForm.durationMinutes);
+    if (isNaN(duration) || duration < 1 || duration > 300) return;
+    await updateSession.mutateAsync({ id: editingSession.id, data: buildSessionPayload() });
+  }, [editingSession, trainingForm]);
+
+  const { status: sessionSaveStatus, flush: flushSession } = useAutoSave(!!editingSession, trainingForm, autoSaveSession);
+
   async function saveSession() {
     const duration = Number(trainingForm.durationMinutes);
     if (isNaN(duration) || duration < 1 || duration > 300) { showToast('Duration must be 1–300 min', 'error'); return; }
     if (!trainingForm.teamId) { showToast('Select a team', 'error'); return; }
-    const payload = { playerId, teamId: Number(trainingForm.teamId), date: trainingForm.date, durationMinutes: duration, attendanceStatus: trainingForm.attendanceStatus as TrainingSession['attendanceStatus'], notes: trainingForm.notes || undefined };
     try {
-      if (editingSession) { await updateSession.mutateAsync({ id: editingSession.id, data: payload }); showToast('Session updated', 'success'); setEditingSession(null); }
-      else { await createSession.mutateAsync(payload as Parameters<typeof createSession.mutateAsync>[0]); showToast('Session recorded', 'success'); setShowNewSession(false); }
+      if (editingSession) { await flushSession(); setEditingSession(null); }
+      else { await createSession.mutateAsync(buildSessionPayload() as Parameters<typeof createSession.mutateAsync>[0]); showToast('Session recorded', 'success'); setShowNewSession(false); }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
 
@@ -517,10 +555,11 @@ export function PlayerDetailPage() {
                       <textarea value={injuryForm.notes} onChange={e => setInjuryForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Details…" className={TEXTAREA_CLS} />
                     </div>
                   </div>
-                  <div className="flex justify-end gap-3 mt-4">
+                  <div className="flex items-center justify-end gap-3 mt-4">
+                    {editingInjury && <AutoSaveStatus status={injurySaveStatus} />}
                     <button onClick={() => { setEditingInjury(null); setShowNewInjury(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
                     <button onClick={saveInjury} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                      {editingInjury ? 'Save Changes' : 'Record Injury'}
+                      {editingInjury ? 'Done' : 'Record Injury'}
                     </button>
                   </div>
                 </div>
@@ -589,10 +628,11 @@ export function PlayerDetailPage() {
                       <textarea value={matchForm.notes} onChange={e => setMatchForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Match observations…" className={TEXTAREA_CLS} />
                     </div>
                   </div>
-                  <div className="flex justify-end gap-3 mt-4">
+                  <div className="flex items-center justify-end gap-3 mt-4">
+                    {editingMatch && <AutoSaveStatus status={matchSaveStatus} />}
                     <button onClick={() => { setEditingMatch(null); setShowNewMatch(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
                     <button onClick={saveMatch} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                      {editingMatch ? 'Save Changes' : 'Record Match'}
+                      {editingMatch ? 'Done' : 'Record Match'}
                     </button>
                   </div>
                 </div>
@@ -650,10 +690,11 @@ export function PlayerDetailPage() {
                       <textarea value={trainingForm.notes} onChange={e => setTrainingForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Session notes…" className={TEXTAREA_CLS} />
                     </div>
                   </div>
-                  <div className="flex justify-end gap-3 mt-4">
+                  <div className="flex items-center justify-end gap-3 mt-4">
+                    {editingSession && <AutoSaveStatus status={sessionSaveStatus} />}
                     <button onClick={() => { setEditingSession(null); setShowNewSession(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
                     <button onClick={saveSession} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                      {editingSession ? 'Save Changes' : 'Log Session'}
+                      {editingSession ? 'Done' : 'Log Session'}
                     </button>
                   </div>
                 </div>

@@ -6,9 +6,11 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { PageSpinner } from '../../components/ui/Spinner';
+import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { useToast } from '../../context/ToastContext';
 import { useSports } from '../../hooks/useSports';
 import { useTeam, useTeams, useCreateTeam, useUpdateTeam } from '../../hooks/useTeams';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { ArrowLeft, Lock } from 'lucide-react';
 
 interface FormValues { name: string; sportId: string; }
@@ -56,6 +58,14 @@ export function TeamFormPage() {
     if (touched) setErrors(validate(next));
   };
 
+  async function autoSaveTeam() {
+    const errs = validate(values);
+    if (Object.keys(errs).length) return;
+    await updateTeam.mutateAsync({ id: Number(id), data: { name: values.name.trim(), sportId: Number(values.sportId) } });
+  }
+
+  const { status: autoSaveStatus } = useAutoSave(isEdit, values, autoSaveTeam);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
@@ -66,15 +76,9 @@ export function TeamFormPage() {
     const payload = { name: values.name.trim(), sportId: Number(values.sportId) };
 
     try {
-      if (isEdit) {
-        await updateTeam.mutateAsync({ id: Number(id), data: payload });
-        showToast('Team updated', 'success');
-        navigate(`/teams/${id}`);
-      } else {
-        const created = await createTeam.mutateAsync(payload as Parameters<typeof createTeam.mutateAsync>[0]);
-        showToast('Team created', 'success');
-        navigate(`/teams/${(created as { id: number }).id}`);
-      }
+      const created = await createTeam.mutateAsync(payload as Parameters<typeof createTeam.mutateAsync>[0]);
+      showToast('Team created', 'success');
+      navigate(`/teams/${(created as { id: number }).id}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Save failed', 'error');
     }
@@ -134,13 +138,14 @@ export function TeamFormPage() {
             )}
           </div>
         </Card>
-        <div className="flex justify-end gap-3">
+        <div className="flex items-center justify-end gap-3">
+          {isEdit && <AutoSaveStatus status={autoSaveStatus} />}
           <Button type="button" variant="secondary" onClick={() => navigate(isEdit ? `/teams/${id}` : '/teams')}>
-            Cancel
+            {isEdit ? 'Back' : 'Cancel'}
           </Button>
-          <Button type="submit" isLoading={isLoading}>
-            {isEdit ? 'Save Changes' : 'Create Team'}
-          </Button>
+          {!isEdit && (
+            <Button type="submit" isLoading={isLoading}>Create Team</Button>
+          )}
         </div>
       </form>
     </PageWrapper>

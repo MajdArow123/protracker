@@ -7,6 +7,8 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmModal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { useToast } from '../../context/ToastContext';
 import { usePlayer } from '../../hooks/usePlayers';
 import {
@@ -401,11 +403,28 @@ export function NutritionPage() {
     setProfileForm({ preferenceType: item.preferenceType, category: item.category, specificItem: item.specificItem ?? '', severity: item.severity, notes: item.notes ?? '' });
     setShowNewItem(false);
   }
+  function buildProfileItemData() {
+    return { preferenceType: profileForm.preferenceType, category: profileForm.category, specificItem: profileForm.specificItem || undefined, severity: profileForm.severity, notes: profileForm.notes || undefined } as Omit<NutritionProfileItem, 'id' | 'playerId'>;
+  }
+
+  async function autoSaveItem() {
+    if (!editingItem) return;
+    await updateItem.mutateAsync({ id: editingItem.id, data: buildProfileItemData() });
+  }
+
+  const { status: itemSaveStatus, flush: flushItem } = useAutoSave(!!editingItem, profileForm, autoSaveItem, 400);
+
   async function saveProfileItem() {
-    const data = { preferenceType: profileForm.preferenceType, category: profileForm.category, specificItem: profileForm.specificItem || undefined, severity: profileForm.severity, notes: profileForm.notes || undefined } as Omit<NutritionProfileItem, 'id' | 'playerId'>;
+    const data = buildProfileItemData();
     try {
-      if (editingItem) { await updateItem.mutateAsync({ id: editingItem.id, data }); showToast('Item updated', 'success'); setEditingItem(null); }
-      else { await createItem.mutateAsync(data); showToast('Item added', 'success'); setShowNewItem(false); }
+      if (editingItem) {
+        await flushItem();
+        setEditingItem(null);
+      } else {
+        await createItem.mutateAsync(data);
+        showToast('Item added', 'success');
+        setShowNewItem(false);
+      }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
 
@@ -417,12 +436,29 @@ export function NutritionPage() {
     setGuidanceForm(f);
     setShowNewGuidance(false);
   }
-  async function saveGuidance() {
+  function buildGuidancePayload() {
     const payload: Partial<NutritionGuidance> = { playerId };
     GUIDANCE_FIELDS.forEach(f => { (payload as Record<string, unknown>)[f.key as string] = guidanceForm[f.key] || undefined; });
+    return payload;
+  }
+
+  async function autoSaveGuidance() {
+    if (!editingGuidance) return;
+    await updateGuidance.mutateAsync({ id: editingGuidance.id, data: buildGuidancePayload() });
+  }
+
+  const { status: guidanceSaveStatus, flush: flushGuidance } = useAutoSave(!!editingGuidance, guidanceForm, autoSaveGuidance);
+
+  async function saveGuidance() {
     try {
-      if (editingGuidance) { await updateGuidance.mutateAsync({ id: editingGuidance.id, data: payload }); showToast('Guidance updated', 'success'); setEditingGuidance(null); }
-      else { await createGuidance.mutateAsync(payload); showToast('Guidance created', 'success'); setShowNewGuidance(false); }
+      if (editingGuidance) {
+        await flushGuidance();
+        setEditingGuidance(null);
+      } else {
+        await createGuidance.mutateAsync(buildGuidancePayload());
+        showToast('Guidance created', 'success');
+        setShowNewGuidance(false);
+      }
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
 
@@ -505,10 +541,11 @@ export function NutritionPage() {
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 mt-4">
+              <div className="flex items-center justify-end gap-3 mt-4">
+                {editingItem && <AutoSaveStatus status={itemSaveStatus} />}
                 <button onClick={() => { setEditingItem(null); setShowNewItem(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
                 <button onClick={saveProfileItem} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                  {editingItem ? 'Save Changes' : 'Add Restriction'}
+                  {editingItem ? 'Done' : 'Add Restriction'}
                 </button>
               </div>
             </div>
@@ -622,10 +659,11 @@ export function NutritionPage() {
                   </div>
                 ))}
               </div>
-              <div className="flex justify-end gap-3 mt-5">
+              <div className="flex items-center justify-end gap-3 mt-5">
+                {editingGuidance && <AutoSaveStatus status={guidanceSaveStatus} />}
                 <button onClick={() => { setEditingGuidance(null); setShowNewGuidance(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
                 <button onClick={saveGuidance} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                  {editingGuidance ? 'Save Changes' : 'Create Guidance'}
+                  {editingGuidance ? 'Done' : 'Create Guidance'}
                 </button>
               </div>
             </div>

@@ -6,10 +6,12 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { PageSpinner } from '../../components/ui/Spinner';
+import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { useToast } from '../../context/ToastContext';
 import { useSports, usePositions } from '../../hooks/useSports';
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayer, useCreatePlayer, useUpdatePlayer } from '../../hooks/usePlayers';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { ArrowLeft, Lock } from 'lucide-react';
 
 interface FormValues {
@@ -230,14 +232,8 @@ export function PlayerFormPage() {
     setValues(v => ({ ...v, weightKg: lbToKg(e.target.value) }));
   }
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setTouched(true);
-    const errs = validate(values);
-    setErrors(errs);
-    if (Object.keys(errs).length) return;
-
-    const payload = {
+  function buildPayload() {
+    return {
       fullName: values.fullName.trim(),
       age: values.age ? Number(values.age) : undefined,
       height: values.heightCm ? Number(values.heightCm) : undefined,
@@ -250,17 +246,27 @@ export function PlayerFormPage() {
       coachNotes: values.coachNotes || undefined,
       injuryNotes: values.injuryNotes || undefined,
     };
+  }
+
+  async function autoSavePlayer() {
+    const errs = validate(values);
+    if (Object.keys(errs).length) return;
+    await updatePlayer.mutateAsync({ id: Number(id), data: buildPayload() });
+  }
+
+  const { status: autoSaveStatus } = useAutoSave(isEdit, values, autoSavePlayer);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setTouched(true);
+    const errs = validate(values);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
 
     try {
-      if (isEdit) {
-        await updatePlayer.mutateAsync({ id: Number(id), data: payload });
-        showToast('Player updated', 'success');
-        navigate(`/players/${id}`);
-      } else {
-        const created = await createPlayer.mutateAsync(payload as Parameters<typeof createPlayer.mutateAsync>[0]);
-        showToast('Player created', 'success');
-        navigate(`/players/${(created as { id: number }).id}`);
-      }
+      const created = await createPlayer.mutateAsync(buildPayload() as Parameters<typeof createPlayer.mutateAsync>[0]);
+      showToast('Player created', 'success');
+      navigate(`/players/${(created as { id: number }).id}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Save failed', 'error');
     }
@@ -479,13 +485,14 @@ export function PlayerFormPage() {
           </div>
         </Card>
 
-        <div className="flex justify-end gap-3">
+        <div className="flex items-center justify-end gap-3">
+          {isEdit && <AutoSaveStatus status={autoSaveStatus} />}
           <Button type="button" variant="secondary" onClick={() => navigate(isEdit ? `/players/${id}` : '/players')}>
-            Cancel
+            {isEdit ? 'Back' : 'Cancel'}
           </Button>
-          <Button type="submit" isLoading={isLoading}>
-            {isEdit ? 'Save Changes' : 'Create Player'}
-          </Button>
+          {!isEdit && (
+            <Button type="submit" isLoading={isLoading}>Create Player</Button>
+          )}
         </div>
       </form>
     </PageWrapper>

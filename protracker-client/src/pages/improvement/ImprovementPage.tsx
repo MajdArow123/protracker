@@ -4,10 +4,12 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { PageSpinner } from '../../components/ui/Spinner';
+import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { useToast } from '../../context/ToastContext';
 import { usePlayer } from '../../hooks/usePlayers';
 import { usePlayerImprovementPlans, useCreateImprovementPlan, useUpdateImprovementPlan } from '../../hooks/useImprovement';
 import { useGenerateImprovementPlan } from '../../hooks/useAI';
+import { useAutoSave } from '../../hooks/useAutoSave';
 import { ArrowLeft, Edit2, Plus, Sparkles, Lightbulb } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { ImprovementPlan } from '../../types';
@@ -85,23 +87,35 @@ export function ImprovementPage() {
     }
   }
 
-  async function save() {
-    const payload = Object.fromEntries(
-      PLAN_FIELDS.map(f => [f.key, values[f.key] || undefined])
-    );
+  function buildPlanPayload() {
+    return Object.fromEntries(PLAN_FIELDS.map(f => [f.key, values[f.key] || undefined]));
+  }
+
+  async function autoSavePlan() {
+    if (!editing) return;
+    await updatePlan.mutateAsync({ id: editing.id, data: buildPlanPayload() });
+  }
+
+  const { status: autoSaveStatus, flush: flushPlan } = useAutoSave(!!editing, values, autoSavePlan);
+
+  async function createNewPlan() {
+    const payload = buildPlanPayload();
     try {
-      if (editing) {
-        await updatePlan.mutateAsync({ id: editing.id, data: payload });
-        showToast('Plan updated', 'success');
-        setEditing(null);
-        setIsAIForm(false);
-      } else {
-        await createPlan.mutateAsync({ ...payload, playerId } as Parameters<typeof createPlan.mutateAsync>[0]);
-        showToast('Plan created', 'success');
-        setShowNew(false);
-      }
+      await createPlan.mutateAsync({ ...payload, playerId } as Parameters<typeof createPlan.mutateAsync>[0]);
+      showToast('Plan created', 'success');
+      setShowNew(false);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Save failed', 'error');
+    }
+  }
+
+  async function done() {
+    if (editing) {
+      await flushPlan();
+      setEditing(null);
+      setIsAIForm(false);
+    } else {
+      await createNewPlan();
     }
   }
 
@@ -203,9 +217,10 @@ export function ImprovementPage() {
                 {isGenerating ? 'Regenerating…' : 'Regenerate'}
               </button>
             )}
-            <div className="flex gap-3 ml-auto">
+            <div className="flex items-center gap-3 ml-auto">
+              {editing && <AutoSaveStatus status={autoSaveStatus} />}
               <Button variant="secondary" onClick={() => { setEditing(null); setShowNew(false); setIsAIForm(false); }}>Cancel</Button>
-              <Button onClick={save} isLoading={isSaving}>{editing ? 'Save Changes' : 'Create Plan'}</Button>
+              <Button onClick={done} isLoading={isSaving}>{editing ? 'Done' : 'Create Plan'}</Button>
             </div>
           </div>
         </div>
