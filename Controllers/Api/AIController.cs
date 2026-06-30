@@ -208,7 +208,7 @@ public class AIController : ApiControllerBase
             : "None recorded";
 
         var prompt = BuildWeeklyNutritionPrompt(player, restrictionBlock);
-        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 8192);
+        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 4096, modelOverride: "claude-haiku-4-5-20251001");
         _logger.LogInformation("AI weekly nutrition plan generated for player {PlayerId}", playerId);
 
         WeeklyNutritionPlanDto planDto;
@@ -518,44 +518,20 @@ public class AIController : ApiControllerBase
 
     private static string BuildWeeklyNutritionPrompt(Player p, string restrictionBlock)
     {
-        return "You are a professional sports nutritionist. Generate a complete 7-day nutrition plan for this athlete.\n\n"
-            + $"Athlete: {p.FullName}\n"
-            + $"Sport: {p.Sport.Name}\n"
-            + $"Position: {p.Position.Name}\n"
-            + $"Age: {p.Age}\n\n"
-            + "DIETARY RESTRICTIONS (MUST BE RESPECTED - CRITICAL):\n"
-            + restrictionBlock + "\n\n"
-            + "CRITICAL MEAL VARIETY RULES:\n"
-            + "- Each day MUST have DIFFERENT meals. Do NOT repeat the same breakfast, lunch, or dinner across the week.\n"
-            + "- Vary the protein sources each day (e.g. chicken, fish, beef, eggs, legumes across different days).\n"
-            + "- Vary the carb sources each day (rice, pasta, potatoes, oats, quinoa across different days).\n"
-            + "- Each day should feel distinct and appealing, not a copy of another day.\n\n"
-            + "Return ONLY valid JSON, no markdown or other text:\n"
-            + "{\n"
-            + "  \"days\": [\n"
-            + "    {\n"
-            + "      \"dayOfWeek\": \"Monday\",\n"
-            + "      \"calories\": 2800,\n"
-            + "      \"macros\": {\"protein\": 160, \"carbs\": 320, \"fats\": 80},\n"
-            + "      \"meals\": [\n"
-            + "        {\n"
-            + "          \"mealType\": \"Breakfast\",\n"
-            + "          \"time\": \"7:00 AM\",\n"
-            + "          \"items\": [\n"
-            + "            {\"food\": \"Oats\", \"portion\": \"100g\", \"calories\": 370, \"protein\": 13, \"carbs\": 67, \"fats\": 7}\n"
-            + "          ]\n"
-            + "        },\n"
-            + "        {\"mealType\": \"Lunch\", \"time\": \"12:30 PM\", \"items\": []},\n"
-            + "        {\"mealType\": \"Snack\", \"time\": \"3:30 PM\", \"items\": []},\n"
-            + "        {\"mealType\": \"Dinner\", \"time\": \"7:00 PM\", \"items\": []},\n"
-            + "        {\"mealType\": \"PostWorkout\", \"time\": \"Within 30 min of training\", \"items\": []}\n"
-            + "      ]\n"
-            + "    }\n"
-            + "    // ... repeat for Tuesday through Sunday with DIFFERENT meals each day\n"
-            + "  ]\n"
-            + "}\n\n"
-            + "Include 3-5 food items per meal with accurate macros. All numbers must be integers. All 7 days required.\n"
-            + "Never include foods conflicting with the restrictions above. Return ONLY the JSON object.";
+        return "Sports nutritionist. Create a 7-day meal plan. Return ONLY valid JSON, no extra text.\n\n"
+            + $"Athlete: {p.FullName}, {p.Sport.Name} {p.Position.Name}, age {p.Age}\n"
+            + "DIETARY RESTRICTIONS (NEVER violate):\n" + restrictionBlock + "\n\n"
+            + "Rules: vary protein/carb sources each day. Each day must have DIFFERENT meals.\n\n"
+            + "JSON format (all 7 days, exactly 4 meals each: Breakfast/Lunch/Snack/Dinner, exactly 3 food items per meal, all integers):\n"
+            + "{\"days\":[{\"dayOfWeek\":\"Monday\",\"calories\":2800,\"macros\":{\"protein\":160,\"carbs\":320,\"fats\":80},"
+            + "\"meals\":[{\"mealType\":\"Breakfast\",\"time\":\"7:00 AM\",\"items\":["
+            + "{\"food\":\"Oats\",\"portion\":\"80g\",\"calories\":300,\"protein\":10,\"carbs\":54,\"fats\":6},"
+            + "{\"food\":\"Banana\",\"portion\":\"1 medium\",\"calories\":90,\"protein\":1,\"carbs\":23,\"fats\":0},"
+            + "{\"food\":\"Milk\",\"portion\":\"200ml\",\"calories\":100,\"protein\":7,\"carbs\":10,\"fats\":4}]},"
+            + "{\"mealType\":\"Lunch\",\"time\":\"12:30 PM\",\"items\":[...]}, "
+            + "{\"mealType\":\"Snack\",\"time\":\"3:30 PM\",\"items\":[...]}, "
+            + "{\"mealType\":\"Dinner\",\"time\":\"7:00 PM\",\"items\":[...]}]},"
+            + "...Tuesday through Sunday with different meals...]}";
     }
 
     private static string BuildInsightsPrompt(

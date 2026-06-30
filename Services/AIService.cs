@@ -6,7 +6,7 @@ namespace ProTracker.Services;
 
 public interface IAIService
 {
-    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null);
+    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null);
 }
 
 public class AIService : IAIService
@@ -24,11 +24,11 @@ public class AIService : IAIService
         _logger = logger;
     }
 
-    public async Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null)
+    public async Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null)
     {
         var body = new
         {
-            model = _model,
+            model = modelOverride ?? _model,
             max_tokens = maxTokensOverride ?? _maxTokens,
             messages = new[] { new { role = "user", content = prompt } }
         };
