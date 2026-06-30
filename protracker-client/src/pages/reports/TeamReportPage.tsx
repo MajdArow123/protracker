@@ -52,10 +52,17 @@ export function TeamReportPage() {
 
   const isGenerating = generateInsights.isPending;
 
-  const barData = playerAverageScores.map(p => ({
-    name: p.playerName.split(' ')[0], // first name only for chart
-    score: parseFloat(p.averageScore.toFixed(1)),
-  }));
+  const barData = [...playerAverageScores]
+    .sort((a, b) => b.averageScore - a.averageScore) // highest first
+    .map(p => ({
+      name: p.playerName.split(' ')[0],
+      score: parseFloat(p.averageScore.toFixed(1)),
+    }));
+
+  const assessedScores = playerAverageScores.filter(p => p.averageScore > 0);
+  const teamAvg = assessedScores.length > 0
+    ? parseFloat((assessedScores.reduce((s, p) => s + p.averageScore, 0) / assessedScores.length).toFixed(1))
+    : null;
 
   const radarData = Object.entries(averageScoreByCategory).map(([subject, value]) => ({
     subject,
@@ -106,14 +113,25 @@ export function TeamReportPage() {
       )}
 
       {/* Team performance bar chart */}
-      <Card header="Player Performance Comparison">
+      <Card header={
+        <div>
+          <p className="font-semibold text-gray-800 dark:text-gray-100">Player Performance Comparison</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal">
+            Average assessment score per player (0–10 scale) · sorted highest to lowest
+            {teamAvg !== null && <> · <span className="text-indigo-500 dark:text-indigo-400">Team avg: {teamAvg}</span></>}
+          </p>
+        </div>
+      }>
         {barData.length === 0 || barData.every(d => d.score === 0) ? (
           <EmptyState title="No assessment data" description="Players have not been assessed yet" />
         ) : (
           <BarChartWrapper
             data={barData}
             series={[{ key: 'score', name: 'Avg Score', color: '#6366f1' }]}
-            height={260}
+            height={280}
+            yAxisLabel="Score / 10"
+            showValueLabels
+            referenceLine={teamAvg !== null ? { value: teamAvg, label: `Avg ${teamAvg}` } : undefined}
           />
         )}
       </Card>
