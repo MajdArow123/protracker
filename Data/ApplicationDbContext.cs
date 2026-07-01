@@ -41,6 +41,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<TrainingPlan> TrainingPlans => Set<TrainingPlan>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
+    public DbSet<PlayerTask> PlayerTasks => Set<PlayerTask>();
 
     public DbSet<Sport> Sports => Set<Sport>();
     public DbSet<Position> Positions => Set<Position>();
@@ -198,6 +199,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(i => i.PlayerId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PlayerTask>()
+            .HasOne(t => t.Player)
+            .WithMany()
+            .HasForeignKey(t => t.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PlayerTask>()
+            .HasIndex(t => t.CoachId);
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

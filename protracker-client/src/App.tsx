@@ -27,6 +27,8 @@ import { PlayerReportPage } from './pages/reports/PlayerReportPage';
 import { TeamReportPage } from './pages/reports/TeamReportPage';
 import { ComparePlayersPage } from './pages/reports/ComparePlayersPage';
 import { FoodAlternativesPage } from './pages/nutrition/FoodAlternativesPage';
+import { TasksPage } from './pages/tasks/TasksPage';
+import { MyTasksPage } from './pages/tasks/MyTasksPage';
 import { PageSpinner } from './components/ui/Spinner';
 import { LandingPage } from './pages/LandingPage';
 import { CoachProfilePage } from './pages/profile/CoachProfilePage';
@@ -68,6 +70,7 @@ function AppRoutes() {
             <Route path="/teams/:id" element={<TeamDetailPage />} />
             <Route path="/teams/:id/edit" element={<TeamFormPage />} />
             <Route path="/players" element={<PlayersPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
             <Route path="/players/new" element={<PlayerFormPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
             <Route path="/players/:id/edit" element={<PlayerFormPage />} />
@@ -107,6 +110,7 @@ function AppRoutes() {
               path="/player-dashboard/improvement"
               element={<PlayerImprovementDashPage />}
             />
+            <Route path="/player-dashboard/tasks" element={<MyTasksPage />} />
             <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
             {/* Athlete can view their team in read-only mode */}
             <Route path="/player-dashboard/team/:id" element={<TeamDetailPage />} />

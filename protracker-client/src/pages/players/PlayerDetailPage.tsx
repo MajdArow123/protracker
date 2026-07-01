@@ -18,14 +18,17 @@ import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,
   Plus, Edit2, Activity, Dumbbell, ShieldAlert, Star,
-  Calendar, Clock, ChevronRight,
+  Calendar, Clock, ChevronRight, CheckSquare,
 } from 'lucide-react';
-import type { InjuryRecord, MatchPerformance, TrainingSession } from '../../types';
+import type { InjuryRecord, MatchPerformance, TrainingSession, PlayerTask } from '../../types';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
 import { useAutoSave } from '../../hooks/useAutoSave';
+import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
+import { TaskCard } from '../../components/tasks/TaskCard';
+import { AssignTaskModal } from '../../components/tasks/AssignTaskModal';
 
-type Tab = 'overview' | 'injuries' | 'matches' | 'training';
+type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
@@ -117,6 +120,8 @@ export function PlayerDetailPage() {
   const { data: matches = [] } = useMatchPerformance(playerId);
   const { data: sessions = [] } = useTrainingSessions(playerId);
   const { data: assessments = [] } = usePlayerAssessments(playerId);
+  const { data: playerTasks = [] } = useCoachTasks({ playerId });
+  const deleteTask = useDeleteTask();
   const heightUnit = getStoredHeightUnit();
   const weightUnit = getStoredWeightUnit();
 
@@ -132,6 +137,9 @@ export function PlayerDetailPage() {
   const deletePlayer = useDeletePlayer();
 
   const [tab, setTab] = useState<Tab>('overview');
+  const [taskModalOpen, setTaskModalOpen] = useState(false);
+  const [editTask, setEditTask] = useState<PlayerTask | null>(null);
+  const [deleteTaskTarget, setDeleteTaskTarget] = useState<PlayerTask | null>(null);
   const [injuryForm, setInjuryForm] = useState<InjuryFormState>(EMPTY_INJURY);
   const [editingInjury, setEditingInjury] = useState<InjuryRecord | null>(null);
   const [showNewInjury, setShowNewInjury] = useState(false);
@@ -247,6 +255,7 @@ export function PlayerDetailPage() {
     { id: 'injuries', label: 'Injuries', icon: ShieldAlert, count: injuries.length },
     { id: 'matches', label: 'Matches', icon: Star, count: matches.length },
     { id: 'training', label: 'Training', icon: Dumbbell, count: sessions.length },
+    { id: 'tasks', label: 'Tasks', icon: CheckSquare, count: playerTasks.length },
   ];
 
   return (
@@ -729,10 +738,55 @@ export function PlayerDetailPage() {
               )}
             </motion.div>
           )}
+
+          {/* Tasks tab */}
+          {tab === 'tasks' && (
+            <motion.div key="tasks" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-gray-900 dark:text-white">Assigned Tasks</h3>
+                <button
+                  onClick={() => { setEditTask(null); setTaskModalOpen(true); }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <Plus size={13} /> Assign Task
+                </button>
+              </div>
+              {playerTasks.length === 0 ? (
+                <EmptyState
+                  icon={<CheckSquare size={32} />}
+                  title="No tasks assigned"
+                  description="Assign a drill or task to this player."
+                  size="sm"
+                />
+              ) : (
+                <div className="space-y-3">
+                  {playerTasks.map(t => (
+                    <TaskCard
+                      key={t.id}
+                      task={t}
+                      onEdit={() => { setEditTask(t); setTaskModalOpen(true); }}
+                      onDelete={() => setDeleteTaskTarget(t)}
+                    />
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
+      <AssignTaskModal
+        isOpen={taskModalOpen}
+        onClose={() => { setTaskModalOpen(false); setEditTask(null); }}
+        players={player ? [{ id: player.id, name: player.fullName }] : []}
+        task={editTask}
+        lockedPlayerId={player?.id}
+      />
+
       {/* Confirm modals */}
+      <ConfirmModal isOpen={!!deleteTaskTarget} onClose={() => setDeleteTaskTarget(null)}
+        onConfirm={async () => { if (!deleteTaskTarget) return; try { await deleteTask.mutateAsync(deleteTaskTarget.id); showToast('Task deleted', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteTaskTarget(null); } }}
+        title="Delete Task" message={`Delete "${deleteTaskTarget?.title}"?`} confirmLabel="Delete" isLoading={deleteTask.isPending} />
       <ConfirmModal isOpen={!!deleteInjuryTarget} onClose={() => setDeleteInjuryTarget(null)}
         onConfirm={async () => { if (!deleteInjuryTarget) return; try { await deleteInjury.mutateAsync(deleteInjuryTarget.id); showToast('Injury deleted', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteInjuryTarget(null); } }}
         title="Delete Injury Record" message={`Delete "${deleteInjuryTarget?.injuryType}" record?`} confirmLabel="Delete" isLoading={deleteInjury.isPending} />

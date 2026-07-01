@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
-  TrendingUp, X, LogOut, User, ChevronRight,
+  TrendingUp, X, LogOut, User, ChevronRight, CheckSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -20,12 +20,14 @@ const coachNav: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/teams', label: 'Teams', icon: Shield },
   { to: '/players', label: 'Players', icon: Users },
+  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 
 const athleteNav: NavItem[] = [
   { to: '/player-dashboard', label: 'My Dashboard', icon: LayoutDashboard, end: true },
   { to: '/player-dashboard/stats', label: 'My Stats', icon: Activity },
+  { to: '/player-dashboard/tasks', label: 'My Tasks', icon: CheckSquare },
   { to: '/player-dashboard/nutrition', label: 'My Nutrition', icon: Salad },
   { to: '/player-dashboard/improvement', label: 'My Plan', icon: TrendingUp },
 ];

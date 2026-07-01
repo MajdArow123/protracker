@@ -205,6 +205,25 @@ export interface AssessmentPeriod {
   teamId: number;
 }
 
+export type TaskPriority = 'Low' | 'Medium' | 'High';
+export type TaskCategory = 'Training' | 'Nutrition' | 'Recovery' | 'Tactical' | 'Physical' | 'Other';
+
+export interface PlayerTask {
+  id: number;
+  coachId: string;
+  playerId: number;
+  playerName: string;
+  title: string;
+  description?: string | null;
+  dueDate?: string | null;
+  priority: TaskPriority;
+  category: TaskCategory;
+  isCompleted: boolean;
+  completedAt?: string | null;
+  completedNote?: string | null;
+  createdAt: string;
+}
+
 export type InjurySeverity = 'Minor' | 'Moderate' | 'Severe';
 export type RecoveryStatus = 'Active' | 'Recovering' | 'FullyRecovered';
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Excused';
