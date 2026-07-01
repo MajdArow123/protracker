@@ -1,6 +1,6 @@
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  ResponsiveContainer, Tooltip, Legend,
+  ResponsiveContainer, Tooltip, Legend, LabelList,
 } from 'recharts';
 
 interface DataPoint {
@@ -18,18 +18,18 @@ interface Props {
 function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name: string; value: number }[] }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-3 shadow-xl">
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-xl">
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 text-sm">
           <span className="text-gray-400">{p.name}:</span>
-          <span className="font-bold text-white">{Number(p.value).toFixed(1)}</span>
+          <span className="font-bold text-white">{Number(p.value).toFixed(1)} / 10</span>
         </div>
       ))}
     </div>
   );
 }
 
-export function RadarChartWrapper({ data, height = 320, showPrevious }: Props) {
+export function RadarChartWrapper({ data, height = 380, showPrevious }: Props) {
   const hasPrev = showPrevious && data.some(d => d.previousValue !== undefined);
 
   return (
@@ -76,7 +76,14 @@ export function RadarChartWrapper({ data, height = 320, showPrevious }: Props) {
           fill="url(#radarGrad)"
           strokeWidth={2}
           dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }}
-        />
+        >
+          <LabelList
+            dataKey="value"
+            position="outside"
+            formatter={(v: unknown) => (typeof v === 'number' ? v.toFixed(1) : String(v ?? ''))}
+            style={{ fontSize: 10, fontWeight: 700, fill: '#818cf8' }}
+          />
+        </Radar>
       </RadarChart>
     </ResponsiveContainer>
   );

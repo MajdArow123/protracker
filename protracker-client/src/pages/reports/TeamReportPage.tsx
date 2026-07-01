@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
-  ArrowLeft, AlertTriangle, Trophy, Zap, Sparkles, Lightbulb,
+  ArrowLeft, Trophy, Zap, Sparkles, Lightbulb,
   Users, ShieldAlert, BarChart3,
 } from 'lucide-react';
 import { useGenerateTeamInsights } from '../../hooks/useAI';
@@ -85,6 +85,10 @@ export function TeamReportPage() {
     value: parseFloat(value.toFixed(1)),
   }));
 
+  const bestCategory = radarData.length > 0
+    ? radarData.reduce((a, b) => b.value > a.value ? b : a)
+    : null;
+
   const top3 = playerAverageScores.slice(0, 3);
   const needsAttention = playerAverageScores.filter(p => p.averageScore === 0 || p.averageScore < 5);
   const assessed = playerAverageScores.filter(p => p.averageScore > 0).length;
@@ -121,17 +125,17 @@ export function TeamReportPage() {
       <div className="p-4 lg:p-6 space-y-6">
         {/* Metric cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Users size={14} className="text-indigo-500" />
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Players</p>
             </div>
             <p className="text-2xl font-black text-gray-900 dark:text-white">{playerCount}</p>
           </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 size={14} className="text-emerald-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Team Avg</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current Avg Score</p>
             </div>
             {teamAvg !== null ? (
               <p className="text-2xl font-black" style={{
@@ -139,21 +143,24 @@ export function TeamReportPage() {
               }}>{teamAvg}</p>
             ) : <p className="text-2xl font-black text-gray-400">—</p>}
           </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Zap size={14} className="text-indigo-500" />
+              <Zap size={14} className="text-violet-500" />
               <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessed</p>
             </div>
             <p className="text-2xl font-black text-gray-900 dark:text-white">{assessed}/{playerCount}</p>
           </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle size={14} className="text-amber-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active Injuries</p>
+              <Trophy size={14} className="text-amber-500" />
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best Category</p>
             </div>
-            <p className={`text-2xl font-black ${activeInjuryCount > 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-              {activeInjuryCount}
-            </p>
+            {bestCategory ? (
+              <>
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{bestCategory.subject}</p>
+                <p className="text-xs text-amber-500 font-semibold">{bestCategory.value}/10</p>
+              </>
+            ) : <p className="text-2xl font-black text-gray-400">—</p>}
           </div>
         </div>
 
@@ -187,7 +194,7 @@ export function TeamReportPage() {
             {radarData.length === 0 ? (
               <EmptyState title="No data" description="No assessment data for this team" />
             ) : (
-              <RadarChartWrapper data={radarData} height={280} />
+              <RadarChartWrapper data={radarData} height={380} />
             )}
           </Card>
 

@@ -26,7 +26,7 @@ interface Props {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-3 shadow-xl min-w-[140px]">
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-xl min-w-[140px]">
       <p className="text-xs font-semibold text-gray-400 mb-2">{label}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center justify-between gap-4 text-sm">
@@ -42,9 +42,8 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 function getBarGradientId(value: number): string {
-  if (value < 4)  return 'barGrad-red';
-  if (value < 6)  return 'barGrad-amber';
-  if (value < 7.5) return 'barGrad-indigo';
+  if (value < 5) return 'barGrad-red';
+  if (value <= 7) return 'barGrad-amber';
   return 'barGrad-green';
 }
 
@@ -60,7 +59,6 @@ export function BarChartWrapper({ data, series, height = 300, yAxisLabel, refere
           {[
             { id: 'barGrad-red',    color: '#ef4444' },
             { id: 'barGrad-amber',  color: '#f59e0b' },
-            { id: 'barGrad-indigo', color: '#6366f1' },
             { id: 'barGrad-green',  color: '#10b981' },
           ].map(g => (
             <linearGradient key={g.id} id={g.id} x1="0" y1="0" x2="0" y2="1">

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Printer, TrendingUp, TrendingDown, Minus,
-  AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb,
+  AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb, Trophy,
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
@@ -145,6 +145,9 @@ export function PlayerReportPage() {
   const isGenerating = generateInsights.isPending;
 
   // Metric cards data
+  const bestCategory = latest?.statScores?.length
+    ? latest.statScores.reduce((a, b) => b.score > a.score ? b : a)
+    : null;
   const latestAvg = latest?.statScores?.length
     ? latest.statScores.reduce((s, x) => s + x.score, 0) / latest.statScores.length
     : null;
@@ -196,17 +199,17 @@ export function PlayerReportPage() {
 
       {/* Metric cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Activity size={14} className="text-indigo-500" />
             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
           </div>
           <p className="text-2xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
         </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={14} className="text-emerald-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Latest Avg</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current Avg Score</p>
           </div>
           {latestAvg !== null ? (
             <p className="text-2xl font-black" style={{
@@ -214,19 +217,22 @@ export function PlayerReportPage() {
             }}>{latestAvg.toFixed(1)}</p>
           ) : <p className="text-2xl font-black text-gray-400">—</p>}
         </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={14} className="text-amber-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active Injuries</p>
+            <Trophy size={14} className="text-amber-500" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best Category</p>
           </div>
-          <p className={`text-2xl font-black ${activeInjuries.length > 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
-            {activeInjuries.length}
-          </p>
+          {bestCategory ? (
+            <>
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{bestCategory.statCategoryName}</p>
+              <p className="text-xs text-amber-500 font-semibold">{bestCategory.score}/10</p>
+            </>
+          ) : <p className="text-2xl font-black text-gray-400">—</p>}
         </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             {overallTrend !== null && overallTrend >= 0 ? <TrendingUp size={14} className="text-green-500" /> : <TrendingDown size={14} className="text-red-500" />}
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Overall Change</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Improvement</p>
           </div>
           {overallTrend !== null ? (
             <p className={`text-2xl font-black ${overallTrend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -396,7 +402,7 @@ export function PlayerReportPage() {
           {!latest ? (
             <EmptyState title="No assessments" description="No data to display" />
           ) : (
-            <RadarChartWrapper data={radarData} showPrevious={!!previous} height={280} />
+            <RadarChartWrapper data={radarData} showPrevious={!!previous} height={380} />
           )}
         </Card>
 

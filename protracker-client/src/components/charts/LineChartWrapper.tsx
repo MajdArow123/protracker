@@ -1,5 +1,5 @@
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceDot,
 } from 'recharts';
 
@@ -42,8 +42,8 @@ function CustomTooltip({
   });
 
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-xl p-3 shadow-2xl min-w-[160px]">
-      <p className="text-xs font-semibold text-gray-400 mb-2.5 pb-2 border-b border-gray-800">{label}</p>
+    <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-2xl min-w-[160px]">
+      <p className="text-xs font-semibold text-gray-400 mb-2.5 pb-2 border-b border-slate-800">{label}</p>
       <div className="space-y-1.5">
         {sorted.map((p) => {
           const isFocused = focusedKey ? p.dataKey === focusedKey : false;
@@ -59,7 +59,7 @@ function CustomTooltip({
                 <span className={isFocused ? 'text-white font-medium' : 'text-gray-300'}>{p.name}</span>
               </span>
               <span className={`font-bold tabular-nums ${isFocused ? 'text-white' : 'text-gray-400'}`}>
-                {Number(p.value).toFixed(1)}
+                {Number(p.value).toFixed(1)} / 10
               </span>
             </div>
           );
@@ -75,11 +75,11 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 12, right: 24, left: leftMargin, bottom: 4 }}>
+      <ComposedChart data={data} margin={{ top: 12, right: 24, left: leftMargin, bottom: 4 }}>
         <defs>
           {series.map(s => (
             <linearGradient key={s.key} id={`lg-${s.key}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={s.color} stopOpacity={0.25} />
+              <stop offset="5%"  stopColor={s.color} stopOpacity={0.3} />
               <stop offset="95%" stopColor={s.color} stopOpacity={0} />
             </linearGradient>
           ))}
@@ -119,6 +119,26 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
           )}
           cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '3 3' }}
         />
+
+        {series.map((s) => {
+          const isFocused = focusedKey === s.key;
+          // With multiple series, only fill under the focused line — stacking a
+          // semi-transparent fill under every series at once looks muddy. A lone
+          // series always gets its fill since there's nothing to overlap with.
+          if (series.length > 1 && !isFocused) return null;
+          return (
+            <Area
+              key={`area-${s.key}`}
+              type="monotone"
+              dataKey={s.key}
+              stroke="none"
+              fill={`url(#lg-${s.key})`}
+              fillOpacity={1}
+              connectNulls
+              isAnimationActive
+            />
+          );
+        })}
 
         {series.map((s) => {
           const isFocused = focusedKey === s.key;
@@ -164,7 +184,7 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
             />
           );
         })()}
-      </LineChart>
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }
