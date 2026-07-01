@@ -81,7 +81,6 @@ api.interceptors.response.use(
         return api(original);
       } catch {
         tokenStorage.clear();
-        window.location.href = '/login';
         return Promise.reject(error);
       } finally {
         isRefreshing = false;
