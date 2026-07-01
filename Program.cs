@@ -21,11 +21,13 @@ var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 // Add services to the container.
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// Railway injects Postgres connection info as a "postgres://user:pass@host:port/db" URI in
+// DATABASE_URL. Npgsql needs the keyword=value format, so convert when present; otherwise
+// fall back to the "DefaultConnection" config value (used for local development).
+var connectionString = ResolveConnectionString(builder.Configuration);
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+    options.UseNpgsql(connectionString));
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
@@ -197,5 +199,29 @@ app.MapGet("/", () => Results.Json(new { message = "ProTracker API", version = "
 app.MapControllers();
 
 app.Run();
+
+static string ResolveConnectionString(IConfiguration config)
+{
+    var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+    if (string.IsNullOrEmpty(databaseUrl))
+    {
+        return config.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+    }
+
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':', 2);
+    var database = uri.AbsolutePath.TrimStart('/');
+
+    return new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Username = Uri.UnescapeDataString(userInfo[0]),
+        Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "",
+        Database = database,
+        SslMode = Npgsql.SslMode.Prefer,
+    }.ConnectionString;
+}
 
 public partial class Program { }

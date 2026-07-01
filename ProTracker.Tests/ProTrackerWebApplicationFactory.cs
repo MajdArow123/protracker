@@ -25,13 +25,39 @@ public class ProTrackerWebApplicationFactory : WebApplicationFactory<Program>
             // Remove the app's DbContext registration and replace it with one pointing at
             // a per-class isolated SQLite file.  This is authoritative: every DI consumer
             // (startup seed code, request pipeline, Identity stores) gets the test database.
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-            if (descriptor != null)
-                services.Remove(descriptor);
+            //
+            // AddDbContext in modern EF Core registers both the built DbContextOptions<T>
+            // singleton AND an IDbContextOptionsConfiguration<T> entry (the incremental
+            // configuration delegate). Removing only the former still leaves the app's
+            // Npgsql configuration delegate registered, so the options end up configured
+            // for both providers at once ("Multiple relational database provider
+            // configurations found") — both descriptor kinds must go.
+            var toRemove = services.Where(d =>
+                d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>) ||
+                (d.ServiceType.IsGenericType &&
+                 d.ServiceType.FullName != null &&
+                 d.ServiceType.FullName.Contains("DbContextOptionsConfiguration") &&
+                 d.ServiceType.GenericTypeArguments.Contains(typeof(ApplicationDbContext))))
+                .ToList();
+            foreach (var d in toRemove)
+                services.Remove(d);
 
+            // An isolated internal service provider keeps this DbContext's SQLite services
+            // separate from the app's ambient Npgsql provider registrations.
+            //
+            // The committed migrations were generated against Npgsql, so their snapshot
+            // carries Npgsql-specific annotations (e.g. identity column strategy) that a
+            // SQLite-built model won't have. EF treats that annotation diff as a pending
+            // model change; it's a false positive here since the tables it produces are
+            // schema-equivalent for SQLite's purposes, so the warning is suppressed.
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlite($"DataSource={_dbPath}"));
+            {
+                options.UseSqlite($"DataSource={_dbPath}");
+                options.UseInternalServiceProvider(
+                    new ServiceCollection().AddEntityFrameworkSqlite().BuildServiceProvider());
+                options.ConfigureWarnings(w =>
+                    w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+            });
         });
     }
 
