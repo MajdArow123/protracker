@@ -163,8 +163,9 @@ SQLite data-loss bug (see gotchas).
 ## Current status
 
 All 6 "Improvement" items above are implemented, typechecked (`npm run build`),
-linted (`oxlint`), and manually verified in-browser as both coach and athlete roles.
-Local Postgres dev environment is set up and working. Not yet done as of this
-writing: final `git push` + Vercel/Railway deploy confirmation for this round (see
-task list in the session that created this file, or just check `git log`/Vercel
-dashboard for the latest deploy status).
+linted (`oxlint`), and pushed to `main` as 6 separate commits (plus this file as a
+7th). Both Vercel (frontend) and Railway (backend, including the decimal-score
+migration) redeployed successfully — verified by hitting the live production API
+directly and by walking through the assessment/teams/reports/nutrition flows on
+https://protracker-iota.vercel.app as both a coach and an athlete. Local Postgres
+dev environment is set up and working for future sessions.
