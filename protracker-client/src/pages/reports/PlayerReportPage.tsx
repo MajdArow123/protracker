@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   ArrowLeft, Printer, TrendingUp, TrendingDown, Minus,
@@ -143,6 +144,17 @@ export function PlayerReportPage() {
 
   const isGenerating = generateInsights.isPending;
 
+  // Metric cards data
+  const latestAvg = latest?.statScores?.length
+    ? latest.statScores.reduce((s, x) => s + x.score, 0) / latest.statScores.length
+    : null;
+  let overallTrend: number | null = null;
+  if (sorted.length >= 2) {
+    const firstAvg = sorted[0].statScores.reduce((s, x) => s + x.score, 0) / (sorted[0].statScores.length || 1);
+    const lastAvg = sorted[sorted.length - 1].statScores.reduce((s, x) => s + x.score, 0) / (sorted[sorted.length - 1].statScores.length || 1);
+    overallTrend = pct(firstAvg, lastAvg);
+  }
+
   return (
     <PageWrapper
       title={player.fullName}
@@ -157,33 +169,72 @@ export function PlayerReportPage() {
         </div>
       }
     >
-      {/* Header */}
-      <Card>
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold text-xl">
-            {player.fullName.charAt(0)}
+      {/* Player hero header */}
+      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 flex items-center gap-4 flex-wrap">
+        <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-xl flex-shrink-0">
+          {player.fullName.charAt(0)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-xl font-black text-gray-900 dark:text-white">{player.fullName}</h2>
+          <div className="flex flex-wrap gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+            {player.positionName && <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">{player.positionName}</span>}
+            {player.teamName && <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">{player.teamName}</span>}
+            {player.sportName && <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-xs font-medium text-indigo-700 dark:text-indigo-300">{player.sportName}</span>}
           </div>
-          <div className="flex-1">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{player.fullName}</h2>
-            <div className="flex flex-wrap gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {player.positionName && <span>{player.positionName}</span>}
-              {player.teamName && <span>· {player.teamName}</span>}
-              {player.sportName && <span>· {player.sportName}</span>}
-            </div>
-          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
           {player.fitnessLevel != null && (
-            <span className="px-3 py-1.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-sm font-medium">
+            <span className="px-3 py-1.5 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
               Fitness {player.fitnessLevel}/10
             </span>
           )}
-          <Link
-            to={`/players/${player.id}/nutrition`}
-            className="text-sm text-indigo-500 hover:underline"
-          >
+          <Link to={`/players/${player.id}/nutrition`} className="text-sm text-indigo-500 hover:underline font-medium">
             View Nutrition →
           </Link>
         </div>
-      </Card>
+      </div>
+
+      {/* Metric cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Activity size={14} className="text-indigo-500" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
+          </div>
+          <p className="text-2xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
+        </div>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp size={14} className="text-emerald-500" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Latest Avg</p>
+          </div>
+          {latestAvg !== null ? (
+            <p className="text-2xl font-black" style={{
+              color: latestAvg > 7 ? '#10b981' : latestAvg >= 5 ? '#f59e0b' : '#ef4444'
+            }}>{latestAvg.toFixed(1)}</p>
+          ) : <p className="text-2xl font-black text-gray-400">—</p>}
+        </div>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle size={14} className="text-amber-500" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Active Injuries</p>
+          </div>
+          <p className={`text-2xl font-black ${activeInjuries.length > 0 ? 'text-red-500' : 'text-gray-900 dark:text-white'}`}>
+            {activeInjuries.length}
+          </p>
+        </div>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            {overallTrend !== null && overallTrend >= 0 ? <TrendingUp size={14} className="text-green-500" /> : <TrendingDown size={14} className="text-red-500" />}
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Overall Change</p>
+          </div>
+          {overallTrend !== null ? (
+            <p className={`text-2xl font-black ${overallTrend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {overallTrend > 0 ? '+' : ''}{overallTrend.toFixed(0)}%
+            </p>
+          ) : <p className="text-2xl font-black text-gray-400">—</p>}
+        </div>
+      </div>
 
       {/* Active injury warning */}
       {activeInjuries.length > 0 && (
@@ -257,10 +308,16 @@ export function PlayerReportPage() {
         {aiInsights && !isGenerating && (
           <ul className="space-y-3">
             {aiInsights.map((insight, i) => (
-              <li key={i} className="flex items-start gap-3 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30">
+              <motion.li
+                key={i}
+                initial={{ opacity: 0, x: -12 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.08 }}
+                className="flex items-start gap-3 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30"
+              >
                 <Lightbulb size={15} className="text-violet-500 mt-0.5 flex-shrink-0" />
                 <span className="text-sm text-gray-800 dark:text-gray-200">{insight}</span>
-              </li>
+              </motion.li>
             ))}
           </ul>
         )}

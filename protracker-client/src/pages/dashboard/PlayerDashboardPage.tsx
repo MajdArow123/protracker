@@ -8,7 +8,7 @@ import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
-  AlertTriangle, Zap, Star, Target,
+  AlertTriangle, Zap, Star, Target, Shield,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -197,11 +197,12 @@ export function PlayerDashboardPage() {
       {/* Quick nav */}
       <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Quick Access</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { label: 'My Stats', desc: 'Full assessment history', icon: TrendingUp, path: '/player-dashboard/stats', color: 'text-indigo-500 bg-indigo-500/10' },
             { label: 'My Nutrition', desc: 'Meal plans & dietary profile', icon: Salad, path: '/player-dashboard/nutrition', color: 'text-green-500 bg-green-500/10' },
             { label: 'My Plan', desc: 'Training & improvement', icon: Activity, path: '/player-dashboard/improvement', color: 'text-purple-500 bg-purple-500/10' },
+            ...(data?.player?.teamId ? [{ label: 'My Team', desc: 'Team roster & skill profile', icon: Shield, path: `/player-dashboard/team/${data.player.teamId}`, color: 'text-orange-500 bg-orange-500/10' }] : []),
           ].map((item) => (
             <button
               key={item.label}

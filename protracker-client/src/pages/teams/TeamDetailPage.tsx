@@ -10,6 +10,7 @@ import { ConfirmModal } from '../../components/ui/Modal';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
@@ -42,6 +43,8 @@ export function TeamDetailPage() {
   const navigate = useNavigate();
   const { addToast: showToast } = useToast();
 
+  const { user } = useAuth();
+  const isCoach = user?.role === 'Coach';
   const { data: team, isLoading } = useTeam(teamId);
   const { data: allPlayers = [] } = usePlayers();
   const { data: report } = useTeamReport(teamId);
@@ -88,25 +91,27 @@ export function TeamDetailPage() {
         <div className="relative z-10 p-4 lg:p-6">
           <div className="flex items-center justify-between mb-6">
             <button
-              onClick={() => navigate('/teams')}
+              onClick={() => navigate(isCoach ? '/teams' : '/player-dashboard')}
               className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer"
             >
-              <ArrowLeft size={16} /> Teams
+              <ArrowLeft size={16} /> {isCoach ? 'Teams' : 'Dashboard'}
             </button>
-            <div className="flex gap-2">
-              <button
-                onClick={() => navigate(`/teams/${id}/edit`)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
-              >
-                <Edit size={14} /> Edit
-              </button>
-              <button
-                onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
-              >
-                <Trash2 size={14} /> Delete
-              </button>
-            </div>
+            {isCoach && (
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/teams/${id}/edit`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
+                >
+                  <Edit size={14} /> Edit
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
+                >
+                  <Trash2 size={14} /> Delete
+                </button>
+              </div>
+            )}
           </div>
 
           <div>
@@ -144,20 +149,22 @@ export function TeamDetailPage() {
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white">Roster</h3>
-              <button
-                onClick={() => navigate('/players/new')}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
-              >
-                <Plus size={13} /> Add Player
-              </button>
+              {isCoach && (
+                <button
+                  onClick={() => navigate('/players/new')}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
+                >
+                  <Plus size={13} /> Add Player
+                </button>
+              )}
             </div>
 
             {teamPlayers.length === 0 ? (
               <EmptyState
                 icon={<Users size={32} />}
                 title="No players yet"
-                description="Add players to this team to get started"
-                action={{ label: 'Add Player', onClick: () => navigate('/players/new') }}
+                description={isCoach ? "Add players to this team to get started" : "No players on this team yet"}
+                action={isCoach ? { label: 'Add Player', onClick: () => navigate('/players/new') } : undefined}
                 size="sm"
               />
             ) : (
@@ -166,10 +173,13 @@ export function TeamDetailPage() {
                   const avgScore = report?.playerAverageScores?.find(s => s.playerId === p.id)?.averageScore;
                   const isInjured = injuredIds.has(p.id);
                   return (
-                    <button
+                    <div
                       key={p.id}
-                      onClick={() => navigate(`/players/${p.id}`)}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer text-left group"
+                      onClick={() => isCoach && navigate(`/players/${p.id}`)}
+                      className={clsx(
+                        'flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800 transition-all text-left group',
+                        isCoach ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer' : 'cursor-default'
+                      )}
                     >
                       <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm font-black flex-shrink-0">
                         {getInitials(p.fullName)}
@@ -191,7 +201,7 @@ export function TeamDetailPage() {
                           <span className="text-[10px] text-gray-400">Fit {p.fitnessLevel}/10</span>
                         )}
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -224,10 +234,13 @@ export function TeamDetailPage() {
                   const MedalIcon = medalIcons[i] ?? Medal;
                   const player = teamPlayers.find(pl => pl.id === p.playerId);
                   return (
-                    <button
+                    <div
                       key={p.playerId}
-                      onClick={() => navigate(`/players/${p.playerId}`)}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer text-left"
+                      onClick={() => isCoach && navigate(`/players/${p.playerId}`)}
+                      className={clsx(
+                        'flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left',
+                        isCoach ? 'hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer' : 'cursor-default'
+                      )}
                     >
                       <MedalIcon size={16} className={medalColors[i]} />
                       <div className="flex-1 min-w-0">
@@ -237,7 +250,7 @@ export function TeamDetailPage() {
                       <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(p.averageScore))}>
                         {p.averageScore.toFixed(1)}
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -254,17 +267,20 @@ export function TeamDetailPage() {
                 {needsAttention.filter(p => p.averageScore < 7).slice(0, 3).map(p => {
                   const isInjured = injuredIds.has(p.playerId);
                   return (
-                    <button
+                    <div
                       key={p.playerId}
-                      onClick={() => navigate(`/players/${p.playerId}`)}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors cursor-pointer text-left"
+                      onClick={() => isCoach && navigate(`/players/${p.playerId}`)}
+                      className={clsx(
+                        'flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left',
+                        isCoach ? 'hover:bg-amber-100/50 dark:hover:bg-amber-900/20 cursor-pointer' : 'cursor-default'
+                      )}
                     >
                       <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.playerName}</p>
                         <p className="text-xs text-amber-600 dark:text-amber-400">{isInjured ? 'Injured · ' : ''}Score {p.averageScore.toFixed(1)}/10</p>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>

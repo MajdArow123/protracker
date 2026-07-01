@@ -107,6 +107,8 @@ function AppRoutes() {
               element={<PlayerImprovementDashPage />}
             />
             <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
+            {/* Athlete can view their team in read-only mode */}
+            <Route path="/player-dashboard/team/:id" element={<TeamDetailPage />} />
           </Route>
         </Route>
       </Route>
