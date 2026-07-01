@@ -231,12 +231,17 @@ export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Excused';
 export interface InjuryRecord {
   id: number;
   playerId: number;
+  playerName?: string;
   injuryDate: string;
   injuryType: string;
+  bodyPart?: string | null;
   severity: InjurySeverity;
   recoveryStatus: RecoveryStatus;
+  isRecovered?: boolean;
   notes?: string | null;
+  treatmentPlan?: string | null;
   expectedReturnDate?: string | null;
+  recoveredDate?: string | null;
 }
 
 export interface MatchPerformance {

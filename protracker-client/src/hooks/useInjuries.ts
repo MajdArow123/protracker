@@ -10,6 +10,24 @@ export function useInjuries(playerId: number | null | undefined) {
   });
 }
 
+/** Active (not fully-recovered) injuries across the coach's teams. */
+export function useActiveInjuries(enabled = true) {
+  return useQuery({
+    queryKey: ['injuries', 'active'],
+    queryFn: injuryApi.getActive,
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+export function useRecoverInjury() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => injuryApi.recover(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['injuries'] }),
+  });
+}
+
 export function useCreateInjury() {
   const qc = useQueryClient();
   return useMutation({

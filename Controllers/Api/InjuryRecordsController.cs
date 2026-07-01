@@ -33,4 +33,14 @@ public class InjuryRecordsController : ApiControllerBase
         await _service.DeleteAsync(User, id);
         return NoContentSuccess();
     }
+
+    // Active injuries across all of the coach's teams (dashboard/roster indicators).
+    [HttpGet("/api/injuries/active")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetActive() => Success(await _service.GetActiveForCoachAsync(User));
+
+    // Mark an injury fully recovered (stamps RecoveredDate).
+    [HttpPatch("/api/injuries/{id}/recover")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> Recover(int id) => Success(await _service.RecoverAsync(User, id));
 }

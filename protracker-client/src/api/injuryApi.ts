@@ -10,4 +10,8 @@ export const injuryApi = {
     api.put<InjuryRecord>(`/api/injury-records/${id}`, data).then(r => r.data),
   delete: (id: number) =>
     api.delete(`/api/injury-records/${id}`),
+  getActive: () =>
+    api.get<InjuryRecord[]>('/api/injuries/active').then(r => r.data),
+  recover: (id: number) =>
+    api.patch<InjuryRecord>(`/api/injuries/${id}/recover`).then(r => r.data),
 };

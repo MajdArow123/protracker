@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayer, useDeletePlayer } from '../../hooks/usePlayers';
-import { useInjuries, useCreateInjury, useUpdateInjury, useDeleteInjury } from '../../hooks/useInjuries';
+import { useInjuries, useCreateInjury, useUpdateInjury, useDeleteInjury, useRecoverInjury } from '../../hooks/useInjuries';
 import { useMatchPerformance, useCreateMatchPerformance, useUpdateMatchPerformance, useDeleteMatchPerformance } from '../../hooks/useMatchPerformance';
 import { useTrainingSessions, useCreateTrainingSession, useUpdateTrainingSession, useDeleteTrainingSession } from '../../hooks/useTrainingSessions';
 import { useTeams } from '../../hooks/useTeams';
@@ -32,6 +32,7 @@ type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
+const BODY_PARTS = ['Knee', 'Ankle', 'Shoulder', 'Back', 'Hamstring', 'Quad', 'Calf', 'Hip', 'Wrist', 'Other'] as const;
 const ATTENDANCE_STATUSES = ['Present', 'Absent', 'Late', 'Excused'] as const;
 
 const TEXTAREA_CLS = 'w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all';
@@ -73,12 +74,12 @@ function getFitnessLabel(level: number) {
 }
 
 interface InjuryFormState {
-  injuryDate: string; injuryType: string; severity: string;
-  recoveryStatus: string; notes: string; expectedReturnDate: string;
+  injuryDate: string; injuryType: string; bodyPart: string; severity: string;
+  recoveryStatus: string; notes: string; treatmentPlan: string; expectedReturnDate: string;
 }
 const EMPTY_INJURY: InjuryFormState = {
   injuryDate: new Date().toISOString().split('T')[0],
-  injuryType: '', severity: 'Minor', recoveryStatus: 'Active', notes: '', expectedReturnDate: '',
+  injuryType: '', bodyPart: 'Other', severity: 'Minor', recoveryStatus: 'Active', notes: '', treatmentPlan: '', expectedReturnDate: '',
 };
 
 interface MatchFormState {
@@ -128,6 +129,7 @@ export function PlayerDetailPage() {
   const createInjury = useCreateInjury();
   const updateInjury = useUpdateInjury();
   const deleteInjury = useDeleteInjury();
+  const recoverInjury = useRecoverInjury();
   const createMatch = useCreateMatchPerformance();
   const updateMatch = useUpdateMatchPerformance();
   const deleteMatch = useDeleteMatchPerformance();
@@ -157,11 +159,11 @@ export function PlayerDetailPage() {
   function openNewInjury() { setEditingInjury(null); setInjuryForm(EMPTY_INJURY); setShowNewInjury(true); }
   function openEditInjury(r: InjuryRecord) {
     setEditingInjury(r);
-    setInjuryForm({ injuryDate: r.injuryDate, injuryType: r.injuryType, severity: r.severity, recoveryStatus: r.recoveryStatus, notes: r.notes ?? '', expectedReturnDate: r.expectedReturnDate ?? '' });
+    setInjuryForm({ injuryDate: r.injuryDate.split('T')[0], injuryType: r.injuryType, bodyPart: r.bodyPart ?? 'Other', severity: r.severity, recoveryStatus: r.recoveryStatus, notes: r.notes ?? '', treatmentPlan: r.treatmentPlan ?? '', expectedReturnDate: r.expectedReturnDate ? r.expectedReturnDate.split('T')[0] : '' });
     setShowNewInjury(false);
   }
   function buildInjuryPayload() {
-    return { playerId, injuryDate: injuryForm.injuryDate, injuryType: injuryForm.injuryType, severity: injuryForm.severity as InjuryRecord['severity'], recoveryStatus: injuryForm.recoveryStatus as InjuryRecord['recoveryStatus'], notes: injuryForm.notes || undefined, expectedReturnDate: injuryForm.expectedReturnDate || undefined };
+    return { playerId, injuryDate: injuryForm.injuryDate, injuryType: injuryForm.injuryType, bodyPart: injuryForm.bodyPart || undefined, severity: injuryForm.severity as InjuryRecord['severity'], recoveryStatus: injuryForm.recoveryStatus as InjuryRecord['recoveryStatus'], notes: injuryForm.notes || undefined, treatmentPlan: injuryForm.treatmentPlan || undefined, expectedReturnDate: injuryForm.expectedReturnDate || undefined };
   }
 
   const autoSaveInjury = useCallback(async () => {
@@ -336,6 +338,23 @@ export function PlayerDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Active injury banner */}
+      {(() => {
+        const active = injuries.filter(i => i.recoveryStatus !== 'FullyRecovered');
+        if (active.length === 0) return null;
+        return (
+          <div className="mx-4 lg:mx-6 mt-4 flex items-center gap-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 px-4 py-2.5">
+            <ShieldAlert size={16} className="text-red-500 flex-shrink-0" />
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              {active.length === 1
+                ? `Active injury: ${active[0].injuryType}${active[0].bodyPart ? ` (${active[0].bodyPart})` : ''}`
+                : `${active.length} active injuries`}
+            </p>
+            <button onClick={() => setTab('injuries')} className="ml-auto text-xs font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer">View</button>
+          </div>
+        );
+      })()}
 
       {/* Sticky Tab Nav */}
       <div className="sticky top-14 z-20 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
@@ -561,10 +580,15 @@ export function PlayerDetailPage() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Input label="Injury Date" type="date" value={injuryForm.injuryDate} onChange={e => setInjuryForm(v => ({ ...v, injuryDate: e.target.value }))} />
                     <Input label="Injury Type *" value={injuryForm.injuryType} onChange={e => setInjuryForm(v => ({ ...v, injuryType: e.target.value }))} placeholder="e.g. Hamstring strain" />
+                    <Select label="Body Part" value={injuryForm.bodyPart} onChange={e => setInjuryForm(v => ({ ...v, bodyPart: e.target.value }))} options={BODY_PARTS.map(s => ({ value: s, label: s }))} />
                     <Select label="Severity" value={injuryForm.severity} onChange={e => setInjuryForm(v => ({ ...v, severity: e.target.value }))} options={INJURY_SEVERITIES.map(s => ({ value: s, label: s }))} />
                     <Select label="Recovery Status" value={injuryForm.recoveryStatus} onChange={e => setInjuryForm(v => ({ ...v, recoveryStatus: e.target.value }))} options={RECOVERY_STATUSES.map(s => ({ value: s, label: s }))} />
                     <Input label="Expected Return Date" type="date" value={injuryForm.expectedReturnDate} onChange={e => setInjuryForm(v => ({ ...v, expectedReturnDate: e.target.value }))} />
-                    <div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Treatment Plan</label>
+                      <textarea value={injuryForm.treatmentPlan} onChange={e => setInjuryForm(v => ({ ...v, treatmentPlan: e.target.value }))} rows={2} placeholder="Rehab protocol, physio schedule…" className={TEXTAREA_CLS} />
+                    </div>
+                    <div className="sm:col-span-2">
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
                       <textarea value={injuryForm.notes} onChange={e => setInjuryForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Details…" className={TEXTAREA_CLS} />
                     </div>
@@ -588,17 +612,30 @@ export function PlayerDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-semibold text-gray-900 dark:text-white">{r.injuryType}</span>
+                          {r.bodyPart && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{r.bodyPart}</span>}
                           <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', SEVERITY_STYLES[r.severity])}>{r.severity}</span>
-                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', RECOVERY_STYLES[r.recoveryStatus])}>{r.recoveryStatus}</span>
+                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', RECOVERY_STYLES[r.recoveryStatus])}>{r.recoveryStatus === 'FullyRecovered' ? 'Recovered' : r.recoveryStatus}</span>
                         </div>
                         <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                          <Calendar size={11} /> {r.injuryDate}{r.expectedReturnDate ? ` → ${r.expectedReturnDate}` : ''}
+                          <Calendar size={11} /> {r.injuryDate.split('T')[0]}{r.expectedReturnDate ? ` → ${r.expectedReturnDate.split('T')[0]}` : ''}
+                          {r.recoveredDate && <span className="text-green-500 ml-1">· recovered {r.recoveredDate.split('T')[0]}</span>}
                         </p>
+                        {r.treatmentPlan && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5"><span className="font-semibold text-gray-500 dark:text-gray-400">Treatment:</span> {r.treatmentPlan}</p>}
                         {r.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{r.notes}</p>}
                       </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <button onClick={() => openEditInjury(r)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Edit2 size={14} /></button>
-                        <button onClick={() => setDeleteInjuryTarget(r)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"><Trash2 size={14} /></button>
+                      <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
+                        <div className="flex gap-1">
+                          <button onClick={() => openEditInjury(r)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Edit2 size={14} /></button>
+                          <button onClick={() => setDeleteInjuryTarget(r)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"><Trash2 size={14} /></button>
+                        </div>
+                        {r.recoveryStatus !== 'FullyRecovered' && (
+                          <button
+                            onClick={async () => { try { await recoverInjury.mutateAsync(r.id); showToast('Marked recovered', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Failed', 'error'); } }}
+                            className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[11px] font-semibold hover:bg-green-200 dark:hover:bg-green-900/50 transition-all cursor-pointer whitespace-nowrap"
+                          >
+                            <ShieldAlert size={11} /> Mark Recovered
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

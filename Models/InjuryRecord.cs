@@ -32,4 +32,9 @@ public class InjuryRecord
     public RecoveryStatus RecoveryStatus { get; set; }
     public string? Notes { get; set; }
     public DateTime? ExpectedReturnDate { get; set; }
+
+    // Phase 9 additions
+    public string? BodyPart { get; set; }
+    public string? TreatmentPlan { get; set; }
+    public DateTime? RecoveredDate { get; set; }
 }

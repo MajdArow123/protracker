@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Plus, Search } from 'lucide-react';
+import { Users, Plus, Search, AlertTriangle } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
+import { useActiveInjuries } from '../../hooks/useInjuries';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Button } from '../../components/ui/Button';
 import { PageSpinner } from '../../components/ui/Spinner';
@@ -31,8 +32,11 @@ export function PlayersPage() {
   const navigate = useNavigate();
   const { data: players, isLoading } = usePlayers();
   const { data: teams = [] } = useTeams();
+  const { data: activeInjuries = [] } = useActiveInjuries();
   const [search, setSearch] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
+
+  const injuredIds = new Set(activeInjuries.map(i => i.playerId));
 
   if (isLoading) return <PageSpinner />;
 
@@ -102,6 +106,9 @@ export function PlayersPage() {
                   <div className="flex items-center gap-1.5">
                     <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{player.fullName}</p>
                     <span className="text-base flex-shrink-0">{emoji}</span>
+                    {injuredIds.has(player.id) && (
+                      <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" aria-label="Active injury" />
+                    )}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{player.positionName ?? 'Player'} · {player.teamName ?? '—'}</p>
                 </div>

@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import {
   Users, Shield, ClipboardList, TrendingUp, ArrowRight,
-  Plus, Activity, AlertTriangle, ChevronRight,
+  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
+import { useActiveInjuries } from '../../hooks/useInjuries';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -68,6 +69,7 @@ export function CoachDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data, isLoading, isError } = useCoachDashboard();
+  const { data: activeInjuries = [] } = useActiveInjuries();
 
   if (isLoading) return <PageSpinner />;
   if (isError)
@@ -109,12 +111,12 @@ export function CoachDashboardPage() {
       text: 'text-indigo-600 dark:text-indigo-400',
     },
     {
-      title: 'Performance',
-      value: 'Tracking',
-      icon: TrendingUp,
-      gradient: 'from-green-500 to-emerald-600',
-      bg: 'bg-green-500/10',
-      text: 'text-green-600 dark:text-green-400',
+      title: 'Active Injuries',
+      value: activeInjuries.length,
+      icon: ShieldAlert,
+      gradient: 'from-red-500 to-rose-600',
+      bg: 'bg-red-500/10',
+      text: 'text-red-600 dark:text-red-400',
     },
   ];
 
@@ -259,6 +261,45 @@ export function CoachDashboardPage() {
           </div>
         )}
       </motion.div>
+
+      {/* Active injuries */}
+      {activeInjuries.length > 0 && (
+        <motion.div custom={9} initial="hidden" animate="show" variants={fadeUp}>
+          <div className="flex items-center gap-2 mb-4">
+            <ShieldAlert size={17} className="text-red-500" />
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Active Injuries</h2>
+            <span className="text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 rounded-full px-2 py-0.5">{activeInjuries.length}</span>
+          </div>
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
+            {activeInjuries.map(inj => (
+              <button
+                key={inj.id}
+                onClick={() => navigate(`/players/${inj.playerId}`)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer first:rounded-t-2xl last:rounded-b-2xl"
+              >
+                <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle size={14} className="text-red-500" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{inj.playerName}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    {inj.injuryType}{inj.bodyPart ? ` · ${inj.bodyPart}` : ''}
+                  </p>
+                </div>
+                <span className={clsx(
+                  'text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0',
+                  inj.severity === 'Severe' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    : inj.severity === 'Moderate' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                )}>
+                  {inj.severity}
+                </span>
+                <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Quick Actions */}
       <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
