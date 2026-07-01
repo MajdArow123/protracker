@@ -88,7 +88,10 @@ api.interceptors.response.use(
     }
 
     const message = error.response?.data?.message || error.message || 'An error occurred';
-    return Promise.reject(new Error(message));
+    // Preserve the HTTP status so callers (e.g. query retry logic) can branch on it —
+    // wrapping in a plain Error previously discarded error.response entirely.
+    const wrapped = Object.assign(new Error(message), { status: error.response?.status });
+    return Promise.reject(wrapped);
   }
 );
 

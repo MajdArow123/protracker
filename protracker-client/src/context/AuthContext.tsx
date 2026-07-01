@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { authApi } from '../api/authApi';
 import { tokenStorage } from '../api/axiosInstance';
 import type { User } from '../types';
@@ -17,6 +18,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // If we have a stored access token try getMe immediately; otherwise fall through to null.
@@ -37,12 +39,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string): Promise<User> => {
     const userData = await authApi.login(email, password);
+    // Drop any cached queries left over from a previous account on this browser
+    // (e.g. a different coach/athlete signing in on a shared machine) before the
+    // new session starts fetching its own data.
+    queryClient.clear();
     setUser(userData);
     return userData;
   };
 
   const register = async (displayName: string, email: string, password: string, role: string): Promise<User> => {
     const userData = await authApi.register(displayName, email, password, role);
+    queryClient.clear();
     setUser(userData);
     return userData;
   };
@@ -50,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     await authApi.logout();
     setUser(null);
+    queryClient.clear();
   };
 
   return (

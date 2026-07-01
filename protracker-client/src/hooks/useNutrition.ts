@@ -68,7 +68,7 @@ export function useWeeklyNutritionPlan(playerId: number | null | undefined) {
     enabled: !!playerId,
     retry: (failCount, error: unknown) => {
       // Don't retry on 404 — player just has no plan yet
-      const status = (error as { response?: { status?: number } })?.response?.status;
+      const status = (error as { status?: number })?.status;
       if (status === 404) return false;
       return failCount < 2;
     },
@@ -79,7 +79,10 @@ export function useGenerateWeeklyNutritionPlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (playerId: number) => nutritionApi.generateWeeklyNutritionPlan(playerId),
-    onSuccess: (_data, playerId) => {
+    onSuccess: (data, playerId) => {
+      // Write the freshly generated plan straight into the cache so the UI updates
+      // immediately, instead of waiting on a background refetch after invalidation.
+      qc.setQueryData(['nutrition', 'weekly', playerId], data);
       qc.invalidateQueries({ queryKey: ['nutrition', 'weekly', playerId] });
     },
   });
