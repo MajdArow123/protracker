@@ -102,6 +102,25 @@ SQLite data-loss bug (see gotchas).
   - Fixed stale-token hard-redirect that bypassed the marketing landing page.
   - Fixed TanStack Query stale-cache bugs (see gotchas).
 
+## Phase 9 (in progress) — new coach/athlete features
+
+Working through 7 features one at a time, committing + deploying after each.
+
+- **Feature 1 — Coach Tasks System (DONE, deployed).** `PlayerTask` model
+  (`TaskPriority` Low/Medium/High, `TaskCategory` Training/Nutrition/Recovery/
+  Tactical/Physical/Other; migration `AddPlayerTask`). `TasksController` at
+  `/api/tasks`: coach GET (filter `?playerId`/`?completed`/`?priority`), athlete
+  `GET /mine`, coach POST/PUT/DELETE, athlete `PATCH {id}/complete|incomplete`.
+  Frontend: `src/api/tasksApi.ts`, `src/hooks/useTasks.ts`, shared
+  `src/components/tasks/{TaskCard,AssignTaskModal,taskUtils}`, coach `/tasks`
+  page + athlete `/player-dashboard/tasks` page + a Tasks tab on the coach
+  player-detail page. Sidebar gained "Tasks"/"My Tasks" (CheckSquare).
+  Note: legacy `TaskItem` (sub-item of a `TrainingPlan`) is unrelated — don't confuse.
+- Features 2–7 (Injury tracking, Match results, Training session planner, Player
+  notes, Notifications/badges, Team announcements): pending. Note several already
+  have partial backend models (`InjuryRecord`, `MatchPerformance`, `TrainingSession`) —
+  check before creating new ones.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`npx tsc --noEmit -p tsconfig.json` is a SILENT NO-OP.** Root `tsconfig.json` is a
