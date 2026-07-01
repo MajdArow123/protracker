@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   Shield, Plus, Users, BarChart3,
-  Trophy, ClipboardList,
+  Trophy, ClipboardList, ShieldAlert,
 } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
+import { useTeamReport } from '../../hooks/useReports';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { clsx } from 'clsx';
@@ -36,6 +37,15 @@ function TeamCard({ team, index }: TeamCardProps) {
   const navigate = useNavigate();
   const grad = SPORT_GRADIENTS[team.sportName] ?? 'from-indigo-500 to-violet-600';
   const dot = SPORT_DOTS[team.sportName] ?? 'bg-indigo-500';
+  const { data: report } = useTeamReport(team.id);
+
+  const assessedScores = report?.playerAverageScores.filter(p => p.averageScore > 0) ?? [];
+  const avgScore = assessedScores.length > 0
+    ? assessedScores.reduce((s, p) => s + p.averageScore, 0) / assessedScores.length
+    : null;
+  const topPerformer = assessedScores.length > 0
+    ? assessedScores.reduce((a, b) => (b.averageScore > a.averageScore ? b : a))
+    : null;
 
   return (
     <motion.div
@@ -65,12 +75,38 @@ function TeamCard({ team, index }: TeamCardProps) {
 
       {/* Card body */}
       <div className="p-4">
-        <div className="flex items-center gap-4 mb-4">
+        <div className="flex items-center gap-4 mb-3">
           <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
             <Users size={14} />
             <span>{team.playerCount ?? 0} players</span>
           </div>
         </div>
+
+        {report && (
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Avg Score</p>
+              <p className={clsx('text-sm font-black', avgScore == null ? 'text-gray-400' :
+                avgScore > 7 ? 'text-green-500' : avgScore >= 5 ? 'text-amber-500' : 'text-red-500')}>
+                {avgScore != null ? avgScore.toFixed(1) : '—'}
+              </p>
+            </div>
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Top Player</p>
+              <p className="text-sm font-black text-gray-900 dark:text-white truncate">
+                {topPerformer ? topPerformer.playerName.split(' ')[0] : '—'}
+              </p>
+            </div>
+            <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-2.5 text-center">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Injuries</p>
+              <p className={clsx('text-sm font-black flex items-center justify-center gap-1',
+                report.activeInjuryCount > 0 ? 'text-red-500' : 'text-gray-900 dark:text-white')}>
+                {report.activeInjuryCount > 0 && <ShieldAlert size={12} />}
+                {report.activeInjuryCount}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Quick action buttons */}
         <div className="flex gap-2">
@@ -101,11 +137,12 @@ export function TeamsPage() {
   if (isLoading) return <PageSpinner />;
 
   const totalPlayers = teams?.reduce((s, t) => s + (t.playerCount ?? 0), 0) ?? 0;
+  const headerGrad = SPORT_GRADIENTS[teams?.[0]?.sportName ?? ''] ?? 'from-indigo-600 via-indigo-700 to-violet-700';
 
   return (
     <div className="flex-1 overflow-y-auto">
       {/* Header */}
-      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 relative overflow-hidden">
+      <div className={clsx('bg-gradient-to-br relative overflow-hidden', headerGrad)}>
         <div className="absolute inset-0 bg-black/10" />
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3" />
         <div className="relative z-10 px-4 lg:px-6 py-6">

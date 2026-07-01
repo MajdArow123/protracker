@@ -11,6 +11,7 @@ import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
@@ -37,6 +38,31 @@ function scoreColor(score: number) {
   return 'bg-red-500/20 text-red-400 border border-red-500/30';
 }
 
+function AvgScoreRingBadge({ score }: { score: number | null }) {
+  const radius = 28;
+  const circumference = 2 * Math.PI * radius;
+  const dash = score != null ? (score / 10) * circumference : 0;
+
+  return (
+    <div className="relative w-16 h-16 flex-shrink-0">
+      <svg width="64" height="64" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r={radius} fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="6" />
+        <circle
+          cx="32" cy="32" r={radius} fill="none"
+          stroke="white" strokeWidth="6"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeDashoffset={circumference / 4}
+          style={{ transition: 'stroke-dasharray 0.4s ease' }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-lg font-black text-white">{score != null ? score.toFixed(1) : '—'}</span>
+      </div>
+    </div>
+  );
+}
+
 export function TeamDetailPage() {
   const { id } = useParams<{ id: string }>();
   const teamId = Number(id);
@@ -51,6 +77,8 @@ export function TeamDetailPage() {
   const { data: periods = [] } = useAssessmentPeriods();
   const deleteTeam = useDeleteTeam();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const heightUnit = getStoredHeightUnit();
+  const weightUnit = getStoredWeightUnit();
 
   const teamPlayers = allPlayers.filter(p => p.teamId === teamId);
   const teamPeriods = periods.filter(p => p.teamId === teamId);
@@ -72,15 +100,15 @@ export function TeamDetailPage() {
   const medalIcons = [Trophy, Medal, Medal];
   const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600'];
 
+  const avgTeamScore = radarData.length ? radarData.reduce((s, d) => s + d.value, 0) / radarData.length : null;
+  const sortedPeriods = [...teamPeriods].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+  const lastPeriod = sortedPeriods[0] ?? null;
+
   const statCards = [
     { label: 'Total Players', value: teamPlayers.length, icon: Users },
-    {
-      label: 'Avg Team Score',
-      value: radarData.length ? (radarData.reduce((s, d) => s + d.value, 0) / radarData.length).toFixed(1) : '—',
-      icon: BarChart3,
-    },
+    { label: 'Avg Team Score', value: avgTeamScore != null ? avgTeamScore.toFixed(1) : '—', icon: BarChart3 },
     { label: 'Active Injuries', value: report?.activeInjuryCount ?? '—', icon: ShieldAlert },
-    { label: 'Periods', value: teamPeriods.length || periods.length || '—', icon: Calendar },
+    { label: 'Last Assessment', value: lastPeriod?.name ?? '—', icon: Calendar },
   ];
 
   return (
@@ -114,17 +142,20 @@ export function TeamDetailPage() {
             )}
           </div>
 
-          <div>
-            <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{team.sportName}</span>
-              <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{teamPlayers.length} players</span>
-              {report?.activeInjuryCount ? (
-                <span className="px-2.5 py-1 rounded-full bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1">
-                  <ShieldAlert size={11} /> {report.activeInjuryCount} injured
-                </span>
-              ) : null}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{team.sportName}</span>
+                <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{teamPlayers.length} players</span>
+                {report?.activeInjuryCount ? (
+                  <span className="px-2.5 py-1 rounded-full bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1">
+                    <ShieldAlert size={11} /> {report.activeInjuryCount} injured
+                  </span>
+                ) : null}
+              </div>
             </div>
+            <AvgScoreRingBadge score={avgTeamScore} />
           </div>
         </div>
       </div>
@@ -189,7 +220,15 @@ export function TeamDetailPage() {
                           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.fullName}</p>
                           {isInjured && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
                         </div>
-                        <p className="text-xs text-gray-500 dark:text-gray-400">{p.positionName ?? 'Player'}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {p.positionName ?? 'Player'}
+                          {(p.height != null || p.weight != null) && (
+                            <span className="text-gray-400 dark:text-gray-500">
+                              {' · '}
+                              {[formatHeight(p.height, heightUnit), formatWeight(p.weight, weightUnit)].filter(Boolean).join(' · ')}
+                            </span>
+                          )}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {avgScore != null && (
@@ -284,6 +323,39 @@ export function TeamDetailPage() {
                   );
                 })}
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Assessment periods */}
+      <div className="px-4 lg:px-6 pb-6">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
+          <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+            <Calendar size={15} className="text-indigo-400" /> Assessment Periods
+          </h3>
+          {sortedPeriods.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">No assessment periods created yet.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {sortedPeriods.map((p, i) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl bg-gray-50 dark:bg-gray-800"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(p.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {' – '}
+                      {new Date(p.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                  </div>
+                  {i === 0 && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 flex-shrink-0">Latest</span>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
