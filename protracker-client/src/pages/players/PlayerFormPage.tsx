@@ -13,6 +13,12 @@ import { useTeams } from '../../hooks/useTeams';
 import { usePlayer, useCreatePlayer, useUpdatePlayer } from '../../hooks/usePlayers';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { ArrowLeft, Lock } from 'lucide-react';
+import {
+  type HeightUnit, type WeightUnit,
+  cmToFtIn, ftInToCm, kgToLb, lbToKg,
+  getStoredHeightUnit, getStoredWeightUnit,
+  setStoredHeightUnit, setStoredWeightUnit,
+} from '../../utils/units';
 
 interface FormValues {
   fullName: string;
@@ -36,9 +42,6 @@ interface FormErrors {
   sportId?: string;
   fitnessLevel?: string;
 }
-
-type HeightUnit = 'cm' | 'ftin';
-type WeightUnit = 'kg' | 'lb';
 
 const EMPTY: FormValues = {
   fullName: '',
@@ -73,42 +76,6 @@ function validate(v: FormValues): FormErrors {
   const fl = Number(v.fitnessLevel);
   if (isNaN(fl) || fl < 1 || fl > 10) e.fitnessLevel = 'Fitness level must be 1–10';
   return e;
-}
-
-function cmToFtIn(cm: string): { ft: string; inches: string } {
-  const val = parseFloat(cm);
-  if (isNaN(val)) return { ft: '', inches: '' };
-  const totalIn = val / 2.54;
-  const ft = Math.floor(totalIn / 12);
-  const inches = Math.round(totalIn % 12);
-  return { ft: String(ft), inches: String(inches) };
-}
-
-function ftInToCm(ft: string, inches: string): string {
-  const f = parseFloat(ft) || 0;
-  const i = parseFloat(inches) || 0;
-  const cm = (f * 12 + i) * 2.54;
-  return cm > 0 ? String(Math.round(cm)) : '';
-}
-
-function kgToLb(kg: string): string {
-  const val = parseFloat(kg);
-  if (isNaN(val)) return '';
-  return String(Math.round(val * 2.20462));
-}
-
-function lbToKg(lb: string): string {
-  const val = parseFloat(lb);
-  if (isNaN(val)) return '';
-  return String(Math.round(val / 2.20462));
-}
-
-function getStoredHeightUnit(): HeightUnit {
-  return (localStorage.getItem('protracker_height_unit') as HeightUnit) || 'cm';
-}
-
-function getStoredWeightUnit(): WeightUnit {
-  return (localStorage.getItem('protracker_weight_unit') as WeightUnit) || 'kg';
 }
 
 export function PlayerFormPage() {
@@ -193,7 +160,7 @@ export function PlayerFormPage() {
 
   function switchHeightUnit(unit: HeightUnit) {
     setHeightUnit(unit);
-    localStorage.setItem('protracker_height_unit', unit);
+    setStoredHeightUnit(unit);
     if (unit === 'ftin') {
       const { ft, inches } = cmToFtIn(values.heightCm);
       setFtVal(ft);
@@ -206,7 +173,7 @@ export function PlayerFormPage() {
 
   function switchWeightUnit(unit: WeightUnit) {
     setWeightUnit(unit);
-    localStorage.setItem('protracker_weight_unit', unit);
+    setStoredWeightUnit(unit);
     if (unit === 'lb') {
       setLbVal(kgToLb(values.weightKg));
     } else {
@@ -344,13 +311,14 @@ export function PlayerFormPage() {
                 </div>
               )}
               {errors.heightCm && <p className="text-xs text-red-500 mt-1">{errors.heightCm}</p>}
-              {values.heightCm && (
-                <p className="text-xs text-gray-400 mt-1">
-                  {heightUnit === 'cm'
-                    ? (() => { const { ft, inches } = cmToFtIn(values.heightCm); return `${ft}ft ${inches}in`; })()
-                    : `${values.heightCm} cm`}
-                </p>
-              )}
+              {values.heightCm && (() => {
+                const { ft, inches } = cmToFtIn(values.heightCm);
+                return (
+                  <p className="text-xs text-gray-400 mt-1">
+                    {ft}'{inches}" = {values.heightCm} cm
+                  </p>
+                );
+              })()}
             </div>
 
             {/* Weight with unit toggle */}
@@ -382,7 +350,7 @@ export function PlayerFormPage() {
               {errors.weightKg && <p className="text-xs text-red-500 mt-1">{errors.weightKg}</p>}
               {values.weightKg && (
                 <p className="text-xs text-gray-400 mt-1">
-                  {weightUnit === 'kg' ? `${kgToLb(values.weightKg)} lb` : `${values.weightKg} kg`}
+                  {kgToLb(values.weightKg)} lb = {values.weightKg} kg
                 </p>
               )}
             </div>

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import type { InjuryRecord, MatchPerformance, TrainingSession } from '../../types';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
+import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
 import { useAutoSave } from '../../hooks/useAutoSave';
 
 type Tab = 'overview' | 'injuries' | 'matches' | 'training';
@@ -116,6 +117,8 @@ export function PlayerDetailPage() {
   const { data: matches = [] } = useMatchPerformance(playerId);
   const { data: sessions = [] } = useTrainingSessions(playerId);
   const { data: assessments = [] } = usePlayerAssessments(playerId);
+  const heightUnit = getStoredHeightUnit();
+  const weightUnit = getStoredWeightUnit();
 
   const createInjury = useCreateInjury();
   const updateInjury = useUpdateInjury();
@@ -297,8 +300,8 @@ export function PlayerDetailPage() {
               {/* Quick stats */}
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-white/70">
                 {player.age && <span>{player.age} yrs</span>}
-                {player.height && <span>{player.height} cm</span>}
-                {player.weight && <span>{player.weight} kg</span>}
+                {player.height != null && <span>{formatHeight(player.height, heightUnit)}</span>}
+                {player.weight != null && <span>{formatWeight(player.weight, weightUnit)}</span>}
                 {player.fitnessLevel && <span>Fitness {player.fitnessLevel}/10</span>}
               </div>
             </div>
@@ -384,13 +387,15 @@ export function PlayerDetailPage() {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
                           { label: 'Age', value: player.age, unit: 'yrs' },
-                          { label: 'Height', value: player.height, unit: 'cm' },
-                          { label: 'Weight', value: player.weight, unit: 'kg' },
+                          { label: 'Height', value: player.height, display: formatHeight(player.height, heightUnit) },
+                          { label: 'Weight', value: player.weight, display: formatWeight(player.weight, weightUnit) },
                           { label: 'Fitness', value: player.fitnessLevel, unit: '/10' },
                         ].filter(s => s.value).map(s => (
                           <div key={s.label} className="text-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
                             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{s.label}</p>
-                            <p className="text-xl font-black text-gray-900 dark:text-white">{s.value}<span className="text-xs font-normal text-gray-400 ml-0.5">{s.unit}</span></p>
+                            <p className="text-xl font-black text-gray-900 dark:text-white">
+                              {s.display ?? <>{s.value}<span className="text-xs font-normal text-gray-400 ml-0.5">{s.unit}</span></>}
+                            </p>
                           </div>
                         ))}
                       </div>
