@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ProTracker.Models;
 
@@ -12,7 +13,8 @@ public class PlayerStatScore
     public int SportStatCategoryId { get; set; }
     public SportStatCategory SportStatCategory { get; set; } = null!;
 
-    // 1-10 scale, consistent across the whole app.
+    // 1-10 scale in 0.5 steps, consistent across the whole app.
     [Range(1, 10)]
-    public int Score { get; set; }
+    [Column(TypeName = "decimal(3,1)")]
+    public decimal Score { get; set; }
 }

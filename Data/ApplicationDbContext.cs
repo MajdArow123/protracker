@@ -1,6 +1,7 @@
 using ProTracker.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ProTracker.Data;
 
@@ -9,6 +10,33 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
+    }
+
+    // Postgres "timestamp with time zone" columns reject DateTimes with Kind=Unspecified
+    // (e.g. from a plain <input type="date"> bound straight into a DTO). Coercing every
+    // DateTime through UTC here means individual services never have to think about it.
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<UtcNullableDateTimeConverter>();
+    }
+
+    private class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
+    {
+        public UtcDateTimeConverter() : base(
+            v => v.Kind == DateTimeKind.Utc ? v : DateTime.SpecifyKind(v, DateTimeKind.Utc),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Utc))
+        {
+        }
+    }
+
+    private class UtcNullableDateTimeConverter : ValueConverter<DateTime?, DateTime?>
+    {
+        public UtcNullableDateTimeConverter() : base(
+            v => v.HasValue ? (v.Value.Kind == DateTimeKind.Utc ? v.Value : DateTime.SpecifyKind(v.Value, DateTimeKind.Utc)) : v,
+            v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : v)
+        {
+        }
     }
 
     public DbSet<TrainingPlan> TrainingPlans => Set<TrainingPlan>();

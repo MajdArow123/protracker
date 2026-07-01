@@ -43,12 +43,12 @@ public class PlayerStatScoreDto
     public int PlayerAssessmentId { get; set; }
     public int SportStatCategoryId { get; set; }
     public string StatCategoryName { get; set; } = "";
-    public int Score { get; set; }
+    public decimal Score { get; set; }
 }
 
 public class CreatePlayerStatScoreDto
 {
     public int PlayerAssessmentId { get; set; }
     public int SportStatCategoryId { get; set; }
-    public int Score { get; set; }
+    public decimal Score { get; set; }
 }

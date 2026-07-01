@@ -79,6 +79,6 @@ public class AssessmentCreationTests : IClassFixture<ProTrackerWebApplicationFac
     private class StatScoreShape
     {
         public int SportStatCategoryId { get; set; }
-        public int Score { get; set; }
+        public decimal Score { get; set; }
     }
 }

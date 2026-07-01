@@ -7,8 +7,7 @@ import { Card } from '../../components/ui/Card';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
-import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
-import { TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Calendar, BarChart3, Trophy, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const CHART_COLORS = [
@@ -48,6 +47,18 @@ export function PlayerStatsPage() {
     [assessments]
   );
 
+  // Best / weakest category from the most recent assessment
+  const summary = useMemo(() => {
+    if (sorted.length === 0) return null;
+    const latest = sorted[sorted.length - 1];
+    const scores = latest.statScores ?? [];
+    const bestScore = scores.length > 0 ? scores.reduce((a, b) => (b.score > a.score ? b : a)) : null;
+    const worstScore = scores.length > 0 ? scores.reduce((a, b) => (b.score < a.score ? b : a)) : null;
+    const best = bestScore ? { name: bestScore.statCategoryName, score: bestScore.score } : null;
+    const worst = worstScore ? { name: worstScore.statCategoryName, score: worstScore.score } : null;
+    return { best, worst };
+  }, [sorted]);
+
   if (loadingId || isLoading) return <PageSpinner />;
 
   const chartData: Array<{ name: string; [key: string]: string | number }> =
@@ -86,33 +97,49 @@ export function PlayerStatsPage() {
       ) : (
         <div className="space-y-6">
           {/* Summary strip */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Assessments</p>
-              <p className="text-2xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
+              <div className="flex items-center gap-2 mb-1">
+                <Calendar size={13} className="text-indigo-500" />
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
+              </div>
+              <p className="text-xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
             </div>
-            {sorted.length > 0 && (() => {
-              const latestAvg = sorted[sorted.length - 1].statScores.reduce((s, x) => s + x.score, 0) / (sorted[sorted.length - 1].statScores.length || 1);
-              const color = scoreColor(latestAvg);
-              const label = scoreLabel(latestAvg);
-              return (
-                <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Latest Score</p>
-                  <div className="flex items-end gap-2">
-                    <p className="text-2xl font-black" style={{ color }}>{latestAvg.toFixed(1)}</p>
-                    <span className={clsx('text-xs px-2 py-0.5 rounded-full font-semibold mb-0.5', label.cls)}>{label.text}</span>
-                  </div>
-                </div>
-              );
-            })()}
-            {overallChange !== null && (
-              <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Overall Change</p>
-                <p className={clsx('text-2xl font-black', overallChange >= 0 ? 'text-green-500' : 'text-red-500')}>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <BarChart3 size={13} className="text-indigo-500" />
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Improvement</p>
+              </div>
+              {overallChange !== null ? (
+                <p className={clsx('text-xl font-black', overallChange >= 0 ? 'text-green-500' : 'text-red-500')}>
                   {overallChange > 0 ? '+' : ''}{overallChange.toFixed(0)}%
                 </p>
+              ) : <p className="text-xl font-black text-gray-400">—</p>}
+            </div>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Trophy size={13} className="text-green-500" />
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best</p>
               </div>
-            )}
+              {summary?.best ? (
+                <>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{summary.best.name}</p>
+                  <p className="text-xs text-green-500 font-semibold">{summary.best.score}/10</p>
+                </>
+              ) : <p className="text-xl font-black text-gray-400">—</p>}
+            </div>
+            <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle size={13} className="text-amber-500" />
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Weakest</p>
+              </div>
+              {summary?.worst ? (
+                <>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{summary.worst.name}</p>
+                  <p className="text-xs text-amber-500 font-semibold">{summary.worst.score}/10</p>
+                </>
+              ) : <p className="text-xl font-black text-gray-400">—</p>}
+            </div>
           </div>
 
           {/* Progress chart */}
@@ -189,33 +216,25 @@ export function PlayerStatsPage() {
                   const isExpanded = expandedId === a.id;
                   const color = avgCurr !== null ? scoreColor(avgCurr) : '#6b7280';
                   const label = avgCurr !== null ? scoreLabel(avgCurr) : null;
+                  const borderColor = !prev ? '#9ca3af' : trend !== null && trend > 0 ? '#10b981' : trend !== null && trend < 0 ? '#ef4444' : '#9ca3af';
 
                   return (
                     <div
                       key={a.id}
-                      className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden"
+                      className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden border-l-4"
+                      style={{ borderLeftColor: borderColor }}
                     >
                       <div className="flex items-start justify-between gap-3 p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="mt-0.5 flex-shrink-0">
-                            <div className={clsx(
-                              'w-3 h-3 rounded-full border-2',
-                              idx === 0
-                                ? 'bg-indigo-600 border-indigo-600'
-                                : 'bg-white dark:bg-gray-900 border-gray-300 dark:border-gray-600'
-                            )} />
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold text-gray-900 dark:text-white text-sm">{a.assessmentPeriodName}</p>
+                            {idx === 0 && (
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">Latest</span>
+                            )}
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-bold text-gray-900 dark:text-white text-sm">{a.assessmentPeriodName}</p>
-                              {idx === 0 && (
-                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">Latest</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {new Date(a.dateRecorded).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                            </p>
-                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {new Date(a.dateRecorded).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          </p>
                         </div>
 
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -243,22 +262,23 @@ export function PlayerStatsPage() {
                         </div>
                       </div>
 
-                      {/* Score pills */}
+                      {/* Mini horizontal score bars */}
                       {a.statScores?.length > 0 && (
-                        <div className="px-4 pb-3">
-                          <div className="flex flex-wrap gap-1.5">
-                            {a.statScores.map(s => (
-                              <div key={s.id} className="flex items-center gap-1.5">
-                                <span className="text-xs text-gray-500 dark:text-gray-400">{s.statCategoryName}</span>
-                                <span
-                                  className="text-xs font-bold px-1.5 py-0.5 rounded-full"
-                                  style={{ color: scoreColor(s.score), background: `${scoreColor(s.score)}20` }}
-                                >
-                                  {s.score}
-                                </span>
+                        <div className="px-4 pb-4 space-y-1.5">
+                          {a.statScores.map(s => (
+                            <div key={s.id} className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 w-24 flex-shrink-0 truncate">{s.statCategoryName}</span>
+                              <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                <div
+                                  className="h-full rounded-full transition-all"
+                                  style={{ width: `${(s.score / 10) * 100}%`, background: scoreColor(s.score) }}
+                                />
                               </div>
-                            ))}
-                          </div>
+                              <span className="text-xs font-bold w-7 text-right flex-shrink-0" style={{ color: scoreColor(s.score) }}>
+                                {s.score}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       )}
 
@@ -271,18 +291,17 @@ export function PlayerStatsPage() {
                             transition={{ duration: 0.2 }}
                             className="overflow-hidden border-t border-gray-100 dark:border-gray-800"
                           >
-                            <div className="p-4">
-                              {a.statScores?.length > 0 && (
-                                <RadarChartWrapper
-                                  data={a.statScores.map(s => ({
-                                    subject: s.statCategoryName,
-                                    value: s.score,
-                                    previousValue: prev?.statScores?.find(ps => ps.sportStatCategoryId === s.sportStatCategoryId)?.score,
-                                  }))}
-                                  height={220}
-                                  showPrevious={!!prev}
-                                />
-                              )}
+                            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                              {a.statScores.map(s => (
+                                <div
+                                  key={s.id}
+                                  className="rounded-xl px-3 py-2 flex items-center justify-between gap-2"
+                                  style={{ background: `${scoreColor(s.score)}18`, border: `1px solid ${scoreColor(s.score)}40` }}
+                                >
+                                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{s.statCategoryName}</span>
+                                  <span className="text-sm font-black flex-shrink-0" style={{ color: scoreColor(s.score) }}>{s.score}</span>
+                                </div>
+                              ))}
                             </div>
                           </motion.div>
                         )}

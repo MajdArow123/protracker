@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using ProTracker.Data;
@@ -11,9 +12,11 @@ using ProTracker.Data;
 namespace ProTracker.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260701144358_AddDecimalStatScores")]
+    partial class AddDecimalStatScores
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -251,7 +254,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("TeamId");
 
-                    b.ToTable("AssessmentPeriods", (string)null);
+                    b.ToTable("AssessmentPeriods");
                 });
 
             modelBuilder.Entity("ProTracker.Models.CoachTeamScope", b =>
@@ -276,7 +279,7 @@ namespace ProTracker.Data.Migrations
                     b.HasIndex("CoachId", "TeamId")
                         .IsUnique();
 
-                    b.ToTable("CoachTeamScopes", (string)null);
+                    b.ToTable("CoachTeamScopes");
                 });
 
             modelBuilder.Entity("ProTracker.Models.DailyMealPlan", b =>
@@ -313,7 +316,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("WeeklyNutritionPlanId");
 
-                    b.ToTable("DailyMealPlans", (string)null);
+                    b.ToTable("DailyMealPlans");
                 });
 
             modelBuilder.Entity("ProTracker.Models.FoodAlternativesLibrary", b =>
@@ -370,7 +373,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FoodAlternativesLibrary", (string)null);
+                    b.ToTable("FoodAlternativesLibrary");
 
                     b.HasData(
                         new
@@ -792,7 +795,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("ImprovementPlans", (string)null);
+                    b.ToTable("ImprovementPlans");
                 });
 
             modelBuilder.Entity("ProTracker.Models.InjuryRecord", b =>
@@ -829,7 +832,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("InjuryRecords", (string)null);
+                    b.ToTable("InjuryRecords");
                 });
 
             modelBuilder.Entity("ProTracker.Models.MatchPerformance", b =>
@@ -863,7 +866,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("MatchPerformances", (string)null);
+                    b.ToTable("MatchPerformances");
                 });
 
             modelBuilder.Entity("ProTracker.Models.NutritionGuidance", b =>
@@ -912,7 +915,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("NutritionGuidances", (string)null);
+                    b.ToTable("NutritionGuidances");
                 });
 
             modelBuilder.Entity("ProTracker.Models.PlannedMeal", b =>
@@ -938,7 +941,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("DailyMealPlanId");
 
-                    b.ToTable("PlannedMeals", (string)null);
+                    b.ToTable("PlannedMeals");
                 });
 
             modelBuilder.Entity("ProTracker.Models.PlannedMealItem", b =>
@@ -982,7 +985,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlannedMealId");
 
-                    b.ToTable("PlannedMealItems", (string)null);
+                    b.ToTable("PlannedMealItems");
                 });
 
             modelBuilder.Entity("ProTracker.Models.Player", b =>
@@ -1043,7 +1046,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Players", (string)null);
+                    b.ToTable("Players");
                 });
 
             modelBuilder.Entity("ProTracker.Models.PlayerAssessment", b =>
@@ -1072,7 +1075,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("PlayerAssessments", (string)null);
+                    b.ToTable("PlayerAssessments");
                 });
 
             modelBuilder.Entity("ProTracker.Models.PlayerNutritionProfile", b =>
@@ -1105,7 +1108,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("PlayerNutritionProfiles", (string)null);
+                    b.ToTable("PlayerNutritionProfiles");
                 });
 
             modelBuilder.Entity("ProTracker.Models.PlayerStatScore", b =>
@@ -1131,7 +1134,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("SportStatCategoryId");
 
-                    b.ToTable("PlayerStatScores", (string)null);
+                    b.ToTable("PlayerStatScores");
                 });
 
             modelBuilder.Entity("ProTracker.Models.Position", b =>
@@ -1153,7 +1156,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("Positions", (string)null);
+                    b.ToTable("Positions");
 
                     b.HasData(
                         new
@@ -1331,7 +1334,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("ProTracker.Models.Sport", b =>
@@ -1354,7 +1357,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Sports", (string)null);
+                    b.ToTable("Sports");
 
                     b.HasData(
                         new
@@ -1411,7 +1414,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("SportStatCategories", (string)null);
+                    b.ToTable("SportStatCategories");
 
                     b.HasData(
                         new
@@ -1684,7 +1687,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("TaskItems", (string)null);
+                    b.ToTable("TaskItems");
                 });
 
             modelBuilder.Entity("ProTracker.Models.Team", b =>
@@ -1712,7 +1715,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("Teams", (string)null);
+                    b.ToTable("Teams");
                 });
 
             modelBuilder.Entity("ProTracker.Models.TrainingPlan", b =>
@@ -1746,7 +1749,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasKey("TrainingPlanId");
 
-                    b.ToTable("TrainingPlans", (string)null);
+                    b.ToTable("TrainingPlans");
                 });
 
             modelBuilder.Entity("ProTracker.Models.TrainingSession", b =>
@@ -1781,7 +1784,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("TeamId");
 
-                    b.ToTable("TrainingSessions", (string)null);
+                    b.ToTable("TrainingSessions");
                 });
 
             modelBuilder.Entity("ProTracker.Models.WeeklyNutritionPlan", b =>
@@ -1808,7 +1811,7 @@ namespace ProTracker.Data.Migrations
 
                     b.HasIndex("PlayerId");
 
-                    b.ToTable("WeeklyNutritionPlans", (string)null);
+                    b.ToTable("WeeklyNutritionPlans");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

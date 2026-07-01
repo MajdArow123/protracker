@@ -48,7 +48,7 @@ public class ReportService : IReportService
         var allScores = assessments.SelectMany(a => a.StatScores).ToList();
         var averages = allScores
             .GroupBy(s => s.SportStatCategory.Name)
-            .ToDictionary(g => g.Key, g => g.Average(s => s.Score));
+            .ToDictionary(g => g.Key, g => (double)g.Average(s => s.Score));
 
         return new PlayerReportDto
         {
@@ -114,7 +114,7 @@ public class ReportService : IReportService
 
         var averages = scores
             .GroupBy(s => s.SportStatCategory.Name)
-            .ToDictionary(g => g.Key, g => g.Average(s => s.Score));
+            .ToDictionary(g => g.Key, g => (double)g.Average(s => s.Score));
 
         var playerAverages = playerIds.Select(pid =>
         {
@@ -127,7 +127,7 @@ public class ReportService : IReportService
             {
                 PlayerId = pid,
                 PlayerName = player.FullName,
-                AverageScore = playerScores.Count != 0 ? playerScores.Average(s => s.Score) : 0
+                AverageScore = playerScores.Count != 0 ? (double)playerScores.Average(s => s.Score) : 0
             };
         }).OrderByDescending(p => p.AverageScore).ToList();
 

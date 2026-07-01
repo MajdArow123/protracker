@@ -63,7 +63,7 @@ public class DashboardService : IDashboardService
 
         var latest = assessments.FirstOrDefault();
         double? latestAverage = latest != null && latest.StatScores.Any()
-            ? latest.StatScores.Average(s => s.Score)
+            ? (double)latest.StatScores.Average(s => s.Score)
             : null;
 
         return new PlayerDashboardDto
