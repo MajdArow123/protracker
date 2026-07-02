@@ -338,17 +338,27 @@ public class AIController : ApiControllerBase
         // Prefill guarantees the model starts with the JSON object. 8000 tokens gives Haiku
         // room for a full multi-week plan with detailed descriptions (4000 could truncate).
         const string prefill = "{\"title\":";
-        var raw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 8000, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
 
-        GeneratedRecoveryPlan generated;
-        try
+        // Haiku occasionally emits malformed/truncated JSON; retry once before surfacing an error.
+        GeneratedRecoveryPlan? generated = null;
+        string lastRaw = "";
+        for (var attempt = 1; attempt <= 2 && generated == null; attempt++)
         {
-            var root = JsonDocument.Parse(raw).RootElement;
-            generated = ParseRecoveryPlan(root);
+            lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 8000, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
+            try
+            {
+                var root = JsonDocument.Parse(lastRaw).RootElement;
+                generated = ParseRecoveryPlan(root);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Recovery plan parse failed (attempt {Attempt})", attempt);
+            }
         }
-        catch (Exception ex)
+
+        if (generated == null)
         {
-            _logger.LogError(ex, "Failed to parse AI recovery plan: {Raw}", raw);
+            _logger.LogError("Failed to parse AI recovery plan after retries: {Raw}", lastRaw);
             return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
         }
 
