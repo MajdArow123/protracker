@@ -42,6 +42,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TrainingPlan> TrainingPlans => Set<TrainingPlan>();
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<PlayerTask> PlayerTasks => Set<PlayerTask>();
+    public DbSet<MatchResult> MatchResults => Set<MatchResult>();
+    public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
 
     public DbSet<Sport> Sports => Set<Sport>();
     public DbSet<Position> Positions => Set<Position>();
@@ -208,6 +210,24 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<PlayerTask>()
             .HasIndex(t => t.CoachId);
+
+        builder.Entity<MatchResult>()
+            .HasOne(m => m.Team)
+            .WithMany()
+            .HasForeignKey(m => m.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PlayerMatchRating>()
+            .HasOne(r => r.MatchResult)
+            .WithMany(m => m.Ratings)
+            .HasForeignKey(r => r.MatchResultId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<PlayerMatchRating>()
+            .HasOne(r => r.Player)
+            .WithMany()
+            .HasForeignKey(r => r.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

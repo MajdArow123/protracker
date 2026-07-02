@@ -12,11 +12,14 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
+import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
-  Trophy, Medal, AlertTriangle, Calendar, BarChart3,
+  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star,
 } from 'lucide-react';
+
+type TeamTab = 'overview' | 'matches';
 
 const SPORT_HEADER_COLORS: Record<string, string> = {
   Football: 'from-green-600 via-emerald-600 to-green-700',
@@ -77,6 +80,7 @@ export function TeamDetailPage() {
   const { data: periods = [] } = useAssessmentPeriods();
   const deleteTeam = useDeleteTeam();
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [teamTab, setTeamTab] = useState<TeamTab>('overview');
   const heightUnit = getStoredHeightUnit();
   const weightUnit = getStoredWeightUnit();
 
@@ -173,6 +177,33 @@ export function TeamDetailPage() {
         ))}
       </div>
 
+      {/* Section tabs */}
+      <div className="px-4 lg:px-6 pt-4">
+        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
+          {([['overview', 'Overview', Users], ['matches', 'Matches', Star]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
+            <button
+              key={id}
+              onClick={() => setTeamTab(id)}
+              className={clsx(
+                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all cursor-pointer',
+                teamTab === id
+                  ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-500'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
+              )}
+            >
+              <Icon size={15} /> {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {teamTab === 'matches' && (
+        <div className="p-4 lg:p-6">
+          <TeamMatchesSection teamId={teamId} players={teamPlayers.map(p => ({ id: p.id, name: p.fullName }))} isCoach={isCoach} />
+        </div>
+      )}
+
+      {teamTab === 'overview' && (<>
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 lg:p-6">
         {/* Left: Roster */}
@@ -360,6 +391,7 @@ export function TeamDetailPage() {
           )}
         </div>
       </div>
+      </>)}
 
       <ConfirmModal
         isOpen={confirmDelete}

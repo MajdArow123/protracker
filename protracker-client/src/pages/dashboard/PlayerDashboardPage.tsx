@@ -1,6 +1,7 @@
 import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
+import { usePlayerMatchRatings } from '../../hooks/useMatches';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -8,7 +9,7 @@ import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
-  AlertTriangle, Zap, Star, Target, Shield,
+  AlertTriangle, Zap, Star, Target, Shield, Trophy,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -49,6 +50,7 @@ export function PlayerDashboardPage() {
   const navigate = useNavigate();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data, isLoading, isError } = usePlayerDashboard(playerId);
+  const { data: matchRatings } = usePlayerMatchRatings(playerId);
 
   if (loadingId || isLoading) return <PageSpinner />;
   if (isError)
@@ -194,8 +196,47 @@ export function PlayerDashboardPage() {
         </motion.div>
       </div>
 
+      {/* My Matches */}
+      {matchRatings && matchRatings.length > 0 && (
+        <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="inline-flex p-2 rounded-xl bg-emerald-500/10">
+              <Trophy size={16} className="text-emerald-500" />
+            </div>
+            <h2 className="font-bold text-gray-900 dark:text-white">My Matches</h2>
+          </div>
+          <div className="space-y-2">
+            {matchRatings.slice(0, 6).map((r) => {
+              const ratingColor = r.rating < 5 ? 'text-red-500 bg-red-500/10'
+                : r.rating < 7 ? 'text-amber-500 bg-amber-500/10'
+                : 'text-green-500 bg-green-500/10';
+              return (
+                <div key={r.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <div className={clsx('flex flex-col items-center justify-center w-12 h-12 rounded-xl font-black flex-shrink-0', ratingColor)}>
+                    <span className="text-lg leading-none">{r.rating.toFixed(1)}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">vs {r.opponentName ?? 'Opponent'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {r.matchDate ? new Date(r.matchDate).toLocaleDateString() : ''}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
+                    {r.goals > 0 && <span className="font-medium">⚽ {r.goals}</span>}
+                    {r.assists > 0 && <span className="font-medium">🅰️ {r.assists}</span>}
+                    {r.minutesPlayed > 0 && <span>{r.minutesPlayed}′</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {/* Quick nav */}
-      <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}>
+      <motion.div custom={8} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Quick Access</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[

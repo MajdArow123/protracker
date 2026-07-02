@@ -244,6 +244,42 @@ export interface InjuryRecord {
   recoveredDate?: string | null;
 }
 
+export type MatchOutcome = 'Win' | 'Draw' | 'Loss';
+
+export interface PlayerMatchRating {
+  id: number;
+  matchResultId: number;
+  playerId: number;
+  playerName: string;
+  rating: number;
+  goals: number;
+  assists: number;
+  yellowCards: number;
+  redCards: number;
+  minutesPlayed: number;
+  notes?: string | null;
+  matchDate?: string | null;
+  opponentName?: string | null;
+}
+
+export interface MatchResult {
+  id: number;
+  teamId: number;
+  teamName: string;
+  opponentName: string;
+  matchDate: string;
+  homeScore: number;
+  awayScore: number;
+  isHome: boolean;
+  ourScore: number;
+  opponentScore: number;
+  result: MatchOutcome;
+  venue?: string | null;
+  competition?: string | null;
+  notes?: string | null;
+  ratings: PlayerMatchRating[];
+}
+
 export interface MatchPerformance {
   id: number;
   playerId: number;
