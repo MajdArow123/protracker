@@ -162,6 +162,45 @@ style. `CoachNote`/`TeamAnnouncement` store a denormalized `CoachName` (resolved
 `ApplicationUser.DisplayName` at create time). Athlete "mine"-style endpoints derive
 team scope via `IAccessControlService.GetAccessibleTeamIdsAsync`.
 
+## Post-Phase-9 improvements (COMPLETE, deployed)
+
+Five follow-up improvements, each its own commit, curl- + browser-verified on production
+as both coach and athlete. **Multi-sport**: every feature is sport-agnostic or passes the
+player's sport into the AI prompt; verified against non-soccer coaches (basketball).
+
+- **1 — Coach notes shareable.** Added `IsPrivate` to `CoachNote` (migration
+  `AddCoachNoteIsPrivate`; existing notes default private on upgrade). `GET
+  /api/players/{id}/notes` returns all notes to coaches, only `IsPrivate==false` to the
+  athlete; mutations stay coach-only. Coach note modal has a Private/Share pill + per-note
+  badge that toggles on click; athlete gets a read-only "Coach Feedback" dashboard section.
+- **2 — Direct messaging.** `Message` model (migration `AddMessages`); `ConversationId =
+  Message.BuildConversationId` (sorted participant pair). Endpoints under `/api/messages`:
+  conversations, contacts, conversation/{otherUserId}, POST, `.../read`, unread-count.
+  Authz: coaches↔athletes on their teams, athletes↔their team's coach only. Shared
+  `/messages` split-panel page (`MessagesPage`) with 5s/10s polling; Messages sidebar item
+  + unread badge; unread count in the bell; background "new message" toast.
+- **3 — Notification read-state.** Derived notifications now track "seen" in localStorage
+  via a shared store (`src/utils/seenNotifications.ts`, `useSyncExternalStore` so bell +
+  sidebar + dashboard stay in sync). Per-rule keys: overdue tasks reappear next day
+  (date-keyed), injuries on new id/worse severity, athlete tasks stay dismissed, sessions
+  daily. Bell marks seen after a 1.2s delay + "Mark all as read"; sidebar task badges count
+  only unseen; dashboard Active Injuries list has per-item dismiss. Messages stay DB-driven.
+- **4 — Injury recovery programs.** `InjuryRecoveryPlan` + `RecoveryExercise` +
+  `RecoveryMilestone` (migration `AddRecoveryPlans`). CRUD + athlete exercise-completion
+  (note + 1-5 difficulty) + coach milestone toggle. **AI generation** `POST
+  /api/ai/recovery-plan/{injuryId}` feeds Claude the injury type/body part/severity **plus
+  the player's sport, position, age, fitness** (Haiku, 8000 tokens, one retry on bad JSON).
+  `RecoveryPlanModal` (progress bar, milestone timeline, week tabs, category-colored
+  exercise cards) opens from each injury card (coach) + an athlete-dashboard Recovery card.
+- **5 — Tasks UI/UX overhaul.** Coach `/tasks`: stats line, priority/status pill filters,
+  collapsible buckets. `TaskCard` gained a priority-colored left border + full-width Mark
+  Complete. Assign modal shows priority cards + live preview. Athlete My Tasks: circular
+  progress ring + Action Required/Upcoming/Completed sections. Task categories stay
+  sport-agnostic. (`useTasks` hooks gained optional `enabled` for cross-role gating.)
+
+Note: `AILoadingPanel` (cycling messages + progress bar) is reused for the recovery-plan
+generation loading state. `Modal` now supports `size="xl"` (max-w-4xl) for the recovery view.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`npx tsc --noEmit -p tsconfig.json` is a SILENT NO-OP.** Root `tsconfig.json` is a
@@ -221,6 +260,17 @@ team scope via `IAccessControlService.GetAccessibleTeamIdsAsync`.
   design spec — keep new chart tooltips consistent.
 
 ## Current status
+
+**Post-Phase-9 improvements complete.** The five improvements above (shared notes,
+messaging, notification read-state, injury recovery programs, tasks UI overhaul) are
+implemented, typechecked (`npm run build`), and pushed to `main` as separate commits.
+New models got EF migrations; endpoints were curl-verified on production and walked
+through on https://protracker-iota.vercel.app as both coach and athlete — including
+private-vs-shared notes (athlete 403 on private), a full coach↔athlete message thread
+with unread badges clearing on read, the injury notification disappearing after being
+viewed, an AI-generated sport-specific recovery program (soccer vs basketball) with the
+athlete completing an exercise, and the redesigned tasks pages (coach pills/sections +
+assign-modal preview, athlete progress ring). All test data cleaned up afterward.
 
 **Phase 9 complete.** All 7 features above are implemented, typechecked
 (`npm run build`), and pushed to `main` as 7 separate commits. Each feature's new
