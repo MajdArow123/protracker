@@ -102,11 +102,13 @@ SQLite data-loss bug (see gotchas).
   - Fixed stale-token hard-redirect that bypassed the marketing landing page.
   - Fixed TanStack Query stale-cache bugs (see gotchas).
 
-## Phase 9 (in progress) — new coach/athlete features
+## Phase 9 (COMPLETE, deployed) — new coach/athlete features
 
-Working through 7 features one at a time, committing + deploying after each.
+All 7 features implemented one at a time, each its own commit, curl-verified against
+production and walked through in-browser as both coach and athlete. New models each
+got an EF migration (auto-applied on Railway startup).
 
-- **Feature 1 — Coach Tasks System (DONE, deployed).** `PlayerTask` model
+- **Feature 1 — Coach Tasks System.** `PlayerTask` model
   (`TaskPriority` Low/Medium/High, `TaskCategory` Training/Nutrition/Recovery/
   Tactical/Physical/Other; migration `AddPlayerTask`). `TasksController` at
   `/api/tasks`: coach GET (filter `?playerId`/`?completed`/`?priority`), athlete
@@ -116,10 +118,49 @@ Working through 7 features one at a time, committing + deploying after each.
   page + athlete `/player-dashboard/tasks` page + a Tasks tab on the coach
   player-detail page. Sidebar gained "Tasks"/"My Tasks" (CheckSquare).
   Note: legacy `TaskItem` (sub-item of a `TrainingPlan`) is unrelated — don't confuse.
-- Features 2–7 (Injury tracking, Match results, Training session planner, Player
-  notes, Notifications/badges, Team announcements): pending. Note several already
-  have partial backend models (`InjuryRecord`, `MatchPerformance`, `TrainingSession`) —
-  check before creating new ones.
+- **Feature 2 — Injury Tracking.** Extended the existing `InjuryRecord` (added
+  `BodyPart`, `TreatmentPlan`, `RecoveredDate`; migration `AddInjuryDetails`) rather
+  than a parallel model — kept `/api/injury-records` CRUD, added
+  `GET /api/injuries/active` (filters coach's teams + `RecoveryStatus != FullyRecovered`,
+  sorted by severity) and `PATCH /api/injuries/{id}/recover`. Injury indicators on
+  players list/detail, log-injury modal with body part + treatment, recover action,
+  coach-dashboard Active Injuries card.
+- **Feature 3 — Match/Game Results.** `MatchResult` (team-level) + `PlayerMatchRating`
+  models (migration `AddMatchResults`); `Rating` is `decimal(3,1)`. `MatchesController`:
+  `GET/POST /api/teams/{id}/matches`, `PUT/DELETE /api/matches/{id}`,
+  `POST /api/matches/{id}/ratings` (replaces all), `GET /api/players/{id}/match-ratings`.
+  Backend recomputes ourScore/opponentScore + Win/Draw/Loss from home/away. Matches tab
+  on team detail (log match → rate players modals); athlete "My Matches" dashboard card.
+  Distinct from the pre-existing per-player `MatchPerformance` — left untouched.
+- **Feature 4 — Training Session Planner.** `ScheduledSession` (team-scheduled,
+  `SessionType` Training/MatchPrep/Recovery/Strength/Tactical/Other; migration
+  `AddScheduledSessions`) — **distinct from the pre-existing per-player, attendance-based
+  `TrainingSession`**. `GET/POST /api/teams/{id}/sessions`, `PUT/DELETE /api/sessions/{id}`,
+  `GET /api/sessions/mine` (athlete's upcoming). Schedule tab on team detail = Monday-based
+  week calendar (`TeamScheduleSection`); athlete "Upcoming Sessions" dashboard card.
+- **Feature 5 — Coach-Private Player Notes.** `CoachNote` model (categorized,
+  timestamped timeline per player; migration `AddCoachNotes`) — distinct from the single
+  free-text `Player.CoachNotes` field. **The entire `CoachNotesController` is
+  `[Authorize(Roles="Coach,Admin")]` so athletes can NEVER read notes** (verified: athlete
+  gets 403 on read + create); coaches may only edit/delete their own. Coach-only Notes tab
+  on player detail (`CoachNotesTab`).
+- **Feature 6 — Notifications & badges (no new backend).** `useNotifications` hook
+  aggregates existing data role-aware: coaches → overdue assigned tasks + active injuries;
+  athletes → own open tasks + sessions in next 48h. `NotificationBell` dropdown in the
+  navbar (count badge, severity colors, click-through), sidebar nav badge counts, and an
+  "Overdue Tasks" coach-dashboard card (replaced the placeholder "Assessments" card).
+- **Feature 7 — Team Announcements.** `TeamAnnouncement` model (`AnnouncementPriority`
+  Normal/Important/Urgent, pinning, author; migration `AddTeamAnnouncements`).
+  `GET/POST /api/teams/{id}/announcements`, `PUT/DELETE /api/announcements/{id}`,
+  `GET /api/announcements/mine`. Pinned-first ordering. Announcements section on team
+  detail Overview (`TeamAnnouncementsSection`, coach CRUD); athlete "Team Announcements"
+  dashboard card (read-only, top of dashboard).
+
+Cross-feature notes: several controllers use `[Route("api")]` with absolute sub-routes
+(matches/sessions/notes/announcements) rather than the older `[Route("api/x")]` prefix
+style. `CoachNote`/`TeamAnnouncement` store a denormalized `CoachName` (resolved from
+`ApplicationUser.DisplayName` at create time). Athlete "mine"-style endpoints derive
+team scope via `IAccessControlService.GetAccessibleTeamIdsAsync`.
 
 ## Architecture decisions & gotchas (read before touching related code)
 
@@ -181,10 +222,17 @@ Working through 7 features one at a time, committing + deploying after each.
 
 ## Current status
 
-All 6 "Improvement" items above are implemented, typechecked (`npm run build`),
-linted (`oxlint`), and pushed to `main` as 6 separate commits (plus this file as a
-7th). Both Vercel (frontend) and Railway (backend, including the decimal-score
-migration) redeployed successfully — verified by hitting the live production API
-directly and by walking through the assessment/teams/reports/nutrition flows on
-https://protracker-iota.vercel.app as both a coach and an athlete. Local Postgres
-dev environment is set up and working for future sessions.
+**Phase 9 complete.** All 7 features above are implemented, typechecked
+(`npm run build`), and pushed to `main` as 7 separate commits. Each feature's new
+models got an EF migration (auto-applied on Railway startup); every endpoint was
+curl-verified against the live production API (create → verify → delete, leaving prod
+data pristine) and every feature was walked through on
+https://protracker-iota.vercel.app as **both coach and athlete** — including the
+coach-note privacy guard (athlete 403), the notification bell (coach sees the seeded
+active injury; athlete "all caught up"), the week-calendar Schedule tab, and the
+pinned team announcement showing on the athlete dashboard. Both Vercel and Railway
+redeployed cleanly on each push.
+
+Prior work: the 6 "Improvement" items (assessment sliders, unit toggles, chart
+overhaul, teams redesign, food-swap polish, this file) were likewise implemented,
+linted (`oxlint`), and deployed. Local Postgres dev environment is set up and working.
