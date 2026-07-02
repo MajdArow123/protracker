@@ -47,6 +47,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CoachNote> CoachNotes => Set<CoachNote>();
     public DbSet<TeamAnnouncement> TeamAnnouncements => Set<TeamAnnouncement>();
     public DbSet<Message> Messages => Set<Message>();
+    public DbSet<InjuryRecoveryPlan> InjuryRecoveryPlans => Set<InjuryRecoveryPlan>();
+    public DbSet<RecoveryExercise> RecoveryExercises => Set<RecoveryExercise>();
+    public DbSet<RecoveryMilestone> RecoveryMilestones => Set<RecoveryMilestone>();
     public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
 
     public DbSet<Sport> Sports => Set<Sport>();
@@ -261,6 +264,29 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(m => m.ConversationId);
         builder.Entity<Message>()
             .HasIndex(m => new { m.ReceiverId, m.IsRead });
+
+        builder.Entity<InjuryRecoveryPlan>()
+            .HasOne(p => p.InjuryRecord)
+            .WithMany()
+            .HasForeignKey(p => p.InjuryRecordId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<InjuryRecoveryPlan>()
+            .HasOne(p => p.Player)
+            .WithMany()
+            .HasForeignKey(p => p.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<InjuryRecoveryPlan>()
+            .HasIndex(p => p.PlayerId);
+        builder.Entity<RecoveryExercise>()
+            .HasOne(e => e.InjuryRecoveryPlan)
+            .WithMany(p => p.Exercises)
+            .HasForeignKey(e => e.InjuryRecoveryPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<RecoveryMilestone>()
+            .HasOne(m => m.InjuryRecoveryPlan)
+            .WithMany(p => p.Milestones)
+            .HasForeignKey(m => m.InjuryRecoveryPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

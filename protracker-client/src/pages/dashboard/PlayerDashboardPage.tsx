@@ -5,6 +5,9 @@ import { usePlayerMatchRatings } from '../../hooks/useMatches';
 import { useMySessions } from '../../hooks/useSessions';
 import { useMyAnnouncements } from '../../hooks/useAnnouncements';
 import { useCoachNotes } from '../../hooks/useCoachNotes';
+import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
+import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
+import { useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -58,6 +61,8 @@ export function PlayerDashboardPage() {
   const { data: upcomingSessions } = useMySessions();
   const { data: announcements } = useMyAnnouncements();
   const { data: coachFeedback } = useCoachNotes(playerId);
+  const { data: recoveryPlan } = usePlayerRecoveryPlan(playerId);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   if (loadingId || isLoading) return <PageSpinner />;
   if (isError)
@@ -143,6 +148,38 @@ export function PlayerDashboardPage() {
               );
             })}
           </div>
+        </motion.div>
+      )}
+
+      {/* Recovery Program */}
+      {recoveryPlan && (
+        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
+          <button onClick={() => setRecoveryOpen(true)}
+            className="w-full text-left rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/60 dark:bg-rose-900/10 p-5 hover:border-rose-300 dark:hover:border-rose-800 transition-all cursor-pointer">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="inline-flex p-2.5 rounded-xl bg-rose-500/10">
+                  <Activity size={18} className="text-rose-500" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{recoveryPlan.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Week {recoveryPlan.currentWeek} of {recoveryPlan.estimatedWeeks} · {recoveryPlan.injuryType}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-lg font-black text-rose-500">
+                  {recoveryPlan.totalExercises > 0 ? Math.round((recoveryPlan.completedExercises / recoveryPlan.totalExercises) * 100) : 0}%
+                </p>
+                <p className="text-[11px] text-gray-500">{recoveryPlan.completedExercises}/{recoveryPlan.totalExercises} exercises</p>
+              </div>
+            </div>
+            <div className="mt-3 h-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-full overflow-hidden">
+              <div className="h-full bg-rose-500 rounded-full" style={{ width: `${recoveryPlan.totalExercises > 0 ? Math.round((recoveryPlan.completedExercises / recoveryPlan.totalExercises) * 100) : 0}%` }} />
+            </div>
+            <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2">View recovery program →</p>
+          </button>
         </motion.div>
       )}
 
@@ -369,6 +406,13 @@ export function PlayerDashboardPage() {
           ))}
         </div>
       </motion.div>
+
+      <RecoveryPlanModal
+        isOpen={recoveryOpen}
+        onClose={() => setRecoveryOpen(false)}
+        playerId={playerId ?? undefined}
+        isCoach={false}
+      />
     </motion.div>
   );
 }

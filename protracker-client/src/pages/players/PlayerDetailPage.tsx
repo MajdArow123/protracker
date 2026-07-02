@@ -28,6 +28,7 @@ import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { AssignTaskModal } from '../../components/tasks/AssignTaskModal';
 import { CoachNotesTab } from '../../components/notes/CoachNotesTab';
+import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 
 type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'notes';
 
@@ -140,6 +141,7 @@ export function PlayerDetailPage() {
   const deletePlayer = useDeletePlayer();
 
   const [tab, setTab] = useState<Tab>('overview');
+  const [recoveryInjuryId, setRecoveryInjuryId] = useState<number | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editTask, setEditTask] = useState<PlayerTask | null>(null);
   const [deleteTaskTarget, setDeleteTaskTarget] = useState<PlayerTask | null>(null);
@@ -638,6 +640,12 @@ export function PlayerDetailPage() {
                             <ShieldAlert size={11} /> Mark Recovered
                           </button>
                         )}
+                        <button
+                          onClick={() => setRecoveryInjuryId(r.id)}
+                          className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[11px] font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-all cursor-pointer whitespace-nowrap"
+                        >
+                          <Activity size={11} /> Recovery Program
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -827,6 +835,13 @@ export function PlayerDetailPage() {
         players={player ? [{ id: player.id, name: player.fullName }] : []}
         task={editTask}
         lockedPlayerId={player?.id}
+      />
+
+      <RecoveryPlanModal
+        isOpen={recoveryInjuryId != null}
+        onClose={() => setRecoveryInjuryId(null)}
+        injuryId={recoveryInjuryId ?? undefined}
+        isCoach
       />
 
       {/* Confirm modals */}
