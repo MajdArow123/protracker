@@ -10,6 +10,7 @@ public class CoachNoteDto
     public string CoachName { get; set; } = "";
     public string Content { get; set; } = "";
     public CoachNoteCategory Category { get; set; }
+    public bool IsPrivate { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 }
@@ -18,4 +19,5 @@ public class CreateCoachNoteDto
 {
     public string Content { get; set; } = "";
     public CoachNoteCategory Category { get; set; } = CoachNoteCategory.General;
+    public bool IsPrivate { get; set; } = true;
 }

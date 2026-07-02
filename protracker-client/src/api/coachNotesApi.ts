@@ -4,6 +4,7 @@ import type { CoachNote, CoachNoteCategory } from '../types';
 export interface CreateCoachNoteInput {
   content: string;
   category: CoachNoteCategory;
+  isPrivate: boolean;
 }
 
 export const coachNotesApi = {

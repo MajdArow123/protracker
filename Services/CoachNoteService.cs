@@ -29,10 +29,11 @@ public class CoachNoteService : ICoachNoteService
     public async Task<List<CoachNoteDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
-        var notes = await _context.CoachNotes
-            .Where(n => n.PlayerId == playerId)
-            .OrderByDescending(n => n.CreatedAt)
-            .ToListAsync();
+        var query = _context.CoachNotes.Where(n => n.PlayerId == playerId);
+        // Athletes only ever see shared notes; coaches/admins see everything.
+        if (!user.IsInRole("Coach") && !user.IsInRole("Admin"))
+            query = query.Where(n => !n.IsPrivate);
+        var notes = await query.OrderByDescending(n => n.CreatedAt).ToListAsync();
         return notes.Select(ToDto).ToList();
     }
 
@@ -49,6 +50,7 @@ public class CoachNoteService : ICoachNoteService
             CoachName = coachName,
             Content = dto.Content.Trim(),
             Category = dto.Category,
+            IsPrivate = dto.IsPrivate,
         };
         _context.CoachNotes.Add(note);
         await _context.SaveChangesAsync();
@@ -66,6 +68,7 @@ public class CoachNoteService : ICoachNoteService
 
         note.Content = dto.Content.Trim();
         note.Category = dto.Category;
+        note.IsPrivate = dto.IsPrivate;
         note.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return ToDto(note);
@@ -103,6 +106,7 @@ public class CoachNoteService : ICoachNoteService
         CoachName = n.CoachName,
         Content = n.Content,
         Category = n.Category,
+        IsPrivate = n.IsPrivate,
         CreatedAt = n.CreatedAt,
         UpdatedAt = n.UpdatedAt,
     };

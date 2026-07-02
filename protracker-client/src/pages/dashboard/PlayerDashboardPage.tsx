@@ -4,6 +4,7 @@ import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerMatchRatings } from '../../hooks/useMatches';
 import { useMySessions } from '../../hooks/useSessions';
 import { useMyAnnouncements } from '../../hooks/useAnnouncements';
+import { useCoachNotes } from '../../hooks/useCoachNotes';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -12,7 +13,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
   AlertTriangle, Zap, Star, Target, Shield, Trophy, CalendarDays, Clock, MapPin,
-  Megaphone, Pin,
+  Megaphone, Pin, MessageCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -56,6 +57,7 @@ export function PlayerDashboardPage() {
   const { data: matchRatings } = usePlayerMatchRatings(playerId);
   const { data: upcomingSessions } = useMySessions();
   const { data: announcements } = useMyAnnouncements();
+  const { data: coachFeedback } = useCoachNotes(playerId);
 
   if (loadingId || isLoading) return <PageSpinner />;
   if (isError)
@@ -311,8 +313,37 @@ export function PlayerDashboardPage() {
         </motion.div>
       )}
 
+      {/* Coach Feedback (shared notes) */}
+      <motion.div custom={9} initial="hidden" animate="show" variants={fadeUp}
+        className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+      >
+        <div className="flex items-center gap-2 mb-4">
+          <div className="inline-flex p-2 rounded-xl bg-green-500/10">
+            <MessageCircle size={16} className="text-green-500" />
+          </div>
+          <h2 className="font-bold text-gray-900 dark:text-white">Coach Feedback</h2>
+        </div>
+        {!coachFeedback || coachFeedback.length === 0 ? (
+          <EmptyState icon={<MessageCircle size={32} />} title="No feedback yet"
+            description="Your coach hasn't shared any feedback yet. Keep working hard!" size="sm" />
+        ) : (
+          <div className="space-y-2">
+            {coachFeedback.slice(0, 6).map((n) => (
+              <div key={n.id} className="rounded-xl border border-gray-100 dark:border-gray-800 p-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{n.category}</span>
+                  <span className="text-[11px] text-gray-400">{new Date(n.createdAt).toLocaleDateString()}</span>
+                </div>
+                <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.content}</p>
+                <p className="text-[11px] text-gray-400 mt-1">{n.coachName || 'Coach'}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </motion.div>
+
       {/* Quick nav */}
-      <motion.div custom={9} initial="hidden" animate="show" variants={fadeUp}>
+      <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Quick Access</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[

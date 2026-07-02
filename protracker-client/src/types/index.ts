@@ -325,6 +325,7 @@ export interface CoachNote {
   coachName: string;
   content: string;
   category: CoachNoteCategory;
+  isPrivate: boolean;
   createdAt: string;
   updatedAt?: string | null;
 }

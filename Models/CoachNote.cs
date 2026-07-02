@@ -12,10 +12,9 @@ public enum CoachNoteCategory
     Medical
 }
 
-// A private, coach-only note about a player. NEVER exposed on any athlete-accessible
-// endpoint — access is restricted to coaches with scope on the player's team.
-// Distinct from the single free-text Player.CoachNotes field: this is a timestamped
-// timeline of individual notes.
+// A coach note about a player. Private by default (coach-only); when IsPrivate is
+// false the note is *shared* and the athlete can read it too. Distinct from the single
+// free-text Player.CoachNotes field: this is a timestamped timeline of individual notes.
 public class CoachNote
 {
     public int Id { get; set; }
@@ -31,6 +30,9 @@ public class CoachNote
     public string Content { get; set; } = "";
 
     public CoachNoteCategory Category { get; set; } = CoachNoteCategory.General;
+
+    // true = only the coach sees it; false = shared with the athlete too.
+    public bool IsPrivate { get; set; } = true;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
