@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Clock, Pencil, Trash2, Undo2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PlayerTask } from '../../types';
-import { PRIORITY_BADGE, CATEGORY_BADGE, isOverdue, formatDate, getInitials } from './taskUtils';
+import { PRIORITY_BADGE, CATEGORY_BADGE, PRIORITY_BORDER, isOverdue, formatDate, getInitials } from './taskUtils';
 
 interface Props {
   task: PlayerTask;
@@ -34,12 +34,10 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2 }}
       className={clsx(
-        'rounded-2xl border bg-white dark:bg-gray-900 p-4',
+        'rounded-2xl border border-l-4 bg-white dark:bg-gray-900 p-4 transition-all hover:shadow-md hover:-translate-y-0.5',
         task.isCompleted
-          ? 'border-gray-200 dark:border-gray-800 opacity-80'
-          : overdue
-            ? 'border-red-300 dark:border-red-900/50'
-            : 'border-gray-200 dark:border-gray-800',
+          ? 'border-gray-200 dark:border-gray-800 border-l-green-500 opacity-80'
+          : clsx('border-gray-200 dark:border-gray-800', PRIORITY_BORDER[task.priority]),
       )}
     >
       <div className="flex items-start gap-3">
@@ -180,7 +178,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
               ) : (
                 <button
                   onClick={() => setNoteOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-700 dark:text-gray-300 hover:text-green-700 dark:hover:text-green-400 text-xs font-semibold transition-all cursor-pointer"
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition-all cursor-pointer"
                 >
                   <CheckCircle2 size={13} /> Mark Complete
                 </button>

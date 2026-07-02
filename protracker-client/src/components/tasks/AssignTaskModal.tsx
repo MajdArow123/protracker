@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useToast } from '../../context/ToastContext';
 import { useCreateTask, useUpdateTask } from '../../hooks/useTasks';
-import { CATEGORY_ORDER, PRIORITY_BADGE } from './taskUtils';
+import { CATEGORY_ORDER, PRIORITY_BADGE, CATEGORY_BADGE, PRIORITY_BORDER, formatDate } from './taskUtils';
 import type { PlayerTask, TaskPriority, TaskCategory } from '../../types';
 
 interface PlayerOption { id: number; name: string; }
@@ -126,16 +126,17 @@ export function AssignTaskModal({ isOpen, onClose, players, task, lockedPlayerId
 
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Priority</label>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {PRIORITIES.map(p => (
               <button
                 key={p}
                 type="button"
                 onClick={() => setPriority(p)}
                 className={clsx(
-                  'flex-1 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer',
+                  'py-3 rounded-xl text-sm font-bold border-2 border-l-4 transition-all cursor-pointer',
+                  PRIORITY_BORDER[p],
                   priority === p
-                    ? clsx(PRIORITY_BADGE[p], 'border-transparent ring-2 ring-offset-1 dark:ring-offset-gray-800 ring-current')
+                    ? clsx(PRIORITY_BADGE[p], 'border-current')
                     : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600',
                 )}
               >
@@ -144,6 +145,22 @@ export function AssignTaskModal({ isOpen, onClose, players, task, lockedPlayerId
             ))}
           </div>
         </div>
+
+        {/* Live preview */}
+        {title.trim() && (
+          <div>
+            <label className="block text-xs font-medium text-gray-400 mb-1.5">Preview</label>
+            <div className={clsx('rounded-xl border border-l-4 bg-gray-50 dark:bg-gray-800/50 p-3', PRIORITY_BORDER[priority])}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="font-bold text-sm text-gray-900 dark:text-white">{title.trim()}</p>
+                <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', CATEGORY_BADGE[category])}>{category}</span>
+                <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', PRIORITY_BADGE[priority])}>{priority}</span>
+              </div>
+              {description.trim() && <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">{description.trim()}</p>}
+              {dueDate && <p className="text-xs text-gray-500 mt-1">Due {formatDate(dueDate)}</p>}
+            </div>
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-500">{error}</p>}
 

@@ -67,3 +67,23 @@ export function groupTasks(tasks: PlayerTask[]): { bucket: TaskBucket; tasks: Pl
 export function getInitials(name: string): string {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 }
+
+// Left-border accent by priority (High=red, Medium=amber, Low=blue).
+export const PRIORITY_BORDER: Record<TaskPriority, string> = {
+  High: 'border-l-red-500',
+  Medium: 'border-l-amber-500',
+  Low: 'border-l-blue-500',
+};
+
+/** Coach header stats: overdue / due today / due this week (all open). */
+export function taskStats(tasks: PlayerTask[]): { overdue: number; today: number; thisWeek: number } {
+  let overdue = 0, today = 0, thisWeek = 0;
+  for (const t of tasks) {
+    if (t.isCompleted) continue;
+    const b = bucketOf(t);
+    if (b === 'Overdue') overdue++;
+    else if (b === 'Today') today++;
+    else if (b === 'This Week') thisWeek++;
+  }
+  return { overdue, today, thisWeek };
+}
