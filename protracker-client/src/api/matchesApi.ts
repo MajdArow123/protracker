@@ -7,6 +7,7 @@ export interface CreateMatchInput {
   homeScore: number;
   awayScore: number;
   isHome: boolean;
+  setScores?: string;
   venue?: string;
   competition?: string;
   notes?: string;
@@ -15,11 +16,7 @@ export interface CreateMatchInput {
 export interface RatingInput {
   playerId: number;
   rating: number;
-  goals: number;
-  assists: number;
-  yellowCards: number;
-  redCards: number;
-  minutesPlayed: number;
+  statJson?: string;
   notes?: string;
 }
 

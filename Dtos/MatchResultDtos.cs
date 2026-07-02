@@ -9,6 +9,9 @@ public class PlayerMatchRatingDto
     public int PlayerId { get; set; }
     public string PlayerName { get; set; } = "";
     public decimal Rating { get; set; }
+    // Sport-specific stats as a JSON object string (source of truth going forward).
+    public string? StatJson { get; set; }
+    // Legacy soccer fields (still populated for soccer; kept for backward compat).
     public int Goals { get; set; }
     public int Assists { get; set; }
     public int YellowCards { get; set; }
@@ -18,6 +21,7 @@ public class PlayerMatchRatingDto
     // Enriched for the athlete's "My Matches" / player match-history view.
     public DateTime? MatchDate { get; set; }
     public string? OpponentName { get; set; }
+    public ScoreFormat? ScoreFormat { get; set; }
 }
 
 public class MatchResultDto
@@ -33,6 +37,10 @@ public class MatchResultDto
     public int OurScore { get; set; }
     public int OpponentScore { get; set; }
     public MatchOutcome Result { get; set; }
+    public ScoreFormat ScoreFormat { get; set; }
+    public string? SetScores { get; set; }
+    // Convenience "our - opp" string (frontend may render richer, sport-specific views).
+    public string ScoreDisplay { get; set; } = "";
     public string? Venue { get; set; }
     public string? Competition { get; set; }
     public string? Notes { get; set; }
@@ -46,6 +54,7 @@ public class CreateMatchResultDto
     public int HomeScore { get; set; }
     public int AwayScore { get; set; }
     public bool IsHome { get; set; }
+    public string? SetScores { get; set; }
     public string? Venue { get; set; }
     public string? Competition { get; set; }
     public string? Notes { get; set; }
@@ -55,6 +64,8 @@ public class CreatePlayerMatchRatingDto
 {
     public int PlayerId { get; set; }
     public decimal Rating { get; set; }
+    public string? StatJson { get; set; }
+    // Legacy soccer fields (optional — sent by the soccer form for backward compat).
     public int Goals { get; set; }
     public int Assists { get; set; }
     public int YellowCards { get; set; }

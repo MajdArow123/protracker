@@ -245,6 +245,7 @@ export interface InjuryRecord {
 }
 
 export type MatchOutcome = 'Win' | 'Draw' | 'Loss';
+export type ScoreFormat = 'Goals' | 'Points' | 'Sets' | 'GamesAndSets';
 
 export interface PlayerMatchRating {
   id: number;
@@ -252,6 +253,7 @@ export interface PlayerMatchRating {
   playerId: number;
   playerName: string;
   rating: number;
+  statJson?: string | null;
   goals: number;
   assists: number;
   yellowCards: number;
@@ -260,6 +262,7 @@ export interface PlayerMatchRating {
   notes?: string | null;
   matchDate?: string | null;
   opponentName?: string | null;
+  scoreFormat?: ScoreFormat | null;
 }
 
 export interface MatchResult {
@@ -274,6 +277,9 @@ export interface MatchResult {
   ourScore: number;
   opponentScore: number;
   result: MatchOutcome;
+  scoreFormat: ScoreFormat;
+  setScores?: string | null;
+  scoreDisplay: string;
   venue?: string | null;
   competition?: string | null;
   notes?: string | null;

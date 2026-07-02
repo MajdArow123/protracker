@@ -43,6 +43,7 @@ public class MatchService : IMatchService
     public async Task<MatchResultDto> CreateAsync(ClaimsPrincipal user, int teamId, CreateMatchResultDto dto)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
+        var sportId = await _context.Teams.Where(t => t.Id == teamId).Select(t => t.SportId).FirstAsync();
         var match = new MatchResult
         {
             TeamId = teamId,
@@ -51,6 +52,8 @@ public class MatchService : IMatchService
             HomeScore = dto.HomeScore,
             AwayScore = dto.AwayScore,
             IsHome = dto.IsHome,
+            ScoreFormat = MatchResult.FormatForSport(sportId),
+            SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim(),
             Venue = dto.Venue,
             Competition = dto.Competition,
             Notes = dto.Notes,
@@ -71,6 +74,9 @@ public class MatchService : IMatchService
         match.HomeScore = dto.HomeScore;
         match.AwayScore = dto.AwayScore;
         match.IsHome = dto.IsHome;
+        // Keep score format aligned with the team's sport (in case older rows predate it).
+        match.ScoreFormat = MatchResult.FormatForSport(match.Team?.SportId ?? 0);
+        match.SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim();
         match.Venue = dto.Venue;
         match.Competition = dto.Competition;
         match.Notes = dto.Notes;
@@ -106,6 +112,7 @@ public class MatchService : IMatchService
                 MatchResultId = matchId,
                 PlayerId = r.PlayerId,
                 Rating = r.Rating,
+                StatJson = string.IsNullOrWhiteSpace(r.StatJson) ? null : r.StatJson,
                 Goals = r.Goals,
                 Assists = r.Assists,
                 YellowCards = r.YellowCards,
@@ -132,21 +139,13 @@ public class MatchService : IMatchService
             .Where(r => r.PlayerId == playerId)
             .OrderByDescending(r => r.MatchResult.MatchDate)
             .ToListAsync();
-        return ratings.Select(r => new PlayerMatchRatingDto
+        return ratings.Select(r =>
         {
-            Id = r.Id,
-            MatchResultId = r.MatchResultId,
-            PlayerId = r.PlayerId,
-            PlayerName = r.Player?.FullName ?? "",
-            Rating = r.Rating,
-            Goals = r.Goals,
-            Assists = r.Assists,
-            YellowCards = r.YellowCards,
-            RedCards = r.RedCards,
-            MinutesPlayed = r.MinutesPlayed,
-            Notes = r.Notes,
-            MatchDate = r.MatchResult?.MatchDate,
-            OpponentName = r.MatchResult?.OpponentName,
+            var dto = ToRatingDto(r);
+            dto.MatchDate = r.MatchResult?.MatchDate;
+            dto.OpponentName = r.MatchResult?.OpponentName;
+            dto.ScoreFormat = r.MatchResult?.ScoreFormat;
+            return dto;
         }).ToList();
     }
 
@@ -177,25 +176,31 @@ public class MatchService : IMatchService
             OurScore = ourScore,
             OpponentScore = oppScore,
             Result = result,
+            ScoreFormat = m.ScoreFormat,
+            SetScores = m.SetScores,
+            ScoreDisplay = $"{ourScore} - {oppScore}",
             Venue = m.Venue,
             Competition = m.Competition,
             Notes = m.Notes,
             Ratings = (m.Ratings ?? new List<PlayerMatchRating>())
                 .OrderByDescending(r => r.Rating)
-                .Select(r => new PlayerMatchRatingDto
-                {
-                    Id = r.Id,
-                    MatchResultId = r.MatchResultId,
-                    PlayerId = r.PlayerId,
-                    PlayerName = r.Player?.FullName ?? "",
-                    Rating = r.Rating,
-                    Goals = r.Goals,
-                    Assists = r.Assists,
-                    YellowCards = r.YellowCards,
-                    RedCards = r.RedCards,
-                    MinutesPlayed = r.MinutesPlayed,
-                    Notes = r.Notes,
-                }).ToList(),
+                .Select(ToRatingDto).ToList(),
         };
     }
+
+    private static PlayerMatchRatingDto ToRatingDto(PlayerMatchRating r) => new()
+    {
+        Id = r.Id,
+        MatchResultId = r.MatchResultId,
+        PlayerId = r.PlayerId,
+        PlayerName = r.Player?.FullName ?? "",
+        Rating = r.Rating,
+        StatJson = r.StatJson,
+        Goals = r.Goals,
+        Assists = r.Assists,
+        YellowCards = r.YellowCards,
+        RedCards = r.RedCards,
+        MinutesPlayed = r.MinutesPlayed,
+        Notes = r.Notes,
+    };
 }

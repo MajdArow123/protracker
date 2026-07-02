@@ -2,6 +2,7 @@ import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerMatchRatings } from '../../hooks/useMatches';
+import { statFieldsForFormat, parseStatJson } from '../../utils/matchSport';
 import { useMySessions } from '../../hooks/useSessions';
 import { useMyAnnouncements } from '../../hooks/useAnnouncements';
 import { useCoachNotes } from '../../hooks/useCoachNotes';
@@ -339,9 +340,15 @@ export function PlayerDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
-                    {r.goals > 0 && <span className="font-medium">⚽ {r.goals}</span>}
-                    {r.assists > 0 && <span className="font-medium">🅰️ {r.assists}</span>}
-                    {r.minutesPlayed > 0 && <span>{r.minutesPlayed}′</span>}
+                    {(() => {
+                      const parsed = parseStatJson(r.statJson);
+                      const legacy = r as unknown as Record<string, number>;
+                      const val = (k: string) => (k in parsed ? parsed[k] : (typeof legacy[k] === 'number' ? legacy[k] : 0));
+                      return statFieldsForFormat(r.scoreFormat)
+                        .filter(f => val(f.key) > 0)
+                        .slice(0, 3)
+                        .map(f => <span key={f.key} className="font-medium">{f.label} {val(f.key)}</span>);
+                    })()}
                   </div>
                 </div>
               );

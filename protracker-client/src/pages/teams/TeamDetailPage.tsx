@@ -207,7 +207,7 @@ export function TeamDetailPage() {
 
       {teamTab === 'matches' && (
         <div className="p-4 lg:p-6">
-          <TeamMatchesSection teamId={teamId} players={teamPlayers.map(p => ({ id: p.id, name: p.fullName }))} isCoach={isCoach} />
+          <TeamMatchesSection teamId={teamId} sportName={team.sportName} players={teamPlayers.map(p => ({ id: p.id, name: p.fullName }))} isCoach={isCoach} />
         </div>
       )}
 
