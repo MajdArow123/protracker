@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
 import { useActiveInjuries } from '../../hooks/useInjuries';
+import { useCoachTasks } from '../../hooks/useTasks';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -70,6 +71,8 @@ export function CoachDashboardPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError } = useCoachDashboard();
   const { data: activeInjuries = [] } = useActiveInjuries();
+  const { data: allTasks = [] } = useCoachTasks();
+  const overdueTasks = allTasks.filter(t => !t.isCompleted && t.dueDate && new Date(t.dueDate).getTime() < Date.now());
 
   if (isLoading) return <PageSpinner />;
   if (isError)
@@ -103,12 +106,12 @@ export function CoachDashboardPage() {
       text: 'text-purple-600 dark:text-purple-400',
     },
     {
-      title: 'Assessments',
-      value: '—',
+      title: 'Overdue Tasks',
+      value: overdueTasks.length,
       icon: ClipboardList,
-      gradient: 'from-indigo-500 to-blue-600',
-      bg: 'bg-indigo-500/10',
-      text: 'text-indigo-600 dark:text-indigo-400',
+      gradient: 'from-amber-500 to-orange-600',
+      bg: 'bg-amber-500/10',
+      text: 'text-amber-600 dark:text-amber-400',
     },
     {
       title: 'Active Injuries',

@@ -1,17 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { tasksApi, type CreateTaskInput, type CoachTaskFilters } from '../api/tasksApi';
 
-export function useCoachTasks(filters?: CoachTaskFilters) {
+export function useCoachTasks(filters?: CoachTaskFilters, enabled = true) {
   return useQuery({
     queryKey: ['tasks', 'coach', filters ?? {}],
     queryFn: () => tasksApi.getForCoach(filters),
+    enabled,
   });
 }
 
-export function useMyTasks() {
+export function useMyTasks(enabled = true) {
   return useQuery({
     queryKey: ['tasks', 'mine'],
     queryFn: tasksApi.getMine,
+    enabled,
   });
 }
 

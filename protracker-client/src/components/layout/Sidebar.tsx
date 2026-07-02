@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useTeams } from '../../hooks/useTeams';
+import { useNotifications } from '../../hooks/useNotifications';
 import { clsx } from 'clsx';
 
 interface NavItem {
@@ -67,6 +68,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
   const nav = user?.role === 'Coach' ? coachNav : athleteNav;
   const profilePath = user?.role === 'Coach' ? '/profile' : '/player-dashboard/profile';
+  const { badges } = useNotifications();
 
   const handleLogout = async () => {
     try {
@@ -125,7 +127,17 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                   <item.icon size={17} />
                   {item.label}
                 </div>
-                {isActive && <ChevronRight size={14} className="opacity-60" />}
+                <div className="flex items-center gap-1.5">
+                  {badges[item.to] > 0 && (
+                    <span className={clsx(
+                      'min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold',
+                      isActive ? 'bg-white/25 text-white' : 'bg-red-500 text-white',
+                    )}>
+                      {badges[item.to] > 9 ? '9+' : badges[item.to]}
+                    </span>
+                  )}
+                  {isActive && <ChevronRight size={14} className="opacity-60" />}
+                </div>
               </>
             )}
           </NavLink>
