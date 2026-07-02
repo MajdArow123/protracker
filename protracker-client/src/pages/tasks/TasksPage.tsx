@@ -6,11 +6,12 @@ import { ConfirmModal } from '../../components/ui/Modal';
 import { Select } from '../../components/ui/Select';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { AssignTaskModal } from '../../components/tasks/AssignTaskModal';
+import { AITaskSuggestionsModal } from '../../components/tasks/AITaskSuggestionsModal';
 import { groupTasks, taskStats, CATEGORY_ORDER } from '../../components/tasks/taskUtils';
 import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useToast } from '../../context/ToastContext';
-import { ClipboardList, Plus, ChevronDown, X } from 'lucide-react';
+import { ClipboardList, Plus, ChevronDown, X, Sparkles } from 'lucide-react';
 import type { PlayerTask, TaskPriority, TaskCategory } from '../../types';
 import { clsx } from 'clsx';
 
@@ -41,6 +42,7 @@ export function TasksPage() {
 
   const deleteTask = useDeleteTask();
   const [assignOpen, setAssignOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [editTask, setEditTask] = useState<PlayerTask | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PlayerTask | null>(null);
 
@@ -72,12 +74,20 @@ export function TasksPage() {
     <PageWrapper
       title="Tasks"
       actions={
-        <button
-          onClick={() => { setEditTask(null); setAssignOpen(true); }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer"
-        >
-          <Plus size={16} /> Assign Task
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setAiOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+          >
+            <Sparkles size={16} /> AI Suggestions
+          </button>
+          <button
+            onClick={() => { setEditTask(null); setAssignOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer"
+          >
+            <Plus size={16} /> Assign Task
+          </button>
+        </div>
       }
     >
       {/* Stats line */}
@@ -177,6 +187,12 @@ export function TasksPage() {
         onClose={() => { setAssignOpen(false); setEditTask(null); }}
         players={players.map(p => ({ id: p.id, name: p.fullName }))}
         task={editTask}
+      />
+
+      <AITaskSuggestionsModal
+        isOpen={aiOpen}
+        onClose={() => setAiOpen(false)}
+        players={players.map(p => ({ id: p.id, name: p.fullName }))}
       />
 
       <ConfirmModal

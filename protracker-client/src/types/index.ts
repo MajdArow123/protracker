@@ -208,6 +208,23 @@ export interface AssessmentPeriod {
 export type TaskPriority = 'Low' | 'Medium' | 'High';
 export type TaskCategory = 'Training' | 'Nutrition' | 'Recovery' | 'Tactical' | 'Physical' | 'Other';
 
+export interface TaskSuggestion {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  category: TaskCategory;
+  focusArea?: string | null;
+  rationale?: string | null;
+}
+
+export interface TaskSuggestions {
+  playerId: number;
+  playerName: string;
+  weakAreas: string[];
+  suggestions: TaskSuggestion[];
+  generatedAt: string;
+}
+
 export interface PlayerTask {
   id: number;
   coachId: string;

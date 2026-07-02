@@ -28,3 +28,9 @@ export function useGenerateTeamInsights() {
     mutationFn: (teamId: number) => aiApi.generateTeamInsights(teamId),
   });
 }
+
+export function useGenerateTaskSuggestions() {
+  return useMutation({
+    mutationFn: (playerId: number) => aiApi.generateTaskSuggestions(playerId),
+  });
+}

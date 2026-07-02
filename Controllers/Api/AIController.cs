@@ -98,6 +98,128 @@ public class AIController : ApiControllerBase
         return Success(dto);
     }
 
+    // ─── Task Suggestions ─────────────────────────────────────────────────────
+
+    [HttpPost("task-suggestions/{playerId}")]
+    public async Task<ActionResult> GenerateTaskSuggestions(int playerId)
+    {
+        await _access.EnsureCanAccessPlayerAsync(User, playerId);
+
+        var player = await _context.Players
+            .Include(p => p.Sport)
+            .Include(p => p.Position)
+            .FirstOrDefaultAsync(p => p.Id == playerId)
+            ?? throw new NotFoundApiException($"Player {playerId} not found.");
+
+        var latestAssessment = await _context.PlayerAssessments
+            .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
+            .Where(a => a.PlayerId == playerId)
+            .OrderByDescending(a => a.DateRecorded)
+            .FirstOrDefaultAsync();
+
+        // Weakest categories drive the suggestions — bottom 4 by score (all, if fewer).
+        var weakScores = (latestAssessment?.StatScores ?? new List<PlayerStatScore>())
+            .OrderBy(s => s.Score)
+            .Take(4)
+            .ToList();
+        var weakAreas = weakScores
+            .Select(s => $"{s.SportStatCategory.Name}: {s.Score}/10")
+            .ToList();
+
+        var weakAreasText = weakAreas.Any()
+            ? string.Join("\n", weakAreas.Select(w => $"- {w}"))
+            : "- No assessment data yet; suggest well-rounded foundational tasks.";
+
+        var prompt = BuildTaskSuggestionsPrompt(player, weakAreasText);
+        // Prefill guarantees a JSON array continuation; Haiku for speed (coach is waiting).
+        const string prefill = "[";
+
+        List<TaskSuggestionDto>? suggestions = null;
+        string lastRaw = "";
+        for (var attempt = 1; attempt <= 2 && suggestions == null; attempt++)
+        {
+            lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 2000, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
+            try
+            {
+                suggestions = ParseTaskSuggestions(lastRaw);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Task suggestions parse failed (attempt {Attempt})", attempt);
+            }
+        }
+
+        if (suggestions == null || suggestions.Count == 0)
+        {
+            _logger.LogError("Failed to parse AI task suggestions after retries: {Raw}", lastRaw);
+            return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
+        }
+
+        _logger.LogInformation("AI task suggestions generated for player {PlayerId}", playerId);
+        return Success(new TaskSuggestionsDto
+        {
+            PlayerId = playerId,
+            PlayerName = player.FullName,
+            WeakAreas = weakAreas,
+            Suggestions = suggestions,
+        });
+    }
+
+    private static string BuildTaskSuggestionsPrompt(Player p, string weakAreasText)
+    {
+        return "You are an elite sports performance coach. Suggest 5 concrete, assignable tasks/drills to help "
+            + "this athlete improve their weakest areas. The coach will assign these directly to the athlete.\n\n"
+            + $"Athlete: {p.FullName}\n"
+            + $"Sport: {p.Sport.Name}\n"
+            + $"Position: {p.Position.Name}\n"
+            + $"Age: {p.Age}\n"
+            + $"Fitness level: {p.FitnessLevel}/10\n\n"
+            + "Weakest assessment areas (lowest scores first):\n"
+            + weakAreasText + "\n\n"
+            + "Return ONLY a JSON array of exactly 5 task objects, no other text. Each object:\n"
+            + "{\"title\": string (short, imperative, e.g. \"Weak-foot passing drill\"), "
+            + "\"description\": string (1-2 sentences: what to do and how often), "
+            + "\"priority\": \"Low|Medium|High\" (High for the weakest areas), "
+            + "\"category\": \"Training|Nutrition|Recovery|Tactical|Physical|Other\", "
+            + "\"focusArea\": string (which weak category this targets), "
+            + "\"rationale\": string (one short sentence on why)}\n\n"
+            + "Make every task specific to this sport and position. Prioritise the lowest-scoring areas. "
+            + "I have pre-started the JSON with [ — continue from there and close with ].";
+    }
+
+    private static List<TaskSuggestionDto> ParseTaskSuggestions(string raw)
+    {
+        string GetStr(JsonElement el, string name, string fallback = "") =>
+            el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? (v.GetString() ?? fallback) : fallback;
+
+        var root = JsonDocument.Parse(raw).RootElement;
+        if (root.ValueKind != JsonValueKind.Array)
+            throw new JsonException("Expected a JSON array of task suggestions.");
+
+        var list = new List<TaskSuggestionDto>();
+        foreach (var el in root.EnumerateArray())
+        {
+            if (el.ValueKind != JsonValueKind.Object) continue;
+
+            Enum.TryParse<TaskPriority>(GetStr(el, "priority", "Medium"), ignoreCase: true, out var priority);
+            Enum.TryParse<TaskCategory>(GetStr(el, "category", "Training"), ignoreCase: true, out var category);
+
+            var title = GetStr(el, "title").Trim();
+            if (string.IsNullOrEmpty(title)) continue;
+
+            list.Add(new TaskSuggestionDto
+            {
+                Title = title,
+                Description = GetStr(el, "description").Trim(),
+                Priority = priority,
+                Category = category,
+                FocusArea = GetStr(el, "focusArea").Trim() is { Length: > 0 } fa ? fa : null,
+                Rationale = GetStr(el, "rationale").Trim() is { Length: > 0 } r ? r : null,
+            });
+        }
+        return list;
+    }
+
     // ─── Nutrition Guidance ───────────────────────────────────────────────────
 
     [HttpPost("nutrition-guidance/{playerId}")]

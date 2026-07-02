@@ -1,5 +1,5 @@
 import api from './axiosInstance';
-import type { ImprovementPlan, NutritionGuidance } from '../types';
+import type { ImprovementPlan, NutritionGuidance, TaskSuggestions } from '../types';
 
 export interface AIInsights {
   insights: string[];
@@ -24,6 +24,11 @@ export const aiApi = {
 
   generateTeamInsights: async (teamId: number): Promise<AIInsights> => {
     const res = await api.post<AIInsights>(`/api/ai/team-insights/${teamId}`);
+    return res.data;
+  },
+
+  generateTaskSuggestions: async (playerId: number): Promise<TaskSuggestions> => {
+    const res = await api.post<TaskSuggestions>(`/api/ai/task-suggestions/${playerId}`);
     return res.data;
   },
 };
