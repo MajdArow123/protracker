@@ -13,13 +13,14 @@ import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
 import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection';
+import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
   Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star,
 } from 'lucide-react';
 
-type TeamTab = 'overview' | 'matches';
+type TeamTab = 'overview' | 'schedule' | 'matches';
 
 const SPORT_HEADER_COLORS: Record<string, string> = {
   Football: 'from-green-600 via-emerald-600 to-green-700',
@@ -180,7 +181,7 @@ export function TeamDetailPage() {
       {/* Section tabs */}
       <div className="px-4 lg:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
-          {([['overview', 'Overview', Users], ['matches', 'Matches', Star]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
+          {([['overview', 'Overview', Users], ['schedule', 'Schedule', Calendar], ['matches', 'Matches', Star]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTeamTab(id)}
@@ -196,6 +197,12 @@ export function TeamDetailPage() {
           ))}
         </div>
       </div>
+
+      {teamTab === 'schedule' && (
+        <div className="p-4 lg:p-6">
+          <TeamScheduleSection teamId={teamId} isCoach={isCoach} />
+        </div>
+      )}
 
       {teamTab === 'matches' && (
         <div className="p-4 lg:p-6">

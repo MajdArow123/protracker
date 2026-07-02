@@ -2,6 +2,7 @@ import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerMatchRatings } from '../../hooks/useMatches';
+import { useMySessions } from '../../hooks/useSessions';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -9,7 +10,7 @@ import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
-  AlertTriangle, Zap, Star, Target, Shield, Trophy,
+  AlertTriangle, Zap, Star, Target, Shield, Trophy, CalendarDays, Clock, MapPin,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -51,6 +52,7 @@ export function PlayerDashboardPage() {
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data, isLoading, isError } = usePlayerDashboard(playerId);
   const { data: matchRatings } = usePlayerMatchRatings(playerId);
+  const { data: upcomingSessions } = useMySessions();
 
   if (loadingId || isLoading) return <PageSpinner />;
   if (isError)
@@ -196,9 +198,43 @@ export function PlayerDashboardPage() {
         </motion.div>
       </div>
 
+      {/* Upcoming Sessions */}
+      {upcomingSessions && upcomingSessions.length > 0 && (
+        <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="inline-flex p-2 rounded-xl bg-indigo-500/10">
+              <CalendarDays size={16} className="text-indigo-500" />
+            </div>
+            <h2 className="font-bold text-gray-900 dark:text-white">Upcoming Sessions</h2>
+          </div>
+          <div className="space-y-2">
+            {upcomingSessions.slice(0, 5).map((s) => {
+              const start = new Date(s.startTime);
+              return (
+                <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                  <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
+                    <span className="text-[10px] font-semibold uppercase leading-none">{start.toLocaleDateString('en-US', { month: 'short' })}</span>
+                    <span className="text-lg font-black leading-none mt-0.5">{start.getDate()}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{s.title}</p>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1"><Clock size={11} /> {start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {s.durationMinutes}m</span>
+                      {s.location && <span className="inline-flex items-center gap-1"><MapPin size={11} /> {s.location}</span>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+
       {/* My Matches */}
       {matchRatings && matchRatings.length > 0 && (
-        <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}
+        <motion.div custom={8} initial="hidden" animate="show" variants={fadeUp}
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
           <div className="flex items-center gap-2 mb-4">
@@ -236,7 +272,7 @@ export function PlayerDashboardPage() {
       )}
 
       {/* Quick nav */}
-      <motion.div custom={8} initial="hidden" animate="show" variants={fadeUp}>
+      <motion.div custom={9} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Quick Access</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[

@@ -43,6 +43,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TaskItem> TaskItems => Set<TaskItem>();
     public DbSet<PlayerTask> PlayerTasks => Set<PlayerTask>();
     public DbSet<MatchResult> MatchResults => Set<MatchResult>();
+    public DbSet<ScheduledSession> ScheduledSessions => Set<ScheduledSession>();
     public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
 
     public DbSet<Sport> Sports => Set<Sport>();
@@ -228,6 +229,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(r => r.PlayerId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ScheduledSession>()
+            .HasOne(s => s.Team)
+            .WithMany()
+            .HasForeignKey(s => s.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ScheduledSession>()
+            .HasIndex(s => new { s.TeamId, s.StartTime });
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

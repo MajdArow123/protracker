@@ -300,6 +300,21 @@ export interface TrainingSession {
   attendanceStatus: AttendanceStatus;
 }
 
+export type SessionType = 'Training' | 'MatchPrep' | 'Recovery' | 'Strength' | 'Tactical' | 'Other';
+
+export interface ScheduledSession {
+  id: number;
+  teamId: number;
+  teamName: string;
+  title: string;
+  sessionType: SessionType;
+  startTime: string;
+  durationMinutes: number;
+  location?: string | null;
+  focus?: string | null;
+  notes?: string | null;
+}
+
 export interface FoodAlternative {
   id: number;
   originalFood: string;
