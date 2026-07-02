@@ -18,7 +18,7 @@ import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,
   Plus, Edit2, Activity, Dumbbell, ShieldAlert, Star,
-  Calendar, Clock, ChevronRight, CheckSquare,
+  Calendar, Clock, ChevronRight, CheckSquare, StickyNote,
 } from 'lucide-react';
 import type { InjuryRecord, MatchPerformance, TrainingSession, PlayerTask } from '../../types';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
@@ -27,8 +27,9 @@ import { useAutoSave } from '../../hooks/useAutoSave';
 import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { AssignTaskModal } from '../../components/tasks/AssignTaskModal';
+import { CoachNotesTab } from '../../components/notes/CoachNotesTab';
 
-type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks';
+type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'notes';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
@@ -258,6 +259,7 @@ export function PlayerDetailPage() {
     { id: 'matches', label: 'Matches', icon: Star, count: matches.length },
     { id: 'training', label: 'Training', icon: Dumbbell, count: sessions.length },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare, count: playerTasks.length },
+    { id: 'notes', label: 'Notes', icon: StickyNote },
   ];
 
   return (
@@ -807,6 +809,13 @@ export function PlayerDetailPage() {
                   ))}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* Notes tab (coach-private) */}
+          {tab === 'notes' && (
+            <motion.div key="notes" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <CoachNotesTab playerId={playerId} />
             </motion.div>
           )}
         </AnimatePresence>

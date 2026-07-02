@@ -300,6 +300,19 @@ export interface TrainingSession {
   attendanceStatus: AttendanceStatus;
 }
 
+export type CoachNoteCategory = 'General' | 'Performance' | 'Attitude' | 'Development' | 'Tactical' | 'Medical';
+
+export interface CoachNote {
+  id: number;
+  playerId: number;
+  coachId: string;
+  coachName: string;
+  content: string;
+  category: CoachNoteCategory;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
 export type SessionType = 'Training' | 'MatchPrep' | 'Recovery' | 'Strength' | 'Tactical' | 'Other';
 
 export interface ScheduledSession {
