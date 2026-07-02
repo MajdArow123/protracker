@@ -3,12 +3,14 @@ import { useAuth } from '../context/AuthContext';
 import { useCoachTasks, useMyTasks } from './useTasks';
 import { useActiveInjuries } from './useInjuries';
 import { useMySessions } from './useSessions';
+import { isSeen, markSeen, useSeenVersion, overdueTaskKey, myTaskKey, injuryKey, sessionKey } from '../utils/seenNotifications';
 
 export type NotificationKind = 'task' | 'injury' | 'session';
 export type NotificationSeverity = 'high' | 'medium' | 'low';
 
 export interface NotificationItem {
   id: string;
+  seenKey: string;
   kind: NotificationKind;
   title: string;
   detail: string;
@@ -20,8 +22,10 @@ export interface NotificationItem {
 export interface NotificationSummary {
   items: NotificationItem[];
   count: number;
-  // Sidebar badge counts, keyed by nav path.
+  // Sidebar badge counts, keyed by nav path (unseen only).
   badges: Record<string, number>;
+  // Mark every currently-visible notification as seen (bell open / "mark all as read").
+  markAllSeen: () => void;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -35,6 +39,7 @@ export function useNotifications(): NotificationSummary {
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
   const isAthlete = user?.role === 'Athlete';
+  const seenVersion = useSeenVersion(); // re-run when the seen set changes
 
   const { data: coachTasks = [] } = useCoachTasks(undefined, isCoach);
   const { data: activeInjuries = [] } = useActiveInjuries(isCoach);
@@ -42,14 +47,12 @@ export function useNotifications(): NotificationSummary {
   const { data: mySessions = [] } = useMySessions(isAthlete);
 
   return useMemo<NotificationSummary>(() => {
-    const items: NotificationItem[] = [];
-    const badges: Record<string, number> = {};
+    const raw: NotificationItem[] = [];
 
     if (isCoach) {
-      // Overdue, still-open tasks the coach assigned.
-      const overdue = coachTasks.filter(t => !t.isCompleted && isOverdue(t.dueDate));
-      overdue.forEach(t => items.push({
+      coachTasks.filter(t => !t.isCompleted && isOverdue(t.dueDate)).forEach(t => raw.push({
         id: `task-${t.id}`,
+        seenKey: overdueTaskKey(t.id),
         kind: 'task',
         title: 'Overdue task',
         detail: `${t.playerName}: ${t.title}`,
@@ -57,11 +60,10 @@ export function useNotifications(): NotificationSummary {
         to: '/tasks',
         timestamp: t.dueDate ? new Date(t.dueDate).getTime() : 0,
       }));
-      if (overdue.length) badges['/tasks'] = overdue.length;
 
-      // Active (unrecovered) injuries across the coach's teams.
-      activeInjuries.forEach(inj => items.push({
+      activeInjuries.forEach(inj => raw.push({
         id: `injury-${inj.id}`,
+        seenKey: injuryKey(inj.id, inj.severity),
         kind: 'injury',
         title: `${inj.severity} injury`,
         detail: `${inj.playerName ?? 'Player'}: ${inj.injuryType}`,
@@ -72,12 +74,11 @@ export function useNotifications(): NotificationSummary {
     }
 
     if (isAthlete) {
-      // The athlete's own open tasks (overdue first, then simply pending).
-      const openTasks = myTasks.filter(t => !t.isCompleted);
-      openTasks.forEach(t => {
+      myTasks.filter(t => !t.isCompleted).forEach(t => {
         const overdue = isOverdue(t.dueDate);
-        items.push({
+        raw.push({
           id: `mytask-${t.id}`,
+          seenKey: myTaskKey(t.id),
           kind: 'task',
           title: overdue ? 'Task overdue' : 'Task to do',
           detail: t.title,
@@ -86,15 +87,13 @@ export function useNotifications(): NotificationSummary {
           timestamp: t.dueDate ? new Date(t.dueDate).getTime() : Number.MAX_SAFE_INTEGER,
         });
       });
-      if (openTasks.length) badges['/player-dashboard/tasks'] = openTasks.length;
 
-      // Sessions happening within the next 48 hours.
-      const soon = mySessions.filter(s => {
+      mySessions.filter(s => {
         const t = new Date(s.startTime).getTime();
         return t >= Date.now() - 12 * 60 * 60 * 1000 && t <= Date.now() + 2 * DAY;
-      });
-      soon.forEach(s => items.push({
+      }).forEach(s => raw.push({
         id: `session-${s.id}`,
+        seenKey: sessionKey(s.id),
         kind: 'session',
         title: 'Upcoming session',
         detail: `${s.title} · ${new Date(s.startTime).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`,
@@ -104,10 +103,21 @@ export function useNotifications(): NotificationSummary {
       }));
     }
 
-    // High severity first; within a severity, soonest/most-overdue first.
+    // Hide anything already seen/dismissed.
+    const items = raw.filter(i => !isSeen(i.seenKey));
+
     const rank: Record<NotificationSeverity, number> = { high: 0, medium: 1, low: 2 };
     items.sort((a, b) => rank[a.severity] - rank[b.severity] || a.timestamp - b.timestamp);
 
-    return { items, count: items.length, badges };
-  }, [isCoach, isAthlete, coachTasks, activeInjuries, myTasks, mySessions]);
+    // Badges count only unseen items, keyed by nav path.
+    const badges: Record<string, number> = {};
+    for (const i of items) {
+      if (i.kind === 'task') badges[i.to] = (badges[i.to] ?? 0) + 1;
+    }
+
+    const markAllSeen = () => markSeen(items.map(i => i.seenKey));
+
+    return { items, count: items.length, badges, markAllSeen };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCoach, isAthlete, coachTasks, activeInjuries, myTasks, mySessions, seenVersion]);
 }

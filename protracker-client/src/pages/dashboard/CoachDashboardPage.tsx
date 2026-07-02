@@ -2,11 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import {
   Users, Shield, ClipboardList, TrendingUp, ArrowRight,
-  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert,
+  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
 import { useActiveInjuries } from '../../hooks/useInjuries';
 import { useCoachTasks } from '../../hooks/useTasks';
+import { isSeen, markSeen, injuryKey, useSeenVersion } from '../../utils/seenNotifications';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -73,6 +74,8 @@ export function CoachDashboardPage() {
   const { data: activeInjuries = [] } = useActiveInjuries();
   const { data: allTasks = [] } = useCoachTasks();
   const overdueTasks = allTasks.filter(t => !t.isCompleted && t.dueDate && new Date(t.dueDate).getTime() < Date.now());
+  useSeenVersion(); // re-render when a card item is dismissed
+  const visibleInjuries = activeInjuries.filter(inj => !isSeen(injuryKey(inj.id, inj.severity)));
 
   if (isLoading) return <PageSpinner />;
   if (isError)
@@ -266,39 +269,47 @@ export function CoachDashboardPage() {
       </motion.div>
 
       {/* Active injuries */}
-      {activeInjuries.length > 0 && (
+      {visibleInjuries.length > 0 && (
         <motion.div custom={9} initial="hidden" animate="show" variants={fadeUp}>
           <div className="flex items-center gap-2 mb-4">
             <ShieldAlert size={17} className="text-red-500" />
             <h2 className="text-base font-bold text-gray-900 dark:text-white">Active Injuries</h2>
-            <span className="text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 rounded-full px-2 py-0.5">{activeInjuries.length}</span>
+            <span className="text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 rounded-full px-2 py-0.5">{visibleInjuries.length}</span>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
-            {activeInjuries.map(inj => (
-              <button
+            {visibleInjuries.map(inj => (
+              <div
                 key={inj.id}
-                onClick={() => navigate(`/players/${inj.playerId}`)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors cursor-pointer first:rounded-t-2xl last:rounded-b-2xl"
+                className="group flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors first:rounded-t-2xl last:rounded-b-2xl"
               >
-                <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle size={14} className="text-red-500" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{inj.playerName}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                    {inj.injuryType}{inj.bodyPart ? ` · ${inj.bodyPart}` : ''}
-                  </p>
-                </div>
-                <span className={clsx(
-                  'text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0',
-                  inj.severity === 'Severe' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    : inj.severity === 'Moderate' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
-                    : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
-                )}>
-                  {inj.severity}
-                </span>
-                <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
-              </button>
+                <button onClick={() => navigate(`/players/${inj.playerId}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
+                  <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle size={14} className="text-red-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{inj.playerName}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {inj.injuryType}{inj.bodyPart ? ` · ${inj.bodyPart}` : ''}
+                    </p>
+                  </div>
+                  <span className={clsx(
+                    'text-[10px] font-semibold px-2 py-0.5 rounded-full flex-shrink-0',
+                    inj.severity === 'Severe' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                      : inj.severity === 'Moderate' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                  )}>
+                    {inj.severity}
+                  </span>
+                  <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
+                </button>
+                <button
+                  onClick={() => markSeen([injuryKey(inj.id, inj.severity)])}
+                  title="Dismiss"
+                  className="p-1 rounded-lg text-gray-300 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer flex-shrink-0"
+                >
+                  <X size={14} />
+                </button>
+              </div>
             ))}
           </div>
         </motion.div>
