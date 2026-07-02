@@ -14,6 +14,7 @@ import { useAuth } from '../../context/AuthContext';
 import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
 import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection';
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
+import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
@@ -211,6 +212,11 @@ export function TeamDetailPage() {
       )}
 
       {teamTab === 'overview' && (<>
+      {/* Announcements */}
+      <div className="px-4 lg:px-6 pt-4 lg:pt-6">
+        <TeamAnnouncementsSection teamId={teamId} isCoach={isCoach} />
+      </div>
+
       {/* Main content */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 lg:p-6">
         {/* Left: Roster */}

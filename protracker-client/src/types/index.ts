@@ -300,6 +300,22 @@ export interface TrainingSession {
   attendanceStatus: AttendanceStatus;
 }
 
+export type AnnouncementPriority = 'Normal' | 'Important' | 'Urgent';
+
+export interface TeamAnnouncement {
+  id: number;
+  teamId: number;
+  teamName: string;
+  coachId: string;
+  coachName: string;
+  title: string;
+  content: string;
+  priority: AnnouncementPriority;
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt?: string | null;
+}
+
 export type CoachNoteCategory = 'General' | 'Performance' | 'Attitude' | 'Development' | 'Tactical' | 'Medical';
 
 export interface CoachNote {

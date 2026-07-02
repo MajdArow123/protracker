@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerMatchRatings } from '../../hooks/useMatches';
 import { useMySessions } from '../../hooks/useSessions';
+import { useMyAnnouncements } from '../../hooks/useAnnouncements';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -11,6 +12,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
   AlertTriangle, Zap, Star, Target, Shield, Trophy, CalendarDays, Clock, MapPin,
+  Megaphone, Pin,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -53,6 +55,7 @@ export function PlayerDashboardPage() {
   const { data, isLoading, isError } = usePlayerDashboard(playerId);
   const { data: matchRatings } = usePlayerMatchRatings(playerId);
   const { data: upcomingSessions } = useMySessions();
+  const { data: announcements } = useMyAnnouncements();
 
   if (loadingId || isLoading) return <PageSpinner />;
   if (isError)
@@ -103,6 +106,43 @@ export function PlayerDashboardPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* Team Announcements */}
+      {announcements && announcements.length > 0 && (
+        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}
+          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <div className="inline-flex p-2 rounded-xl bg-indigo-500/10">
+              <Megaphone size={16} className="text-indigo-500" />
+            </div>
+            <h2 className="font-bold text-gray-900 dark:text-white">Team Announcements</h2>
+          </div>
+          <div className="space-y-2">
+            {announcements.slice(0, 4).map((a) => {
+              const border = a.priority === 'Urgent' ? 'border-red-300 dark:border-red-800'
+                : a.priority === 'Important' ? 'border-amber-300 dark:border-amber-800'
+                : 'border-gray-100 dark:border-gray-800';
+              const badge = a.priority === 'Urgent' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                : a.priority === 'Important' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
+              return (
+                <div key={a.id} className={clsx('rounded-xl border p-3', border)}>
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      {a.isPinned && <Pin size={12} className="text-indigo-500 flex-shrink-0" />}
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{a.title}</p>
+                    </div>
+                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0', badge)}>{a.priority}</span>
+                  </div>
+                  {a.content && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{a.content}</p>}
+                  <p className="text-[10px] text-gray-400 mt-1">{a.teamName} · {a.coachName || 'Coach'}</p>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
