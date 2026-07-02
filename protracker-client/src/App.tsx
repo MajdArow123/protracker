@@ -29,6 +29,7 @@ import { ComparePlayersPage } from './pages/reports/ComparePlayersPage';
 import { FoodAlternativesPage } from './pages/nutrition/FoodAlternativesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
 import { MyTasksPage } from './pages/tasks/MyTasksPage';
+import { MessagesPage } from './pages/messages/MessagesPage';
 import { PageSpinner } from './components/ui/Spinner';
 import { LandingPage } from './pages/LandingPage';
 import { CoachProfilePage } from './pages/profile/CoachProfilePage';
@@ -63,6 +64,8 @@ function AppRoutes() {
       <Route path="/" element={<RootRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
+          {/* Messaging is available to both roles */}
+          <Route path="/messages" element={<MessagesPage />} />
           <Route element={<ProtectedRoute roles={['Coach']} />}>
             <Route path="/dashboard" element={<CoachDashboardPage />} />
             <Route path="/teams" element={<TeamsPage />} />

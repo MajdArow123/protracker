@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, AlertTriangle, CheckSquare, CalendarDays, Check } from 'lucide-react';
+import { Bell, AlertTriangle, CheckSquare, CalendarDays, Check, MessageSquare } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useNotifications, type NotificationKind } from '../../hooks/useNotifications';
+import { useUnreadMessageCount } from '../../hooks/useMessages';
 
 const KIND_ICON: Record<NotificationKind, typeof Bell> = {
   task: CheckSquare,
@@ -17,7 +18,9 @@ const SEV_STYLES = {
 } as const;
 
 export function NotificationBell() {
-  const { items, count } = useNotifications();
+  const { items, count: derivedCount } = useNotifications();
+  const { data: unreadMessages = 0 } = useUnreadMessageCount();
+  const count = derivedCount + unreadMessages;
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -53,7 +56,7 @@ export function NotificationBell() {
             {count > 0 && <span className="text-xs font-semibold text-gray-500">{count}</span>}
           </div>
 
-          {items.length === 0 ? (
+          {count === 0 ? (
             <div className="px-4 py-8 flex flex-col items-center text-center">
               <div className="p-3 rounded-full bg-green-500/10 mb-2">
                 <Check size={20} className="text-green-500" />
@@ -63,6 +66,20 @@ export function NotificationBell() {
             </div>
           ) : (
             <div className="max-h-[60vh] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
+              {unreadMessages > 0 && (
+                <button
+                  onClick={() => { setOpen(false); navigate('/messages'); }}
+                  className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors cursor-pointer"
+                >
+                  <div className="p-1.5 rounded-lg flex-shrink-0 text-blue-500 bg-blue-500/10">
+                    <MessageSquare size={14} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{unreadMessages} unread message{unreadMessages > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Tap to open your messages</p>
+                  </div>
+                </button>
+              )}
               {items.map(item => {
                 const Icon = KIND_ICON[item.kind];
                 return (

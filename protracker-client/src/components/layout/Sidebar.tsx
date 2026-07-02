@@ -2,12 +2,13 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
-  TrendingUp, X, LogOut, User, ChevronRight, CheckSquare,
+  TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useTeams } from '../../hooks/useTeams';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useUnreadMessageCount } from '../../hooks/useMessages';
 import { clsx } from 'clsx';
 
 interface NavItem {
@@ -22,6 +23,7 @@ const coachNav: NavItem[] = [
   { to: '/teams', label: 'Teams', icon: Shield },
   { to: '/players', label: 'Players', icon: Users },
   { to: '/tasks', label: 'Tasks', icon: CheckSquare },
+  { to: '/messages', label: 'Messages', icon: MessageSquare },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
 ];
 
@@ -29,6 +31,7 @@ const athleteNav: NavItem[] = [
   { to: '/player-dashboard', label: 'My Dashboard', icon: LayoutDashboard, end: true },
   { to: '/player-dashboard/stats', label: 'My Stats', icon: Activity },
   { to: '/player-dashboard/tasks', label: 'My Tasks', icon: CheckSquare },
+  { to: '/messages', label: 'Messages', icon: MessageSquare },
   { to: '/player-dashboard/nutrition', label: 'My Nutrition', icon: Salad },
   { to: '/player-dashboard/improvement', label: 'My Plan', icon: TrendingUp },
 ];
@@ -69,6 +72,8 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const nav = user?.role === 'Coach' ? coachNav : athleteNav;
   const profilePath = user?.role === 'Coach' ? '/profile' : '/player-dashboard/profile';
   const { badges } = useNotifications();
+  const { data: unreadMessages = 0 } = useUnreadMessageCount();
+  const navBadge = (to: string) => to === '/messages' ? unreadMessages : (badges[to] ?? 0);
 
   const handleLogout = async () => {
     try {
@@ -128,12 +133,12 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                   {item.label}
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {badges[item.to] > 0 && (
+                  {navBadge(item.to) > 0 && (
                     <span className={clsx(
                       'min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold',
                       isActive ? 'bg-white/25 text-white' : 'bg-red-500 text-white',
                     )}>
-                      {badges[item.to] > 9 ? '9+' : badges[item.to]}
+                      {navBadge(item.to) > 9 ? '9+' : navBadge(item.to)}
                     </span>
                   )}
                   {isActive && <ChevronRight size={14} className="opacity-60" />}

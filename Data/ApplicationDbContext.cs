@@ -46,6 +46,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ScheduledSession> ScheduledSessions => Set<ScheduledSession>();
     public DbSet<CoachNote> CoachNotes => Set<CoachNote>();
     public DbSet<TeamAnnouncement> TeamAnnouncements => Set<TeamAnnouncement>();
+    public DbSet<Message> Messages => Set<Message>();
     public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
 
     public DbSet<Sport> Sports => Set<Sport>();
@@ -255,6 +256,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<TeamAnnouncement>()
             .HasIndex(a => a.TeamId);
+
+        builder.Entity<Message>()
+            .HasIndex(m => m.ConversationId);
+        builder.Entity<Message>()
+            .HasIndex(m => new { m.ReceiverId, m.IsRead });
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

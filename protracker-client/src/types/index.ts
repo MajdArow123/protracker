@@ -300,6 +300,33 @@ export interface TrainingSession {
   attendanceStatus: AttendanceStatus;
 }
 
+export interface Message {
+  id: number;
+  senderId: string;
+  receiverId: string;
+  content: string;
+  sentAt: string;
+  isRead: boolean;
+  readAt?: string | null;
+  isMine: boolean;
+}
+
+export interface Conversation {
+  otherUserId: string;
+  otherUserName: string;
+  otherUserRole: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  lastMessageMine: boolean;
+  unreadCount: number;
+}
+
+export interface MessageContact {
+  userId: string;
+  name: string;
+  role: string;
+}
+
 export type AnnouncementPriority = 'Normal' | 'Important' | 'Urgent';
 
 export interface TeamAnnouncement {

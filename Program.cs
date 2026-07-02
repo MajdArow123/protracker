@@ -144,6 +144,7 @@ builder.Services.AddScoped<IMatchService, MatchService>();
 builder.Services.AddScoped<IScheduledSessionService, ScheduledSessionService>();
 builder.Services.AddScoped<ICoachNoteService, CoachNoteService>();
 builder.Services.AddScoped<ITeamAnnouncementService, TeamAnnouncementService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanService>();
