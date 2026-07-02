@@ -8,6 +8,7 @@ import { useCoachDashboard } from '../../hooks/useDashboard';
 import { useActiveInjuries } from '../../hooks/useInjuries';
 import { useCoachTasks } from '../../hooks/useTasks';
 import { isSeen, markSeen, injuryKey, useSeenVersion } from '../../utils/seenNotifications';
+import { TeamWellbeingCard } from '../../components/wellbeing/TeamWellbeingCard';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -315,8 +316,13 @@ export function CoachDashboardPage() {
         </motion.div>
       )}
 
-      {/* Quick Actions */}
+      {/* Team Wellbeing */}
       <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
+        <TeamWellbeingCard />
+      </motion.div>
+
+      {/* Quick Actions */}
+      <motion.div custom={11} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[

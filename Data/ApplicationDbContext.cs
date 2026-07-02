@@ -51,6 +51,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RecoveryExercise> RecoveryExercises => Set<RecoveryExercise>();
     public DbSet<RecoveryMilestone> RecoveryMilestones => Set<RecoveryMilestone>();
     public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
+    public DbSet<WellbeingCheckin> WellbeingCheckins => Set<WellbeingCheckin>();
 
     public DbSet<Sport> Sports => Set<Sport>();
     public DbSet<Position> Positions => Set<Position>();
@@ -287,6 +288,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(p => p.Milestones)
             .HasForeignKey(m => m.InjuryRecoveryPlanId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<WellbeingCheckin>()
+            .HasOne(c => c.Player)
+            .WithMany()
+            .HasForeignKey(c => c.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // One check-in per player per calendar day.
+        builder.Entity<WellbeingCheckin>()
+            .HasIndex(c => new { c.PlayerId, c.Date })
+            .IsUnique();
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

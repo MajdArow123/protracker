@@ -8,6 +8,7 @@ import { useMyAnnouncements } from '../../hooks/useAnnouncements';
 import { useCoachNotes } from '../../hooks/useCoachNotes';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
+import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
 import { useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
@@ -113,6 +114,11 @@ export function PlayerDashboardPage() {
             <p className="text-indigo-200 text-sm mt-1">Keep pushing — your next level is within reach.</p>
           </div>
         </div>
+      </motion.div>
+
+      {/* Daily wellbeing check-in */}
+      <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
+        <WellbeingCheckinWidget />
       </motion.div>
 
       {/* Team Announcements */}

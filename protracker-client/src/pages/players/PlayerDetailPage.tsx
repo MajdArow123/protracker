@@ -18,7 +18,7 @@ import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,
   Plus, Edit2, Activity, Dumbbell, ShieldAlert, Star,
-  Calendar, Clock, ChevronRight, CheckSquare, StickyNote,
+  Calendar, Clock, ChevronRight, CheckSquare, StickyNote, HeartPulse,
 } from 'lucide-react';
 import type { InjuryRecord, MatchPerformance, TrainingSession, PlayerTask } from '../../types';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
@@ -29,8 +29,9 @@ import { TaskCard } from '../../components/tasks/TaskCard';
 import { AssignTaskModal } from '../../components/tasks/AssignTaskModal';
 import { CoachNotesTab } from '../../components/notes/CoachNotesTab';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
+import { WellbeingTrendCard } from '../../components/wellbeing/WellbeingTrendCard';
 
-type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'notes';
+type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'wellbeing' | 'notes';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
@@ -261,6 +262,7 @@ export function PlayerDetailPage() {
     { id: 'matches', label: 'Matches', icon: Star, count: matches.length },
     { id: 'training', label: 'Training', icon: Dumbbell, count: sessions.length },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare, count: playerTasks.length },
+    { id: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
     { id: 'notes', label: 'Notes', icon: StickyNote },
   ];
 
@@ -817,6 +819,13 @@ export function PlayerDetailPage() {
                   ))}
                 </div>
               )}
+            </motion.div>
+          )}
+
+          {/* Wellbeing tab (coach view of athlete daily check-ins) */}
+          {tab === 'wellbeing' && (
+            <motion.div key="wellbeing" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <WellbeingTrendCard playerId={playerId} />
             </motion.div>
           )}
 
