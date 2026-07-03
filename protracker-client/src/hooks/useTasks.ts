@@ -17,6 +17,14 @@ export function useMyTasks(enabled = true) {
   });
 }
 
+export function useTaskAnalytics(enabled = true) {
+  return useQuery({
+    queryKey: ['tasks', 'analytics'],
+    queryFn: tasksApi.getAnalytics,
+    enabled,
+  });
+}
+
 export function useCreateTask() {
   const qc = useQueryClient();
   return useMutation({

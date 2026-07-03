@@ -225,6 +225,43 @@ export interface TaskSuggestions {
   generatedAt: string;
 }
 
+export interface PlayerTaskStats {
+  playerId: number;
+  playerName: string;
+  total: number;
+  completed: number;
+  overdue: number;
+  completionRate: number;
+}
+
+export interface TaskCategoryStats {
+  category: TaskCategory;
+  total: number;
+  completed: number;
+  completionRate: number;
+}
+
+export interface WeeklyTaskTrend {
+  weekStart: string;
+  weekLabel: string;
+  assigned: number;
+  completed: number;
+}
+
+export interface TaskAnalytics {
+  total: number;
+  completed: number;
+  pending: number;
+  overdue: number;
+  completionRate: number;
+  avgDaysToComplete?: number | null;
+  playerStats: PlayerTaskStats[];
+  categoryStats: TaskCategoryStats[];
+  weeklyTrend: WeeklyTaskTrend[];
+  topPerformer?: PlayerTaskStats | null;
+  needsAttention?: PlayerTaskStats | null;
+}
+
 export interface PlayerTask {
   id: number;
   coachId: string;

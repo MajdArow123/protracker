@@ -11,7 +11,8 @@ import { groupTasks, taskStats, CATEGORY_ORDER } from '../../components/tasks/ta
 import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useToast } from '../../context/ToastContext';
-import { ClipboardList, Plus, ChevronDown, X, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ClipboardList, Plus, ChevronDown, X, Sparkles, BarChart3 } from 'lucide-react';
 import type { PlayerTask, TaskPriority, TaskCategory } from '../../types';
 import { clsx } from 'clsx';
 
@@ -27,6 +28,7 @@ type StatusFilter = 'all' | 'pending' | 'completed';
 
 export function TasksPage() {
   const { addToast } = useToast();
+  const navigate = useNavigate();
   const { data: players = [] } = usePlayers();
   const [playerFilter, setPlayerFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<'all' | TaskPriority>('all');
@@ -75,6 +77,12 @@ export function TasksPage() {
       title="Tasks"
       actions={
         <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/tasks/analytics')}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-all cursor-pointer"
+          >
+            <BarChart3 size={16} /> Analytics
+          </button>
           <button
             onClick={() => setAiOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-lg shadow-indigo-500/20"

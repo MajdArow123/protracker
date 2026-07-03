@@ -1,5 +1,5 @@
 import api from './axiosInstance';
-import type { PlayerTask, TaskPriority, TaskCategory } from '../types';
+import type { PlayerTask, TaskPriority, TaskCategory, TaskAnalytics } from '../types';
 
 export interface CreateTaskInput {
   playerId: number;
@@ -26,6 +26,7 @@ export const tasksApi = {
     return api.get<PlayerTask[]>(`/api/tasks${qs ? `?${qs}` : ''}`).then(r => r.data);
   },
   getMine: () => api.get<PlayerTask[]>('/api/tasks/mine').then(r => r.data),
+  getAnalytics: () => api.get<TaskAnalytics>('/api/tasks/analytics').then(r => r.data),
   create: (data: CreateTaskInput) => api.post<PlayerTask>('/api/tasks', data).then(r => r.data),
   update: (id: number, data: CreateTaskInput) => api.put<PlayerTask>(`/api/tasks/${id}`, data).then(r => r.data),
   delete: (id: number) => api.delete(`/api/tasks/${id}`),

@@ -28,6 +28,7 @@ import { TeamReportPage } from './pages/reports/TeamReportPage';
 import { ComparePlayersPage } from './pages/reports/ComparePlayersPage';
 import { FoodAlternativesPage } from './pages/nutrition/FoodAlternativesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
+import { TaskAnalyticsPage } from './pages/tasks/TaskAnalyticsPage';
 import { MyTasksPage } from './pages/tasks/MyTasksPage';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { PageSpinner } from './components/ui/Spinner';
@@ -74,6 +75,7 @@ function AppRoutes() {
             <Route path="/teams/:id/edit" element={<TeamFormPage />} />
             <Route path="/players" element={<PlayersPage />} />
             <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/tasks/analytics" element={<TaskAnalyticsPage />} />
             <Route path="/players/new" element={<PlayerFormPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
             <Route path="/players/:id/edit" element={<PlayerFormPage />} />

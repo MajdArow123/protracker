@@ -30,6 +30,11 @@ public class TasksController : ApiControllerBase
     [Authorize(Roles = "Athlete")]
     public async Task<ActionResult> GetMine() => Success(await _service.GetMineAsync(User));
 
+    // Coach: completion analytics across their assigned tasks.
+    [HttpGet("analytics")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetAnalytics() => Success(await _service.GetAnalyticsAsync(User));
+
     [HttpPost]
     [Authorize(Roles = "Coach,Admin")]
     public async Task<ActionResult> Create(CreatePlayerTaskDto dto) => Created(await _service.CreateAsync(User, dto));

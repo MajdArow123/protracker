@@ -16,6 +16,7 @@ public interface IPlayerTaskService
     Task DeleteAsync(ClaimsPrincipal user, int id);
     Task<PlayerTaskDto> CompleteAsync(ClaimsPrincipal user, int id, CompleteTaskDto dto);
     Task<PlayerTaskDto> IncompleteAsync(ClaimsPrincipal user, int id);
+    Task<TaskAnalyticsDto> GetAnalyticsAsync(ClaimsPrincipal user);
 }
 
 public class PlayerTaskService : IPlayerTaskService
@@ -149,6 +150,119 @@ public class PlayerTaskService : IPlayerTaskService
         task.CompletedNote = null;
         await _context.SaveChangesAsync();
         return ToDto(task);
+    }
+
+    public async Task<TaskAnalyticsDto> GetAnalyticsAsync(ClaimsPrincipal user)
+    {
+        var userId = _access.RequireUserId(user);
+
+        // Same scoping as the coach task list: own tasks only (admins see all).
+        var query = _context.PlayerTasks.Include(t => t.Player).AsQueryable();
+        if (!user.IsInRole("Admin"))
+            query = query.Where(t => t.CoachId == userId);
+        var tasks = await query.ToListAsync();
+
+        var now = DateTime.UtcNow;
+        bool IsOverdue(PlayerTask t) => !t.IsCompleted && t.DueDate.HasValue && t.DueDate.Value < now;
+
+        var total = tasks.Count;
+        var completed = tasks.Count(t => t.IsCompleted);
+        var overdue = tasks.Count(IsOverdue);
+
+        // Average calendar days from assignment to completion (completed tasks only).
+        var completedDurations = tasks
+            .Where(t => t.IsCompleted && t.CompletedAt.HasValue)
+            .Select(t => (t.CompletedAt!.Value - t.CreatedAt).TotalDays)
+            .Where(d => d >= 0)
+            .ToList();
+        double? avgDays = completedDurations.Count > 0
+            ? Math.Round(completedDurations.Average(), 1)
+            : null;
+
+        // Per-player breakdown.
+        var playerStats = tasks
+            .GroupBy(t => new { t.PlayerId, Name = t.Player?.FullName ?? "" })
+            .Select(g =>
+            {
+                var t = g.Count();
+                var c = g.Count(x => x.IsCompleted);
+                return new PlayerTaskStatsDto
+                {
+                    PlayerId = g.Key.PlayerId,
+                    PlayerName = g.Key.Name,
+                    Total = t,
+                    Completed = c,
+                    Overdue = g.Count(IsOverdue),
+                    CompletionRate = t > 0 ? Math.Round(c * 100.0 / t, 0) : 0,
+                };
+            })
+            .OrderByDescending(p => p.CompletionRate)
+            .ThenByDescending(p => p.Total)
+            .ToList();
+
+        // Per-category breakdown (every category, even if zero, for a stable chart).
+        var categoryStats = Enum.GetValues<TaskCategory>()
+            .Select(cat =>
+            {
+                var inCat = tasks.Where(t => t.Category == cat).ToList();
+                var c = inCat.Count(t => t.IsCompleted);
+                return new TaskCategoryStatsDto
+                {
+                    Category = cat,
+                    Total = inCat.Count,
+                    Completed = c,
+                    CompletionRate = inCat.Count > 0 ? Math.Round(c * 100.0 / inCat.Count, 0) : 0,
+                };
+            })
+            .Where(c => c.Total > 0)
+            .ToList();
+
+        // Last 8 weeks (Monday-based): tasks assigned (by CreatedAt) vs completed (by CompletedAt).
+        var weeklyTrend = new List<WeeklyTaskTrendDto>();
+        var thisWeekStart = StartOfWeek(now.Date);
+        for (var i = 7; i >= 0; i--)
+        {
+            var weekStart = thisWeekStart.AddDays(-7 * i);
+            var weekEnd = weekStart.AddDays(7);
+            weeklyTrend.Add(new WeeklyTaskTrendDto
+            {
+                WeekStart = weekStart,
+                WeekLabel = weekStart.ToString("MMM d"),
+                Assigned = tasks.Count(t => t.CreatedAt >= weekStart && t.CreatedAt < weekEnd),
+                Completed = tasks.Count(t => t.IsCompleted && t.CompletedAt.HasValue && t.CompletedAt.Value >= weekStart && t.CompletedAt.Value < weekEnd),
+            });
+        }
+
+        // Callouts: only meaningful for players with a few tasks assigned.
+        var eligible = playerStats.Where(p => p.Total >= 2).ToList();
+        var topPerformer = eligible
+            .OrderByDescending(p => p.CompletionRate).ThenByDescending(p => p.Completed)
+            .FirstOrDefault();
+        var needsAttention = eligible
+            .OrderByDescending(p => p.Overdue).ThenBy(p => p.CompletionRate)
+            .FirstOrDefault(p => p.Overdue > 0 || p.CompletionRate < 100);
+
+        return new TaskAnalyticsDto
+        {
+            Total = total,
+            Completed = completed,
+            Pending = total - completed,
+            Overdue = overdue,
+            CompletionRate = total > 0 ? Math.Round(completed * 100.0 / total, 0) : 0,
+            AvgDaysToComplete = avgDays,
+            PlayerStats = playerStats,
+            CategoryStats = categoryStats,
+            WeeklyTrend = weeklyTrend,
+            TopPerformer = topPerformer,
+            NeedsAttention = needsAttention,
+        };
+    }
+
+    // Monday as the first day of the week (UTC dates).
+    private static DateTime StartOfWeek(DateTime date)
+    {
+        int diff = ((int)date.DayOfWeek + 6) % 7; // Mon=0 … Sun=6
+        return date.AddDays(-diff).Date;
     }
 
     // A coach/admin may only edit or delete a task they created.
