@@ -201,6 +201,44 @@ player's sport into the AI prompt; verified against non-soccer coaches (basketba
 Note: `AILoadingPanel` (cycling messages + progress bar) is reused for the recovery-plan
 generation loading state. `Modal` now supports `size="xl"` (max-w-4xl) for the recovery view.
 
+## Latest feature round (COMPLETE, deployed) — 5 features
+
+Five features, each its own commit, curl- + browser-verified as both coach and athlete.
+
+- **Feature 1 — Match Results sport-aware score format** (commit `8eec2f4`, earlier
+  session). `ScoreFormat`/`SetScores` on `MatchResult`, `StatJson` on `PlayerMatchRating`
+  (sport-specific stats), migration `AddMatchScoreFormat`; sport config centralized in
+  `src/utils/matchSport.ts`.
+- **Feature 2 — Athlete Wellbeing Check-in.** `WellbeingCheckin` model (1-5 feeling/energy/
+  sleep + pain flag, **one row per player per day** via unique index on `PlayerId+Date`,
+  upserted; migration `AddWellbeingCheckins`). `WellbeingController` at `/api`: athlete
+  `GET wellbeing/mine|today` + `POST wellbeing`; coach `GET players/{id}/wellbeing`
+  (30-day trend) + `GET wellbeing/team-summary`. Overall **score = avg of the three scales
+  ×2 (0-10)**. **Pain-during-recovery alert**: latest check-in has pain AND player has a
+  non-`FullyRecovered` injury. Frontend: step-by-step 5-step `WellbeingCheckinWidget` on the
+  athlete dashboard (+ checked-in summary), coach-dashboard `TeamWellbeingCard`, and a
+  Wellbeing tab (`WellbeingTrendCard`) on the coach player-detail page.
+- **Feature 3 — AI Task Suggestions.** `POST /api/ai/task-suggestions/{playerId}`
+  (coach/admin, stateless): analyzes the bottom-4 weakest assessment categories and asks
+  **Claude Haiku** for 5 sport/position-specific tasks (prefill `[` + one retry on bad JSON).
+  Frontend `AITaskSuggestionsModal` (athlete picker → AILoadingPanel → weak-area pills + 5
+  cards with one-click Assign / Assign all / Regenerate), "AI Suggestions" button on `/tasks`.
+- **Feature 4 — Recovery Plan Templates.** 10 built-in templates (`RecoveryTemplate` +
+  child exercise/milestone models; migration `AddRecoveryTemplates`) seeded by
+  `RecoveryTemplateSeeder` (**idempotent — inserts only when the table is empty**, wired in
+  `Program.cs` before `DemoDataSeeder`). `GET /api/recovery-templates`; `POST /api/injuries/
+  {injuryId}/recovery-plan/from-template/{templateId}` copies a template into a fresh
+  editable plan via `RecoveryPlanService.ApplyTemplateAsync` → `SaveGeneratedPlanAsync`.
+  Frontend: "Use Template" button + in-modal `TemplatePicker` in `RecoveryPlanModal` (matching
+  body part floats to top as "Suggested"; `injuryBodyPart` threaded from the injury card).
+- **Feature 5 — Task Completion Analytics.** `GET /api/tasks/analytics` (coach/admin) →
+  totals, completion rate, overdue, avg days to complete, per-player + per-category stats,
+  8-week assigned-vs-completed trend, and top-performer / needs-attention callouts (players
+  with ≥2 tasks). New `/tasks/analytics` page (`TaskAnalyticsPage`) with stat cards, callout
+  cards, and three charts. **Recharts is used directly here** because the shared
+  `BarChartWrapper`/`LineChartWrapper` are hardcoded to a 0-10 Y domain (unfit for %/counts).
+  "Analytics" button on the `/tasks` header.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`npx tsc --noEmit -p tsconfig.json` is a SILENT NO-OP.** Root `tsconfig.json` is a
@@ -260,6 +298,19 @@ generation loading state. `Modal` now supports `size="xl"` (max-w-4xl) for the r
   design spec — keep new chart tooltips consistent.
 
 ## Current status
+
+**Latest feature round complete.** The 5 features above (match score format, wellbeing
+check-in, AI task suggestions, recovery templates, task analytics) are implemented,
+typechecked (`npm run build`) + linted (`oxlint`), and pushed to `main` as separate
+commits (each auto-deploying to Railway + Vercel). New models got EF migrations
+(auto-applied on Railway startup); every endpoint was curl-verified locally and each
+feature walked through in-browser on the local dev stack as **both coach and athlete** —
+including the 5-step wellbeing widget + pain-during-recovery alert on the coach dashboard,
+AI task suggestions for soccer vs basketball with one-click assign, the "Use Template"
+recovery flow (suggested body-part match), and the analytics page (stat cards, callouts,
+3 charts). All test data cleaned up afterward. Local Postgres runs on the non-standard
+port/socket (see Local Postgres section); its `/tmp/pgsock16` socket dir is wiped on
+macOS restart and must be `mkdir`'d before starting Postgres.
 
 **Post-Phase-9 improvements complete.** The five improvements above (shared notes,
 messaging, notification read-state, injury recovery programs, tasks UI overhaul) are
