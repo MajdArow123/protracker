@@ -23,6 +23,7 @@ public interface IMessageService
     Task<MessageDto> SendAsync(ClaimsPrincipal user, SendMessageDto dto);
     Task MarkReadAsync(ClaimsPrincipal user, string otherUserId);
     Task<int> GetUnreadCountAsync(ClaimsPrincipal user);
+    Task DeleteAsync(ClaimsPrincipal user, int messageId);
 }
 
 public class MessageService : IMessageService
@@ -159,6 +160,18 @@ public class MessageService : IMessageService
     {
         var userId = _access.RequireUserId(user);
         return await _context.Messages.CountAsync(m => m.ReceiverId == userId && !m.IsRead);
+    }
+
+    // A user may delete a message they sent (admins may delete any).
+    public async Task DeleteAsync(ClaimsPrincipal user, int messageId)
+    {
+        var userId = _access.RequireUserId(user);
+        var message = await _context.Messages.FirstOrDefaultAsync(m => m.Id == messageId)
+            ?? throw new NotFoundApiException($"Message {messageId} was not found.");
+        if (!user.IsInRole("Admin") && message.SenderId != userId)
+            throw new ForbiddenApiException("You can only delete messages you sent.");
+        _context.Messages.Remove(message);
+        await _context.SaveChangesAsync();
     }
 
     // Coaches may only message athletes on their teams; athletes may only message a

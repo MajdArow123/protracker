@@ -26,6 +26,14 @@ public class MessagesController : ApiControllerBase
     [HttpPost]
     public async Task<ActionResult> Send(SendMessageDto dto) => Created(await _service.SendAsync(User, dto));
 
+    // Delete a message you sent.
+    [HttpDelete("{id}")]
+    public async Task<ActionResult> Delete(int id)
+    {
+        await _service.DeleteAsync(User, id);
+        return NoContentSuccess();
+    }
+
     [HttpPatch("conversation/{otherUserId}/read")]
     public async Task<ActionResult> MarkRead(string otherUserId)
     {
