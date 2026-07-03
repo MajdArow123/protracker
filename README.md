@@ -1,138 +1,248 @@
-# ProTracker
+<div align="center">
 
-**Sports performance tracking for coaches and athletes — assessments, AI insights, and nutrition plans in one place.**
+# 🏆 ProTracker
 
-[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet)](https://dotnet.microsoft.com/)
+### AI-powered multi-sport athlete & team performance tracking platform for coaches and athletes
+
+[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-protracker--iota.vercel.app-22c55e?style=for-the-badge)](https://protracker-iota.vercel.app)
+
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Claude AI](https://img.shields.io/badge/AI-Claude-D97757?logo=anthropic&logoColor=white)](https://anthropic.com/)
-[![Backend on Railway](https://img.shields.io/badge/Backend-Railway-0B0D0E?logo=railway)](https://railway.app/)
-[![Frontend on Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?logo=vercel)](https://vercel.com/)
-[![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen)](/)
+[![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Railway-336791?logo=postgresql&logoColor=white)](https://railway.app/)
+[![Claude AI](https://img.shields.io/badge/AI-Claude_API-D4A017?logo=anthropic&logoColor=white)](https://www.anthropic.com/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed_on-Vercel-000000?logo=vercel)](https://protracker-iota.vercel.app)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-ProTracker is a full-stack sports performance platform for coaches and athletes. Coaches manage multi-sport teams, record player assessments across sport-specific stat categories, and generate AI-powered improvement plans and structured nutrition meal plans for each athlete. Players get a personal dashboard with a live radar chart, progress trends, injury tracking, and AI-generated insights — all behind a JWT-authenticated REST API and a React + TypeScript frontend.
+</div>
 
-## 🚀 Live Demo
+---
 
-The app is live — create a free account or log in with a seed account to explore both roles instantly:
+ProTracker is a full-stack platform where coaches manage multi-sport teams and athletes own their development. Coaches record sport-specific assessments, generate **AI improvement plans, nutrition meal plans, and task suggestions**, run injury-recovery programs, and read completion analytics. Athletes get a personal dashboard with radar charts, daily wellbeing check-ins, recovery tracking, tasks, and direct messaging — all behind a JWT-secured REST API.
+
+## 🚀 Try the Live Demo
+
+> ### **▶ [protracker-iota.vercel.app](https://protracker-iota.vercel.app)**
+> No signup required — log in with a seed account below and explore **both roles** instantly.
 
 | Role | Email | Password |
-|---|---|---|
-| Coach | `coach.basketball@protracker.seed` | `SeedCoach123!` |
-| Coach | `coach.soccer@protracker.seed` | `SeedCoach123!` |
-| Athlete | `marcus.bell@protracker.seed` | `SeedCoach123!` |
-| Athlete | `aisha.torres@protracker.seed` | `SeedCoach123!` |
+|------|-------|----------|
+| ⚽ Soccer Coach | `coach.soccer@protracker.seed` | `SeedCoach123!` |
+| 🏀 Basketball Coach | `coach.basketball@protracker.seed` | `SeedCoach123!` |
+| 🏐 Volleyball Coach | `coach.volleyball@protracker.seed` | `SeedCoach123!` |
+| 🎾 Tennis Coach | `coach.tennis@protracker.seed` | `SeedCoach123!` |
+| 🏖️ Beach Volleyball Coach | `coach.beachvolley@protracker.seed` | `SeedCoach123!` |
+| 🏃 Athlete (Soccer) | `lucas.ward@protracker.seed` | `SeedCoach123!` |
+| 🏃 Athlete (Basketball) | `marcus.bell@protracker.seed` | `SeedCoach123!` |
 
-> Log in as a **Coach** to manage teams, record assessments, and generate AI plans. Log in as an **Athlete** to see your personal dashboard, radar chart, nutrition guidance, and improvement plan.
+> 💡 **Tip:** Sign in as a **coach** for team management, AI tools, and analytics; sign in as an **athlete** for the personal dashboard, wellbeing check-in, tasks, and recovery program.
 
 ## ✨ Key Features
 
-- 🏆 **Multi-sport team management** — support for Football, Basketball, Volleyball, Beach Volleyball, and Tennis, each with sport-specific stat categories and position profiles; coaches are locked to a single sport for consistency
-- 📊 **Player assessments** — score every stat category per assessment period with gradient-fill sliders and a live overall score ring; history shown as a timeline with trend arrows
-- 🧠 **AI-powered improvement plans** — Claude AI generates weekly goals, position-specific drills, skill targets, and motivational notes from the player's latest assessment data
-- 🥗 **Structured nutrition meal plans** — AI returns a full day plan with per-meal food items, portions, calories, and macros (protein/carbs/fats); dietary restrictions (allergies, halal, vegan, etc.) are enforced by the AI prompt
-- 📈 **Performance reports** — per-player and per-team reports with Recharts Line, Radar, and Bar charts; improvement trends, match performance history, and AI-generated insights
-- 🤕 **Injury management** — track injury type, severity, and recovery status; active injuries surface as warnings in team rosters and reports
-- 📏 **Unit toggles** — height in cm or ft/in, weight in kg or lb; preference saved to localStorage with auto-conversion
-- 🔒 **JWT auth via HttpOnly cookies** — tokens never touch localStorage; role-based access control for Coach and Athlete routes
-- 🌗 **Dark / light mode** — full theme toggle persisted across sessions
-- ✨ **Framer Motion UI** — page transitions, staggered card entrances, expandable sections, and animated score rings
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### 🤖 AI-Powered
+- **Weekly nutrition plans** — 7-day, sport-specific, macro-balanced
+- **Improvement plans & performance insights**
+- **Smart task suggestions** from weak assessment areas
+- **Injury recovery program generation**
+- **Nutrition guidance** + food-swap recommendations
+
+#### 📊 Performance Analytics
+- Multi-period assessments with trend analysis
+- Per-player **skill radar charts**
+- Team comparisons & reports
+- **Match results** with sport-aware scoring
+- **Task completion analytics** (rates, trends, callouts)
+
+#### 🏋️ Training & Recovery
+- Injury tracking with recovery status
+- **10 built-in recovery-plan templates** + AI generation
+- Training-session scheduling (weekly calendar)
+- Exercise completion with difficulty ratings
+
+</td>
+<td width="50%" valign="top">
+
+#### 💬 Communication & Tasks
+- Direct **coach ↔ athlete messaging**
+- Task assignment with AI suggestions
+- Team announcements with priority levels
+- Shared coach notes (private or shared)
+
+#### ❤️ Athlete Wellbeing
+- Daily **check-in** (feeling / energy / sleep + pain)
+- 30-day trend charts per athlete
+- Team wellbeing dashboard card
+- Pain-during-recovery alerts to the coach
+
+#### 🏆 Multi-Sport Support
+- Soccer, Basketball, Volleyball, Beach Volleyball, Tennis
+- Sport-specific positions, stats & score formats
+- Color-coded sport identity throughout
+
+#### 📱 Role-Based Experience
+- **Coaches** — full management & analytics
+- **Athletes** — dashboard, check-ins, recovery, tasks
+- JWT auth · dark / light mode · unit toggles
+
+</td>
+</tr>
+</table>
 
 ## 🛠️ Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Backend framework | ASP.NET Core 9 Web API (C# 13) |
-| Database | SQLite (local) / PostgreSQL (production) via Entity Framework Core 9 |
-| Auth | JWT Bearer tokens in HttpOnly cookies + refresh token rotation |
-| AI | Anthropic Claude API — improvement plans, nutrition guidance, performance insights |
-| Backend tests | xUnit + EF Core InMemory (34 tests) |
-| Frontend framework | React 19 + Vite + TypeScript (strict) |
-| Styling | Tailwind CSS v4 |
-| Server state | TanStack Query v5 |
-| Routing | React Router v6 |
-| Charts | Recharts (Area, Line, Radar, Bar with gradient fills) |
-| Animation | Framer Motion |
-| Backend hosting | Railway (Docker) |
-| Frontend hosting | Vercel |
+<table>
+<tr><th>Backend</th><th>Frontend</th></tr>
+<tr valign="top"><td>
+
+- **ASP.NET Core 9** Web API (C#)
+- **Entity Framework Core 9** + Npgsql
+- **PostgreSQL** (Railway)
+- **JWT Bearer** auth + refresh tokens
+- **Anthropic Claude API** (Haiku + Sonnet)
+- FluentValidation
+- xUnit integration tests
+- Docker · Railway (auto-deploy)
+
+</td><td>
+
+- **React 19** + **Vite** + **TypeScript**
+- **Tailwind CSS v4**
+- **TanStack Query v5** (server state)
+- **Recharts** (radar / line / bar)
+- **Framer Motion** (animations)
+- **React Router v6**
+- Lucide React · clsx · Axios
+- Vercel (auto-deploy)
+
+</td></tr>
+</table>
 
 ## 📸 Screenshots
 
-| Sign In | Coach Dashboard |
+| Sign In — "Stadium Lights" | Coach Dashboard |
 |---|---|
 | ![Sign In](docs/screenshots/login.png) | ![Coach Dashboard](docs/screenshots/coach-dashboard.png) |
+| _Split-screen auth with animated backdrop_ | _Teams, overdue tasks, injuries & team wellbeing_ |
 
 | Players List | Player Profile |
 |---|---|
 | ![Players](docs/screenshots/players.png) | ![Player Profile](docs/screenshots/player-detail.png) |
+| _Roster with injury indicators & unit toggles_ | _Assessments + tabs: injuries, matches, tasks, wellbeing_ |
 
-| Athlete Dashboard — Radar Chart + Progress |
-|---|
-| ![Athlete Dashboard](docs/screenshots/athlete-dashboard.png) |
+| Athlete Dashboard | AI Nutrition Plan |
+|---|---|
+| ![Athlete Dashboard](docs/screenshots/athlete-dashboard.png) | ![Nutrition Plan](docs/screenshots/plan-details.png) |
+| _Radar chart, wellbeing check-in, tasks & recovery_ | _7-day AI meal plan with per-meal macros_ |
 
-## 💻 How to Run Locally
+> 🔎 Recovery programs, coach ↔ athlete messaging, and task analytics are best explored in the **[live demo](https://protracker-iota.vercel.app)**.
 
-**Prerequisites:** .NET 9 SDK, Node.js 20+, an Anthropic API key
+## 💻 Getting Started
 
-```bash
-git clone https://github.com/MajdArow123/ProTracker.git
-cd ProTracker
-```
-
-Set your Anthropic API key using .NET User Secrets (never stored in source files):
+**Prerequisites:** [.NET 9 SDK](https://dotnet.microsoft.com/download), [Node.js 20+](https://nodejs.org/), [PostgreSQL](https://www.postgresql.org/), and an [Anthropic API key](https://console.anthropic.com/).
 
 ```bash
-dotnet user-secrets set "Anthropic:ApiKey" "sk-ant-..."
+git clone https://github.com/MajdArow123/protracker.git
+cd protracker
 ```
 
-Start the backend API (creates and seeds the SQLite database automatically on first run):
+**1. Configure the backend** — create `appsettings.Development.json` (gitignored):
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=protracker_dev;Username=youruser"
+  },
+  "Anthropic": {
+    "ApiKey": "sk-ant-..."
+  }
+}
+```
+
+**2. Run the backend** (applies migrations + seeds demo data on first run):
 
 ```bash
-dotnet restore
-dotnet run
-# API running at http://localhost:8080
+dotnet ef database update
+dotnet run --urls http://localhost:8080
 ```
 
-Start the React frontend in a second terminal:
+**3. Run the frontend** in a second terminal:
 
 ```bash
 cd protracker-client
 npm install
 npm run dev
-# App running at http://localhost:5173
 ```
 
-Run the backend test suite:
+Open **http://localhost:5173** and sign in with any [seed account](#-try-the-live-demo).
 
 ```bash
-cd ..
+# Run the backend test suite
 dotnet test
-# 34/34 passing
 ```
 
-> AI features (improvement plans, nutrition guidance, performance insights) require billing credits on your Anthropic account. Claude Haiku costs roughly $0.00025 per generation.
+> AI features require Anthropic billing credits. Weekly plans use Claude **Haiku** (~fractions of a cent per generation); insights use **Sonnet**.
 
 ## ☁️ Deployment
 
-The backend runs on [Railway](https://railway.app), built from the `Dockerfile` in this repo. The React frontend is deployed to [Vercel](https://vercel.com) via the `protracker-client/vercel.json` config.
+| Component | Host | Notes |
+|---|---|---|
+| **Backend** | Railway (Docker) | Auto-deploys from `main`; migrations apply on startup |
+| **Database** | Railway PostgreSQL | `DATABASE_URL` injected & parsed automatically |
+| **Frontend** | Vercel | Auto-deploys from `main`; `VITE_API_URL` → Railway backend |
 
-**Backend (Railway):**
-- `DATABASE_URL` injected by Railway switches EF Core automatically from SQLite to PostgreSQL
-- `Anthropic__ApiKey` set as a Railway config variable
-- Migrations apply automatically on startup
-- Health check at `/api/health` keeps the container alive
+Health check at `/api/health`. On startup the app migrates the database and runs an **idempotent seeder** (coaches, athletes, teams, assessments, wellbeing check-ins, tasks, and 10 recovery templates).
 
-**Frontend (Vercel):**
-- `VITE_API_URL` points at the Railway backend URL
-- `vercel.json` rewrites all routes to `index.html` for client-side routing
+## 🔌 API Overview
 
-To deploy your own copy: create a Railway project, add a PostgreSQL service, set `Anthropic__ApiKey`, and point it at this repo — `railway.json` already configures the health check and restart policy. For the frontend, import the `protracker-client` folder into Vercel and set `VITE_API_URL` to your Railway URL.
+JWT-secured REST API under `/api`. Main endpoint groups:
 
-## License
+| Group | Purpose |
+|---|---|
+| `auth` | Login, register, refresh-token rotation |
+| `teams` · `players` · `assessments` | Core CRUD & rosters |
+| `ai` | Improvement plans, nutrition, task suggestions, recovery generation |
+| `tasks` · `tasks/analytics` | Assignment, completion, analytics |
+| `wellbeing` | Daily check-ins, trends, team summary |
+| `injuries` · `recovery-plans` · `recovery-templates` | Injury & recovery tracking |
+| `matches` · `sessions` · `announcements` · `messages` | Team ops & communication |
+| `reports` · `dashboard` | Aggregated analytics |
+
+## 📁 Project Structure
+
+```
+protracker/
+├── Controllers/Api/     # REST API controllers
+├── Services/            # Business logic (access control, AI, domain services)
+├── Models/              # EF Core entities
+├── Dtos/                # Request/response DTOs
+├── Data/                # DbContext, migrations, seeders
+├── Validation/          # FluentValidation validators
+├── ProTracker.Tests/    # xUnit integration tests
+└── protracker-client/   # React + Vite + TypeScript frontend
+    └── src/
+        ├── api/         # Axios API clients
+        ├── hooks/       # TanStack Query hooks
+        ├── pages/       # Route pages (coach + athlete)
+        ├── components/  # Reusable UI + feature components
+        └── types/       # Shared TypeScript types
+```
+
+## 🤝 Contributing
+
+Contributions are welcome! See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for the workflow and conventions.
+
+## 📄 License
 
 Released under the [MIT License](LICENSE).
 
-## Author
+---
 
-Majd Arow
+<div align="center">
+
+**Built by [Majd Arow](https://github.com/MajdArow123)** · [Live Demo](https://protracker-iota.vercel.app) · [Report an issue](https://github.com/MajdArow123/protracker/issues)
+
+</div>
