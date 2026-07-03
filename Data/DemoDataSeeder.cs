@@ -66,6 +66,10 @@ public static class DemoDataSeeder
             await LinkAthleteToPlayerAsync(context, marcusBellLogin.Id, "Marcus Bell");
             await LinkAthleteToPlayerAsync(context, carlosSantosLogin.Id, "Carlos Santos Jr");
             await LinkAthleteToPlayerAsync(context, alexWilliamsLogin.Id, "Alex Williams");
+            // These are self-guarded (skip if their tables already have rows), so existing
+            // deployments get demo wellbeing check-ins + tasks on the next startup.
+            await SeedWellbeingCheckinsAsync(context, today);
+            await SeedPlayerTasksAsync(context, today);
             return;
         }
 
@@ -202,6 +206,10 @@ public static class DemoDataSeeder
         SeedMatchPerformances(context, today, soccerPlayers, basketballPlayers, volleyballPlayers, beachVolleyPlayers, tennisPlayers);
 
         await context.SaveChangesAsync();
+
+        // --- Demo wellbeing check-ins + tasks (so dashboards/analytics look populated) ---
+        await SeedWellbeingCheckinsAsync(context, today);
+        await SeedPlayerTasksAsync(context, today);
     }
 
     // ─── Auth helpers ────────────────────────────────────────────────────────
@@ -841,6 +849,160 @@ public static class DemoDataSeeder
                 ExpectedReturnDate = today.AddDays(-15)
             }
         );
+    }
+
+    // ─── Wellbeing Check-ins ──────────────────────────────────────────────────
+
+    // 14 days of daily check-ins for a handful of athletes. Deterministic (no RNG) so it's
+    // reproducible. Idempotent per (player, date): only inserts days that don't already have
+    // a check-in, so it never duplicates and never clobbers a real athlete-submitted entry.
+    // Mason Reid (a recovering-hamstring soccer player) reports pain today so the coach's
+    // Team Wellbeing card shows a pain-during-recovery alert out of the box.
+    private static async Task SeedWellbeingCheckinsAsync(ApplicationDbContext context, DateTime today)
+    {
+        var profiles = new (string Name, int Baseline, bool PainToday, string? PainArea)[]
+        {
+            ("Lucas Ward",   4, false, null),
+            ("Ethan Brooks", 4, false, null),
+            ("Noah Bennett", 3, false, null),
+            ("Mason Reid",   2, true,  "Hamstring"),
+            ("Marcus Bell",  4, false, null),
+        };
+
+        var names = profiles.Select(p => p.Name).ToList();
+        var idByName = await context.Players
+            .Where(p => names.Contains(p.FullName))
+            .ToDictionaryAsync(p => p.FullName, p => p.Id);
+        var playerIds = idByName.Values.ToList();
+
+        // Existing (player, date) pairs to avoid duplicating / overwriting real entries.
+        var existing = (await context.WellbeingCheckins
+                .Where(c => playerIds.Contains(c.PlayerId))
+                .Select(c => new { c.PlayerId, c.Date })
+                .ToListAsync())
+            .Select(x => (x.PlayerId, x.Date.Date))
+            .ToHashSet();
+
+        var checkins = new List<WellbeingCheckin>();
+        foreach (var prof in profiles)
+        {
+            if (!idByName.TryGetValue(prof.Name, out var playerId)) continue;
+
+            for (var d = 13; d >= 0; d--)
+            {
+                var date = today.AddDays(-d);
+                if (existing.Contains((playerId, date.Date))) continue; // keep real data
+
+                var feeling = Math.Clamp(prof.Baseline + (((d * 3) % 3) - 1), 1, 5);
+                var energy  = Math.Clamp(prof.Baseline + (((d + 1) % 3) - 1), 1, 5);
+                var sleep   = Math.Clamp(prof.Baseline + (((d + 2) % 3) - 1), 1, 5);
+                var pain = prof.PainToday && d == 0;
+
+                checkins.Add(new WellbeingCheckin
+                {
+                    PlayerId = playerId,
+                    Date = date,
+                    Feeling = feeling,
+                    Energy = energy,
+                    Sleep = sleep,
+                    HasPain = pain,
+                    PainArea = pain ? prof.PainArea : null,
+                    PainNote = pain ? "Tightness during sprints — easing off today." : null,
+                    CreatedAt = date,
+                });
+            }
+        }
+
+        if (checkins.Count > 0)
+        {
+            context.WellbeingCheckins.AddRange(checkins);
+            await context.SaveChangesAsync();
+        }
+    }
+
+    // ─── Player Tasks ─────────────────────────────────────────────────────────
+
+    private enum SeedTaskState { Completed, Pending, Overdue }
+    // PlayerSlot deliberately clusters outcomes so the demo has a clear top performer
+    // (slots 0/1 = all completed) and a clear needs-attention athlete (slot 3 = overdue).
+    private record SeedTaskSpec(
+        string Title, string? Description, TaskCategory Category, TaskPriority Priority,
+        int CreatedDaysAgo, SeedTaskState State, int DueOffsetDays, int CompletedDaysAgo, int PlayerSlot);
+
+    // Seeds a realistic spread of tasks for the two demo teams' coaches, so the coach Tasks
+    // page + analytics (completion rate, overdue, weekly trend, callouts) are populated.
+    // Self-guarded on the PlayerTasks table.
+    private static async Task SeedPlayerTasksAsync(ApplicationDbContext context, DateTime today)
+    {
+        if (await context.PlayerTasks.AnyAsync()) return;
+
+        // Mix of states/categories/priorities spread over ~3 weeks (for the weekly trend):
+        // 6 completed, 6 pending, 2 overdue.
+        var specs = new[]
+        {
+            new SeedTaskSpec("Complete film review of last match", "Note 3 positioning takeaways.", TaskCategory.Tactical, TaskPriority.Medium, 18, SeedTaskState.Completed, 0, 15, 0),
+            new SeedTaskSpec("Weak-foot finishing — 3 sessions", "30 minutes, focus on accuracy over power.", TaskCategory.Training, TaskPriority.High, 16, SeedTaskState.Completed, 0, 12, 0),
+            new SeedTaskSpec("Log daily hydration for a week", "Track fluid intake and report back.", TaskCategory.Nutrition, TaskPriority.Low, 14, SeedTaskState.Completed, 0, 9, 1),
+            new SeedTaskSpec("Core stability circuit ×2", "Planks, dead bugs, bird dogs.", TaskCategory.Physical, TaskPriority.Medium, 12, SeedTaskState.Completed, 0, 8, 1),
+            new SeedTaskSpec("Study set-piece assignments", "Learn your marking role on corners.", TaskCategory.Tactical, TaskPriority.Medium, 9, SeedTaskState.Completed, 0, 6, 2),
+            new SeedTaskSpec("Extra passing drills (20 min)", "One- and two-touch under light pressure.", TaskCategory.Training, TaskPriority.Medium, 7, SeedTaskState.Completed, 0, 3, 4),
+            new SeedTaskSpec("Sprint interval session", "6 × 40m at 90%, 90s rest between reps.", TaskCategory.Physical, TaskPriority.High, 10, SeedTaskState.Overdue, 2, 0, 3),
+            new SeedTaskSpec("Weak-side defending drills", "Recovery runs and covering angles.", TaskCategory.Tactical, TaskPriority.High, 5, SeedTaskState.Overdue, 1, 0, 3),
+            new SeedTaskSpec("Mobility routine before each session", "Dynamic warm-up, 10 minutes.", TaskCategory.Recovery, TaskPriority.Low, 11, SeedTaskState.Pending, 3, 0, 2),
+            new SeedTaskSpec("Increase protein at breakfast", "Aim for 30g protein in the morning.", TaskCategory.Nutrition, TaskPriority.Medium, 6, SeedTaskState.Pending, 5, 0, 4),
+            new SeedTaskSpec("Foam-rolling + stretch nightly", "10 minutes before bed.", TaskCategory.Recovery, TaskPriority.Low, 4, SeedTaskState.Pending, 2, 0, 3),
+            new SeedTaskSpec("Complete fitness benchmark test", "Beep test — record your level.", TaskCategory.Physical, TaskPriority.High, 3, SeedTaskState.Pending, 4, 0, 5),
+            new SeedTaskSpec("Review nutrition plan with coach", "Book a 15-minute slot this week.", TaskCategory.Nutrition, TaskPriority.Low, 2, SeedTaskState.Pending, 6, 0, 6),
+            new SeedTaskSpec("Finishing under fatigue drill", "Shooting reps after conditioning.", TaskCategory.Training, TaskPriority.High, 1, SeedTaskState.Pending, 7, 0, 7),
+        };
+
+        var teams = await context.Teams
+            .Where(t => t.Name == "City FC U18" || t.Name == "Riverside Hawks")
+            .Include(t => t.Players)
+            .ToListAsync();
+
+        var tasks = new List<PlayerTask>();
+        foreach (var team in teams)
+        {
+            var players = team.Players.OrderBy(p => p.Id).ToList();
+            if (players.Count == 0) continue;
+
+            foreach (var spec in specs)
+            {
+                var player = players[spec.PlayerSlot % players.Count];
+                var createdAt = today.AddDays(-spec.CreatedDaysAgo);
+
+                var task = new PlayerTask
+                {
+                    CoachId = team.CoachId,
+                    PlayerId = player.Id,
+                    Title = spec.Title,
+                    Description = spec.Description,
+                    Priority = spec.Priority,
+                    Category = spec.Category,
+                    CreatedAt = createdAt,
+                };
+
+                switch (spec.State)
+                {
+                    case SeedTaskState.Completed:
+                        task.IsCompleted = true;
+                        task.CompletedAt = today.AddDays(-spec.CompletedDaysAgo);
+                        task.CompletedNote = "Done — felt good.";
+                        break;
+                    case SeedTaskState.Pending:
+                        task.DueDate = today.AddDays(spec.DueOffsetDays);
+                        break;
+                    case SeedTaskState.Overdue:
+                        task.DueDate = today.AddDays(-spec.DueOffsetDays);
+                        break;
+                }
+                tasks.Add(task);
+            }
+        }
+
+        context.PlayerTasks.AddRange(tasks);
+        await context.SaveChangesAsync();
     }
 
     // ─── Training Sessions ────────────────────────────────────────────────────

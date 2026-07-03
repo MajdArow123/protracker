@@ -233,14 +233,21 @@ public class PlayerTaskService : IPlayerTaskService
             });
         }
 
-        // Callouts: only meaningful for players with a few tasks assigned.
-        var eligible = playerStats.Where(p => p.Total >= 2).ToList();
+        // Callouts over players who actually have tasks assigned.
+        var eligible = playerStats.Where(p => p.Total >= 1).ToList();
         var topPerformer = eligible
             .OrderByDescending(p => p.CompletionRate).ThenByDescending(p => p.Completed)
             .FirstOrDefault();
+        // Prefer a player who isn't already the top performer, so the two callouts differ
+        // (falls back to allowing the same player only when there's a single one).
         var needsAttention = eligible
-            .OrderByDescending(p => p.Overdue).ThenBy(p => p.CompletionRate)
-            .FirstOrDefault(p => p.Overdue > 0 || p.CompletionRate < 100);
+            .Where(p => p.Overdue > 0 || p.CompletionRate < 100)
+            .OrderByDescending(p => p.Overdue).ThenBy(p => p.CompletionRate).ThenByDescending(p => p.Total)
+            .FirstOrDefault(p => topPerformer == null || p.PlayerId != topPerformer.PlayerId)
+            ?? eligible
+                .Where(p => p.Overdue > 0 || p.CompletionRate < 100)
+                .OrderByDescending(p => p.Overdue).ThenBy(p => p.CompletionRate)
+                .FirstOrDefault();
 
         return new TaskAnalyticsDto
         {
