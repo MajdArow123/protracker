@@ -375,6 +375,36 @@ export interface RecoveryPlan {
   milestones: RecoveryMilestone[];
 }
 
+export interface RecoveryTemplateExercise {
+  title: string;
+  description?: string | null;
+  sets?: number | null;
+  reps?: number | null;
+  durationMinutes?: number | null;
+  restSeconds?: number | null;
+  week: number;
+  dayOfWeek: string;
+  category: RecoveryExerciseCategory;
+}
+
+export interface RecoveryTemplateMilestone {
+  title: string;
+  targetWeek: number;
+}
+
+export interface RecoveryTemplate {
+  id: number;
+  name: string;
+  bodyPart: string;
+  description?: string | null;
+  estimatedWeeks: number;
+  typicalSeverity: InjurySeverity;
+  exerciseCount: number;
+  milestoneCount: number;
+  exercises: RecoveryTemplateExercise[];
+  milestones: RecoveryTemplateMilestone[];
+}
+
 export interface Message {
   id: number;
   senderId: string;

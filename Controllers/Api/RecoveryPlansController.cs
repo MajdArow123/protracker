@@ -15,6 +15,15 @@ public class RecoveryPlansController : ApiControllerBase
         _service = service;
     }
 
+    // Built-in recovery templates (reference data) — any authenticated coach/athlete can list.
+    [HttpGet("recovery-templates")]
+    public async Task<ActionResult> GetTemplates() => Success(await _service.GetTemplatesAsync());
+
+    [HttpPost("injuries/{injuryId}/recovery-plan/from-template/{templateId}")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> ApplyTemplate(int injuryId, int templateId)
+        => Success(await _service.ApplyTemplateAsync(User, injuryId, templateId));
+
     [HttpGet("injuries/{injuryId}/recovery-plan")]
     public async Task<ActionResult> GetForInjury(int injuryId) => Success(await _service.GetForInjuryAsync(User, injuryId));
 

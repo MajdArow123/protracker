@@ -1,5 +1,5 @@
 import api from './axiosInstance';
-import type { RecoveryPlan, RecoveryExerciseCategory } from '../types';
+import type { RecoveryPlan, RecoveryExerciseCategory, RecoveryTemplate } from '../types';
 
 export interface ExerciseInput {
   title: string;
@@ -22,6 +22,10 @@ export const recoveryApi = {
     api.post<RecoveryPlan>(`/api/injuries/${injuryId}/recovery-plan`, data).then(r => r.data),
   generate: (injuryId: number) =>
     api.post<RecoveryPlan>(`/api/ai/recovery-plan/${injuryId}`).then(r => r.data),
+  getTemplates: () =>
+    api.get<RecoveryTemplate[]>('/api/recovery-templates').then(r => r.data),
+  applyTemplate: (injuryId: number, templateId: number) =>
+    api.post<RecoveryPlan>(`/api/injuries/${injuryId}/recovery-plan/from-template/${templateId}`).then(r => r.data),
   updatePlan: (planId: number, data: { title: string; estimatedWeeks: number; currentWeek: number; status: string; notes?: string }) =>
     api.put<RecoveryPlan>(`/api/recovery-plans/${planId}`, data).then(r => r.data),
   addExercise: (planId: number, data: ExerciseInput) =>

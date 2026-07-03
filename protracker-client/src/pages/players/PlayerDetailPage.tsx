@@ -850,6 +850,7 @@ export function PlayerDetailPage() {
         isOpen={recoveryInjuryId != null}
         onClose={() => setRecoveryInjuryId(null)}
         injuryId={recoveryInjuryId ?? undefined}
+        injuryBodyPart={injuries.find(i => i.id === recoveryInjuryId)?.bodyPart}
         isCoach
       />
 

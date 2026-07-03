@@ -29,6 +29,8 @@ public interface IRecoveryPlanService
     Task<RecoveryPlanDto> AddMilestoneAsync(ClaimsPrincipal user, int planId, CreateRecoveryMilestoneDto dto);
     Task<RecoveryPlanDto> AchieveMilestoneAsync(ClaimsPrincipal user, int milestoneId, AchieveMilestoneDto dto);
     Task<RecoveryPlanDto> SaveGeneratedPlanAsync(ClaimsPrincipal user, int injuryId, GeneratedRecoveryPlan generated);
+    Task<List<RecoveryTemplateDto>> GetTemplatesAsync();
+    Task<RecoveryPlanDto> ApplyTemplateAsync(ClaimsPrincipal user, int injuryId, int templateId);
 }
 
 public class RecoveryPlanService : IRecoveryPlanService
@@ -194,6 +196,66 @@ public class RecoveryPlanService : IRecoveryPlanService
         _context.InjuryRecoveryPlans.Add(plan);
         await _context.SaveChangesAsync();
         return await ToDtoAsync(await LoadAsync(plan.Id));
+    }
+
+    public async Task<List<RecoveryTemplateDto>> GetTemplatesAsync()
+    {
+        var templates = await _context.RecoveryTemplates
+            .Include(t => t.Exercises)
+            .Include(t => t.Milestones)
+            .OrderBy(t => t.Name)
+            .ToListAsync();
+
+        return templates.Select(t => new RecoveryTemplateDto
+        {
+            Id = t.Id,
+            Name = t.Name,
+            BodyPart = t.BodyPart,
+            Description = t.Description,
+            EstimatedWeeks = t.EstimatedWeeks,
+            TypicalSeverity = t.TypicalSeverity,
+            ExerciseCount = t.Exercises.Count,
+            MilestoneCount = t.Milestones.Count,
+            Exercises = t.Exercises.OrderBy(e => e.Week).ThenBy(e => e.Id).Select(e => new RecoveryTemplateExerciseDto
+            {
+                Title = e.Title, Description = e.Description, Sets = e.Sets, Reps = e.Reps,
+                DurationMinutes = e.DurationMinutes, RestSeconds = e.RestSeconds,
+                Week = e.Week, DayOfWeek = e.DayOfWeek, Category = e.Category,
+            }).ToList(),
+            Milestones = t.Milestones.OrderBy(m => m.TargetWeek).ThenBy(m => m.Id).Select(m => new RecoveryTemplateMilestoneDto
+            {
+                Title = m.Title, TargetWeek = m.TargetWeek,
+            }).ToList(),
+        }).ToList();
+    }
+
+    public async Task<RecoveryPlanDto> ApplyTemplateAsync(ClaimsPrincipal user, int injuryId, int templateId)
+    {
+        var template = await _context.RecoveryTemplates
+            .Include(t => t.Exercises)
+            .Include(t => t.Milestones)
+            .FirstOrDefaultAsync(t => t.Id == templateId)
+            ?? throw new NotFoundApiException($"Recovery template {templateId} was not found.");
+
+        // Copy the template into a fresh, editable plan (same persistence path as AI generation,
+        // which also replaces any existing plan for the injury).
+        var generated = new GeneratedRecoveryPlan
+        {
+            Title = template.Name,
+            EstimatedWeeks = template.EstimatedWeeks,
+            Exercises = template.Exercises.Select(e => new RecoveryExercise
+            {
+                Title = e.Title, Description = e.Description, Sets = e.Sets, Reps = e.Reps,
+                DurationMinutes = e.DurationMinutes, RestSeconds = e.RestSeconds,
+                Week = e.Week, DayOfWeek = e.DayOfWeek, Category = e.Category,
+            }).ToList(),
+            Milestones = template.Milestones.Select(m => new RecoveryMilestone
+            {
+                Title = m.Title, TargetWeek = m.TargetWeek,
+            }).ToList(),
+        };
+
+        return await SaveGeneratedPlanAsync(user, injuryId, generated);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

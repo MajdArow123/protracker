@@ -62,6 +62,39 @@ public class CreateRecoveryPlanDto
     public string? Notes { get; set; }
 }
 
+public class RecoveryTemplateExerciseDto
+{
+    public string Title { get; set; } = "";
+    public string? Description { get; set; }
+    public int? Sets { get; set; }
+    public int? Reps { get; set; }
+    public int? DurationMinutes { get; set; }
+    public int? RestSeconds { get; set; }
+    public int Week { get; set; }
+    public string DayOfWeek { get; set; } = "All";
+    public RecoveryExerciseCategory Category { get; set; }
+}
+
+public class RecoveryTemplateMilestoneDto
+{
+    public string Title { get; set; } = "";
+    public int TargetWeek { get; set; }
+}
+
+public class RecoveryTemplateDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public string BodyPart { get; set; } = "";
+    public string? Description { get; set; }
+    public int EstimatedWeeks { get; set; }
+    public InjurySeverity TypicalSeverity { get; set; }
+    public int ExerciseCount { get; set; }
+    public int MilestoneCount { get; set; }
+    public List<RecoveryTemplateExerciseDto> Exercises { get; set; } = new();
+    public List<RecoveryTemplateMilestoneDto> Milestones { get; set; } = new();
+}
+
 public class UpdateRecoveryPlanDto
 {
     public string Title { get; set; } = "";

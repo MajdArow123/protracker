@@ -32,6 +32,18 @@ export const useCreateRecoveryPlan = () =>
 export const useGenerateRecoveryPlan = () =>
   useRecoveryMutation((injuryId: number) => recoveryApi.generate(injuryId));
 
+export function useRecoveryTemplates(enabled = true) {
+  return useQuery({
+    queryKey: ['recovery', 'templates'],
+    queryFn: () => recoveryApi.getTemplates(),
+    enabled,
+    staleTime: Infinity, // reference data — never changes during a session
+  });
+}
+
+export const useApplyRecoveryTemplate = () =>
+  useRecoveryMutation(({ injuryId, templateId }: { injuryId: number; templateId: number }) => recoveryApi.applyTemplate(injuryId, templateId));
+
 export const useUpdateRecoveryPlan = () =>
   useRecoveryMutation(({ planId, data }: { planId: number; data: { title: string; estimatedWeeks: number; currentWeek: number; status: string; notes?: string } }) => recoveryApi.updatePlan(planId, data));
 

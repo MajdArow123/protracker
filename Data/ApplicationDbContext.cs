@@ -52,6 +52,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RecoveryMilestone> RecoveryMilestones => Set<RecoveryMilestone>();
     public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
     public DbSet<WellbeingCheckin> WellbeingCheckins => Set<WellbeingCheckin>();
+    public DbSet<RecoveryTemplate> RecoveryTemplates => Set<RecoveryTemplate>();
+    public DbSet<RecoveryTemplateExercise> RecoveryTemplateExercises => Set<RecoveryTemplateExercise>();
+    public DbSet<RecoveryTemplateMilestone> RecoveryTemplateMilestones => Set<RecoveryTemplateMilestone>();
 
     public DbSet<Sport> Sports => Set<Sport>();
     public DbSet<Position> Positions => Set<Position>();
@@ -287,6 +290,17 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(m => m.InjuryRecoveryPlan)
             .WithMany(p => p.Milestones)
             .HasForeignKey(m => m.InjuryRecoveryPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<RecoveryTemplateExercise>()
+            .HasOne(e => e.RecoveryTemplate)
+            .WithMany(t => t.Exercises)
+            .HasForeignKey(e => e.RecoveryTemplateId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<RecoveryTemplateMilestone>()
+            .HasOne(m => m.RecoveryTemplate)
+            .WithMany(t => t.Milestones)
+            .HasForeignKey(m => m.RecoveryTemplateId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<WellbeingCheckin>()

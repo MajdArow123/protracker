@@ -178,6 +178,7 @@ using (var scope = app.Services.CreateScope())
             await roleManager.CreateAsync(new IdentityRole(role));
     }
 
+    await ProTracker.Data.RecoveryTemplateSeeder.SeedAsync(db);
     await ProTracker.Data.DemoDataSeeder.SeedAsync(scope.ServiceProvider);
 }
 

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import {
   Sparkles, Plus, Pencil, Trash2, Check, Star, CheckCircle2, Circle, Activity,
+  LayoutTemplate, ChevronLeft, Dumbbell, Flag,
 } from 'lucide-react';
 import { Modal, ConfirmModal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -13,7 +14,7 @@ import { useToast } from '../../context/ToastContext';
 import {
   useInjuryRecoveryPlan, usePlayerRecoveryPlan, useGenerateRecoveryPlan, useCreateRecoveryPlan,
   useAddExercise, useUpdateExercise, useDeleteExercise, useCompleteExercise,
-  useAddMilestone, useAchieveMilestone,
+  useAddMilestone, useAchieveMilestone, useRecoveryTemplates, useApplyRecoveryTemplate,
 } from '../../hooks/useRecovery';
 import type { RecoveryExercise, RecoveryExerciseCategory, RecoveryPlan } from '../../types';
 import type { ExerciseInput } from '../../api/recoveryApi';
@@ -159,9 +160,85 @@ function ExerciseModal({ planId, exercise, defaultWeek, isOpen, onClose }: {
   );
 }
 
+// ── Template picker (coach) ──────────────────────────────────────────────────
+function TemplatePicker({ injuryId, bodyPart, onBack }: { injuryId: number; bodyPart?: string | null; onBack: () => void }) {
+  const { addToast } = useToast();
+  const { data: templates = [], isLoading } = useRecoveryTemplates();
+  const apply = useApplyRecoveryTemplate();
+  const [applyingId, setApplyingId] = useState<number | null>(null);
+
+  async function applyTemplate(templateId: number) {
+    setApplyingId(templateId);
+    try {
+      await apply.mutateAsync({ injuryId, templateId });
+      addToast('Recovery plan created from template', 'success');
+      // Leave the picker so the modal shows the freshly-created plan.
+      onBack();
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Failed to apply template', 'error');
+    } finally {
+      setApplyingId(null);
+    }
+  }
+
+  // Templates whose body part matches the injury float to the top as "suggested".
+  const bp = bodyPart?.toLowerCase().trim();
+  const sorted = [...templates].sort((a, b) => {
+    const am = bp && a.bodyPart.toLowerCase().includes(bp) ? 0 : 1;
+    const bm = bp && b.bodyPart.toLowerCase().includes(bp) ? 0 : 1;
+    return am - bm || a.name.localeCompare(b.name);
+  });
+
+  return (
+    <div className="space-y-4">
+      <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer">
+        <ChevronLeft size={16} /> Back
+      </button>
+      <div>
+        <h3 className="text-lg font-black text-gray-900 dark:text-white">Choose a Template</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">Start from a built-in program — you can edit every exercise afterwards.</p>
+      </div>
+
+      {isLoading ? (
+        <div className="py-12 flex justify-center"><Spinner /></div>
+      ) : (
+        <div className="space-y-2.5 max-h-[52vh] overflow-y-auto pr-1">
+          {sorted.map(t => {
+            const suggested = bp ? t.bodyPart.toLowerCase().includes(bp) : false;
+            return (
+              <div key={t.id} className={clsx('rounded-xl border p-3.5 transition-all',
+                suggested ? 'border-indigo-300 dark:border-indigo-800 bg-indigo-50/40 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-gray-800')}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</h4>
+                      {suggested && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Suggested</span>}
+                      <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', SEV_STYLES[t.typicalSeverity])}>{t.typicalSeverity}</span>
+                    </div>
+                    {t.description && <p className="text-xs text-gray-600 dark:text-gray-400">{t.description}</p>}
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
+                      <span className="inline-flex items-center gap-1"><Activity size={11} /> {t.estimatedWeeks} wks</span>
+                      <span className="inline-flex items-center gap-1"><Dumbbell size={11} /> {t.exerciseCount} exercises</span>
+                      <span className="inline-flex items-center gap-1"><Flag size={11} /> {t.milestoneCount} milestones</span>
+                    </div>
+                  </div>
+                  <button onClick={() => applyTemplate(t.id)} disabled={applyingId != null}
+                    className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-all cursor-pointer disabled:opacity-60">
+                    {applyingId === t.id ? 'Applying…' : 'Use'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Main modal ───────────────────────────────────────────────────────────────
-export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach }: {
-  isOpen: boolean; onClose: () => void; injuryId?: number; playerId?: number; isCoach: boolean;
+export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach, injuryBodyPart }: {
+  isOpen: boolean; onClose: () => void; injuryId?: number; playerId?: number; isCoach: boolean; injuryBodyPart?: string | null;
 }) {
   const { addToast } = useToast();
   const injuryQuery = useInjuryRecoveryPlan(injuryId ?? null);
@@ -180,8 +257,11 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
   const [editEx, setEditEx] = useState<RecoveryExercise | null>(null);
   const [completeEx, setCompleteEx] = useState<RecoveryExercise | null>(null);
   const [deleteEx, setDeleteEx] = useState<RecoveryExercise | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   useEffect(() => { if (plan) setWeek(plan.currentWeek || 1); }, [plan?.id]); // eslint-disable-line
+  // Reset the template picker whenever the modal re-opens.
+  useEffect(() => { if (isOpen) setShowTemplates(false); }, [isOpen]);
 
   async function handleGenerate() {
     if (!injuryId) return;
@@ -215,12 +295,15 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
           messages={['Analyzing injury type & severity…', 'Considering sport & position…', 'Planning week-by-week exercises…', 'Setting recovery milestones…']}
           estimatedSeconds={40}
         />
+      ) : showTemplates && isCoach && injuryId ? (
+        <TemplatePicker injuryId={injuryId} bodyPart={injuryBodyPart} onBack={() => setShowTemplates(false)} />
       ) : !plan ? (
         isCoach ? (
           <div className="space-y-4 py-4">
-            <EmptyState icon={<Activity size={32} />} title="No recovery program yet" description="Generate one with AI or build it manually." size="sm" />
-            <div className="flex justify-center gap-3">
+            <EmptyState icon={<Activity size={32} />} title="No recovery program yet" description="Pick a template, generate with AI, or build it manually." size="sm" />
+            <div className="flex flex-wrap justify-center gap-3">
               <Button variant="secondary" onClick={handleCreateManual} isLoading={createPlan.isPending}><Plus size={15} className="mr-1" /> Create Manually</Button>
+              <Button variant="secondary" onClick={() => setShowTemplates(true)}><LayoutTemplate size={15} className="mr-1" /> Use Template</Button>
               <Button onClick={handleGenerate}><Sparkles size={15} className="mr-1" /> Generate with AI</Button>
             </div>
           </div>
