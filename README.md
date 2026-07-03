@@ -123,22 +123,69 @@ ProTracker is a full-stack platform where coaches manage multi-sport teams and a
 
 ## 📸 Screenshots
 
+### 👔 Coach Experience
+
 | Sign In — "Stadium Lights" | Coach Dashboard |
-|---|---|
+|:--:|:--:|
 | ![Sign In](docs/screenshots/login.png) | ![Coach Dashboard](docs/screenshots/coach-dashboard.png) |
-| _Split-screen auth with animated backdrop_ | _Teams, overdue tasks, injuries & team wellbeing_ |
+| _Split-screen auth with animated backdrop_ | _Stats, active injuries & team wellbeing card_ |
 
 | Players List | Player Profile |
-|---|---|
-| ![Players](docs/screenshots/players.png) | ![Player Profile](docs/screenshots/player-detail.png) |
-| _Roster with injury indicators & unit toggles_ | _Assessments + tabs: injuries, matches, tasks, wellbeing_ |
+|:--:|:--:|
+| ![Players List](docs/screenshots/players-list.png) | ![Player Profile](docs/screenshots/player-profile-overview.png) |
+| _Roster with injury indicators & unit toggles_ | _Overview with radar chart & quick stats_ |
 
-| Athlete Dashboard | AI Nutrition Plan |
-|---|---|
-| ![Athlete Dashboard](docs/screenshots/athlete-dashboard.png) | ![Nutrition Plan](docs/screenshots/plan-details.png) |
-| _Radar chart, wellbeing check-in, tasks & recovery_ | _7-day AI meal plan with per-meal macros_ |
+| Assessments — History | Injuries & Recovery |
+|:--:|:--:|
+| ![Assessments](docs/screenshots/player-profile-assessments.png) | ![Injuries](docs/screenshots/player-profile-injuries.png) |
+| _Trend, best/weakest & per-category score bars_ | _Injury tracking with recovery status_ |
 
-> 🔎 Recovery programs, coach ↔ athlete messaging, and task analytics are best explored in the **[live demo](https://protracker-iota.vercel.app)**.
+| Assigned Tasks | Wellbeing Trend |
+|:--:|:--:|
+| ![Tasks](docs/screenshots/player-profile-tasks.png) | ![Wellbeing](docs/screenshots/player-profile-wellbeing.png) |
+| _Per-player task list with priorities_ | _30-day wellbeing trend & pain reports_ |
+
+| Match Results | Coach Notes |
+|:--:|:--:|
+| ![Matches](docs/screenshots/player-profile-matches.png) | ![Notes](docs/screenshots/player-profile-notes.png) |
+| _Sport-aware match ratings & stats_ | _Timestamped notes (private or shared)_ |
+
+| Weekly Nutrition Plan | Recovery Program |
+|:--:|:--:|
+| ![Nutrition](docs/screenshots/player-profile-nutrition.png) | ![Recovery](docs/screenshots/recovery-program.png) |
+| _7-day AI meal plan with per-meal macros_ | _Template/AI recovery plan with milestones_ |
+
+| Teams | Team Detail |
+|:--:|:--:|
+| ![Teams](docs/screenshots/teams-page.png) | ![Team Detail](docs/screenshots/team-detail.png) |
+| _Sport-gradient team cards with key stats_ | _Roster grid, radar & assessment periods_ |
+
+| Player Report | Team Report |
+|:--:|:--:|
+| ![Player Report](docs/screenshots/player-report.png) | ![Team Report](docs/screenshots/team-report.png) |
+| _Trends, radar & AI performance insights_ | _Player comparison, strengths & top performers_ |
+
+| Task Analytics | Messaging |
+|:--:|:--:|
+| ![Task Analytics](docs/screenshots/tasks-analytics.png) | ![Messages](docs/screenshots/messages.png) |
+| _Completion rate, callouts & weekly trend_ | _Direct coach ↔ athlete conversations_ |
+
+### 🏃 Athlete Experience
+
+| Athlete Dashboard | Daily Wellbeing Check-in |
+|:--:|:--:|
+| ![Athlete Dashboard](docs/screenshots/athlete-dashboard.png) | ![Wellbeing Check-in](docs/screenshots/wellbeing-checkin.png) |
+| _Radar, wellbeing, recovery, tasks & feedback_ | _Step-by-step feeling / energy / sleep + pain_ |
+
+| My Stats | My Nutrition |
+|:--:|:--:|
+| ![My Stats](docs/screenshots/athlete-stats.png) | ![My Nutrition](docs/screenshots/athlete-nutrition.png) |
+| _Assessment timeline & progress trends_ | _Personal 7-day AI meal plan_ |
+
+| My Tasks | My Recovery Program |
+|:--:|:--:|
+| ![My Tasks](docs/screenshots/athlete-tasks.png) | ![My Recovery](docs/screenshots/athlete-recovery.png) |
+| _Progress ring with action-required sections_ | _Week-by-week rehab with exercise completion_ |
 
 ## 💻 Getting Started
 
