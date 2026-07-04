@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Trophy, Zap, Sparkles, Lightbulb,
-  Users, ShieldAlert, BarChart3,
+  Users, ShieldAlert, BarChart3, Download,
 } from 'lucide-react';
 import { useGenerateTeamInsights } from '../../hooks/useAI';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
@@ -40,6 +40,7 @@ export function TeamReportPage() {
   const { data: report, isLoading, isError, refetch } = useTeamReport(teamId);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const generateInsights = useGenerateTeamInsights();
 
   if (isLoading) return <ReportSkeleton />;
@@ -64,6 +65,19 @@ export function TeamReportPage() {
       setAiInsights(result.insights);
     } catch {
       setAiError('AI analysis failed. Please try again.');
+    }
+  }
+
+  async function handleExportPdf() {
+    setExporting(true);
+    try {
+      const [{ downloadPdf, reportFilename }, { TeamReportPDF }] = await Promise.all([
+        import('../../utils/exportPdf'),
+        import('../../components/pdf/TeamReportPDF'),
+      ]);
+      await downloadPdf(<TeamReportPDF report={report!} />, reportFilename(team.name));
+    } finally {
+      setExporting(false);
     }
   }
 
@@ -104,12 +118,21 @@ export function TeamReportPage() {
       <div className={clsx('relative overflow-hidden bg-gradient-to-br', headerGrad)}>
         <div className="absolute inset-0 bg-black/20" />
         <div className="relative z-10 p-4 lg:p-6">
-          <button
-            onClick={() => navigate('/reports')}
-            className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer mb-6"
-          >
-            <ArrowLeft size={16} /> Reports
-          </button>
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <button
+              onClick={() => navigate('/reports')}
+              className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer"
+            >
+              <ArrowLeft size={16} /> Reports
+            </button>
+            <button
+              onClick={handleExportPdf}
+              disabled={exporting}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-semibold transition-all cursor-pointer border border-white/20 disabled:opacity-60"
+            >
+              <Download size={15} /> {exporting ? 'Generating PDF…' : 'Export PDF'}
+            </button>
+          </div>
 
           <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2">

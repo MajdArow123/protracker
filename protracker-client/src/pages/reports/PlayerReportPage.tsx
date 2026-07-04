@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
-  ArrowLeft, Printer, TrendingUp, TrendingDown, Minus,
+  ArrowLeft, Printer, Download, TrendingUp, TrendingDown, Minus,
   AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb, Trophy,
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
@@ -46,6 +46,7 @@ export function PlayerReportPage() {
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const generateInsights = useGeneratePerformanceInsights();
 
   if (isLoading) return <ReportSkeleton />;
@@ -160,6 +161,19 @@ export function PlayerReportPage() {
     overallTrend = pct(firstAvg, lastAvg);
   }
 
+  async function handleExportPdf() {
+    setExporting(true);
+    try {
+      const [{ downloadPdf, reportFilename }, { PlayerReportPDF }] = await Promise.all([
+        import('../../utils/exportPdf'),
+        import('../../components/pdf/PlayerReportPDF'),
+      ]);
+      await downloadPdf(<PlayerReportPDF report={report!} insights={aiInsights ?? undefined} />, reportFilename(player.fullName));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   return (
     <PageWrapper
       title={player.fullName}
@@ -170,6 +184,9 @@ export function PlayerReportPage() {
           </Button>
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             <Printer size={16} /> Print
+          </Button>
+          <Button size="sm" onClick={handleExportPdf} isLoading={exporting}>
+            <Download size={16} /> {exporting ? 'Generating PDF…' : 'Export PDF'}
           </Button>
         </div>
       }
