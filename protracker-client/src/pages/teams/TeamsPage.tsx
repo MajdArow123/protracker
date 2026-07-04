@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
 import { useTeamReport } from '../../hooks/useReports';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { clsx } from 'clsx';
 import type { Team } from '../../types';
@@ -134,7 +134,7 @@ export function TeamsPage() {
   const navigate = useNavigate();
   const { data: teams, isLoading } = useTeams();
 
-  if (isLoading) return <PageSpinner />;
+  if (isLoading) return <div className="flex-1 p-4 lg:p-6"><CardListSkeleton count={6} /></div>;
 
   const totalPlayers = teams?.reduce((s, t) => s + (t.playerCount ?? 0), 0) ?? 0;
   const headerGrad = SPORT_GRADIENTS[teams?.[0]?.sportName ?? ''] ?? 'from-indigo-600 via-indigo-700 to-violet-700';

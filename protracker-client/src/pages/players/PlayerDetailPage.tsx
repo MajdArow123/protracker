@@ -8,7 +8,8 @@ import { useTrainingSessions, useCreateTrainingSession, useUpdateTrainingSession
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { DetailSkeleton } from '../../components/ui/Skeleton';
+import { Users } from 'lucide-react';
 import { ConfirmModal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -245,10 +246,10 @@ export function PlayerDetailPage() {
     } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
   }
 
-  if (isLoading) return <PageSpinner />;
+  if (isLoading) return <DetailSkeleton />;
   if (!player) return (
     <div className="flex-1 p-6">
-      <p className="text-red-500">Player not found.</p>
+      <EmptyState icon={<Users size={40} />} title="Player not found" description="This player may have been removed." />
     </div>
   );
 

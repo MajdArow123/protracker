@@ -11,7 +11,8 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { ReportSkeleton } from '../../components/ui/Skeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
@@ -40,15 +41,16 @@ export function PlayerReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const playerId = id ? parseInt(id) : undefined;
-  const { data: report, isLoading, isError } = usePlayerReport(playerId);
+  const { data: report, isLoading, isError, refetch } = usePlayerReport(playerId);
   const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const generateInsights = useGeneratePerformanceInsights();
 
-  if (isLoading) return <PageSpinner />;
-  if (isError || !report) return (
+  if (isLoading) return <ReportSkeleton />;
+  if (isError) return <PageWrapper><ErrorState thing="the report" onRetry={() => refetch()} /></PageWrapper>;
+  if (!report) return (
     <PageWrapper>
       <EmptyState title="Report not found" description="Could not load player report" action={{ label: 'Back', onClick: () => navigate('/reports') }} />
     </PageWrapper>

@@ -9,7 +9,8 @@ import { useGenerateTeamInsights } from '../../hooks/useAI';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { ReportSkeleton } from '../../components/ui/Skeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
@@ -36,13 +37,14 @@ export function TeamReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const teamId = id ? parseInt(id) : undefined;
-  const { data: report, isLoading, isError } = useTeamReport(teamId);
+  const { data: report, isLoading, isError, refetch } = useTeamReport(teamId);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const generateInsights = useGenerateTeamInsights();
 
-  if (isLoading) return <PageSpinner />;
-  if (isError || !report) return (
+  if (isLoading) return <ReportSkeleton />;
+  if (isError) return <PageWrapper><ErrorState thing="the report" onRetry={() => refetch()} /></PageWrapper>;
+  if (!report) return (
     <PageWrapper>
       <EmptyState
         title="Report not found"

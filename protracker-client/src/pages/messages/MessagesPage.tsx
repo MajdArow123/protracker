@@ -4,6 +4,7 @@ import { Send, Search, MessageSquare, ArrowLeft } from 'lucide-react';
 import { useConversations, useContacts, useConversation, useSendMessage, useMarkConversationRead } from '../../hooks/useMessages';
 import type { Conversation, MessageContact, Message } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { Skeleton, SkeletonAvatar } from '../../components/ui/Skeleton';
 
 interface Partner { userId: string; name: string; role: string; lastMessage?: string; lastMessageAt?: string; unreadCount: number; }
 
@@ -32,7 +33,7 @@ function RoleBadge({ role }: { role: string }) {
 }
 
 export function MessagesPage() {
-  const { data: conversations = [] } = useConversations();
+  const { data: conversations = [], isLoading: convLoading } = useConversations();
   const { data: contacts = [] } = useContacts();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -98,8 +99,17 @@ export function MessagesPage() {
           </div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {partners.length === 0 ? (
-            <div className="p-6"><EmptyState icon={<MessageSquare size={28} />} title="No contacts" description="No one to message yet." size="sm" /></div>
+          {convLoading && partners.length === 0 ? (
+            <div className="p-3 space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-1 py-2">
+                  <SkeletonAvatar size={40} />
+                  <div className="flex-1 space-y-2"><Skeleton className="h-3 w-1/2 rounded" /><Skeleton className="h-2.5 w-2/3 rounded" /></div>
+                </div>
+              ))}
+            </div>
+          ) : partners.length === 0 ? (
+            <div className="p-6"><EmptyState icon={<MessageSquare size={28} />} title="No conversations yet" description="Message a player to start a conversation." size="sm" /></div>
           ) : partners.map(p => (
             <button key={p.userId} onClick={() => setSelectedId(p.userId)}
               className={clsx('w-full flex items-center gap-3 px-3 py-3 text-left border-b border-gray-50 dark:border-gray-800/50 transition-colors cursor-pointer',

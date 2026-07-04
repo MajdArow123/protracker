@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageWrapper } from '../../components/layout/PageWrapper';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { StatGridSkeleton, SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmModal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
@@ -490,7 +490,7 @@ export function NutritionPage() {
   const hardRestrictions = profileItems.filter(r => r.severity === 'Hard');
   const consideredLabels = profileItems.map(r => r.specificItem || r.category).slice(0, 5);
 
-  if (loadingPlayer || loadingProfile) return <PageSpinner />;
+  if (loadingPlayer || loadingProfile) return <div className="flex-1 p-4 lg:p-6"><StatGridSkeleton count={2} /></div>;
 
   const isItemFormOpen = showNewItem || !!editingItem;
   const isGuidanceFormOpen = showNewGuidance || !!editingGuidance;
@@ -710,7 +710,7 @@ export function NutritionPage() {
       {tab === 'weekly' && (
         <div className="space-y-4">
           {loadingWeekly ? (
-            <PageSpinner />
+            <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
           ) : generateWeekly.isPending ? (
             <AILoadingPanel
               primaryText="Generating your weekly plan..."

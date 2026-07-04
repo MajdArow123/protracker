@@ -4,7 +4,7 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
 
@@ -13,7 +13,7 @@ export function ReportsPage() {
   const { data: teams, isLoading: loadingTeams } = useTeams();
   const { data: players, isLoading: loadingPlayers } = usePlayers();
 
-  if (loadingTeams || loadingPlayers) return <PageSpinner />;
+  if (loadingTeams || loadingPlayers) return <PageWrapper title="Reports"><CardListSkeleton count={6} /></PageWrapper>;
 
   return (
     <PageWrapper

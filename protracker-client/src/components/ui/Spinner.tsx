@@ -40,13 +40,3 @@ export function PageSpinner() {
   );
 }
 
-export function SkeletonCard({ lines = 3 }: { lines?: number }) {
-  return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 animate-pulse">
-      <div className="h-4 w-1/3 bg-gray-200 dark:bg-gray-700 rounded-full mb-4" />
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className={clsx('h-3 bg-gray-100 dark:bg-gray-800 rounded-full mb-2', i === lines - 1 ? 'w-2/3' : 'w-full')} />
-      ))}
-    </div>
-  );
-}

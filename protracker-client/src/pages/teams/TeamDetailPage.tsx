@@ -5,7 +5,7 @@ import { useTeam, useDeleteTeam } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeamReport } from '../../hooks/useReports';
 import { useAssessmentPeriods } from '../../hooks/useAssessmentPeriods';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { DetailSkeleton } from '../../components/ui/Skeleton';
 import { ConfirmModal } from '../../components/ui/Modal';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -89,10 +89,10 @@ export function TeamDetailPage() {
   const teamPlayers = allPlayers.filter(p => p.teamId === teamId);
   const teamPeriods = periods.filter(p => p.teamId === teamId);
 
-  if (isLoading) return <PageSpinner />;
+  if (isLoading) return <DetailSkeleton />;
   if (!team) return (
     <div className="flex-1 p-6">
-      <p className="text-red-500">Team not found.</p>
+      <EmptyState icon={<ShieldAlert size={40} />} title="Team not found" description="This team may have been removed." />
     </div>
   );
 

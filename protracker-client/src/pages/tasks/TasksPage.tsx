@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { SkeletonCard } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmModal } from '../../components/ui/Modal';
 import { Select } from '../../components/ui/Select';
@@ -151,7 +151,7 @@ export function TasksPage() {
       </div>
 
       {isLoading ? (
-        <PageSpinner />
+        <div className="space-y-3">{Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<ClipboardList size={40} />}

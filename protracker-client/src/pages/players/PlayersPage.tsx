@@ -6,7 +6,8 @@ import { useTeams } from '../../hooks/useTeams';
 import { useActiveInjuries } from '../../hooks/useInjuries';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Button } from '../../components/ui/Button';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { CardListSkeleton } from '../../components/ui/Skeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { clsx } from 'clsx';
 
@@ -30,7 +31,7 @@ function scoreColor(score: number) {
 
 export function PlayersPage() {
   const navigate = useNavigate();
-  const { data: players, isLoading } = usePlayers();
+  const { data: players, isLoading, isError, refetch } = usePlayers();
   const { data: teams = [] } = useTeams();
   const { data: activeInjuries = [] } = useActiveInjuries();
   const [search, setSearch] = useState('');
@@ -38,7 +39,8 @@ export function PlayersPage() {
 
   const injuredIds = new Set(activeInjuries.map(i => i.playerId));
 
-  if (isLoading) return <PageSpinner />;
+  if (isLoading) return <PageWrapper title="Players"><CardListSkeleton count={6} /></PageWrapper>;
+  if (isError) return <PageWrapper title="Players"><ErrorState thing="players" onRetry={() => refetch()} /></PageWrapper>;
 
   const filtered = (players ?? []).filter(p => {
     const matchesSearch = p.fullName.toLowerCase().includes(search.toLowerCase());

@@ -11,13 +11,14 @@ import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
 import { useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useAuth } from '../../context/AuthContext';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
-  AlertTriangle, Zap, Star, Target, Shield, Trophy, CalendarDays, Clock, MapPin,
+  Zap, Star, Target, Shield, Trophy, CalendarDays, Clock, MapPin,
   Megaphone, Pin, MessageCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -58,7 +59,7 @@ export function PlayerDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
-  const { data, isLoading, isError } = usePlayerDashboard(playerId);
+  const { data, isLoading, isError, refetch } = usePlayerDashboard(playerId);
   const { data: matchRatings } = usePlayerMatchRatings(playerId);
   const { data: upcomingSessions } = useMySessions();
   const { data: announcements } = useMyAnnouncements();
@@ -66,14 +67,11 @@ export function PlayerDashboardPage() {
   const { data: recoveryPlan } = usePlayerRecoveryPlan(playerId);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
 
-  if (loadingId || isLoading) return <PageSpinner />;
+  if (loadingId || isLoading) return <DashboardSkeleton />;
   if (isError)
     return (
       <PageWrapper>
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
-          <AlertTriangle size={18} />
-          Failed to load dashboard data.
-        </div>
+        <ErrorState thing="your dashboard" onRetry={() => refetch()} />
       </PageWrapper>
     );
 

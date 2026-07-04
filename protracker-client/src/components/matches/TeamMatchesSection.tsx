@@ -5,6 +5,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { EmptyState } from '../ui/EmptyState';
+import { SkeletonCard } from '../ui/Skeleton';
 import { ConfirmModal } from '../ui/Modal';
 import { useToast } from '../../context/ToastContext';
 import { useTeamMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, useSaveMatchRatings } from '../../hooks/useMatches';
@@ -262,9 +263,12 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : matches.length === 0 ? (
-        <EmptyState icon={<Star size={32} />} title="No matches logged" description={isCoach ? 'Log a match result to start tracking.' : 'No matches recorded yet.'} size="sm" />
+        <EmptyState icon={<Trophy size={40} />} title="No matches recorded yet"
+          description={isCoach ? 'Log your first match result to start tracking performances.' : 'Your coach hasn\'t logged any matches yet.'}
+          size="sm"
+          action={isCoach ? { label: 'Log First Match', onClick: () => { setEditMatch(null); setLogOpen(true); } } : undefined} />
       ) : (
         <div className="space-y-3">
           {matches.map(m => {

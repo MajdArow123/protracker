@@ -10,7 +10,8 @@ import { useCoachTasks } from '../../hooks/useTasks';
 import { isSeen, markSeen, injuryKey, useSeenVersion } from '../../utils/seenNotifications';
 import { TeamWellbeingCard } from '../../components/wellbeing/TeamWellbeingCard';
 import { PageWrapper } from '../../components/layout/PageWrapper';
-import { PageSpinner } from '../../components/ui/Spinner';
+import { DashboardSkeleton } from '../../components/ui/Skeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import { clsx } from 'clsx';
@@ -71,21 +72,18 @@ const fadeUp: Variants = {
 export function CoachDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { data, isLoading, isError } = useCoachDashboard();
+  const { data, isLoading, isError, refetch } = useCoachDashboard();
   const { data: activeInjuries = [] } = useActiveInjuries();
   const { data: allTasks = [] } = useCoachTasks();
   const overdueTasks = allTasks.filter(t => !t.isCompleted && t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   useSeenVersion(); // re-render when a card item is dismissed
   const visibleInjuries = activeInjuries.filter(inj => !isSeen(injuryKey(inj.id, inj.severity)));
 
-  if (isLoading) return <PageSpinner />;
+  if (isLoading) return <DashboardSkeleton />;
   if (isError)
     return (
       <PageWrapper>
-        <div className="flex items-center gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
-          <AlertTriangle size={18} />
-          Failed to load dashboard data.
-        </div>
+        <ErrorState thing="dashboard" onRetry={() => refetch()} />
       </PageWrapper>
     );
 
