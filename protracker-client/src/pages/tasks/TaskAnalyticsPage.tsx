@@ -12,6 +12,7 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useTaskAnalytics } from '../../hooks/useTasks';
+import { CountUp } from '../../components/ui/CountUp';
 import type { PlayerTaskStats } from '../../types';
 
 function rateColor(rate: number) {
@@ -88,10 +89,10 @@ export function TaskAnalyticsPage() {
   }
 
   const statCards = [
-    { label: 'Total Tasks', value: data.total, icon: ClipboardList, bg: 'bg-indigo-500/10', text: 'text-indigo-500' },
-    { label: 'Completion Rate', value: `${data.completionRate}%`, icon: CheckCircle2, bg: 'bg-green-500/10', text: rateText(data.completionRate) },
-    { label: 'Overdue', value: data.overdue, icon: AlertTriangle, bg: 'bg-red-500/10', text: 'text-red-500' },
-    { label: 'Avg Days to Complete', value: data.avgDaysToComplete != null ? data.avgDaysToComplete : '—', icon: Clock, bg: 'bg-amber-500/10', text: 'text-amber-500' },
+    { label: 'Total Tasks', num: data.total, suffix: '', decimals: 0, icon: ClipboardList, bg: 'bg-indigo-500/10', text: 'text-indigo-500' },
+    { label: 'Completion Rate', num: data.completionRate, suffix: '%', decimals: 0, icon: CheckCircle2, bg: 'bg-green-500/10', text: rateText(data.completionRate) },
+    { label: 'Overdue', num: data.overdue, suffix: '', decimals: 0, icon: AlertTriangle, bg: 'bg-red-500/10', text: 'text-red-500' },
+    { label: 'Avg Days to Complete', num: data.avgDaysToComplete ?? null, suffix: '', decimals: 1, icon: Clock, bg: 'bg-amber-500/10', text: 'text-amber-500' },
   ];
 
   const playerChartData = data.playerStats.map(p => ({ name: p.playerName, rate: p.completionRate }));
@@ -111,7 +112,9 @@ export function TaskAnalyticsPage() {
               <c.icon size={18} className={c.text} />
             </div>
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{c.label}</p>
-            <p className={clsx('text-3xl font-black mt-0.5', c.text)}>{c.value}</p>
+            {c.num == null
+              ? <p className={clsx('text-3xl font-black mt-0.5', c.text)}>—</p>
+              : <CountUp value={c.num} suffix={c.suffix} decimals={c.decimals} className={clsx('text-3xl font-black mt-0.5 block', c.text)} />}
           </div>
         ))}
       </div>

@@ -119,20 +119,26 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             className={({ isActive }) =>
               clsx(
-                'group flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
-                isActive
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                'group relative flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                isActive ? 'text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'
               )
             }
           >
             {({ isActive }) => (
               <>
-                <div className="flex items-center gap-3">
+                {/* Sliding active background — shared layoutId animates it between items. */}
+                {isActive && (
+                  <motion.span
+                    layoutId="sidebar-active"
+                    className="absolute inset-0 rounded-xl bg-indigo-600 shadow-lg shadow-indigo-500/20"
+                    transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                  />
+                )}
+                <div className="relative z-10 flex items-center gap-3">
                   <item.icon size={17} />
                   {item.label}
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="relative z-10 flex items-center gap-1.5">
                   {navBadge(item.to) > 0 && (
                     <span className={clsx(
                       'min-w-[18px] h-[18px] px-1 flex items-center justify-center rounded-full text-[10px] font-bold',

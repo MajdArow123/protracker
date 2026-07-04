@@ -127,6 +127,7 @@ export function BarChartWrapper({ data, series, height = 300, yAxisLabel, refere
             fill={useScoreColors ? undefined : `url(#barGrad-${s.key})`}
             radius={[5, 5, 0, 0]}
             maxBarSize={56}
+            isAnimationActive
           >
             {useScoreColors &&
               data.map((entry, idx) => (

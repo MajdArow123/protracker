@@ -12,6 +12,7 @@ import { TeamWellbeingCard } from '../../components/wellbeing/TeamWellbeingCard'
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
+import { CountUp } from '../../components/ui/CountUp';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import { clsx } from 'clsx';
@@ -178,7 +179,7 @@ export function CoachDashboardPage() {
               <card.icon size={18} className={card.text} />
             </div>
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.title}</p>
-            <p className="text-2xl font-black text-gray-900 dark:text-white mt-0.5">{card.value}</p>
+            <CountUp value={card.value} className="text-2xl font-black text-gray-900 dark:text-white mt-0.5 block" />
           </motion.div>
         ))}
       </div>

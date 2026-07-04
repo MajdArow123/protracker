@@ -79,6 +79,7 @@ export function RadarChartWrapper({ data, height = 380, showPrevious }: Props) {
           fill="url(#radarGrad)"
           strokeWidth={2}
           dot={{ r: 3, fill: '#6366f1', strokeWidth: 0 }}
+          isAnimationActive
         >
           <LabelList
             dataKey="value"

@@ -4,7 +4,9 @@ import { Users, Plus, Search, AlertTriangle } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
 import { useActiveInjuries } from '../../hooks/useInjuries';
+import { motion } from 'framer-motion';
 import { PageWrapper } from '../../components/layout/PageWrapper';
+import { staggerContainer, staggerItem } from '../../utils/animations';
 import { Button } from '../../components/ui/Button';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -92,14 +94,23 @@ export function PlayersPage() {
           />
         )
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
           {filtered.map(player => {
             const emoji = SPORT_EMOJIS[player.sportId] ?? '🏅';
             return (
-              <button
+              <motion.button
                 key={player.id}
+                variants={staggerItem}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.99 }}
+                transition={{ duration: 0.15 }}
                 onClick={() => navigate(`/players/${player.id}`)}
-                className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-500/40 hover:shadow-md hover:shadow-indigo-500/5 transition-all cursor-pointer text-left group"
+                className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-500/40 hover:shadow-md hover:shadow-indigo-500/5 transition-colors cursor-pointer text-left group"
               >
                 <div className="w-11 h-11 rounded-xl bg-indigo-600/15 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-black flex-shrink-0 group-hover:bg-indigo-600/25 transition-colors">
                   {getInitials(player.fullName)}
@@ -121,10 +132,10 @@ export function PlayersPage() {
                     </span>
                   )}
                 </div>
-              </button>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
       )}
     </PageWrapper>
   );

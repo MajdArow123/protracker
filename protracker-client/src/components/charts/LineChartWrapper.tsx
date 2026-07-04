@@ -164,6 +164,7 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
               dot={showDots ? { r: isFocused ? 4 : 2.5, fill: s.color, stroke: '#111827', strokeWidth: 1.5 } : false}
               activeDot={isFocused || !hasFocus ? { r: 5, fill: s.color, stroke: '#111827', strokeWidth: 2 } : false}
               connectNulls
+              isAnimationActive
             />
           );
         })}

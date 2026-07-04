@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
@@ -22,6 +23,7 @@ function useNewMessageToast() {
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
   useNewMessageToast();
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
@@ -32,7 +34,15 @@ export function AppLayout() {
       <div className="flex flex-col flex-1 overflow-hidden">
         <Navbar onMenuClick={() => setSidebarOpen(true)} />
         <main className="flex-1 overflow-y-auto">
-          <Outlet />
+          {/* Consistent enter transition on every route change (keyed by pathname). */}
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+          >
+            <Outlet />
+          </motion.div>
         </main>
         {/* In-flow bottom tab bar on mobile — main (flex-1) shrinks to make room, so
             content is never hidden behind it. Hidden on md+ (sidebar takes over). */}
