@@ -12,8 +12,43 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html.dark {
   color-scheme: dark;
+}
+
+/* ── Print: clean, full-width, black-on-white reports ─────────────────────── */
+@media print {
+  /* Hide app chrome and interactive controls. */
+  aside, nav, header,
+  .no-print,
+  button:not(.print-keep) {
+    display: none !important;
+  }
+  html, body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  main {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  /* Neutralize dark cards to white with subtle borders for legibility. */
+  .dark * {
+    color: #111 !important;
+  }
+  [class*="bg-gray-9"], [class*="bg-gray-8"], [class*="dark:bg-gray-9"] {
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: none !important;
+  }
+  /* Start major report sections on a fresh page when needed. */
+  section, .print-break {
+    break-inside: avoid;
+  }
 }
 
 ::-webkit-scrollbar {

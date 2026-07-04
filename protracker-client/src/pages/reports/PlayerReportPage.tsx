@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Fragment } from 'react';
 import { motion } from 'framer-motion';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
@@ -486,9 +486,8 @@ export function PlayerReportPage() {
                     : '—';
                   const isExpanded = expandedRow === a.id;
                   return (
-                    <>
+                    <Fragment key={a.id}>
                       <tr
-                        key={a.id}
                         className="border-b border-gray-100 dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-700/30 cursor-pointer"
                         onClick={() => setExpandedRow(isExpanded ? null : a.id)}
                       >
@@ -505,7 +504,7 @@ export function PlayerReportPage() {
                         </td>
                       </tr>
                       {isExpanded && a.statScores?.length > 0 && (
-                        <tr key={`${a.id}-exp`} className="bg-gray-50 dark:bg-gray-800/60">
+                        <tr className="bg-gray-50 dark:bg-gray-800/60">
                           <td colSpan={5} className="px-2 py-3">
                             <div className="flex flex-wrap gap-2">
                               {a.statScores.map(s => (
@@ -521,7 +520,7 @@ export function PlayerReportPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })}
               </tbody>

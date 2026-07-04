@@ -12,6 +12,8 @@ import { PageSpinner } from './components/ui/Spinner';
 import { PageLoadingSkeleton } from './components/ui/PageLoadingSkeleton';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { OfflineBanner } from './components/ui/OfflineBanner';
+import { ScrollToTop } from './components/layout/ScrollToTop';
+import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, NotFoundPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
@@ -126,6 +128,8 @@ export default function App() {
           <ToastProvider>
             <AuthProvider>
               <BrowserRouter>
+                <ScrollToTop />
+                <RouteProgressBar />
                 <OfflineBanner />
                 <AppRoutes />
                 <ToastContainer />
