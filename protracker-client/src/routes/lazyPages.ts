@@ -12,6 +12,7 @@ function named<T extends Record<string, unknown>, K extends keyof T>(
 // Pre-auth
 export const LandingPage = named(() => import('../pages/LandingPage'), 'LandingPage');
 export const LoginPage = named(() => import('../pages/auth/LoginPage'), 'LoginPage');
+export const NotFoundPage = named(() => import('../pages/NotFoundPage'), 'NotFoundPage');
 
 // Coach
 export const CoachDashboardPage = named(() => import('../pages/dashboard/CoachDashboardPage'), 'CoachDashboardPage');

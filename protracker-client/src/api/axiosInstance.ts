@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { friendlyErrorMessage } from '../utils/errorMessage';
 
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
@@ -87,10 +88,12 @@ api.interceptors.response.use(
       }
     }
 
-    const message = error.response?.data?.message || error.message || 'An error occurred';
-    // Preserve the HTTP status so callers (e.g. query retry logic) can branch on it —
-    // wrapping in a plain Error previously discarded error.response entirely.
-    const wrapped = Object.assign(new Error(message), { status: error.response?.status });
+    // Preserve the HTTP status (query retry logic branches on it) and the raw backend
+    // message, but surface a friendly, human-readable `.message` to callers/toasts.
+    const status = error.response?.status;
+    const backendMessage = error.response?.data?.message;
+    const friendly = friendlyErrorMessage({ status, backendMessage, message: error.message });
+    const wrapped = Object.assign(new Error(friendly), { status, backendMessage });
     return Promise.reject(wrapped);
   }
 );

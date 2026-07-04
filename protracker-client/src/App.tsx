@@ -10,8 +10,10 @@ import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import { PageSpinner } from './components/ui/Spinner';
 import { PageLoadingSkeleton } from './components/ui/PageLoadingSkeleton';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { OfflineBanner } from './components/ui/OfflineBanner';
 import {
-  LandingPage, LoginPage,
+  LandingPage, LoginPage, NotFoundPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -109,6 +111,8 @@ function AppRoutes() {
           </Route>
         </Route>
       </Route>
+      {/* Catch-all — standalone 404 for any unmatched path. */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
     </Suspense>
   );
@@ -116,18 +120,21 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <BrowserRouter>
-              <AppRoutes />
-              <ToastContainer />
-            </BrowserRouter>
-          </AuthProvider>
-        </ToastProvider>
-      </ThemeProvider>
-      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <BrowserRouter>
+                <OfflineBanner />
+                <AppRoutes />
+                <ToastContainer />
+              </BrowserRouter>
+            </AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
+        {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
