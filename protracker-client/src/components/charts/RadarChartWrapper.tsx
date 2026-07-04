@@ -2,6 +2,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend, LabelList,
 } from 'recharts';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface DataPoint {
   subject: string;
@@ -31,9 +32,11 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
 
 export function RadarChartWrapper({ data, height = 380, showPrevious }: Props) {
   const hasPrev = showPrevious && data.some(d => d.previousValue !== undefined);
+  const isMobile = useIsMobile();
+  const h = isMobile ? Math.min(height, 280) : height;
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height={h}>
       <RadarChart data={data} margin={{ top: 10, right: 20, bottom: 10, left: 20 }}>
         <defs>
           <linearGradient id="radarGrad" x1="0" y1="0" x2="0" y2="1">

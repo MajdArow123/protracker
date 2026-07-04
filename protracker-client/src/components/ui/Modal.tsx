@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Button } from './Button';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface Props {
   isOpen: boolean;
@@ -13,7 +14,7 @@ interface Props {
   size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
-const sizes = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl', xl: 'max-w-4xl' };
+const sizes = { sm: 'sm:max-w-sm', md: 'sm:max-w-md', lg: 'sm:max-w-2xl', xl: 'sm:max-w-4xl' };
 
 export function Modal({
   isOpen,
@@ -22,6 +23,8 @@ export function Modal({
   children,
   size = 'md',
 }: Props) {
+  const isMobile = useIsMobile();
+
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -30,6 +33,11 @@ export function Modal({
     return () => document.removeEventListener('keydown', handle);
   }, [onClose]);
 
+  // Bottom-sheet on mobile (slide up, rounded top only); centered scale/fade on desktop.
+  const panelMotion = isMobile
+    ? { initial: { y: '100%' }, animate: { y: 0 }, exit: { y: '100%' } }
+    : { initial: { scale: 0.95, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0.95, opacity: 0 } };
+
   return createPortal(
     <AnimatePresence>
       {isOpen && (
@@ -37,29 +45,28 @@ export function Modal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className={`w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-xl shadow-xl`}
+            {...panelMotion}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className={`w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col max-h-[92vh] sm:max-h-[88vh]`}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
                 {title}
               </h2>
               <button
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 -m-1"
+                aria-label="Close"
               >
                 <X size={20} />
               </button>
             </div>
-            <div className="px-6 py-4">{children}</div>
+            <div className="px-5 sm:px-6 py-4 overflow-y-auto">{children}</div>
           </motion.div>
         </motion.div>
       )}

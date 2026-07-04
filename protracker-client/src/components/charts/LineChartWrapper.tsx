@@ -2,6 +2,7 @@ import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceDot,
 } from 'recharts';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface DataPoint {
   name: string;
@@ -72,9 +73,11 @@ function CustomTooltip({
 export function LineChartWrapper({ data, series, height = 300, focusedKey = null, yAxisLabel }: Props) {
   const fewPoints = data.length <= 4;
   const leftMargin = yAxisLabel ? 16 : -10;
+  const isMobile = useIsMobile();
+  const h = isMobile ? Math.min(height, 250) : height;
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height={h}>
       <ComposedChart data={data} margin={{ top: 12, right: 24, left: leftMargin, bottom: 4 }}>
         <defs>
           {series.map(s => (

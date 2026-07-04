@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
+import { BottomNav } from './BottomNav';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
 import { useToast } from '../../context/ToastContext';
 
@@ -33,6 +34,9 @@ export function AppLayout() {
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
+        {/* In-flow bottom tab bar on mobile — main (flex-1) shrinks to make room, so
+            content is never hidden behind it. Hidden on md+ (sidebar takes over). */}
+        <BottomNav />
       </div>
     </div>
   );

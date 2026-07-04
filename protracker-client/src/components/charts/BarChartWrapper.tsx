@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, Cell, LabelList, ReferenceLine,
 } from 'recharts';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface DataPoint {
   name: string;
@@ -50,9 +51,11 @@ function getBarGradientId(value: number): string {
 export function BarChartWrapper({ data, series, height = 300, yAxisLabel, referenceLine, showValueLabels = false }: Props) {
   const useScoreColors = series.length === 1 && data.some(d => typeof d[series[0].key] === 'number');
   const leftMargin = yAxisLabel ? 20 : -10;
+  const isMobile = useIsMobile();
+  const h = isMobile ? Math.min(height, 250) : height;
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ResponsiveContainer width="100%" height={h}>
       <BarChart data={data} margin={{ top: showValueLabels ? 20 : 10, right: 16, left: leftMargin, bottom: 4 }}>
         <defs>
           {/* Gradient per color band */}
@@ -100,7 +103,7 @@ export function BarChartWrapper({ data, series, height = 300, yAxisLabel, refere
 
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
 
-        {series.length > 1 && <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af', paddingTop: 8 }} />}
+        {series.length > 1 && !isMobile && <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af', paddingTop: 8 }} />}
 
         {referenceLine && (
           <ReferenceLine

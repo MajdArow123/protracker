@@ -86,7 +86,7 @@ export function MessagesPage() {
   }
 
   return (
-    <div className="flex-1 flex h-[calc(100vh-3.5rem)] overflow-hidden">
+    <div className="flex-1 flex h-full overflow-hidden">
       {/* LEFT: conversation list */}
       <div className={clsx('w-full sm:w-[320px] flex-shrink-0 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-white dark:bg-gray-900',
         selectedId ? 'hidden sm:flex' : 'flex')}>
