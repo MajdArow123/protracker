@@ -239,6 +239,39 @@ Five features, each its own commit, curl- + browser-verified as both coach and a
   `BarChartWrapper`/`LineChartWrapper` are hardcoded to a 0-10 Y domain (unfit for %/counts).
   "Analytics" button on the `/tasks` header.
 
+## Phase 10 — final polish sprint (COMPLETE, deployed)
+
+Production-readiness pass, mostly frontend, in 7 commits (each its own section,
+`npm run build` + `oxlint` clean, browser-verified; backend untouched except an
+earlier `DELETE /api/messages/{id}`).
+
+- **1 — Performance / code splitting.** Every route is `React.lazy` (`src/routes/
+  lazyPages.ts`) behind a `<Suspense>` `PageLoadingSkeleton`; vendor `manualChunks`
+  (react/ui/chart/query + a `pdf-vendor`) — **function form only** (rolldown-vite
+  rejects the object form). Single 1.3 MB bundle → ~42 KB entry + on-demand chunks.
+  `preloadDashboard(role)` warms the dashboard chunk on login.
+- **2 — Mobile.** `BottomNav` (role-aware, md:hidden, in-flow flex child so `main`
+  shrinks — no overlap); `Modal` is a bottom-sheet on mobile; chart wrappers clamp
+  height via `useMediaQuery`/`useIsMobile`; Button 44px min-height on mobile.
+  Messages page uses `h-[calc(100dvh-7rem)] md:h-[calc(100vh-3.5rem)]`.
+- **3 — Skeletons / errors / empties.** `Skeleton.tsx` (shimmer `.skeleton` class,
+  primitives + `DashboardSkeleton`/`ReportSkeleton`/`DetailSkeleton`/`CardListSkeleton`)
+  replaced `PageSpinner` across pages; `ErrorState` (AlertCircle + Retry→refetch).
+- **4 — Animations.** Route transition = keyed (`pathname`) `motion.div` around
+  `<Outlet>`; `CountUp` (reduced-motion aware); sidebar active bg uses `layoutId=
+  "sidebar-active"`; Players grid stagger (`src/utils/animations.ts`). **All `ease`
+  values are strings** (never arrays — rule enforced).
+- **5 — Reliability.** `ErrorBoundary` (class) wraps the app; `NotFoundPage` catch-all
+  `*` route; `OfflineBanner` (window online/offline); axios interceptor maps status →
+  friendly messages via `friendlyErrorMessage` (keeps backend message + `.status`).
+- **6 — PDF export.** `@react-pdf/renderer` → `PlayerReportPDF` / `TeamReportPDF`;
+  "Export PDF" buttons; **dynamically imported on click** so the 1.4 MB `pdf-vendor`
+  chunk never loads eagerly (`chunkSizeWarningLimit` raised to 1500 for it).
+- **7 — Final polish.** `ScrollToTop` (resets `main`, not window) + `scroll-smooth`;
+  `RouteProgressBar` (GitHub-style top bar); `@media print` stylesheet; real
+  `<title>`/description/OG/Twitter meta + branded "PT" `favicon.svg`; fixed a
+  PlayerReportPage keyless-Fragment warning.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`npx tsc --noEmit -p tsconfig.json` is a SILENT NO-OP.** Root `tsconfig.json` is a
@@ -298,6 +331,15 @@ Five features, each its own commit, curl- + browser-verified as both coach and a
   design spec — keep new chart tooltips consistent.
 
 ## Current status
+
+**Phase 10 complete — production ready.** The 7-section polish sprint above (code
+splitting, mobile/bottom-nav, skeletons + error/empty states, animations, error
+boundary + 404 + offline, PDF export, final polish) is implemented, `npm run build`
++ `oxlint` clean, backend `dotnet test` 34/34 passing, and pushed to `main`. Verified
+in-browser: lazy routes load with no console errors, mobile bottom nav / bottom-sheet
+modals / single-pane messages at 390px, skeletons (delayed-API capture), 404 + offline
+banner, count-up + sliding sidebar indicator, and PDF exports downloading valid `%PDF`
+files. The app is feature-complete and production-ready.
 
 **Latest feature round complete.** The 5 features above (match score format, wellbeing
 check-in, AI task suggestions, recovery templates, task analytics) are implemented,
