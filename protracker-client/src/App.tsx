@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -7,34 +8,19 @@ import { ToastProvider } from './context/ToastContext';
 import { ToastContainer } from './components/ui/Toast';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
-import { LoginPage } from './pages/auth/LoginPage';
-import { CoachDashboardPage } from './pages/dashboard/CoachDashboardPage';
-import { PlayerDashboardPage } from './pages/dashboard/PlayerDashboardPage';
-import { PlayerStatsPage } from './pages/dashboard/PlayerStatsPage';
-import { PlayerNutritionDashPage } from './pages/dashboard/PlayerNutritionDashPage';
-import { PlayerImprovementDashPage } from './pages/dashboard/PlayerImprovementDashPage';
-import { TeamsPage } from './pages/teams/TeamsPage';
-import { TeamDetailPage } from './pages/teams/TeamDetailPage';
-import { TeamFormPage } from './pages/teams/TeamFormPage';
-import { PlayersPage } from './pages/players/PlayersPage';
-import { PlayerDetailPage } from './pages/players/PlayerDetailPage';
-import { PlayerFormPage } from './pages/players/PlayerFormPage';
-import { AssessmentPage } from './pages/assessments/AssessmentPage';
-import { ImprovementPage } from './pages/improvement/ImprovementPage';
-import { NutritionPage } from './pages/nutrition/NutritionPage';
-import { ReportsPage } from './pages/reports/ReportsPage';
-import { PlayerReportPage } from './pages/reports/PlayerReportPage';
-import { TeamReportPage } from './pages/reports/TeamReportPage';
-import { ComparePlayersPage } from './pages/reports/ComparePlayersPage';
-import { FoodAlternativesPage } from './pages/nutrition/FoodAlternativesPage';
-import { TasksPage } from './pages/tasks/TasksPage';
-import { TaskAnalyticsPage } from './pages/tasks/TaskAnalyticsPage';
-import { MyTasksPage } from './pages/tasks/MyTasksPage';
-import { MessagesPage } from './pages/messages/MessagesPage';
 import { PageSpinner } from './components/ui/Spinner';
-import { LandingPage } from './pages/LandingPage';
-import { CoachProfilePage } from './pages/profile/CoachProfilePage';
-import { AthleteProfilePage } from './pages/profile/AthleteProfilePage';
+import { PageLoadingSkeleton } from './components/ui/PageLoadingSkeleton';
+import {
+  LandingPage, LoginPage,
+  CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
+  PlayersPage, PlayerDetailPage, PlayerFormPage,
+  AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
+  ReportsPage, PlayerReportPage, TeamReportPage, ComparePlayersPage,
+  TasksPage, TaskAnalyticsPage, CoachProfilePage,
+  PlayerDashboardPage, PlayerStatsPage, PlayerNutritionDashPage,
+  PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
+  MessagesPage,
+} from './routes/lazyPages';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +46,7 @@ function RootRedirect() {
 
 function AppRoutes() {
   return (
+    <Suspense fallback={<PageLoadingSkeleton />}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<RootRedirect />} />
@@ -123,6 +110,7 @@ function AppRoutes() {
         </Route>
       </Route>
     </Routes>
+    </Suspense>
   );
 }
 

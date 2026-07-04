@@ -9,6 +9,7 @@ import {
   Zap, BarChart2,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { preloadDashboard } from '../../routes/lazyPages';
 
 type AuthTab = 'signin' | 'register';
 type Role = 'Coach' | 'Athlete';
@@ -72,6 +73,7 @@ export function LoginPage() {
     setIsLoading(true);
     try {
       const user = await login(email, password);
+      preloadDashboard(user.role); // warm the dashboard chunk before redirecting
       navigate(user.role === 'Coach' ? '/dashboard' : '/player-dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid email or password');

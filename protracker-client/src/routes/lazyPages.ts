@@ -1,0 +1,51 @@
+import { lazy } from 'react';
+
+// Helper: React.lazy expects a module with a `default` export, but our pages use
+// named exports — this adapts a named export into the shape lazy() wants.
+function named<T extends Record<string, unknown>, K extends keyof T>(
+  factory: () => Promise<T>,
+  key: K,
+) {
+  return lazy(() => factory().then((m) => ({ default: m[key] as React.ComponentType })));
+}
+
+// Pre-auth
+export const LandingPage = named(() => import('../pages/LandingPage'), 'LandingPage');
+export const LoginPage = named(() => import('../pages/auth/LoginPage'), 'LoginPage');
+
+// Coach
+export const CoachDashboardPage = named(() => import('../pages/dashboard/CoachDashboardPage'), 'CoachDashboardPage');
+export const TeamsPage = named(() => import('../pages/teams/TeamsPage'), 'TeamsPage');
+export const TeamDetailPage = named(() => import('../pages/teams/TeamDetailPage'), 'TeamDetailPage');
+export const TeamFormPage = named(() => import('../pages/teams/TeamFormPage'), 'TeamFormPage');
+export const PlayersPage = named(() => import('../pages/players/PlayersPage'), 'PlayersPage');
+export const PlayerDetailPage = named(() => import('../pages/players/PlayerDetailPage'), 'PlayerDetailPage');
+export const PlayerFormPage = named(() => import('../pages/players/PlayerFormPage'), 'PlayerFormPage');
+export const AssessmentPage = named(() => import('../pages/assessments/AssessmentPage'), 'AssessmentPage');
+export const ImprovementPage = named(() => import('../pages/improvement/ImprovementPage'), 'ImprovementPage');
+export const NutritionPage = named(() => import('../pages/nutrition/NutritionPage'), 'NutritionPage');
+export const FoodAlternativesPage = named(() => import('../pages/nutrition/FoodAlternativesPage'), 'FoodAlternativesPage');
+export const ReportsPage = named(() => import('../pages/reports/ReportsPage'), 'ReportsPage');
+export const PlayerReportPage = named(() => import('../pages/reports/PlayerReportPage'), 'PlayerReportPage');
+export const TeamReportPage = named(() => import('../pages/reports/TeamReportPage'), 'TeamReportPage');
+export const ComparePlayersPage = named(() => import('../pages/reports/ComparePlayersPage'), 'ComparePlayersPage');
+export const TasksPage = named(() => import('../pages/tasks/TasksPage'), 'TasksPage');
+export const TaskAnalyticsPage = named(() => import('../pages/tasks/TaskAnalyticsPage'), 'TaskAnalyticsPage');
+export const CoachProfilePage = named(() => import('../pages/profile/CoachProfilePage'), 'CoachProfilePage');
+
+// Athlete
+export const PlayerDashboardPage = named(() => import('../pages/dashboard/PlayerDashboardPage'), 'PlayerDashboardPage');
+export const PlayerStatsPage = named(() => import('../pages/dashboard/PlayerStatsPage'), 'PlayerStatsPage');
+export const PlayerNutritionDashPage = named(() => import('../pages/dashboard/PlayerNutritionDashPage'), 'PlayerNutritionDashPage');
+export const PlayerImprovementDashPage = named(() => import('../pages/dashboard/PlayerImprovementDashPage'), 'PlayerImprovementDashPage');
+export const MyTasksPage = named(() => import('../pages/tasks/MyTasksPage'), 'MyTasksPage');
+export const AthleteProfilePage = named(() => import('../pages/profile/AthleteProfilePage'), 'AthleteProfilePage');
+
+// Shared
+export const MessagesPage = named(() => import('../pages/messages/MessagesPage'), 'MessagesPage');
+
+// Warm the dashboard chunk the instant login succeeds, before the redirect fires.
+export function preloadDashboard(role: 'Coach' | 'Athlete') {
+  if (role === 'Coach') import('../pages/dashboard/CoachDashboardPage');
+  else import('../pages/dashboard/PlayerDashboardPage');
+}
