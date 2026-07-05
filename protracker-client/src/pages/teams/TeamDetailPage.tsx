@@ -12,6 +12,12 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } from '../../utils/units';
+import { ExportMenu, type ExportOption } from '../../components/ui/ExportMenu';
+import { exportCsv, slugify, todayStamp, csvDate, type CsvRow } from '../../utils/csv';
+import { matchesApi } from '../../api/matchesApi';
+import { reportsApi } from '../../api/reportsApi';
+import { tasksApi } from '../../api/tasksApi';
+import type { PlayerReport } from '../../types';
 import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection';
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
 import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
@@ -111,6 +117,95 @@ export function TeamDetailPage() {
   const sortedPeriods = [...teamPeriods].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
   const lastPeriod = sortedPeriods[0] ?? null;
 
+  const fileFor = (kind: string) => `${slugify(team.name)}-${kind}-${todayStamp()}.csv`;
+
+  const exportOptions: ExportOption[] = [
+    {
+      label: 'Team Roster',
+      description: 'Players with bio & fitness',
+      run: () => {
+        if (teamPlayers.length === 0) throw new Error('No players to export.');
+        const rows: CsvRow[] = teamPlayers.map(p => ({
+          Name: p.fullName,
+          Position: p.positionName ?? '',
+          Age: p.age ?? '',
+          'Height (cm)': p.height ?? '',
+          'Weight (kg)': p.weight ?? '',
+          'Fitness (1-10)': p.fitnessLevel ?? '',
+          Team: team.name,
+        }));
+        exportCsv(fileFor('Roster'), rows);
+      },
+    },
+    {
+      label: 'Player Stats',
+      description: 'Per-player scores by category',
+      run: async () => {
+        if (teamPlayers.length === 0) throw new Error('No players to export.');
+        const reports = await Promise.all(
+          teamPlayers.map(p => reportsApi.getPlayerReport(p.id) as Promise<PlayerReport>),
+        );
+        const categories = [...new Set(reports.flatMap(r => Object.keys(r.averageScoreByCategory)))].sort();
+        const rows: CsvRow[] = reports.map(r => {
+          const vals = Object.values(r.averageScoreByCategory);
+          const overall = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+          const row: CsvRow = {
+            Name: r.player.fullName,
+            Position: r.player.positionName ?? '',
+            'Overall Avg': overall ? overall.toFixed(1) : '',
+          };
+          categories.forEach(c => {
+            const v = r.averageScoreByCategory[c];
+            row[c] = v != null ? v.toFixed(1) : '';
+          });
+          return row;
+        });
+        exportCsv(fileFor('Player-Stats'), rows, ['Name', 'Position', 'Overall Avg', ...categories]);
+      },
+    },
+    {
+      label: 'Match Results',
+      description: 'Fixtures, scores & outcomes',
+      run: async () => {
+        const matches = await matchesApi.getForTeam(teamId);
+        if (matches.length === 0) throw new Error('No matches to export.');
+        const rows: CsvRow[] = matches.map(m => ({
+          Date: csvDate(m.matchDate),
+          Opponent: m.opponentName,
+          'Home/Away': m.isHome ? 'Home' : 'Away',
+          Score: m.scoreDisplay,
+          'Our Score': m.ourScore,
+          'Opponent Score': m.opponentScore,
+          Result: m.result,
+          Competition: m.competition ?? '',
+          Venue: m.venue ?? '',
+        }));
+        exportCsv(fileFor('Matches'), rows);
+      },
+    },
+    {
+      label: 'Tasks',
+      description: "This team's assigned tasks",
+      run: async () => {
+        const teamPlayerIds = new Set(teamPlayers.map(p => p.id));
+        const all = await tasksApi.getForCoach();
+        const rows: CsvRow[] = all
+          .filter(t => teamPlayerIds.has(t.playerId))
+          .map(t => ({
+            Player: t.playerName,
+            Title: t.title,
+            Category: t.category,
+            Priority: t.priority,
+            'Due Date': csvDate(t.dueDate),
+            Status: t.isCompleted ? 'Completed' : 'Open',
+            'Completed Date': csvDate(t.completedAt),
+          }));
+        if (rows.length === 0) throw new Error('No tasks to export for this team.');
+        exportCsv(fileFor('Tasks'), rows);
+      },
+    },
+  ];
+
   const statCards = [
     { label: 'Total Players', value: teamPlayers.length, icon: Users },
     { label: 'Avg Team Score', value: avgTeamScore != null ? avgTeamScore.toFixed(1) : '—', icon: BarChart3 },
@@ -133,6 +228,7 @@ export function TeamDetailPage() {
             </button>
             {isCoach && (
               <div className="flex gap-2">
+                <ExportMenu options={exportOptions} variant="hero" onError={msg => showToast(msg, 'error')} />
                 <button
                   onClick={() => navigate(`/teams/${id}/edit`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"

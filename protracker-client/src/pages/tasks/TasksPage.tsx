@@ -10,6 +10,8 @@ import { AITaskSuggestionsModal } from '../../components/tasks/AITaskSuggestions
 import { groupTasks, taskStats, CATEGORY_ORDER } from '../../components/tasks/taskUtils';
 import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
 import { usePlayers } from '../../hooks/usePlayers';
+import { ExportMenu, type ExportOption } from '../../components/ui/ExportMenu';
+import { exportCsv, todayStamp, csvDate, type CsvRow } from '../../utils/csv';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, Plus, ChevronDown, X, Sparkles, BarChart3 } from 'lucide-react';
@@ -72,11 +74,32 @@ export function TasksPage() {
   const priorityPills: ('all' | TaskPriority)[] = ['all', 'High', 'Medium', 'Low'];
   const statusPills: StatusFilter[] = ['all', 'pending', 'completed'];
 
+  const exportOptions: ExportOption[] = [
+    {
+      label: 'Tasks',
+      description: 'Current list as CSV',
+      run: () => {
+        if (tasks.length === 0) throw new Error('No tasks to export.');
+        const rows: CsvRow[] = tasks.map(t => ({
+          Player: t.playerName,
+          Title: t.title,
+          Category: t.category,
+          Priority: t.priority,
+          'Due Date': csvDate(t.dueDate),
+          Status: t.isCompleted ? 'Completed' : 'Open',
+          'Completed Date': csvDate(t.completedAt),
+        }));
+        exportCsv(`Tasks-${todayStamp()}.csv`, rows);
+      },
+    },
+  ];
+
   return (
     <PageWrapper
       title="Tasks"
       actions={
         <div className="flex gap-2">
+          <ExportMenu options={exportOptions} onError={msg => addToast(msg, 'error')} />
           <button
             onClick={() => navigate('/tasks/analytics')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-all cursor-pointer"
