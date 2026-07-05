@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, ChevronDown, Loader2, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -22,15 +23,33 @@ export function ExportMenu({ options, label = 'Export Data', className, variant 
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
   const [done, setDone] = useState<number | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 });
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // The menu is portaled to <body> (so it escapes any overflow-hidden ancestor like the page hero);
+  // position it under the trigger, right-aligned.
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    setPos({ top: r.bottom + 8, right: window.innerWidth - r.right });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
     const onDoc = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (!triggerRef.current?.contains(t) && !menuRef.current?.contains(t)) setOpen(false);
     };
+    const onScrollOrResize = () => setOpen(false);
     document.addEventListener('mousedown', onDoc);
-    return () => document.removeEventListener('mousedown', onDoc);
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
   }, [open]);
 
   async function handle(idx: number) {
@@ -53,8 +72,9 @@ export function ExportMenu({ options, label = 'Export Data', className, variant 
     : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700';
 
   return (
-    <div ref={ref} className={clsx('relative', className)}>
+    <div className={clsx('relative', className)}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(o => !o)}
         className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all cursor-pointer', trigger)}
       >
@@ -63,8 +83,12 @@ export function ExportMenu({ options, label = 'Export Data', className, variant 
         <ChevronDown size={13} className={clsx('transition-transform', open && 'rotate-180')} />
       </button>
 
-      {open && (
-        <div className="absolute right-0 mt-2 w-64 z-30 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl overflow-hidden">
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: 'fixed', top: pos.top, right: pos.right, zIndex: 60 }}
+          className="w-64 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl overflow-hidden"
+        >
           {options.map((opt, idx) => (
             <button
               key={opt.label}
@@ -85,7 +109,8 @@ export function ExportMenu({ options, label = 'Export Data', className, variant 
               )}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
