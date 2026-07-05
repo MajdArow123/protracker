@@ -1,10 +1,14 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
+import { clsx } from 'clsx';
 import {
-  Activity, BarChart3, Brain, Salad, ShieldAlert, FileText,
+  Activity, BarChart3, Brain, Salad, ShieldAlert,
   Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
-  Target, Heart, CheckCircle, Circle,
+  Target, Heart, CheckCircle, Circle, CheckSquare, MessageSquare,
+  CalendarDays, HeartPulse, Code2, Globe,
 } from 'lucide-react';
+import { CountUp } from '../components/ui/CountUp';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -16,12 +20,36 @@ const fadeUp: Variants = {
 };
 
 const FEATURES = [
-  { icon: Trophy, title: 'Multi-Sport Support', desc: 'Football, Basketball, Volleyball, Tennis and more — one platform for all your teams.', color: 'from-amber-500 to-orange-500' },
-  { icon: BarChart3, title: 'Player Assessment Tracking', desc: 'Score every stat category per period. Visualize progress over time with beautiful charts.', color: 'from-indigo-500 to-blue-500' },
-  { icon: Brain, title: 'AI-Powered Insights', desc: 'Claude AI generates personalized improvement plans and nutrition guidance in seconds.', color: 'from-purple-500 to-violet-500' },
-  { icon: Salad, title: 'Nutrition Guidance', desc: 'Tailored meal plans and dietary profiles that respect every athlete\'s restrictions.', color: 'from-green-500 to-emerald-500' },
-  { icon: ShieldAlert, title: 'Injury Management', desc: 'Track injuries, severity, and recovery status. Never lose sight of player availability.', color: 'from-red-500 to-rose-500' },
-  { icon: FileText, title: 'Performance Reports', desc: 'Comprehensive PDF-ready reports for players and teams. Share with stakeholders easily.', color: 'from-cyan-500 to-teal-500' },
+  { icon: Brain, title: 'AI-Powered Insights', desc: 'Generate personalized improvement plans, weekly nutrition schedules, and injury recovery programs using Claude AI. Get smart task suggestions based on each athlete\'s weak areas.', color: 'from-purple-500 to-violet-500' },
+  { icon: BarChart3, title: 'Performance Analytics', desc: 'Track athlete assessments across multiple categories with gradient sliders. View trend charts, radar skill profiles, and compare progress over time.', color: 'from-indigo-500 to-blue-500' },
+  { icon: ShieldAlert, title: 'Injury & Recovery Tracking', desc: 'Log injuries with severity levels and assign structured recovery programs. AI generates sport-specific rehab exercises week by week.', color: 'from-red-500 to-rose-500' },
+  { icon: CheckSquare, title: 'Task Management', desc: 'Assign targeted training tasks to athletes with priority levels and due dates. AI suggests tasks based on assessment weak areas. Track completion rates.', color: 'from-cyan-500 to-teal-500' },
+  { icon: MessageSquare, title: 'Direct Messaging', desc: 'Built-in coach-to-athlete messaging with real-time updates. Share notes privately or with the athlete. Keep communication organized.', color: 'from-blue-500 to-indigo-500' },
+  { icon: Salad, title: 'Nutrition Planning', desc: 'Generate 7-day AI meal plans tailored to the athlete\'s sport, position, and dietary restrictions. Athletes can swap foods for nutritionally equivalent alternatives.', color: 'from-green-500 to-emerald-500' },
+  { icon: CalendarDays, title: 'Training Scheduler', desc: 'Plan weekly training sessions with a calendar view. Athletes see upcoming sessions on their dashboard. Track session completion.', color: 'from-orange-500 to-amber-500' },
+  { icon: Trophy, title: 'Match Results', desc: 'Log match scores with sport-aware formatting — sets for volleyball/tennis, points for basketball, goals for soccer. Rate individual player performance.', color: 'from-amber-500 to-yellow-500' },
+  { icon: Dumbbell, title: 'Multi-Sport Support', desc: 'Built for Basketball, Soccer, Volleyball, Beach Volleyball, and Tennis. Sport-specific positions, stats, scoring, and color themes throughout.', color: 'from-fuchsia-500 to-pink-500' },
+  { icon: HeartPulse, title: 'Wellbeing Check-ins', desc: 'Athletes submit daily check-ins rating their energy, sleep, and overall feeling. Coaches see trends and get alerts when athletes report pain during recovery.', color: 'from-rose-500 to-pink-500' },
+];
+
+const ABOUT_STATS = [
+  { value: 5, suffix: '', label: 'Sports Supported' },
+  { value: 10, suffix: '+', label: 'AI Features' },
+  { value: 34, suffix: '', label: 'Backend Tests' },
+  { value: 2026, suffix: '', label: 'Built in', countUp: false },
+];
+
+const TECH_STACK = [
+  { group: 'Backend', items: ['ASP.NET Core 9', 'PostgreSQL', 'EF Core', 'JWT Auth'], color: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20' },
+  { group: 'Frontend', items: ['React 19', 'TypeScript', 'Tailwind CSS', 'Recharts'], color: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20' },
+  { group: 'AI', items: ['Anthropic Claude API (Haiku + Sonnet)'], color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
+  { group: 'Hosting', items: ['Railway', 'Vercel'], color: 'text-green-300 bg-green-500/10 border-green-500/20' },
+];
+
+const NAV_LINKS = [
+  { id: 'features', label: 'Features' },
+  { id: 'about', label: 'About' },
+  { id: 'contact', label: 'Contact' },
 ];
 
 const SPORTS = [
@@ -68,16 +96,42 @@ const TESTIMONIALS = [
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
     <div className="min-h-screen bg-gray-950 text-white overflow-x-hidden">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 bg-gray-950/80 glass border-b border-gray-800/50">
-        <div className="flex items-center gap-2.5">
+      {/* Nav — sticky; gains a blurred, semi-transparent background once scrolled. */}
+      <nav className={clsx(
+        'fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 transition-all duration-300',
+        scrolled ? 'bg-gray-950/80 backdrop-blur-md border-b border-gray-800/70 shadow-lg shadow-black/20' : 'bg-transparent border-b border-transparent',
+      )}>
+        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2.5 cursor-pointer">
           <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
             <Activity size={17} className="text-white" />
           </div>
           <span className="text-lg font-bold tracking-tight">ProTracker</span>
+        </button>
+        <div className="hidden md:flex items-center gap-7">
+          {NAV_LINKS.map((l) => (
+            <button
+              key={l.id}
+              onClick={() => scrollToSection(l.id)}
+              className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
+            >
+              {l.label}
+            </button>
+          ))}
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -220,7 +274,7 @@ export function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="py-24">
+      <section id="features" className="py-24 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div
             initial="hidden"
@@ -231,10 +285,10 @@ export function LandingPage() {
           >
             <h2 className="text-4xl font-black tracking-tight mb-4">
               Everything you need to{' '}
-              <span className="gradient-text">win</span>
+              <span className="gradient-text">develop elite athletes</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              From player assessments to AI-generated nutrition plans — ProTracker has every tool a modern coach needs.
+              ProTracker combines AI, analytics, and communication tools into one platform built for modern sports teams.
             </p>
           </motion.div>
 
@@ -295,6 +349,58 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* About */}
+      <section id="about" className="py-24 scroll-mt-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+            {/* Left — text + stats */}
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+              <h2 className="text-4xl font-black tracking-tight mb-6">
+                About <span className="gradient-text">ProTracker</span>
+              </h2>
+              <div className="space-y-4 text-gray-400 leading-relaxed">
+                <p>ProTracker is a full-stack sports performance platform designed for coaches and athletes who take performance seriously.</p>
+                <p>Built with modern technology including ASP.NET Core 9, React, PostgreSQL, and the Anthropic Claude AI API, ProTracker gives coaches the tools they need to track, analyze, and improve athlete performance across 5 sports.</p>
+                <p>From AI-generated nutrition plans to injury recovery programs, every feature is designed to save coaches time while giving athletes the personalized attention they need to reach their potential.</p>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10">
+                {ABOUT_STATS.map((s) => (
+                  <div key={s.label} className="rounded-2xl bg-gray-900/50 border border-gray-800 p-4 text-center">
+                    <div className="text-2xl font-black text-white">
+                      {s.countUp === false
+                        ? <span>{s.value}{s.suffix}</span>
+                        : <CountUp value={s.value} suffix={s.suffix} />}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Right — tech stack */}
+            <motion.div
+              initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} custom={1}
+              className="rounded-3xl bg-gray-900/50 border border-gray-800 p-7"
+            >
+              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-6">Built with</h3>
+              <div className="space-y-5">
+                {TECH_STACK.map((t) => (
+                  <div key={t.group}>
+                    <p className="text-xs font-semibold text-gray-400 mb-2">{t.group}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {t.items.map((it) => (
+                        <span key={it} className={clsx('text-xs font-medium px-3 py-1.5 rounded-full border', t.color)}>{it}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials */}
       <section className="py-24">
         <div className="max-w-6xl mx-auto px-6">
@@ -341,6 +447,68 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Contact */}
+      <section id="contact" className="py-24 bg-gray-900/30 scroll-mt-20">
+        <div className="max-w-5xl mx-auto px-6">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="text-center mb-14">
+            <h2 className="text-4xl font-black tracking-tight mb-4">Get in <span className="gradient-text">Touch</span></h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              Have questions about ProTracker? Want to see a demo or discuss how it could work for your team? Reach out.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* GitHub */}
+            <motion.div
+              initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}
+              className="rounded-3xl bg-gray-900/60 border border-gray-800 p-8 flex flex-col"
+            >
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mb-5">
+                <Code2 size={24} className="text-white" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">View Source Code</h3>
+              <p className="text-gray-400 text-sm leading-relaxed flex-1">Explore the full codebase on GitHub.</p>
+              <a
+                href="https://github.com/MajdArow123/protracker"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-semibold text-sm transition-all cursor-pointer"
+              >
+                <Code2 size={16} /> View on GitHub
+              </a>
+            </motion.div>
+
+            {/* Live Demo */}
+            <motion.div
+              initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} custom={1}
+              className="rounded-3xl bg-gradient-to-br from-indigo-600/15 to-purple-600/10 border border-indigo-500/25 p-8 flex flex-col"
+            >
+              <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 mb-5">
+                <Globe size={24} className="text-indigo-300" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Try the Live Demo</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">Log in as a coach or athlete and explore all features for free.</p>
+
+              <div className="mt-4 rounded-xl bg-gray-950/50 border border-gray-800 p-3 text-xs">
+                <p className="text-gray-500">Coach: <span className="text-gray-300 font-mono">coach.soccer@protracker.seed</span></p>
+                <p className="text-gray-500 mt-1">Password: <span className="text-gray-300 font-mono">SeedCoach123!</span></p>
+              </div>
+
+              <button
+                onClick={() => navigate('/login')}
+                className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/25 cursor-pointer"
+              >
+                <Globe size={16} /> Try Demo
+              </button>
+            </motion.div>
+          </div>
+
+          <p className="text-center text-sm text-gray-500 mt-10">
+            Built by <a href="https://github.com/MajdArow123" target="_blank" rel="noopener noreferrer" className="text-gray-300 font-semibold hover:text-indigo-400 transition-colors">Majd Arow</a>
+          </p>
+        </div>
+      </section>
+
       {/* CTA */}
       <section className="py-24">
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -381,9 +549,9 @@ export function LandingPage() {
               <span className="font-bold text-white">ProTracker</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-white transition-colors cursor-pointer">Features</a>
-              <a href="#" className="hover:text-white transition-colors cursor-pointer">About</a>
-              <a href="#" className="hover:text-white transition-colors cursor-pointer">Contact</a>
+              {NAV_LINKS.map((l) => (
+                <button key={l.id} onClick={() => scrollToSection(l.id)} className="hover:text-white transition-colors cursor-pointer">{l.label}</button>
+              ))}
             </div>
             <div className="text-sm text-gray-600">
               Built with Claude AI · © 2026 ProTracker
