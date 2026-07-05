@@ -190,6 +190,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     await ProTracker.Data.RecoveryTemplateSeeder.SeedAsync(db);
+    await ProTracker.Data.FoodItemSeeder.SeedAsync(db);
     await ProTracker.Data.DemoDataSeeder.SeedAsync(scope.ServiceProvider);
 }
 

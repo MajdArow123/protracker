@@ -532,6 +532,22 @@ export interface FoodAlternative {
   fats?: number | null;
 }
 
+// A food scaled to a portion matching the meal item being swapped (see /api/food-alternatives/equivalent).
+export interface EquivalentFood {
+  id: number;
+  foodName: string;
+  category: string;
+  suggestedPortion: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fats: number;
+  isGoodMatch: boolean;
+  matchQuality: 'good' | 'similar' | 'different';
+  originalCalories: number;
+  caloriesDiffPct: number;
+}
+
 export interface PlayerAverageScore {
   playerId: number;
   playerName: string;

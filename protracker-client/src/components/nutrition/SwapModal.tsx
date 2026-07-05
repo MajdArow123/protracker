@@ -1,32 +1,37 @@
 import { useState, useMemo } from 'react';
-import { X, ArrowLeftRight, Search, Check, AlertTriangle, Loader2, ChevronRight } from 'lucide-react';
+import { X, ArrowLeftRight, Search, Check, AlertTriangle, XCircle, Loader2, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
-import type { PlannedMealItem } from '../../types';
-import type { FoodAlternative } from '../../types';
+import type { PlannedMealItem, EquivalentFood } from '../../types';
 import { useSwapMealItem } from '../../hooks/useNutrition';
-import { useFoodAlternatives } from '../../hooks/useReports';
+import { useEquivalentFoods } from '../../hooks/useReports';
 import { useToast } from '../../context/ToastContext';
 
-function pctDiff(a: number, b: number): number {
-  if (a === 0) return 0;
-  return Math.abs(b - a) / a;
-}
+type MatchQuality = 'good' | 'similar' | 'different';
 
-function isGoodMatch(original: PlannedMealItem, food: FoodAlternative): boolean {
-  if (food.calories == null || food.protein == null || food.carbs == null || food.fats == null) return false;
-  return (
-    pctDiff(original.calories, food.calories) <= 0.20 &&
-    pctDiff(original.protein, food.protein) <= 0.25 &&
-    pctDiff(original.carbs, food.carbs) <= 0.25 &&
-    pctDiff(original.fats, food.fats) <= 0.25
-  );
-}
+// Backend already computes matchQuality against the portion-scaled macros; this maps it to UI.
+const MATCH_UI: Record<MatchQuality, { label: string; badge: string; icon: typeof Check }> = {
+  good: {
+    label: 'Good match',
+    badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
+    icon: Check,
+  },
+  similar: {
+    label: 'Similar macros',
+    badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
+    icon: AlertTriangle,
+  },
+  different: {
+    label: 'Different macros',
+    badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
+    icon: XCircle,
+  },
+};
 
 function MacDiff({ label, original, next, color }: { label: string; original: number; next: number; color: string }) {
   const diff = next - original;
   const pct = original > 0 ? ((diff / original) * 100) : 0;
-  const significant = Math.abs(pct) > 20;
+  const significant = Math.abs(pct) > 25;
   return (
     <div className="text-center">
       <p className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${color}`}>{label}</p>
@@ -49,46 +54,35 @@ interface Props {
 export function SwapModal({ item, playerId, onClose }: Props) {
   const { addToast } = useToast();
   const swap = useSwapMealItem(playerId);
-  const { data: library = [], isLoading: loadingLibrary } = useFoodAlternatives();
+  const { data: foods = [], isLoading } = useEquivalentFoods(item);
 
   const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<FoodAlternative | null>(null);
-
-  // Deduplicate by food name (keep first occurrence per unique alternativeFood)
-  const uniqueFoods = useMemo(() => {
-    const seen = new Set<string>();
-    return library.filter(f => {
-      const key = f.alternativeFood.toLowerCase();
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-  }, [library]);
+  const [selected, setSelected] = useState<EquivalentFood | null>(null);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return uniqueFoods;
+    if (!query.trim()) return foods;
     const q = query.toLowerCase();
-    return uniqueFoods.filter(f => f.alternativeFood.toLowerCase().includes(q));
-  }, [uniqueFoods, query]);
+    return foods.filter(f => f.foodName.toLowerCase().includes(q));
+  }, [foods, query]);
 
-  const goodMatch = selected ? isGoodMatch(item, selected) : false;
-  const macrosDiffer = selected && !goodMatch;
+  const goodMatch = selected?.matchQuality === 'good';
+  const notGood = selected && !goodMatch;
 
   async function handleConfirm() {
-    if (!selected || selected.calories == null) return;
+    if (!selected) return;
     try {
       await swap.mutateAsync({
         mealItemId: item.id,
         data: {
-          newFoodName: selected.alternativeFood,
-          newPortion: selected.suggestedPortion ?? '',
-          newCalories: selected.calories ?? 0,
-          newProtein: selected.protein ?? 0,
-          newCarbs: selected.carbs ?? 0,
-          newFats: selected.fats ?? 0,
+          newFoodName: selected.foodName,
+          newPortion: selected.suggestedPortion,
+          newCalories: selected.calories,
+          newProtein: selected.protein,
+          newCarbs: selected.carbs,
+          newFats: selected.fats,
         },
       });
-      addToast(`Swapped to ${selected.alternativeFood}`, 'success');
+      addToast(`Swapped to ${selected.foodName}`, 'success');
       onClose();
     } catch {
       addToast('Swap failed. Please try again.', 'error');
@@ -149,8 +143,8 @@ export function SwapModal({ item, playerId, onClose }: Props) {
 
           {/* Food list */}
           <div className="flex-shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Food Library</p>
-            {loadingLibrary ? (
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Portion-matched to {item.calories} kcal</p>
+            {isLoading ? (
               <div className="flex items-center justify-center py-8 text-gray-400">
                 <Loader2 size={18} className="animate-spin" />
               </div>
@@ -159,7 +153,8 @@ export function SwapModal({ item, playerId, onClose }: Props) {
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
                 {filtered.map(food => {
-                  const match = isGoodMatch(item, food);
+                  const ui = MATCH_UI[food.matchQuality];
+                  const Icon = ui.icon;
                   const isSelected = selected?.id === food.id;
                   return (
                     <button
@@ -174,31 +169,23 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{food.alternativeFood}</p>
-                          {food.suggestedPortion && (
-                            <p className="text-xs text-gray-500 mt-0.5">{food.suggestedPortion}</p>
-                          )}
-                          {food.calories != null && (
-                            <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold">{food.calories} kcal</span>
-                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold">P {food.protein}g</span>
-                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold">C {food.carbs}g</span>
-                              <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold">F {food.fats}g</span>
-                            </div>
-                          )}
+                          <p className="font-bold text-gray-900 dark:text-white text-sm truncate">{food.foodName}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{food.suggestedPortion}</p>
+                          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold">{food.calories} kcal</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-semibold">P {food.protein}g</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-semibold">C {food.carbs}g</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold">F {food.fats}g</span>
+                          </div>
                         </div>
                         <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                          {food.calories != null && (
-                            <span className={clsx(
-                              'text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1',
-                              match
-                                ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300'
-                                : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                            )}>
-                              {match ? <Check size={9} /> : <AlertTriangle size={9} />}
-                              {match ? 'Good match' : 'Different macros'}
-                            </span>
-                          )}
+                          <span className={clsx(
+                            'text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1',
+                            ui.badge
+                          )}>
+                            <Icon size={9} />
+                            {ui.label}
+                          </span>
                           {isSelected && (
                             <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                               <Check size={10} className="text-white" />
@@ -215,7 +202,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
 
           {/* Comparison section */}
           <AnimatePresence>
-            {selected && selected.calories != null && (
+            {selected && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -228,16 +215,16 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                   <div className="grid grid-cols-5 gap-2">
                     <div className="text-center">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Calories</p>
-                      <p className={clsx('text-base font-black', pctDiff(item.calories, selected.calories!) > 0.20 ? 'text-amber-500' : 'text-gray-900 dark:text-white')}>{selected.calories}</p>
+                      <p className={clsx('text-base font-black', selected.caloriesDiffPct > 20 ? 'text-amber-500' : 'text-gray-900 dark:text-white')}>{selected.calories}</p>
                       {selected.calories !== item.calories && (
-                        <p className={clsx('text-[10px] font-semibold', selected.calories! > item.calories ? 'text-emerald-500' : 'text-red-500')}>
-                          {selected.calories! > item.calories ? '+' : ''}{selected.calories! - item.calories}
+                        <p className={clsx('text-[10px] font-semibold', selected.calories > item.calories ? 'text-emerald-500' : 'text-red-500')}>
+                          {selected.calories > item.calories ? '+' : ''}{selected.calories - item.calories}
                         </p>
                       )}
                     </div>
-                    <MacDiff label="Protein" original={item.protein} next={selected.protein ?? 0} color="text-blue-500" />
-                    <MacDiff label="Carbs" original={item.carbs} next={selected.carbs ?? 0} color="text-amber-500" />
-                    <MacDiff label="Fats" original={item.fats} next={selected.fats ?? 0} color="text-red-500" />
+                    <MacDiff label="Protein" original={item.protein} next={selected.protein} color="text-blue-500" />
+                    <MacDiff label="Carbs" original={item.carbs} next={selected.carbs} color="text-amber-500" />
+                    <MacDiff label="Fats" original={item.fats} next={selected.fats} color="text-red-500" />
                     <div className="flex items-center justify-center">
                       {goodMatch ? (
                         <span className="text-emerald-500"><Check size={18} /></span>
@@ -248,9 +235,13 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                   </div>
                   <p className={clsx(
                     'text-xs font-semibold mt-2',
-                    goodMatch ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    goodMatch ? 'text-emerald-600 dark:text-emerald-400'
+                      : selected.matchQuality === 'similar' ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-red-600 dark:text-red-400'
                   )}>
-                    {goodMatch ? '✓ Macros are similar' : 'Macros differ significantly from original'}
+                    {goodMatch ? '✓ Macros are similar'
+                      : selected.matchQuality === 'similar' ? 'Macros are close but not identical'
+                      : 'Macros differ significantly from original'}
                   </p>
                 </div>
               </motion.div>
@@ -260,7 +251,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
 
         {/* Footer */}
         <div className="px-4 pb-4 flex-shrink-0 space-y-2">
-          {macrosDiffer && (
+          {notGood && (
             <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <AlertTriangle size={13} className="text-amber-500 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
@@ -270,7 +261,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
           )}
           <button
             onClick={handleConfirm}
-            disabled={!selected || selected.calories == null || swap.isPending}
+            disabled={!selected || swap.isPending}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer"
           >
             {swap.isPending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}

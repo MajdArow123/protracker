@@ -68,6 +68,25 @@ public class FoodAlternativeDto
     public int? Fats { get; set; }
 }
 
+// Returned by GET /api/food-alternatives/equivalent — a food from the per-100g library
+// already scaled to a portion that matches the calories of the meal item being swapped.
+public class EquivalentFoodDto
+{
+    public int Id { get; set; }
+    public string FoodName { get; set; } = "";
+    public string Category { get; set; } = "";
+    public string SuggestedPortion { get; set; } = "";
+    public int Calories { get; set; }
+    public int Protein { get; set; }
+    public int Carbs { get; set; }
+    public int Fats { get; set; }
+    public bool IsGoodMatch { get; set; }
+    // "good" | "similar" | "different" — drives the green/amber/red badge in the swap modal.
+    public string MatchQuality { get; set; } = "different";
+    public int OriginalCalories { get; set; }
+    public double CaloriesDiffPct { get; set; }
+}
+
 // ── Weekly Nutrition Plan DTOs ───────────────────────────────────────────────
 
 public class PlannedMealItemDto

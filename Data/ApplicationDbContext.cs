@@ -69,6 +69,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<NutritionGuidance> NutritionGuidances => Set<NutritionGuidance>();
     public DbSet<PlayerNutritionProfile> PlayerNutritionProfiles => Set<PlayerNutritionProfile>();
     public DbSet<FoodAlternativesLibrary> FoodAlternativesLibrary => Set<FoodAlternativesLibrary>();
+    public DbSet<FoodItem> FoodItems => Set<FoodItem>();
     public DbSet<TrainingSession> TrainingSessions => Set<TrainingSession>();
     public DbSet<MatchPerformance> MatchPerformances => Set<MatchPerformance>();
     public DbSet<InjuryRecord> InjuryRecords => Set<InjuryRecord>();
