@@ -2,9 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import {
   Users, Shield, ClipboardList, TrendingUp, ArrowRight,
-  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X,
+  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X, CalendarRange, Star,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
+import { useActiveSeasons } from '../../hooks/useSeasons';
 import { useActiveInjuries } from '../../hooks/useInjuries';
 import { useCoachTasks } from '../../hooks/useTasks';
 import { isSeen, markSeen, injuryKey, useSeenVersion } from '../../utils/seenNotifications';
@@ -74,6 +75,7 @@ export function CoachDashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useCoachDashboard();
+  const { data: activeSeasons = [] } = useActiveSeasons();
   const { data: activeInjuries = [] } = useActiveInjuries();
   const { data: allTasks = [] } = useCoachTasks();
   const overdueTasks = allTasks.filter(t => !t.isCompleted && t.dueDate && new Date(t.dueDate).getTime() < Date.now());
@@ -183,6 +185,37 @@ export function CoachDashboardPage() {
           </motion.div>
         ))}
       </div>
+
+      {/* Current season(s) across the coach's teams */}
+      {activeSeasons.length > 0 && (
+        <motion.div custom={4.5} initial="hidden" animate="show" variants={fadeUp}>
+          <div className="flex items-center gap-2 mb-3">
+            <CalendarRange size={18} className="text-indigo-500" />
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Current Season</h3>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeSeasons.map(s => (
+              <button
+                key={s.id}
+                onClick={() => navigate(`/teams/${s.teamId}`)}
+                className="text-left rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-gray-900 p-4 hover:shadow-md transition-all cursor-pointer"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">{s.teamName}</span>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white flex-shrink-0">
+                    <Star size={9} className="fill-current" /> CURRENT
+                  </span>
+                </div>
+                <p className="font-bold text-gray-900 dark:text-white mt-1">{s.name}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {new Date(s.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} – {new Date(s.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+                  {' · '}{s.linkedPeriodCount} period{s.linkedPeriodCount === 1 ? '' : 's'}
+                </p>
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Teams */}
       <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>

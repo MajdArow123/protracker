@@ -158,6 +158,7 @@ builder.Services.AddScoped<ITeamAnnouncementService, TeamAnnouncementService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IRecoveryPlanService, RecoveryPlanService>();
 builder.Services.AddScoped<IWellbeingService, WellbeingService>();
+builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanService>();

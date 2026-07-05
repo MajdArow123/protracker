@@ -203,6 +203,57 @@ export interface AssessmentPeriod {
   startDate: string;
   endDate: string;
   teamId: number;
+  seasonId?: number | null;
+}
+
+export interface Season {
+  id: number;
+  teamId: number;
+  teamName: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  goals?: string | null;
+  linkedPeriodCount: number;
+}
+
+export interface CreateSeasonInput {
+  name: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  goals?: string | null;
+}
+
+export interface SeasonPeriodPoint {
+  periodId: number;
+  periodName: string;
+  startDate: string;
+  average: number;
+  isLinked: boolean;
+}
+
+export interface SeasonCategoryTrend {
+  category: string;
+  startAverage: number;
+  endAverage: number;
+  improvement: number;
+}
+
+export interface SeasonSummary {
+  seasonId: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  hasData: boolean;
+  startPeriodName?: string | null;
+  endPeriodName?: string | null;
+  startAverage: number;
+  endAverage: number;
+  improvement: number;
+  categoryTrends: SeasonCategoryTrend[];
+  points: SeasonPeriodPoint[];
 }
 
 export type TaskPriority = 'Low' | 'Medium' | 'High';

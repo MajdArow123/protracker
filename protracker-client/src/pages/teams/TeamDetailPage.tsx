@@ -15,13 +15,14 @@ import { formatHeight, formatWeight, getStoredHeightUnit, getStoredWeightUnit } 
 import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection';
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
 import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
+import { TeamSeasonsSection } from '../../components/seasons/TeamSeasonsSection';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
-  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star,
+  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange,
 } from 'lucide-react';
 
-type TeamTab = 'overview' | 'schedule' | 'matches';
+type TeamTab = 'overview' | 'schedule' | 'matches' | 'seasons';
 
 const SPORT_HEADER_COLORS: Record<string, string> = {
   Football: 'from-green-600 via-emerald-600 to-green-700',
@@ -182,7 +183,7 @@ export function TeamDetailPage() {
       {/* Section tabs */}
       <div className="px-4 lg:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
-          {([['overview', 'Overview', Users], ['schedule', 'Schedule', Calendar], ['matches', 'Matches', Star]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
+          {([['overview', 'Overview', Users], ['schedule', 'Schedule', Calendar], ['matches', 'Matches', Star], ['seasons', 'Seasons', CalendarRange]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTeamTab(id)}
@@ -208,6 +209,12 @@ export function TeamDetailPage() {
       {teamTab === 'matches' && (
         <div className="p-4 lg:p-6">
           <TeamMatchesSection teamId={teamId} sportName={team.sportName} players={teamPlayers.map(p => ({ id: p.id, name: p.fullName }))} isCoach={isCoach} />
+        </div>
+      )}
+
+      {teamTab === 'seasons' && (
+        <div className="p-4 lg:p-6">
+          <TeamSeasonsSection teamId={teamId} isCoach={isCoach} />
         </div>
       )}
 

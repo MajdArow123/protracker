@@ -7,6 +7,7 @@ public class AssessmentPeriodDto
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public int TeamId { get; set; }
+    public int? SeasonId { get; set; }
 }
 
 public class CreateAssessmentPeriodDto

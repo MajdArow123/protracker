@@ -16,5 +16,9 @@ public class AssessmentPeriod
     public int TeamId { get; set; }
     public Team Team { get; set; } = null!;
 
+    // Optional link to a Season, so a season summary can span the periods within it.
+    public int? SeasonId { get; set; }
+    public Season? Season { get; set; }
+
     public List<PlayerAssessment> PlayerAssessments { get; set; } = new();
 }

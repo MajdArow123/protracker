@@ -186,7 +186,7 @@ public class AssessmentService : IAssessmentService
     };
 
     private static System.Linq.Expressions.Expression<Func<AssessmentPeriod, AssessmentPeriodDto>> ToPeriodDtoExpr() =>
-        p => new AssessmentPeriodDto { Id = p.Id, Name = p.Name, StartDate = p.StartDate, EndDate = p.EndDate, TeamId = p.TeamId };
+        p => new AssessmentPeriodDto { Id = p.Id, Name = p.Name, StartDate = p.StartDate, EndDate = p.EndDate, TeamId = p.TeamId, SeasonId = p.SeasonId };
 
     private static PlayerAssessmentDto ToAssessmentDto(PlayerAssessment a) => new()
     {

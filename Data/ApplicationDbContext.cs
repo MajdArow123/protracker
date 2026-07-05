@@ -63,6 +63,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Player> Players => Set<Player>();
     public DbSet<CoachTeamScope> CoachTeamScopes => Set<CoachTeamScope>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
+    public DbSet<Season> Seasons => Set<Season>();
     public DbSet<PlayerAssessment> PlayerAssessments => Set<PlayerAssessment>();
     public DbSet<PlayerStatScore> PlayerStatScores => Set<PlayerStatScore>();
     public DbSet<ImprovementPlan> ImprovementPlans => Set<ImprovementPlan>();
@@ -146,6 +147,19 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasOne(a => a.Team)
             .WithMany(t => t.AssessmentPeriods)
             .HasForeignKey(a => a.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Deleting a season unlinks its assessment periods (SetNull) rather than deleting them.
+        builder.Entity<AssessmentPeriod>()
+            .HasOne(a => a.Season)
+            .WithMany(s => s.AssessmentPeriods)
+            .HasForeignKey(a => a.SeasonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<Season>()
+            .HasOne(s => s.Team)
+            .WithMany()
+            .HasForeignKey(s => s.TeamId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<PlayerAssessment>()
