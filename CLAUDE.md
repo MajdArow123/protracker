@@ -272,8 +272,29 @@ earlier `DELETE /api/messages/{id}`).
   `<title>`/description/OG/Twitter meta + branded "PT" `favicon.svg`; fixed a
   PlayerReportPage keyless-Fragment warning.
 
+## Password reset flow (COMPLETE, deployed)
+
+Forgot-password / reset-password with our own `PasswordResetToken` table (migration
+`AddPasswordResetTokens`; URL-safe 32-byte token, 1h expiry, `IsUsed`). `AuthService`:
+`ForgotPasswordAsync` (generic response — no email enumeration; **3 tokens/user/hour**
+rate limit), `ValidateResetTokenAsync`, `ResetPasswordAsync` (validates the password
+**before** `RemovePassword`+`AddPassword`, marks the token used, invalidates the user's
+other tokens). Endpoints (all `[AllowAnonymous]`): `POST /api/auth/forgot-password`,
+`GET /api/auth/validate-reset-token?token=`, `POST /api/auth/reset-password`.
+`EmailService` (MailKit) sends a branded HTML email over SMTP and **falls back to
+logging the reset URL** when SMTP isn't configured or send fails — so prod (no email
+provider) logs `[PasswordReset] ... Reset link: {url}` to Railway logs. Frontend:
+`/forgot-password` + `/reset-password` (validates token on mount; Weak/Fair/Strong
+meter; disabled-until-valid) + a "Forgot your password?" link on login. Env vars:
+`FRONTEND_URL`, `SMTP_HOST/PORT/USER/PASS`, `EMAIL_FROM`.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
+- **Identity password rules were set explicitly** in `Program.cs` (`options.Password`):
+  **min 8, one uppercase, one digit** — lowercase/non-alphanumeric NOT required. This
+  keeps registration + password-reset consistent and matches the frontend strength meter.
+  Changing the options does NOT invalidate existing password hashes (login still works);
+  it only affects new registrations/resets. Seed password `SeedCoach123!` still satisfies.
 - **`npx tsc --noEmit -p tsconfig.json` is a SILENT NO-OP.** Root `tsconfig.json` is a
   solution file (`"files": []`, references `tsconfig.app.json`/`tsconfig.node.json`).
   That command reports zero errors even when the code doesn't compile. Always verify
