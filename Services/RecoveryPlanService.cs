@@ -37,11 +37,27 @@ public class RecoveryPlanService : IRecoveryPlanService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IPushService _push;
 
-    public RecoveryPlanService(ApplicationDbContext context, IAccessControlService access)
+    public RecoveryPlanService(ApplicationDbContext context, IAccessControlService access, IPushService push)
     {
         _context = context;
         _access = access;
+        _push = push;
+    }
+
+    // Push the athlete a heads-up that a recovery program is ready for them.
+    private async Task NotifyPlayerAsync(int playerId, string title)
+    {
+        var userId = await _context.Players.Where(p => p.Id == playerId).Select(p => p.UserId).FirstOrDefaultAsync();
+        if (!string.IsNullOrEmpty(userId))
+            _push.SendToUser(userId, new PushPayload
+            {
+                Title = "Recovery program ready",
+                Body = title,
+                Url = "/player-dashboard",
+                Tag = $"recovery-{playerId}",
+            });
     }
 
     public async Task<RecoveryPlanDto?> GetForInjuryAsync(ClaimsPrincipal user, int injuryId)
@@ -87,6 +103,7 @@ public class RecoveryPlanService : IRecoveryPlanService
         };
         _context.InjuryRecoveryPlans.Add(plan);
         await _context.SaveChangesAsync();
+        await NotifyPlayerAsync(plan.PlayerId, plan.Title);
         return await ToDtoAsync(await LoadAsync(plan.Id));
     }
 
@@ -195,6 +212,7 @@ public class RecoveryPlanService : IRecoveryPlanService
         };
         _context.InjuryRecoveryPlans.Add(plan);
         await _context.SaveChangesAsync();
+        await NotifyPlayerAsync(plan.PlayerId, plan.Title);
         return await ToDtoAsync(await LoadAsync(plan.Id));
     }
 

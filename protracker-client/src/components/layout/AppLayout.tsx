@@ -6,6 +6,7 @@ import { Navbar } from './Navbar';
 import { BottomNav } from './BottomNav';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
 import { useToast } from '../../context/ToastContext';
+import { PushPrompt } from '../PushPrompt';
 
 // Toasts when the unread-message count rises while the user isn't on the Messages page.
 function useNewMessageToast() {
@@ -48,6 +49,7 @@ export function AppLayout() {
             content is never hidden behind it. Hidden on md+ (sidebar takes over). */}
         <BottomNav />
       </div>
+      <PushPrompt />
     </div>
   );
 }

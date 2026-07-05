@@ -23,11 +23,13 @@ public class PlayerTaskService : IPlayerTaskService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IPushService _push;
 
-    public PlayerTaskService(ApplicationDbContext context, IAccessControlService access)
+    public PlayerTaskService(ApplicationDbContext context, IAccessControlService access, IPushService push)
     {
         _context = context;
         _access = access;
+        _push = push;
     }
 
     public async Task<List<PlayerTaskDto>> GetForCoachAsync(ClaimsPrincipal user, int? playerId, bool? completed, TaskPriority? priority)
@@ -95,6 +97,17 @@ public class PlayerTaskService : IPlayerTaskService
         await _context.SaveChangesAsync();
 
         await _context.Entry(task).Reference(t => t.Player).LoadAsync();
+
+        // Notify the athlete their coach assigned a task.
+        if (!string.IsNullOrEmpty(task.Player.UserId))
+            _push.SendToUser(task.Player.UserId, new PushPayload
+            {
+                Title = "New task assigned",
+                Body = $"{task.Priority} · {task.Title}",
+                Url = "/player-dashboard/tasks",
+                Tag = $"task-{task.Id}",
+            });
+
         return ToDto(task);
     }
 

@@ -20,11 +20,13 @@ public class TeamAnnouncementService : ITeamAnnouncementService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IPushService _push;
 
-    public TeamAnnouncementService(ApplicationDbContext context, IAccessControlService access)
+    public TeamAnnouncementService(ApplicationDbContext context, IAccessControlService access, IPushService push)
     {
         _context = context;
         _access = access;
+        _push = push;
     }
 
     public async Task<List<TeamAnnouncementDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
@@ -66,6 +68,20 @@ public class TeamAnnouncementService : ITeamAnnouncementService
         _context.TeamAnnouncements.Add(announcement);
         await _context.SaveChangesAsync();
         await _context.Entry(announcement).Reference(a => a.Team).LoadAsync();
+
+        // Notify every athlete on the team.
+        var athleteUserIds = await _context.Players
+            .Where(p => p.TeamId == teamId && p.UserId != null)
+            .Select(p => p.UserId!)
+            .ToListAsync();
+        _push.SendToUsers(athleteUserIds, new PushPayload
+        {
+            Title = $"📣 {announcement.Team.Name}: {announcement.Title}",
+            Body = announcement.Content.Length > 120 ? announcement.Content[..120] + "…" : announcement.Content,
+            Url = "/player-dashboard",
+            Tag = $"announcement-{announcement.Id}",
+        });
+
         return ToDto(announcement);
     }
 

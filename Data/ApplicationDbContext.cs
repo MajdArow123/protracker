@@ -66,6 +66,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
     public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
+    public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<PlayerAssessment> PlayerAssessments => Set<PlayerAssessment>();
     public DbSet<PlayerStatScore> PlayerStatScores => Set<PlayerStatScore>();
     public DbSet<ImprovementPlan> ImprovementPlans => Set<ImprovementPlan>();
@@ -182,6 +183,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<ParentInvite>()
             .HasIndex(i => i.Token)
+            .IsUnique();
+
+        builder.Entity<PushSubscription>()
+            .HasIndex(s => s.Endpoint)
             .IsUnique();
 
         builder.Entity<PlayerAssessment>()

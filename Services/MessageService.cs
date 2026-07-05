@@ -34,13 +34,15 @@ public class MessageService : IMessageService
     private readonly IAccessControlService _access;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly IHubContext<ChatHub> _hub;
+    private readonly IPushService _push;
 
-    public MessageService(ApplicationDbContext context, IAccessControlService access, UserManager<ApplicationUser> userManager, IHubContext<ChatHub> hub)
+    public MessageService(ApplicationDbContext context, IAccessControlService access, UserManager<ApplicationUser> userManager, IHubContext<ChatHub> hub, IPushService push)
     {
         _context = context;
         _access = access;
         _userManager = userManager;
         _hub = hub;
+        _push = push;
     }
 
     public async Task<List<ContactDto>> GetContactsAsync(ClaimsPrincipal user)
@@ -147,6 +149,16 @@ public class MessageService : IMessageService
         // for the receiver and the sender's for the sender.
         await _hub.Clients.Group(dto.ReceiverId).SendAsync("ReceiveMessage", ToDto(message, dto.ReceiverId));
         await _hub.Clients.Group(userId).SendAsync("ReceiveMessage", ToDto(message, userId));
+
+        // Browser push for when the recipient's app is closed/backgrounded.
+        var senderName = (await _userManager.FindByIdAsync(userId))?.DisplayName ?? "Someone";
+        _push.SendToUser(dto.ReceiverId, new PushPayload
+        {
+            Title = $"New message from {senderName}",
+            Body = message.Content.Length > 120 ? message.Content[..120] + "…" : message.Content,
+            Url = "/messages",
+            Tag = $"msg-{Message.BuildConversationId(userId, dto.ReceiverId)}",
+        });
 
         return ToDto(message, userId);
     }
