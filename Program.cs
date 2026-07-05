@@ -85,12 +85,18 @@ builder.Services.AddAuthentication()
             NameClaimType = ClaimTypes.NameIdentifier
         };
 
-        // The access token never lives in localStorage — read it from the HttpOnly cookie instead.
+        // Read the access token from the HttpOnly cookie (REST) or, for the SignalR hub, from the
+        // `access_token` query string — the WebSocket handshake can't set an Authorization header,
+        // so the JS client passes the token this way via accessTokenFactory.
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
             {
-                if (context.Request.Cookies.TryGetValue(JwtSettings.AccessTokenCookieName, out var token))
+                var path = context.HttpContext.Request.Path;
+                var queryToken = context.Request.Query["access_token"];
+                if (path.StartsWithSegments("/hubs") && !string.IsNullOrEmpty(queryToken))
+                    context.Token = queryToken;
+                else if (context.Request.Cookies.TryGetValue(JwtSettings.AccessTokenCookieName, out var token))
                     context.Token = token;
                 return Task.CompletedTask;
             }
@@ -160,6 +166,7 @@ builder.Services.AddScoped<IRecoveryPlanService, RecoveryPlanService>();
 builder.Services.AddScoped<IWellbeingService, WellbeingService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
+builder.Services.AddSignalR();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanService>();
@@ -220,6 +227,7 @@ app.MapGet("/api/health", () => Results.Ok(new { status = "healthy" }));
 app.MapGet("/", () => Results.Json(new { message = "ProTracker API", version = "1.0", docs = "/api" }));
 
 app.MapControllers();
+app.MapHub<ProTracker.Hubs.ChatHub>("/hubs/chat");
 
 app.Run();
 

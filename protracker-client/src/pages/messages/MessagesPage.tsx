@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { clsx } from 'clsx';
 import { Send, Search, MessageSquare, ArrowLeft } from 'lucide-react';
 import { useConversations, useContacts, useConversation, useSendMessage, useMarkConversationRead } from '../../hooks/useMessages';
+import { useChatRealtime } from '../../context/ChatRealtimeContext';
 import type { Conversation, MessageContact, Message } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Skeleton, SkeletonAvatar } from '../../components/ui/Skeleton';
@@ -40,6 +41,7 @@ export function MessagesPage() {
   const [draft, setDraft] = useState('');
   const markRead = useMarkConversationRead();
   const sendMessage = useSendMessage();
+  const { isOnline, typingUsers, sendTyping, stopTyping } = useChatRealtime();
   const { data: messages = [] } = useConversation(selectedId);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -65,6 +67,7 @@ export function MessagesPage() {
   }, [conversations, contacts, search]);
 
   const selected = partners.find(p => p.userId === selectedId) ?? null;
+  const partnerTyping = !!selectedId && typingUsers.has(selectedId);
 
   // Mark read when opening / when new messages arrive in the open conversation.
   useEffect(() => {
@@ -74,15 +77,16 @@ export function MessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, messages.length]);
 
-  // Auto-scroll to bottom on new messages / conversation switch.
+  // Auto-scroll to bottom on new messages / conversation switch / typing indicator.
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'auto' });
-  }, [messages.length, selectedId]);
+  }, [messages.length, selectedId, partnerTyping]);
 
   function handleSend() {
     const text = draft.trim();
     if (!text || !selectedId) return;
     setDraft('');
+    stopTyping(selectedId);
     sendMessage.mutate({ receiverId: selectedId, content: text });
   }
 
@@ -118,6 +122,7 @@ export function MessagesPage() {
                 <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
                   {initials(p.name)}
                 </div>
+                {isOnline(p.userId) && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" title="Online" />}
                 {p.unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-white dark:ring-gray-900" />}
               </div>
               <div className="min-w-0 flex-1">
@@ -147,12 +152,20 @@ export function MessagesPage() {
           <>
             <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
               <button onClick={() => setSelectedId(null)} className="sm:hidden p-1 text-gray-500 cursor-pointer"><ArrowLeft size={18} /></button>
-              <div className="w-9 h-9 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
-                {initials(selected.name)}
+              <div className="relative">
+                <div className="w-9 h-9 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+                  {initials(selected.name)}
+                </div>
+                {isOnline(selected.userId) && <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" />}
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{selected.name}</p>
-                <div className="mt-1"><RoleBadge role={selected.role} /></div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{selected.name}</p>
+                  <RoleBadge role={selected.role} />
+                </div>
+                <p className={clsx('text-xs mt-0.5', partnerTyping ? 'text-indigo-500 font-medium' : isOnline(selected.userId) ? 'text-emerald-500' : 'text-gray-400')}>
+                  {partnerTyping ? 'typing…' : isOnline(selected.userId) ? 'Online' : 'Offline'}
+                </p>
               </div>
             </div>
 
@@ -183,6 +196,15 @@ export function MessagesPage() {
                   </div>
                 );
               })}
+              {partnerTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-200 dark:bg-gray-800 rounded-2xl rounded-bl-sm px-3.5 py-2.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              )}
               <div ref={bottomRef} />
             </div>
 
@@ -190,7 +212,7 @@ export function MessagesPage() {
               <div className="flex items-end gap-2">
                 <textarea
                   value={draft}
-                  onChange={e => setDraft(e.target.value)}
+                  onChange={e => { setDraft(e.target.value); if (selectedId && e.target.value) sendTyping(selectedId); }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   rows={1}
                   placeholder="Type a message… (Enter to send, Shift+Enter for new line)"

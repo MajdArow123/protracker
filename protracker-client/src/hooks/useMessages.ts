@@ -7,7 +7,7 @@ export function useConversations(enabled = true) {
     queryKey: ['messages', 'conversations'],
     queryFn: messagesApi.getConversations,
     enabled,
-    refetchInterval: 10_000, // conversation list refresh
+    // Live updates arrive over SignalR (ChatRealtimeProvider invalidates this key on ReceiveMessage).
   });
 }
 
@@ -24,7 +24,7 @@ export function useConversation(otherUserId: string | null) {
     queryKey: ['messages', 'conversation', otherUserId],
     queryFn: () => messagesApi.getConversation(otherUserId!),
     enabled: !!otherUserId,
-    refetchInterval: 5_000, // near-real-time feel
+    // Real-time: new messages are pushed via SignalR, which invalidates this key.
   });
 }
 
@@ -35,7 +35,7 @@ export function useUnreadMessageCount() {
     queryKey: ['messages', 'unread-count'],
     queryFn: messagesApi.getUnreadCount,
     enabled: !!user && user.role !== 'Parent',
-    refetchInterval: 10_000,
+    // Updated in real time via SignalR; no interval needed.
   });
 }
 

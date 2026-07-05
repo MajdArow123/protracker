@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ToastProvider } from './context/ToastContext';
+import { ChatRealtimeProvider } from './context/ChatRealtimeContext';
 import { ToastContainer } from './components/ui/Toast';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProtectedRoute } from './components/layout/ProtectedRoute';
@@ -131,13 +132,15 @@ export default function App() {
         <ThemeProvider>
           <ToastProvider>
             <AuthProvider>
-              <BrowserRouter>
-                <ScrollToTop />
-                <RouteProgressBar />
-                <OfflineBanner />
-                <AppRoutes />
-                <ToastContainer />
-              </BrowserRouter>
+              <ChatRealtimeProvider>
+                <BrowserRouter>
+                  <ScrollToTop />
+                  <RouteProgressBar />
+                  <OfflineBanner />
+                  <AppRoutes />
+                  <ToastContainer />
+                </BrowserRouter>
+              </ChatRealtimeProvider>
             </AuthProvider>
           </ToastProvider>
         </ThemeProvider>

@@ -1,9 +1,11 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Common;
 using ProTracker.Data;
 using ProTracker.Dtos;
+using ProTracker.Hubs;
 using ProTracker.Models;
 
 namespace ProTracker.Services;
@@ -31,12 +33,14 @@ public class MessageService : IMessageService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IHubContext<ChatHub> _hub;
 
-    public MessageService(ApplicationDbContext context, IAccessControlService access, UserManager<ApplicationUser> userManager)
+    public MessageService(ApplicationDbContext context, IAccessControlService access, UserManager<ApplicationUser> userManager, IHubContext<ChatHub> hub)
     {
         _context = context;
         _access = access;
         _userManager = userManager;
+        _hub = hub;
     }
 
     public async Task<List<ContactDto>> GetContactsAsync(ClaimsPrincipal user)
@@ -137,6 +141,13 @@ public class MessageService : IMessageService
         };
         _context.Messages.Add(message);
         await _context.SaveChangesAsync();
+
+        // Push to the recipient (all their devices) and echo to the sender's other tabs. The DTO's
+        // read/isMine flags are relative to the receiver, so build it from the receiver's viewpoint
+        // for the receiver and the sender's for the sender.
+        await _hub.Clients.Group(dto.ReceiverId).SendAsync("ReceiveMessage", ToDto(message, dto.ReceiverId));
+        await _hub.Clients.Group(userId).SendAsync("ReceiveMessage", ToDto(message, userId));
+
         return ToDto(message, userId);
     }
 
