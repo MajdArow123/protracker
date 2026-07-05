@@ -26,21 +26,24 @@ public class ParentService : IParentService
     private readonly IEmailService _email;
     private readonly IConfiguration _config;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IBillingService _billing;
 
     public ParentService(
         ApplicationDbContext context, IAccessControlService access, IEmailService email,
-        IConfiguration config, UserManager<ApplicationUser> userManager)
+        IConfiguration config, UserManager<ApplicationUser> userManager, IBillingService billing)
     {
         _context = context;
         _access = access;
         _email = email;
         _config = config;
         _userManager = userManager;
+        _billing = billing;
     }
 
     public async Task<ParentInviteResultDto> InviteAsync(ClaimsPrincipal coach, CreateParentInviteDto dto)
     {
         await _access.EnsureCanAccessPlayerAsync(coach, dto.PlayerId);
+        await _billing.EnsureParentPortalAllowedAsync(coach);
         var email = dto.Email.Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
             throw new ValidationApiException("A valid parent email is required.");

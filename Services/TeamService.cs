@@ -21,11 +21,13 @@ public class TeamService : ITeamService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IBillingService _billing;
 
-    public TeamService(ApplicationDbContext context, IAccessControlService access)
+    public TeamService(ApplicationDbContext context, IAccessControlService access, IBillingService billing)
     {
         _context = context;
         _access = access;
+        _billing = billing;
     }
 
     public async Task<List<TeamDto>> GetAccessibleTeamsAsync(ClaimsPrincipal user)
@@ -64,6 +66,7 @@ public class TeamService : ITeamService
     public async Task<TeamDto> CreateAsync(ClaimsPrincipal user, TeamCreateDto dto)
     {
         var coachId = _access.RequireUserId(user);
+        await _billing.EnsureCanCreateTeamAsync(user);
 
         if (!await _context.Sports.AnyAsync(s => s.Id == dto.SportId))
             throw new ValidationApiException($"Sport {dto.SportId} does not exist.");

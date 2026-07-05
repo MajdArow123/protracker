@@ -21,7 +21,7 @@ import {
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
   ReportsPage, PlayerReportPage, TeamReportPage, ComparePlayersPage,
-  TasksPage, TaskAnalyticsPage, CoachProfilePage,
+  TasksPage, TaskAnalyticsPage, CoachProfilePage, BillingPage,
   PlayerDashboardPage, PlayerStatsPage, PlayerNutritionDashPage,
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
@@ -89,6 +89,7 @@ function AppRoutes() {
             <Route path="/reports/compare" element={<ComparePlayersPage />} />
             <Route path="/nutrition/food-alternatives" element={<FoodAlternativesPage />} />
             <Route path="/profile" element={<CoachProfilePage />} />
+            <Route path="/settings/billing" element={<BillingPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['Athlete']} />}>
             <Route

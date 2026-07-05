@@ -18,6 +18,13 @@ public class UnauthorizedApiException : Exception
     public UnauthorizedApiException(string message = "Authentication is required.") : base(message) { }
 }
 
+// The action is blocked by the coach's current plan. Maps to 402 so the frontend can
+// distinguish "upgrade needed" from a plain authorization failure.
+public class PlanLimitApiException : Exception
+{
+    public PlanLimitApiException(string message) : base(message) { }
+}
+
 public class ValidationApiException : Exception
 {
     public List<string> Errors { get; }

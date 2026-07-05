@@ -21,11 +21,13 @@ public class PlayerService : IPlayerService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IBillingService _billing;
 
-    public PlayerService(ApplicationDbContext context, IAccessControlService access)
+    public PlayerService(ApplicationDbContext context, IAccessControlService access, IBillingService billing)
     {
         _context = context;
         _access = access;
+        _billing = billing;
     }
 
     public async Task<List<PlayerDto>> GetAccessiblePlayersAsync(ClaimsPrincipal user)
@@ -61,6 +63,7 @@ public class PlayerService : IPlayerService
     public async Task<PlayerProfileDto> CreateAsync(ClaimsPrincipal user, PlayerCreateDto dto)
     {
         await _access.EnsureCanAccessTeamAsync(user, dto.TeamId);
+        await _billing.EnsureCanAddPlayerAsync(user);
 
         var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == dto.TeamId)
             ?? throw new NotFoundApiException($"Team {dto.TeamId} was not found.");

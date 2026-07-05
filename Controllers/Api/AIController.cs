@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Common;
 using ProTracker.Data;
@@ -13,13 +14,14 @@ namespace ProTracker.Controllers.Api;
 
 [Route("api/ai")]
 [Authorize(Roles = "Coach,Admin")]
-public class AIController : ApiControllerBase
+public class AIController : ApiControllerBase, IAsyncActionFilter
 {
     private readonly ApplicationDbContext _context;
     private readonly IAIService _ai;
     private readonly IAccessControlService _access;
     private readonly IWeeklyNutritionPlanService _weeklyPlanService;
     private readonly IRecoveryPlanService _recoveryPlanService;
+    private readonly IBillingService _billing;
     private readonly ILogger<AIController> _logger;
 
     public AIController(
@@ -28,6 +30,7 @@ public class AIController : ApiControllerBase
         IAccessControlService access,
         IWeeklyNutritionPlanService weeklyPlanService,
         IRecoveryPlanService recoveryPlanService,
+        IBillingService billing,
         ILogger<AIController> logger)
     {
         _context = context;
@@ -35,7 +38,17 @@ public class AIController : ApiControllerBase
         _access = access;
         _weeklyPlanService = weeklyPlanService;
         _recoveryPlanService = recoveryPlanService;
+        _billing = billing;
         _logger = logger;
+    }
+
+    // Every AI endpoint requires a plan with AI enabled (Pro/Team). Gate them all in one place —
+    // the controller acts as its own action filter.
+    [NonAction]
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+    {
+        await _billing.EnsureAiAllowedAsync(User);
+        await next();
     }
 
     // ─── Improvement Plan ────────────────────────────────────────────────────

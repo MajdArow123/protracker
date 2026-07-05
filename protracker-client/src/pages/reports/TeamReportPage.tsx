@@ -6,6 +6,8 @@ import {
   Users, ShieldAlert, BarChart3, Download,
 } from 'lucide-react';
 import { useGenerateTeamInsights } from '../../hooks/useAI';
+import { useBilling } from '../../hooks/useBilling';
+import { useToast } from '../../context/ToastContext';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -36,6 +38,8 @@ const SPORT_HEADER_COLORS: Record<string, string> = {
 export function TeamReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { data: billing } = useBilling();
+  const { addToast } = useToast();
   const teamId = id ? parseInt(id) : undefined;
   const { data: report, isLoading, isError, refetch } = useTeamReport(teamId);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
@@ -69,6 +73,11 @@ export function TeamReportPage() {
   }
 
   async function handleExportPdf() {
+    if (billing && !billing.limits.pdf) {
+      addToast('PDF export is available on the Pro plan.', 'info');
+      navigate('/settings/billing');
+      return;
+    }
     setExporting(true);
     try {
       const [{ downloadPdf, reportFilename }, { TeamReportPDF }] = await Promise.all([

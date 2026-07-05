@@ -6,6 +6,8 @@ import {
   AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb, Trophy,
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
+import { useBilling } from '../../hooks/useBilling';
+import { useToast } from '../../context/ToastContext';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
@@ -40,6 +42,8 @@ function pct(from: number, to: number) {
 export function PlayerReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { data: billing } = useBilling();
+  const { addToast } = useToast();
   const playerId = id ? parseInt(id) : undefined;
   const { data: report, isLoading, isError, refetch } = usePlayerReport(playerId);
   const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
@@ -162,6 +166,12 @@ export function PlayerReportPage() {
   }
 
   async function handleExportPdf() {
+    // PDF export is a Pro feature (generated client-side, so it must be gated here).
+    if (billing && !billing.limits.pdf) {
+      addToast('PDF export is available on the Pro plan.', 'info');
+      navigate('/settings/billing');
+      return;
+    }
     setExporting(true);
     try {
       const [{ downloadPdf, reportFilename }, { PlayerReportPDF }] = await Promise.all([

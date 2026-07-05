@@ -24,6 +24,10 @@ public static class DemoDataSeeder
         var beachVolleyCoach = await GetOrCreateCoachAsync(userManager, "coach.beachvolley@protracker.seed", "Coach Santos");
         var tennisCoach = await GetOrCreateCoachAsync(userManager, "coach.tennis@protracker.seed", "Coach Williams");
 
+        // Seed coaches get Pro so all demo features (AI, unlimited teams/players) keep working.
+        foreach (var coachId in new[] { soccerCoach.Id, basketballCoach.Id, volleyballCoach.Id, beachVolleyCoach.Id, tennisCoach.Id })
+            await EnsureCoachPlanAsync(context, coachId, BillingPlan.Pro);
+
         // Athlete logins — created before the idempotency guard so they always exist
         var lucasWardLogin = await GetOrCreateAthleteAsync(userManager, "lucas.ward@protracker.seed", "Lucas Ward");
         var marcusBellLogin = await GetOrCreateAthleteAsync(userManager, "marcus.bell@protracker.seed", "Marcus Bell");
@@ -213,6 +217,22 @@ public static class DemoDataSeeder
     }
 
     // ─── Auth helpers ────────────────────────────────────────────────────────
+
+    // Idempotently set a coach's billing plan (creates the row if missing; bumps Free → target).
+    private static async Task EnsureCoachPlanAsync(ApplicationDbContext context, string coachId, BillingPlan plan)
+    {
+        var sub = await context.CoachSubscriptions.FirstOrDefaultAsync(s => s.CoachId == coachId);
+        if (sub == null)
+        {
+            context.CoachSubscriptions.Add(new CoachSubscription { CoachId = coachId, Plan = plan, Status = "seed" });
+            await context.SaveChangesAsync();
+        }
+        else if (sub.Plan < plan)
+        {
+            sub.Plan = plan;
+            await context.SaveChangesAsync();
+        }
+    }
 
     private static async Task<ApplicationUser> GetOrCreateCoachAsync(
         UserManager<ApplicationUser> um, string email, string displayName)

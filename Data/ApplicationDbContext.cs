@@ -67,6 +67,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
     public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<CoachSubscription> CoachSubscriptions => Set<CoachSubscription>();
     public DbSet<PlayerAssessment> PlayerAssessments => Set<PlayerAssessment>();
     public DbSet<PlayerStatScore> PlayerStatScores => Set<PlayerStatScore>();
     public DbSet<ImprovementPlan> ImprovementPlans => Set<ImprovementPlan>();
@@ -187,6 +188,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<PushSubscription>()
             .HasIndex(s => s.Endpoint)
+            .IsUnique();
+
+        builder.Entity<CoachSubscription>()
+            .HasIndex(s => s.CoachId)
             .IsUnique();
 
         builder.Entity<PlayerAssessment>()

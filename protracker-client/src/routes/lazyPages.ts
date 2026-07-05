@@ -35,6 +35,7 @@ export const ComparePlayersPage = named(() => import('../pages/reports/ComparePl
 export const TasksPage = named(() => import('../pages/tasks/TasksPage'), 'TasksPage');
 export const TaskAnalyticsPage = named(() => import('../pages/tasks/TaskAnalyticsPage'), 'TaskAnalyticsPage');
 export const CoachProfilePage = named(() => import('../pages/profile/CoachProfilePage'), 'CoachProfilePage');
+export const BillingPage = named(() => import('../pages/billing/BillingPage'), 'BillingPage');
 
 // Athlete
 export const PlayerDashboardPage = named(() => import('../pages/dashboard/PlayerDashboardPage'), 'PlayerDashboardPage');
