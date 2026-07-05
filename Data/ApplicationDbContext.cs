@@ -64,6 +64,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CoachTeamScope> CoachTeamScopes => Set<CoachTeamScope>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
     public DbSet<Season> Seasons => Set<Season>();
+    public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
+    public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
     public DbSet<PlayerAssessment> PlayerAssessments => Set<PlayerAssessment>();
     public DbSet<PlayerStatScore> PlayerStatScores => Set<PlayerStatScore>();
     public DbSet<ImprovementPlan> ImprovementPlans => Set<ImprovementPlan>();
@@ -161,6 +163,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(s => s.TeamId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // --- Parent portal ---
+        builder.Entity<ParentLink>()
+            .HasOne(l => l.Player)
+            .WithMany()
+            .HasForeignKey(l => l.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // A parent is linked to a given player only once.
+        builder.Entity<ParentLink>()
+            .HasIndex(l => new { l.ParentUserId, l.PlayerId })
+            .IsUnique();
+
+        builder.Entity<ParentInvite>()
+            .HasOne(i => i.Player)
+            .WithMany()
+            .HasForeignKey(i => i.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ParentInvite>()
+            .HasIndex(i => i.Token)
+            .IsUnique();
 
         builder.Entity<PlayerAssessment>()
             .HasOne(a => a.Player)

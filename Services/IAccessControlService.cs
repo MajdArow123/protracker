@@ -15,4 +15,7 @@ public interface IAccessControlService
     Task EnsureCanAccessPlayerAsync(ClaimsPrincipal user, int playerId);
 
     Task<List<int>> GetAccessibleTeamIdsAsync(ClaimsPrincipal user);
+
+    // Players a Parent-role user is linked to (their children). Empty for other roles.
+    Task<List<int>> GetParentPlayerIdsAsync(ClaimsPrincipal user);
 }

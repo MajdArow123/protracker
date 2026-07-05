@@ -30,10 +30,11 @@ export function useConversation(otherUserId: string | null) {
 
 export function useUnreadMessageCount() {
   const { user } = useAuth();
+  // Parents have no messaging — don't poll the (403-ing) endpoint for them.
   return useQuery({
     queryKey: ['messages', 'unread-count'],
     queryFn: messagesApi.getUnreadCount,
-    enabled: !!user,
+    enabled: !!user && user.role !== 'Parent',
     refetchInterval: 10_000,
   });
 }

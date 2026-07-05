@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProTracker.Dtos;
 using ProTracker.Services;
 
 namespace ProTracker.Controllers.Api;
 
+// Parents are read-only and explicitly excluded from messaging.
 [Route("api/messages")]
+[Authorize(Roles = "Coach,Athlete,Admin")]
 public class MessagesController : ApiControllerBase
 {
     private readonly IMessageService _service;

@@ -78,7 +78,18 @@ public class AccessControlService : IAccessControlService
             return;
         }
 
+        // NB: Parent is deliberately NOT handled here. Parents are read-only and must go through
+        // the dedicated /api/parent/* endpoints (which do their own link check) — this keeps them
+        // out of every coach/athlete endpoint that funnels through EnsureCanAccessPlayer, so they
+        // can never reach coach-private notes or other players.
         throw new ForbiddenApiException();
+    }
+
+    public async Task<List<int>> GetParentPlayerIdsAsync(ClaimsPrincipal user)
+    {
+        if (!user.IsInRole("Parent")) return new();
+        var userId = RequireUserId(user);
+        return await _context.ParentLinks.Where(l => l.ParentUserId == userId).Select(l => l.PlayerId).ToListAsync();
     }
 
     public async Task<List<int>> GetAccessibleTeamIdsAsync(ClaimsPrincipal user)

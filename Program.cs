@@ -159,6 +159,7 @@ builder.Services.AddScoped<IMessageService, MessageService>();
 builder.Services.AddScoped<IRecoveryPlanService, RecoveryPlanService>();
 builder.Services.AddScoped<IWellbeingService, WellbeingService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
+builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanService>();
@@ -184,7 +185,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in new[] { "Coach", "Athlete", "Admin" })
+    foreach (var role in new[] { "Coach", "Athlete", "Admin", "Parent" })
     {
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));

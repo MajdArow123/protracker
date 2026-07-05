@@ -74,7 +74,7 @@ export function LoginPage() {
     try {
       const user = await login(email, password);
       preloadDashboard(user.role); // warm the dashboard chunk before redirecting
-      navigate(user.role === 'Coach' ? '/dashboard' : '/player-dashboard');
+      navigate(user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {

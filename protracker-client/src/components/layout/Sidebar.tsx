@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
-  TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare,
+  TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -34,6 +34,10 @@ const athleteNav: NavItem[] = [
   { to: '/messages', label: 'Messages', icon: MessageSquare },
   { to: '/player-dashboard/nutrition', label: 'My Nutrition', icon: Salad },
   { to: '/player-dashboard/improvement', label: 'My Plan', icon: TrendingUp },
+];
+
+const parentNav: NavItem[] = [
+  { to: '/parent-dashboard', label: 'My Children', icon: Heart, end: true },
 ];
 
 const SPORT_COLORS: Record<string, string> = {
@@ -69,8 +73,8 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const { user, logout } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
-  const nav = user?.role === 'Coach' ? coachNav : athleteNav;
-  const profilePath = user?.role === 'Coach' ? '/profile' : '/player-dashboard/profile';
+  const nav = user?.role === 'Coach' ? coachNav : user?.role === 'Parent' ? parentNav : athleteNav;
+  const profilePath = user?.role === 'Coach' ? '/profile' : user?.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard/profile';
   const { badges } = useNotifications();
   const { data: unreadMessages = 0 } = useUnreadMessageCount();
   const navBadge = (to: string) => to === '/messages' ? unreadMessages : (badges[to] ?? 0);
@@ -109,7 +113,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
-          {user?.role === 'Coach' ? 'Management' : 'My Profile'}
+          {user?.role === 'Coach' ? 'Management' : user?.role === 'Parent' ? 'Family' : 'My Profile'}
         </p>
         {nav.map((item) => (
           <NavLink

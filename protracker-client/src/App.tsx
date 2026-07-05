@@ -24,6 +24,7 @@ import {
   PlayerDashboardPage, PlayerStatsPage, PlayerNutritionDashPage,
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
+  ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -40,12 +41,8 @@ function RootRedirect() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <PageSpinner />;
   if (!user) return <LandingPage />;
-  return (
-    <Navigate
-      to={user.role === 'Coach' ? '/dashboard' : '/player-dashboard'}
-      replace
-    />
-  );
+  const home = user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard';
+  return <Navigate to={home} replace />;
 }
 
 function AppRoutes() {
@@ -55,6 +52,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/parent-invite" element={<ParentInviteAcceptPage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
@@ -112,6 +110,10 @@ function AppRoutes() {
             <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
             {/* Athlete can view their team in read-only mode */}
             <Route path="/player-dashboard/team/:id" element={<TeamDetailPage />} />
+          </Route>
+          <Route element={<ProtectedRoute roles={['Parent']} />}>
+            <Route path="/parent-dashboard" element={<ParentDashboardPage />} />
+            <Route path="/parent-dashboard/child/:id" element={<ChildOverviewPage />} />
           </Route>
         </Route>
       </Route>

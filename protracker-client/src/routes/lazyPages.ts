@@ -44,11 +44,17 @@ export const PlayerImprovementDashPage = named(() => import('../pages/dashboard/
 export const MyTasksPage = named(() => import('../pages/tasks/MyTasksPage'), 'MyTasksPage');
 export const AthleteProfilePage = named(() => import('../pages/profile/AthleteProfilePage'), 'AthleteProfilePage');
 
+// Parent portal
+export const ParentInviteAcceptPage = named(() => import('../pages/parent/ParentInviteAcceptPage'), 'ParentInviteAcceptPage');
+export const ParentDashboardPage = named(() => import('../pages/parent/ParentDashboardPage'), 'ParentDashboardPage');
+export const ChildOverviewPage = named(() => import('../pages/parent/ChildOverviewPage'), 'ChildOverviewPage');
+
 // Shared
 export const MessagesPage = named(() => import('../pages/messages/MessagesPage'), 'MessagesPage');
 
 // Warm the dashboard chunk the instant login succeeds, before the redirect fires.
-export function preloadDashboard(role: 'Coach' | 'Athlete') {
+export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent') {
   if (role === 'Coach') import('../pages/dashboard/CoachDashboardPage');
+  else if (role === 'Parent') import('../pages/parent/ParentDashboardPage');
   else import('../pages/dashboard/PlayerDashboardPage');
 }

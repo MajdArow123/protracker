@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad } from 'lucide-react';
+import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad, Heart } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
@@ -28,13 +28,17 @@ const athleteItems: Item[] = [
   { to: '/player-dashboard/nutrition', label: 'Nutrition', icon: Salad },
 ];
 
+const parentItems: Item[] = [
+  { to: '/parent-dashboard', label: 'My Children', icon: Heart, end: true },
+];
+
 // Fixed bottom tab bar shown only on phones (< md). Replaces the sidebar for primary
 // navigation; the hamburger drawer remains for overflow items (Reports, Profile, etc.).
 export function BottomNav() {
   const { user } = useAuth();
   const { data: unread = 0 } = useUnreadMessageCount();
   if (!user) return null;
-  const items = user.role === 'Coach' ? coachItems : athleteItems;
+  const items = user.role === 'Coach' ? coachItems : user.role === 'Parent' ? parentItems : athleteItems;
 
   return (
     <nav className="md:hidden flex-shrink-0 flex items-stretch border-t border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">
