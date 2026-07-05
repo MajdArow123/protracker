@@ -19,7 +19,7 @@ import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,
   Plus, Edit2, Activity, Dumbbell, ShieldAlert, Star,
-  Calendar, Clock, ChevronRight, CheckSquare, StickyNote, HeartPulse,
+  Calendar, Clock, ChevronRight, CheckSquare, StickyNote, HeartPulse, GitCompare,
 } from 'lucide-react';
 import type { InjuryRecord, MatchPerformance, TrainingSession, PlayerTask } from '../../types';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
@@ -282,6 +282,12 @@ export function PlayerDetailPage() {
               <ArrowLeft size={16} /> Players
             </button>
             <div className="flex gap-2">
+              <button
+                onClick={() => navigate(`/reports/compare?players=${id}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
+              >
+                <GitCompare size={14} /> Compare
+              </button>
               <button
                 onClick={() => navigate(`/players/${id}/edit`)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
