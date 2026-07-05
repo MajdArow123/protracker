@@ -73,6 +73,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<MatchPerformance> MatchPerformances => Set<MatchPerformance>();
     public DbSet<InjuryRecord> InjuryRecords => Set<InjuryRecord>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<WeeklyNutritionPlan> WeeklyNutritionPlans => Set<WeeklyNutritionPlan>();
     public DbSet<DailyMealPlan> DailyMealPlans => Set<DailyMealPlan>();
     public DbSet<PlannedMeal> PlannedMeals => Set<PlannedMeal>();
@@ -318,6 +319,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.TokenHash)
             .IsUnique();
+
+        builder.Entity<PasswordResetToken>()
+            .HasIndex(t => t.Token)
+            .IsUnique();
+        builder.Entity<PasswordResetToken>()
+            .HasIndex(t => t.UserId);
 
         // --- Static reference data seed (Sports / Positions / StatCategories / Food Alternatives) ---
         // Safe to seed via HasData: fixed IDs, no dependency on runtime-generated data (e.g. user IDs).

@@ -268,6 +268,12 @@ export function LoginPage() {
                     </button>
                   </div>
 
+                  <div className="flex justify-end -mt-1">
+                    <button type="button" onClick={() => navigate('/forgot-password')} className="text-sm text-gray-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer">
+                      Forgot your password?
+                    </button>
+                  </div>
+
                   {error && (
                     <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-900/40 text-red-400 text-sm">
                       <AlertCircle size={14} className="flex-shrink-0" /> {error}

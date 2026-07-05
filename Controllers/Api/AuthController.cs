@@ -67,6 +67,30 @@ public class AuthController : ApiControllerBase
         return Success(user);
     }
 
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ForgotPassword(ForgotPasswordRequest request)
+    {
+        await _authService.ForgotPasswordAsync(request.Email);
+        // Always the same response, regardless of whether the email exists (no enumeration).
+        return Success(new GenericMessageResponse { Message = "If that email exists, a reset link has been sent." });
+    }
+
+    [HttpGet("validate-reset-token")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ValidateResetToken([FromQuery] string token)
+    {
+        return Success(await _authService.ValidateResetTokenAsync(token ?? ""));
+    }
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult> ResetPassword(ResetPasswordRequest request)
+    {
+        await _authService.ResetPasswordAsync(request.Token, request.NewPassword);
+        return Success(new GenericMessageResponse { Message = "Password reset successfully." });
+    }
+
     private void WriteAuthCookies(string accessToken, string refreshToken)
     {
         var isDev = HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment();

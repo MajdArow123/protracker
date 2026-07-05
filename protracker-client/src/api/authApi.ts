@@ -48,4 +48,21 @@ export const authApi = {
     const res = await api.get<ApiUser>('/api/auth/me');
     return mapUser(res.data);
   },
+
+  forgotPassword: async (email: string): Promise<string> => {
+    const res = await api.post<{ message: string }>('/api/auth/forgot-password', { email });
+    return res.data.message;
+  },
+
+  validateResetToken: async (token: string): Promise<{ valid: boolean; email?: string }> => {
+    const res = await api.get<{ valid: boolean; email?: string }>(
+      `/api/auth/validate-reset-token?token=${encodeURIComponent(token)}`
+    );
+    return res.data;
+  },
+
+  resetPassword: async (token: string, newPassword: string): Promise<string> => {
+    const res = await api.post<{ message: string }>('/api/auth/reset-password', { token, newPassword });
+    return res.data.message;
+  },
 };

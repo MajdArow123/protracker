@@ -39,3 +39,25 @@ public class TokenResponse
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";
 }
+
+public class ForgotPasswordRequest
+{
+    public string Email { get; set; } = "";
+}
+
+public class ResetPasswordRequest
+{
+    public string Token { get; set; } = "";
+    public string NewPassword { get; set; } = "";
+}
+
+public class ValidateResetTokenResponse
+{
+    public bool Valid { get; set; }
+    public string? Email { get; set; }
+}
+
+public class GenericMessageResponse
+{
+    public string Message { get; set; } = "";
+}

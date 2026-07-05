@@ -15,7 +15,7 @@ import { OfflineBanner } from './components/ui/OfflineBanner';
 import { ScrollToTop } from './components/layout/ScrollToTop';
 import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
-  LandingPage, LoginPage, NotFoundPage,
+  LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -53,6 +53,8 @@ function AppRoutes() {
     <Suspense fallback={<PageLoadingSkeleton />}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
