@@ -80,10 +80,13 @@ export function ComparePlayersPage() {
   const loadedReports = reports.map(r => r.data).filter((r): r is PlayerReport => !!r);
 
   const colorFor = (pid: number) => COLORS[selectedIds.indexOf(pid) % COLORS.length];
-  const nameFor = (pid: number) =>
-    loadedReports.find(r => r.player.id === pid)?.player.fullName
-    ?? players?.find(p => p.id === pid)?.fullName
-    ?? `#${pid}`;
+  const nameFor = (pid: number) => {
+    const base = loadedReports.find(r => r.player.id === pid)?.player.fullName
+      ?? players?.find(p => p.id === pid)?.fullName
+      ?? `Player ${pid}`;
+    const jersey = players?.find(p => p.id === pid)?.jerseyNumber;
+    return jersey != null ? `#${jersey} ${base}` : base;
+  };
 
   const allCategories = [
     ...new Set(loadedReports.flatMap(r => Object.keys(r.averageScoreByCategory))),
@@ -183,6 +186,7 @@ export function ComparePlayersPage() {
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:border-indigo-400 dark:hover:border-indigo-600 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer"
                 >
                   <Plus size={13} />
+                  {p.jerseyNumber != null && <span className="font-black text-indigo-500">#{p.jerseyNumber}</span>}
                   {p.fullName}
                   {p.teamName && <span className="text-xs text-gray-400">· {p.teamName}</span>}
                 </button>

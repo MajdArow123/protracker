@@ -8,6 +8,7 @@ import { useTrainingSessions, useCreateTrainingSession, useUpdateTrainingSession
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
+import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import { Users } from 'lucide-react';
 import { ConfirmModal } from '../../components/ui/Modal';
@@ -307,12 +308,21 @@ export function PlayerDetailPage() {
 
           {/* Player info */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="w-20 h-20 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center text-white text-2xl font-black flex-shrink-0 shadow-xl">
-              {getInitials(player.fullName)}
+            <div className="relative flex-shrink-0">
+              <div className="w-20 h-20 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center text-white text-2xl font-black shadow-xl">
+                {getInitials(player.fullName)}
+              </div>
+              {/* Large jersey badge */}
+              {player.jerseyNumber != null && (
+                <div className="absolute -bottom-2 -right-2 min-w-[30px] h-[30px] px-1.5 rounded-xl bg-white text-indigo-700 border-2 border-indigo-200 flex items-center justify-center text-sm font-black shadow-lg">
+                  #{player.jerseyNumber}
+                </div>
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-black text-white tracking-tight">{player.fullName}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
+                <PlayerStatusBadge status={player.status} size="sm" />
                 {player.positionName && (
                   <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{player.positionName}</span>
                 )}

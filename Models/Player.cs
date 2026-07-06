@@ -2,6 +2,15 @@ using System.ComponentModel.DataAnnotations;
 
 namespace ProTracker.Models;
 
+// Explicit roster status, set by the coach (previously only derivable from injury records).
+public enum PlayerStatus
+{
+    Active,
+    Injured,
+    Suspended,
+    Inactive
+}
+
 public class Player
 {
     public int Id { get; set; }
@@ -41,6 +50,8 @@ public class Player
     public DateTime? DateOfBirth { get; set; }
 
     public int? JerseyNumber { get; set; }
+
+    public PlayerStatus Status { get; set; } = PlayerStatus.Active;
 
     // Set when the athlete self-enrolled via a team join code — used to surface a
     // "new athlete joined" notification to the coach. Null for coach-created players.

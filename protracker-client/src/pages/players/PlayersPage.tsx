@@ -11,6 +11,7 @@ import { Button } from '../../components/ui/Button';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
 import { clsx } from 'clsx';
 
 const SPORT_EMOJIS: Record<number, string> = {
@@ -117,7 +118,10 @@ export function PlayersPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{player.fullName}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
+                      {player.jerseyNumber != null && <span className="text-indigo-500 font-black mr-1">#{player.jerseyNumber}</span>}
+                      {player.fullName}
+                    </p>
                     <span className="text-base flex-shrink-0">{emoji}</span>
                     {injuredIds.has(player.id) && (
                       <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" aria-label="Active injury" />
@@ -131,6 +135,7 @@ export function PlayersPage() {
                       Fit {player.fitnessLevel}/10
                     </span>
                   )}
+                  <PlayerStatusBadge status={player.status} hideActive />
                 </div>
               </motion.button>
             );

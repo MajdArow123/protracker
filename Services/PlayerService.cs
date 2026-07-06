@@ -84,6 +84,8 @@ public class PlayerService : IPlayerService
             TeamId = dto.TeamId,
             PositionId = dto.PositionId,
             FitnessLevel = dto.FitnessLevel,
+            JerseyNumber = dto.JerseyNumber,
+            Status = ParseStatus(dto.Status) ?? PlayerStatus.Active,
             InjuryNotes = dto.InjuryNotes,
             Goals = dto.Goals,
             CoachNotes = dto.CoachNotes,
@@ -118,6 +120,8 @@ public class PlayerService : IPlayerService
         player.Weight = dto.Weight;
         player.PositionId = dto.PositionId;
         player.FitnessLevel = dto.FitnessLevel;
+        player.JerseyNumber = dto.JerseyNumber;
+        if (ParseStatus(dto.Status) is { } status) player.Status = status;
         player.InjuryNotes = dto.InjuryNotes;
         player.Goals = dto.Goals;
         player.CoachNotes = dto.CoachNotes;
@@ -154,8 +158,14 @@ public class PlayerService : IPlayerService
         FitnessLevel = p.FitnessLevel,
         ProfileImageUrl = p.ProfileImageUrl,
         JerseyNumber = p.JerseyNumber,
+        Status = p.Status.ToString(),
         JoinedViaCodeAt = p.JoinedViaCodeAt
     };
+
+    private static PlayerStatus? ParseStatus(string? status) =>
+        !string.IsNullOrWhiteSpace(status) && Enum.TryParse<PlayerStatus>(status, true, out var parsed)
+            ? parsed
+            : null;
 
     public static PlayerProfileDto ToProfileDto(Player p)
     {
@@ -175,6 +185,7 @@ public class PlayerService : IPlayerService
             FitnessLevel = dto.FitnessLevel,
             ProfileImageUrl = dto.ProfileImageUrl,
             JerseyNumber = dto.JerseyNumber,
+            Status = dto.Status,
             JoinedViaCodeAt = dto.JoinedViaCodeAt,
             InjuryNotes = p.InjuryNotes,
             Goals = p.Goals,

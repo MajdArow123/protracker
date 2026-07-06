@@ -150,7 +150,11 @@ export interface Team {
   coachId: string;   // UUID
   playerCount?: number;
   photoUrl?: string | null;
+  foundedYear?: number | null;
+  description?: string | null;
 }
+
+export type PlayerStatus = 'Active' | 'Injured' | 'Suspended' | 'Inactive';
 
 export interface Player {
   id: number;
@@ -167,6 +171,7 @@ export interface Player {
   fitnessLevel?: number;
   profileImageUrl?: string | null;
   jerseyNumber?: number | null;
+  status?: PlayerStatus;
   // Set only for athletes who self-enrolled via a team join code.
   joinedViaCodeAt?: string | null;
   // detail-only fields

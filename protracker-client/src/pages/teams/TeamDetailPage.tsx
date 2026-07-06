@@ -24,6 +24,8 @@ import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnn
 import { TeamSeasonsSection } from '../../components/seasons/TeamSeasonsSection';
 import { TeamInviteSection } from '../../components/teams/TeamInviteSection';
 import { TeamPhotoBadge } from '../../components/teams/TeamPhotoBadge';
+import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
+import { useTeamMatches } from '../../hooks/useMatches';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
@@ -89,6 +91,7 @@ export function TeamDetailPage() {
   const { data: allPlayers = [] } = usePlayers();
   const { data: report } = useTeamReport(teamId);
   const { data: periods = [] } = useAssessmentPeriods();
+  const { data: teamMatches = [] } = useTeamMatches(teamId);
   const deleteTeam = useDeleteTeam();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [teamTab, setTeamTab] = useState<TeamTab>('overview');
@@ -114,6 +117,13 @@ export function TeamDetailPage() {
   const injuredIds = new Set((report?.activeInjuries ?? []).map(i => i.playerId));
   const medalIcons = [Trophy, Medal, Medal];
   const medalColors = ['text-yellow-400', 'text-gray-300', 'text-amber-600'];
+
+  // Season record from logged match results (W-D-L; draws hidden for sports without them).
+  const record = {
+    wins: teamMatches.filter(m => m.result === 'Win').length,
+    draws: teamMatches.filter(m => m.result === 'Draw').length,
+    losses: teamMatches.filter(m => m.result === 'Loss').length,
+  };
 
   const avgTeamScore = radarData.length ? radarData.reduce((s, d) => s + d.value, 0) / radarData.length : null;
   const sortedPeriods = [...teamPeriods].sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
@@ -255,12 +265,25 @@ export function TeamDetailPage() {
               <div className="flex flex-wrap items-center gap-2 mt-2">
                 <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{team.sportName}</span>
                 <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{teamPlayers.length} players</span>
+                {team.foundedYear && (
+                  <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">Est. {team.foundedYear}</span>
+                )}
+                {teamMatches.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold" title="Win–Draw–Loss record">
+                    {record.draws > 0
+                      ? `${record.wins}W–${record.draws}D–${record.losses}L`
+                      : `${record.wins}W–${record.losses}L`}
+                  </span>
+                )}
                 {report?.activeInjuryCount ? (
                   <span className="px-2.5 py-1 rounded-full bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1">
                     <ShieldAlert size={11} /> {report.activeInjuryCount} injured
                   </span>
                 ) : null}
               </div>
+              {team.description && (
+                <p className="text-white/80 text-sm mt-2 max-w-xl">{team.description}</p>
+              )}
             </div>
             </div>
             <AvgScoreRingBadge score={avgTeamScore} />
@@ -370,7 +393,11 @@ export function TeamDetailPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.fullName}</p>
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            {p.jerseyNumber != null && <span className="text-indigo-500 font-black mr-1">#{p.jerseyNumber}</span>}
+                            {p.fullName}
+                          </p>
+                          <PlayerStatusBadge status={p.status} hideActive />
                           {isInjured && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">

@@ -15,6 +15,7 @@ public class PlayerDto
     public int FitnessLevel { get; set; }
     public string? ProfileImageUrl { get; set; }
     public int? JerseyNumber { get; set; }
+    public string Status { get; set; } = "Active";
     // Set only for athletes who self-enrolled via a team join code.
     public DateTime? JoinedViaCodeAt { get; set; }
 }
@@ -37,6 +38,9 @@ public class PlayerCreateDto
     public int TeamId { get; set; }
     public int PositionId { get; set; }
     public int FitnessLevel { get; set; }
+    public int? JerseyNumber { get; set; }
+    // Enum name; null/empty keeps the default (Active).
+    public string? Status { get; set; }
     public string? InjuryNotes { get; set; }
     public string? Goals { get; set; }
     public string? CoachNotes { get; set; }
@@ -51,6 +55,9 @@ public class PlayerUpdateDto
     public double Weight { get; set; }
     public int PositionId { get; set; }
     public int FitnessLevel { get; set; }
+    public int? JerseyNumber { get; set; }
+    // Enum name; null/empty leaves the current status unchanged.
+    public string? Status { get; set; }
     public string? InjuryNotes { get; set; }
     public string? Goals { get; set; }
     public string? CoachNotes { get; set; }

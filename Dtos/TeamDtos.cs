@@ -9,6 +9,8 @@ public class TeamDto
     public string CoachId { get; set; } = "";
     public int PlayerCount { get; set; }
     public string? PhotoUrl { get; set; }
+    public int? FoundedYear { get; set; }
+    public string? Description { get; set; }
 }
 
 public class TeamWithPlayersDto : TeamDto
@@ -20,9 +22,13 @@ public class TeamCreateDto
 {
     public string Name { get; set; } = "";
     public int SportId { get; set; }
+    public int? FoundedYear { get; set; }
+    public string? Description { get; set; }
 }
 
 public class TeamUpdateDto
 {
     public string Name { get; set; } = "";
+    public int? FoundedYear { get; set; }
+    public string? Description { get; set; }
 }

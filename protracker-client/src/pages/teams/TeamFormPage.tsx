@@ -13,13 +13,18 @@ import { useTeam, useTeams, useCreateTeam, useUpdateTeam } from '../../hooks/use
 import { useAutoSave } from '../../hooks/useAutoSave';
 import { ArrowLeft, Lock } from 'lucide-react';
 
-interface FormValues { name: string; sportId: string; }
-interface FormErrors { name?: string; sportId?: string; }
+interface FormValues { name: string; sportId: string; foundedYear: string; description: string; }
+interface FormErrors { name?: string; sportId?: string; foundedYear?: string; description?: string; }
 
 function validate(v: FormValues): FormErrors {
   const e: FormErrors = {};
   if (!v.name.trim()) e.name = 'Team name is required';
   if (!v.sportId) e.sportId = 'Sport is required';
+  if (v.foundedYear) {
+    const y = Number(v.foundedYear);
+    if (isNaN(y) || y < 1850 || y > new Date().getFullYear()) e.foundedYear = `Year must be 1850–${new Date().getFullYear()}`;
+  }
+  if (v.description.length > 500) e.description = 'Max 500 characters';
   return e;
 }
 
@@ -35,7 +40,7 @@ export function TeamFormPage() {
   const createTeam = useCreateTeam();
   const updateTeam = useUpdateTeam();
 
-  const [values, setValues] = useState<FormValues>({ name: '', sportId: '' });
+  const [values, setValues] = useState<FormValues>({ name: '', sportId: '', foundedYear: '', description: '' });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState(false);
 
@@ -46,22 +51,36 @@ export function TeamFormPage() {
 
   useEffect(() => {
     if (team && isEdit) {
-      setValues({ name: team.name, sportId: String(team.sportId) });
+      setValues({
+        name: team.name,
+        sportId: String(team.sportId),
+        foundedYear: team.foundedYear?.toString() ?? '',
+        description: team.description ?? '',
+      });
     } else if (!isEdit && lockedSport && !values.sportId) {
       setValues(v => ({ ...v, sportId: lockedSport.id }));
     }
   }, [team, isEdit, lockedSport?.id]);
 
-  const set = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const set = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const next = { ...values, [field]: e.target.value };
     setValues(next);
     if (touched) setErrors(validate(next));
   };
 
+  function buildPayload() {
+    return {
+      name: values.name.trim(),
+      sportId: Number(values.sportId),
+      foundedYear: values.foundedYear ? Number(values.foundedYear) : null,
+      description: values.description.trim() || null,
+    };
+  }
+
   async function autoSaveTeam() {
     const errs = validate(values);
     if (Object.keys(errs).length) return;
-    await updateTeam.mutateAsync({ id: Number(id), data: { name: values.name.trim(), sportId: Number(values.sportId) } });
+    await updateTeam.mutateAsync({ id: Number(id), data: buildPayload() });
   }
 
   const { status: autoSaveStatus } = useAutoSave(isEdit, values, autoSaveTeam);
@@ -73,7 +92,7 @@ export function TeamFormPage() {
     setErrors(errs);
     if (Object.keys(errs).length) return;
 
-    const payload = { name: values.name.trim(), sportId: Number(values.sportId) };
+    const payload = buildPayload();
 
     try {
       const created = await createTeam.mutateAsync(payload as Parameters<typeof createTeam.mutateAsync>[0]);
@@ -136,6 +155,33 @@ export function TeamFormPage() {
                 ]}
               />
             )}
+
+            <Input
+              label="Founded Year"
+              type="number"
+              value={values.foundedYear}
+              onChange={set('foundedYear')}
+              error={errors.foundedYear}
+              placeholder="e.g. 2015"
+              min={1850}
+              max={new Date().getFullYear()}
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Description
+              </label>
+              <textarea
+                value={values.description}
+                onChange={set('description')}
+                maxLength={500}
+                rows={3}
+                placeholder="A short description of the team — level, ambitions, training culture…"
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2.5 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 resize-none transition-all"
+              />
+              {errors.description && <p className="text-xs text-red-500 mt-1">{errors.description}</p>}
+              <p className="text-xs text-gray-400 mt-1 text-right">{values.description.length}/500</p>
+            </div>
           </div>
         </Card>
         <div className="flex items-center justify-end gap-3">

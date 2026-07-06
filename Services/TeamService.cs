@@ -64,6 +64,8 @@ public class TeamService : ITeamService
             CoachId = dto.CoachId,
             PlayerCount = dto.PlayerCount,
             PhotoUrl = dto.PhotoUrl,
+            FoundedYear = dto.FoundedYear,
+            Description = dto.Description,
             Players = team.Players.Select(PlayerService.ToDto).ToList()
         };
     }
@@ -84,7 +86,15 @@ public class TeamService : ITeamService
         if (existingSportId.HasValue && existingSportId.Value != dto.SportId)
             throw new ValidationApiException("You can only create teams in the same sport as your existing teams.");
 
-        var team = new Team { Name = dto.Name, SportId = dto.SportId, CoachId = coachId };
+        ValidateTeamDetails(dto.FoundedYear, dto.Description);
+        var team = new Team
+        {
+            Name = dto.Name,
+            SportId = dto.SportId,
+            CoachId = coachId,
+            FoundedYear = dto.FoundedYear,
+            Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim(),
+        };
         _context.Teams.Add(team);
         await _context.SaveChangesAsync();
 
@@ -102,7 +112,10 @@ public class TeamService : ITeamService
         var team = await _context.Teams.Include(t => t.Sport).FirstOrDefaultAsync(t => t.Id == id)
             ?? throw new NotFoundApiException($"Team {id} was not found.");
 
+        ValidateTeamDetails(dto.FoundedYear, dto.Description);
         team.Name = dto.Name;
+        team.FoundedYear = dto.FoundedYear;
+        team.Description = string.IsNullOrWhiteSpace(dto.Description) ? null : dto.Description.Trim();
         await _context.SaveChangesAsync();
         return ToDto(team);
     }
@@ -160,6 +173,16 @@ public class TeamService : ITeamService
         SportName = t.Sport?.Name ?? "",
         CoachId = t.CoachId,
         PlayerCount = t.Players?.Count ?? 0,
-        PhotoUrl = t.PhotoUrl
+        PhotoUrl = t.PhotoUrl,
+        FoundedYear = t.FoundedYear,
+        Description = t.Description
     };
+
+    private static void ValidateTeamDetails(int? foundedYear, string? description)
+    {
+        if (foundedYear.HasValue && (foundedYear < 1850 || foundedYear > DateTime.UtcNow.Year))
+            throw new ValidationApiException($"Founded year must be between 1850 and {DateTime.UtcNow.Year}.");
+        if (description is { Length: > 500 })
+            throw new ValidationApiException("Team description must be 500 characters or fewer.");
+    }
 }

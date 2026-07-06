@@ -29,6 +29,8 @@ interface FormValues {
   teamId: string;
   positionId: string;
   fitnessLevel: string;
+  jerseyNumber: string;
+  status: string;
   goals: string;
   coachNotes: string;
   injuryNotes: string;
@@ -52,6 +54,8 @@ const EMPTY: FormValues = {
   teamId: '',
   positionId: '',
   fitnessLevel: '5',
+  jerseyNumber: '',
+  status: 'Active',
   goals: '',
   coachNotes: '',
   injuryNotes: '',
@@ -121,6 +125,8 @@ export function PlayerFormPage() {
         teamId: player.teamId?.toString() ?? '',
         positionId: player.positionId?.toString() ?? '',
         fitnessLevel: player.fitnessLevel?.toString() ?? '5',
+        jerseyNumber: player.jerseyNumber?.toString() ?? '',
+        status: player.status ?? 'Active',
         goals: player.goals ?? '',
         coachNotes: player.coachNotes ?? '',
         injuryNotes: player.injuryNotes ?? '',
@@ -209,6 +215,8 @@ export function PlayerFormPage() {
       teamId: values.teamId ? Number(values.teamId) : undefined,
       positionId: values.positionId ? Number(values.positionId) : undefined,
       fitnessLevel: Number(values.fitnessLevel),
+      jerseyNumber: values.jerseyNumber ? Number(values.jerseyNumber) : null,
+      status: (values.status || undefined) as import('../../types').PlayerStatus | undefined,
       goals: values.goals || undefined,
       coachNotes: values.coachNotes || undefined,
       injuryNotes: values.injuryNotes || undefined,
@@ -272,6 +280,18 @@ export function PlayerFormPage() {
               />
             </div>
             <Input label="Age" type="number" value={values.age} onChange={set('age')} error={errors.age} placeholder="20" min={10} max={60} />
+            <Input label="Jersey Number" type="number" value={values.jerseyNumber} onChange={set('jerseyNumber')} placeholder="7" min={0} max={999} />
+            <Select
+              label="Status"
+              value={values.status}
+              onChange={set('status')}
+              options={[
+                { value: 'Active', label: 'Active' },
+                { value: 'Injured', label: 'Injured' },
+                { value: 'Suspended', label: 'Suspended' },
+                { value: 'Inactive', label: 'Inactive' },
+              ]}
+            />
 
             {/* Height with unit toggle */}
             <div>
