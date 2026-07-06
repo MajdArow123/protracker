@@ -14,6 +14,9 @@ public class PlayerDto
     public string PositionName { get; set; } = "";
     public int FitnessLevel { get; set; }
     public string? ProfileImageUrl { get; set; }
+    public int? JerseyNumber { get; set; }
+    // Set only for athletes who self-enrolled via a team join code.
+    public DateTime? JoinedViaCodeAt { get; set; }
 }
 
 // Full detail view for a single player's profile page.

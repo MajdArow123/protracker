@@ -3,9 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { useCoachTasks, useMyTasks } from './useTasks';
 import { useActiveInjuries } from './useInjuries';
 import { useMySessions } from './useSessions';
-import { isSeen, markSeen, useSeenVersion, overdueTaskKey, myTaskKey, injuryKey, sessionKey } from '../utils/seenNotifications';
+import { usePlayers } from './usePlayers';
+import { isSeen, markSeen, useSeenVersion, overdueTaskKey, myTaskKey, injuryKey, sessionKey, joinedKey } from '../utils/seenNotifications';
 
-export type NotificationKind = 'task' | 'injury' | 'session';
+export type NotificationKind = 'task' | 'injury' | 'session' | 'join';
 export type NotificationSeverity = 'high' | 'medium' | 'low';
 
 export interface NotificationItem {
@@ -43,6 +44,8 @@ export function useNotifications(): NotificationSummary {
 
   const { data: coachTasks = [] } = useCoachTasks(undefined, isCoach);
   const { data: activeInjuries = [] } = useActiveInjuries(isCoach);
+  // Players are already cached for coaches (list/teams pages); used for join alerts.
+  const { data: players = [] } = usePlayers(isCoach);
   const { data: myTasks = [] } = useMyTasks(isAthlete);
   const { data: mySessions = [] } = useMySessions(isAthlete);
 
@@ -59,6 +62,18 @@ export function useNotifications(): NotificationSummary {
         severity: 'high',
         to: '/tasks',
         timestamp: t.dueDate ? new Date(t.dueDate).getTime() : 0,
+      }));
+
+      // Athletes who self-enrolled via a join code in the last 7 days.
+      players.filter(p => p.joinedViaCodeAt && Date.now() - new Date(p.joinedViaCodeAt).getTime() < 7 * DAY).forEach(p => raw.push({
+        id: `join-${p.id}`,
+        seenKey: joinedKey(p.id),
+        kind: 'join',
+        title: 'New athlete joined',
+        detail: `${p.fullName} joined ${p.teamName || 'your team'}`,
+        severity: 'medium',
+        to: `/players/${p.id}`,
+        timestamp: new Date(p.joinedViaCodeAt!).getTime(),
       }));
 
       activeInjuries.forEach(inj => raw.push({
@@ -119,5 +134,5 @@ export function useNotifications(): NotificationSummary {
 
     return { items, count: items.length, badges, markAllSeen };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCoach, isAthlete, coachTasks, activeInjuries, myTasks, mySessions, seenVersion]);
+  }, [isCoach, isAthlete, coachTasks, activeInjuries, players, myTasks, mySessions, seenVersion]);
 }

@@ -152,7 +152,9 @@ public class PlayerService : IPlayerService
         PositionId = p.PositionId,
         PositionName = p.Position?.Name ?? "",
         FitnessLevel = p.FitnessLevel,
-        ProfileImageUrl = p.ProfileImageUrl
+        ProfileImageUrl = p.ProfileImageUrl,
+        JerseyNumber = p.JerseyNumber,
+        JoinedViaCodeAt = p.JoinedViaCodeAt
     };
 
     public static PlayerProfileDto ToProfileDto(Player p)
@@ -172,6 +174,8 @@ public class PlayerService : IPlayerService
             PositionName = dto.PositionName,
             FitnessLevel = dto.FitnessLevel,
             ProfileImageUrl = dto.ProfileImageUrl,
+            JerseyNumber = dto.JerseyNumber,
+            JoinedViaCodeAt = dto.JoinedViaCodeAt,
             InjuryNotes = p.InjuryNotes,
             Goals = p.Goals,
             CoachNotes = p.CoachNotes,

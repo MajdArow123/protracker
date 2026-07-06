@@ -6,6 +6,7 @@ namespace ProTracker.Services;
 public interface IAuthService
 {
     Task<(UserInfoDto User, string AccessToken, string RefreshToken)> RegisterAsync(RegisterRequest request);
+    Task<RegisterAthleteResponse> RegisterAthleteAsync(RegisterAthleteRequest request);
     Task<(UserInfoDto User, string AccessToken, string RefreshToken)> LoginAsync(LoginRequest request);
     Task LogoutAsync(string? rawRefreshToken);
     Task<(string AccessToken, string RefreshToken)> RefreshAsync(string? rawRefreshToken);

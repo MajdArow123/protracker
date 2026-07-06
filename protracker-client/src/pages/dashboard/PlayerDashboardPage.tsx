@@ -67,6 +67,20 @@ export function PlayerDashboardPage() {
   const { data: recoveryPlan } = usePlayerRecoveryPlan(playerId);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
 
+  // One-time welcome banner set by the join-code registration flow.
+  const [welcome, setWelcome] = useState<{ team: string; name: string } | null>(() => {
+    try {
+      const raw = sessionStorage.getItem('pt_welcome');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+  const dismissWelcome = () => {
+    sessionStorage.removeItem('pt_welcome');
+    setWelcome(null);
+  };
+
   if (loadingId || isLoading) return <DashboardSkeleton />;
   if (isError)
     return (
@@ -99,6 +113,26 @@ export function PlayerDashboardPage() {
       transition={{ duration: 0.3 }}
       className="flex-1 p-4 lg:p-6 space-y-6"
     >
+      {/* Welcome banner (shown once after joining via a team code) */}
+      {welcome && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2 rounded-xl bg-white/15 flex-shrink-0">
+                <Trophy size={18} />
+              </div>
+              <div>
+                <p className="font-black text-lg leading-tight">Welcome to {welcome.team}, {welcome.name.split(' ')[0]}! 🎉</p>
+                <p className="text-emerald-100 text-sm mt-0.5">Your coach has been notified. Your profile is set up — assessments and tasks will appear here.</p>
+              </div>
+            </div>
+            <button onClick={dismissWelcome} aria-label="Dismiss" className="text-white/70 hover:text-white cursor-pointer text-lg leading-none px-1">×</button>
+          </div>
+        </motion.div>
+      )}
+
       {/* Hero greeting */}
       <motion.div custom={0} initial="hidden" animate="show" variants={fadeUp}>
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 p-6 text-white">

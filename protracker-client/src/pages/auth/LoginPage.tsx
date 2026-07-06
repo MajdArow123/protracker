@@ -362,6 +362,10 @@ export function LoginPage() {
                   <button type="submit" disabled={isRegistering} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-1">
                     {isRegistering ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Create Account <ArrowRight size={15} /></>}
                   </button>
+
+                  <button type="button" onClick={() => navigate('/register')} className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer mt-1">
+                    Athlete with a team join code? <span className="text-indigo-400 font-semibold">Join your team</span>
+                  </button>
                 </motion.form>
               )}
             </AnimatePresence>

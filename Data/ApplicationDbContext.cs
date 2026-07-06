@@ -66,6 +66,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
     public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
+    public DbSet<TeamJoinCode> TeamJoinCodes => Set<TeamJoinCode>();
+    public DbSet<AthleteInvite> AthleteInvites => Set<AthleteInvite>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
     public DbSet<CoachSubscription> CoachSubscriptions => Set<CoachSubscription>();
     public DbSet<PlayerAssessment> PlayerAssessments => Set<PlayerAssessment>();
@@ -185,6 +187,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<ParentInvite>()
             .HasIndex(i => i.Token)
             .IsUnique();
+
+        // --- Athlete self-enrollment ---
+        builder.Entity<TeamJoinCode>()
+            .HasOne(c => c.Team)
+            .WithMany()
+            .HasForeignKey(c => c.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<TeamJoinCode>()
+            .HasIndex(c => c.Code)
+            .IsUnique();
+        builder.Entity<TeamJoinCode>()
+            .HasIndex(c => new { c.TeamId, c.IsActive });
+
+        builder.Entity<AthleteInvite>()
+            .HasOne(i => i.Team)
+            .WithMany()
+            .HasForeignKey(i => i.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<AthleteInvite>()
+            .HasIndex(i => i.TeamId);
 
         builder.Entity<PushSubscription>()
             .HasIndex(s => s.Endpoint)

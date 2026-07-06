@@ -13,6 +13,8 @@ function named<T extends Record<string, unknown>, K extends keyof T>(
 export const LandingPage = named(() => import('../pages/LandingPage'), 'LandingPage');
 export const LoginPage = named(() => import('../pages/auth/LoginPage'), 'LoginPage');
 export const ForgotPasswordPage = named(() => import('../pages/auth/ForgotPasswordPage'), 'ForgotPasswordPage');
+export const RegisterPage = named(() => import('../pages/auth/RegisterPage'), 'RegisterPage');
+export const JoinTeamPage = named(() => import('../pages/auth/JoinTeamPage'), 'JoinTeamPage');
 export const ResetPasswordPage = named(() => import('../pages/auth/ResetPasswordPage'), 'ResetPasswordPage');
 export const NotFoundPage = named(() => import('../pages/NotFoundPage'), 'NotFoundPage');
 

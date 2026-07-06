@@ -22,6 +22,7 @@ import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection'
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
 import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
 import { TeamSeasonsSection } from '../../components/seasons/TeamSeasonsSection';
+import { TeamInviteSection } from '../../components/teams/TeamInviteSection';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
@@ -324,6 +325,7 @@ export function TeamDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 lg:p-6">
         {/* Left: Roster */}
         <div className="lg:col-span-3 space-y-4">
+          {isCoach && <TeamInviteSection teamId={teamId} teamName={team.name} />}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white">Roster</h3>

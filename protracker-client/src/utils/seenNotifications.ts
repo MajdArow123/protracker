@@ -68,3 +68,5 @@ export const myTaskKey = (id: number) => `task_${id}`;
 export const injuryKey = (id: number, severity: string) => `injury_${id}_${severity}`;
 // Upcoming session reappears each day it's within the window → include the date.
 export const sessionKey = (id: number) => `session_${id}_${todayStr()}`;
+// A new athlete joining via code is announced once → stable per player.
+export const joinedKey = (playerId: number) => `joined_${playerId}`;

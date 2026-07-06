@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { playersApi } from '../api/playersApi';
 import type { Player } from '../types';
 
-export function usePlayers() {
+export function usePlayers(enabled = true) {
   return useQuery({
     queryKey: ['players'],
     queryFn: playersApi.getPlayers,
     staleTime: 60_000,
+    enabled,
   });
 }
 

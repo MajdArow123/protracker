@@ -17,6 +17,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
+  RegisterPage, JoinTeamPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -54,6 +55,8 @@ function AppRoutes() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/parent-invite" element={<ParentInviteAcceptPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/join/:code" element={<JoinTeamPage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

@@ -35,4 +35,14 @@ public class Player
 
     // Set only if this player also has a login (ApplicationUser) of their own.
     public string? UserId { get; set; }
+
+    // Known only for self-enrolled athletes (join-code registration); coach-created players
+    // just have Age. When set, Age is derived from it.
+    public DateTime? DateOfBirth { get; set; }
+
+    public int? JerseyNumber { get; set; }
+
+    // Set when the athlete self-enrolled via a team join code — used to surface a
+    // "new athlete joined" notification to the coach. Null for coach-created players.
+    public DateTime? JoinedViaCodeAt { get; set; }
 }

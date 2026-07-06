@@ -18,6 +18,7 @@ public class AuthService : IAuthService
     private readonly IEmailService _email;
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
+    private readonly IPushService _push;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -25,7 +26,8 @@ public class AuthService : IAuthService
         ApplicationDbContext context,
         IEmailService email,
         IConfiguration config,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IPushService push)
     {
         _userManager = userManager;
         _tokenService = tokenService;
@@ -33,6 +35,7 @@ public class AuthService : IAuthService
         _email = email;
         _config = config;
         _logger = logger;
+        _push = push;
     }
 
     public async Task<(UserInfoDto User, string AccessToken, string RefreshToken)> RegisterAsync(RegisterRequest request)
@@ -59,6 +62,147 @@ public class AuthService : IAuthService
 
         return (ToUserInfo(user, roles), accessToken, refreshToken);
     }
+
+    // Athlete self-enrollment via a team join code: one call creates the account, the Player
+    // record on the coach's team, and any dietary-restriction rows, then auto-logs-in.
+    public async Task<RegisterAthleteResponse> RegisterAthleteAsync(RegisterAthleteRequest request)
+    {
+        var code = (request.Code ?? "").Trim().ToUpperInvariant();
+        var joinCode = await _context.TeamJoinCodes
+            .Include(c => c.Team)
+            .FirstOrDefaultAsync(c => c.Code == code);
+
+        if (joinCode == null || !joinCode.IsActive
+            || (joinCode.ExpiresAt.HasValue && joinCode.ExpiresAt.Value < DateTime.UtcNow)
+            || (joinCode.MaxUses.HasValue && joinCode.UseCount >= joinCode.MaxUses.Value))
+            throw new ValidationApiException("This join code is invalid, expired, or no longer active. Ask your coach for a new one.");
+
+        var email = (request.Email ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+            throw new ValidationApiException("A valid email is required.");
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            throw new ValidationApiException("Full name is required.");
+        if (await _userManager.FindByEmailAsync(email) != null)
+            throw new ValidationApiException("An account with this email already exists. Sign in instead.");
+
+        var age = ComputeAge(request.DateOfBirth);
+        if (age < 5 || age > 90)
+            throw new ValidationApiException("Please enter a valid date of birth.");
+        if (request.Height < 80 || request.Height > 250)
+            throw new ValidationApiException("Height must be between 80 and 250 cm.");
+        if (request.Weight < 20 || request.Weight > 250)
+            throw new ValidationApiException("Weight must be between 20 and 250 kg.");
+        if (request.JerseyNumber is < 0 or > 999)
+            throw new ValidationApiException("Jersey number must be between 0 and 999.");
+
+        var position = await _context.Positions.FirstOrDefaultAsync(p => p.Id == request.PositionId)
+            ?? throw new ValidationApiException("Please choose a position.");
+        if (position.SportId != joinCode.Team.SportId)
+            throw new ValidationApiException("That position does not belong to this team's sport.");
+
+        // Parse dietary restrictions up front so a bad payload fails before any writes.
+        var restrictions = new List<PlayerNutritionProfile>();
+        foreach (var r in request.DietaryRestrictions ?? new())
+        {
+            if (!Enum.TryParse<NutritionPreferenceType>(r.Type, true, out var type)
+                || !Enum.TryParse<NutritionCategory>(r.Category, true, out var category)
+                || !Enum.TryParse<NutritionSeverity>(r.Severity, true, out var severity))
+                throw new ValidationApiException("One of the dietary restrictions is invalid.");
+            restrictions.Add(new PlayerNutritionProfile
+            {
+                PreferenceType = type,
+                Category = category,
+                SpecificItem = string.IsNullOrWhiteSpace(r.SpecificItem) ? null : r.SpecificItem.Trim(),
+                Severity = severity,
+            });
+        }
+
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = request.FullName.Trim(),
+            PhoneNumber = string.IsNullOrWhiteSpace(request.Phone) ? null : request.Phone.Trim(),
+            EmergencyContactName = NullIfBlank(request.EmergencyContactName),
+            EmergencyContactPhone = NullIfBlank(request.EmergencyContactPhone),
+            EmergencyContactRelationship = NullIfBlank(request.EmergencyContactRelationship),
+        };
+        var created = await _userManager.CreateAsync(user, request.Password);
+        if (!created.Succeeded)
+            throw new ValidationApiException(string.Join("; ", created.Errors.Select(e => e.Description)));
+        await _userManager.AddToRoleAsync(user, "Athlete");
+
+        var player = new Player
+        {
+            FullName = request.FullName.Trim(),
+            Age = age,
+            DateOfBirth = request.DateOfBirth,
+            Height = request.Height,
+            Weight = request.Weight,
+            SportId = joinCode.Team.SportId,
+            TeamId = joinCode.TeamId,
+            PositionId = request.PositionId,
+            JerseyNumber = request.JerseyNumber,
+            FitnessLevel = 5, // neutral default until the coach assesses
+            Goals = NullIfBlank(request.Preferences),
+            UserId = user.Id,
+            JoinedViaCodeAt = DateTime.UtcNow,
+        };
+        _context.Players.Add(player);
+        await _context.SaveChangesAsync();
+
+        foreach (var r in restrictions)
+        {
+            r.PlayerId = player.Id;
+            _context.PlayerNutritionProfiles.Add(r);
+        }
+
+        joinCode.UseCount++;
+
+        // If the coach emailed this athlete an invite for this team, mark it accepted.
+        var pendingInvites = await _context.AthleteInvites
+            .Where(i => i.TeamId == joinCode.TeamId && i.Email == email && i.AcceptedAt == null)
+            .ToListAsync();
+        foreach (var inv in pendingInvites) inv.AcceptedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        // Fire-and-forget web push to the coach (in-app bell derives from JoinedViaCodeAt).
+        _push.SendToUser(joinCode.Team.CoachId, new PushPayload
+        {
+            Title = "New athlete joined",
+            Body = $"{player.FullName} joined {joinCode.Team.Name}",
+            Url = $"/players/{player.Id}",
+            Tag = $"athlete-joined-{player.Id}",
+        });
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var accessToken = _tokenService.CreateAccessToken(user, roles);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user.Id);
+
+        return new RegisterAthleteResponse
+        {
+            User = ToUserInfo(user, roles),
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            TeamName = joinCode.Team.Name,
+            PlayerId = player.Id,
+        };
+    }
+
+    private static int ComputeAge(DateTime dateOfBirth)
+    {
+        var today = DateTime.UtcNow.Date;
+        var age = today.Year - dateOfBirth.Year;
+        if (dateOfBirth.Date > today.AddYears(-age)) age--;
+        return age;
+    }
+
+    private static string? NullIfBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     public async Task<(UserInfoDto User, string AccessToken, string RefreshToken)> LoginAsync(LoginRequest request)
     {

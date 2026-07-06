@@ -165,6 +165,9 @@ export interface Player {
   positionName?: string;
   fitnessLevel?: number;
   profileImageUrl?: string | null;
+  jerseyNumber?: number | null;
+  // Set only for athletes who self-enrolled via a team join code.
+  joinedViaCodeAt?: string | null;
   // detail-only fields
   injuryNotes?: string | null;
   goals?: string | null;

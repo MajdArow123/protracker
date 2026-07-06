@@ -4,6 +4,7 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ProTracker.Auth;
@@ -139,6 +140,21 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddFluentValidationAutoValidation();
 
+// Per-IP rate limit for the public join-code endpoints (validate + register) so 8-char
+// codes can't be brute-forced. Authenticated endpoints are unaffected.
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("join-validate", context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1),
+            }));
+});
+
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -166,6 +182,7 @@ builder.Services.AddScoped<IRecoveryPlanService, RecoveryPlanService>();
 builder.Services.AddScoped<IWellbeingService, WellbeingService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
+builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
 builder.Services.AddSingleton<IPushService, PushService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddSignalR();
@@ -220,6 +237,8 @@ else
 }
 
 app.UseRouting();
+
+app.UseRateLimiter();
 
 app.UseCors("ReactClient");
 

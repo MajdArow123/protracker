@@ -24,6 +24,18 @@ public class AuthController : ApiControllerBase
         return Success(new LoginResponse { User = user, AccessToken = accessToken, RefreshToken = refreshToken });
     }
 
+    // Athlete self-enrollment via a team join code — creates account + player record,
+    // then behaves exactly like a successful login (cookies + tokens).
+    [HttpPost("register-athlete")]
+    [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("join-validate")]
+    public async Task<ActionResult> RegisterAthlete(RegisterAthleteRequest request)
+    {
+        var result = await _authService.RegisterAthleteAsync(request);
+        WriteAuthCookies(result.AccessToken, result.RefreshToken);
+        return Success(result);
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult> Login(LoginRequest request)
