@@ -75,6 +75,38 @@ const MEAL_ICONS: Record<string, typeof Coffee> = {
   'Post-Workout': Dumbbell,
 };
 
+const CHIP_CATEGORY_LABELS: Record<string, string> = {
+  NutAllergy: 'No Nuts', DairyFree: 'No Dairy', GlutenFree: 'Gluten-Free',
+  NoEggs: 'No Eggs', NoFish: 'No Fish', NoRedMeat: 'No Red Meat',
+};
+
+// Shown around AI plan generation so the coach sees the athlete's restrictions are
+// applied automatically — no need to re-enter them.
+function RestrictionsNotice({ items, generating }: { items: NutritionProfileItem[]; generating?: boolean }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-900/40">
+      <Salad size={13} className="text-emerald-500" />
+      <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+        {generating ? 'Generating plan respecting:' : 'This plan will automatically respect:'}
+      </span>
+      {items.map(r => (
+        <span key={r.id} className={clsx(
+          'px-2 py-0.5 rounded-full text-[11px] font-semibold',
+          r.severity === 'Hard'
+            ? 'bg-red-500/15 text-red-500'
+            : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+        )}>
+          {r.specificItem ? `No ${r.specificItem}` : (CHIP_CATEGORY_LABELS[r.category] ?? r.category)}
+        </span>
+      ))}
+      <span className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60 w-full text-center mt-0.5">
+        Loaded from the athlete's dietary profile — nothing to re-enter.
+      </span>
+    </div>
+  );
+}
+
 function parseList(str: string | null | undefined): string[] {
   if (!str) return [];
   return str.split(',').map(s => s.trim()).filter(Boolean);
@@ -712,6 +744,8 @@ export function NutritionPage() {
           {loadingWeekly ? (
             <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
           ) : generateWeekly.isPending ? (
+            <>
+            <RestrictionsNotice items={profileItems} generating />
             <AILoadingPanel
               primaryText="Generating your weekly plan..."
               messages={[
@@ -725,6 +759,7 @@ export function NutritionPage() {
               note="This usually takes 30-60 seconds since we're planning every meal for the full week"
               estimatedSeconds={45}
             />
+            </>
           ) : !weeklyPlan ? (
             <div className="space-y-4">
               {weeklyError && (
@@ -733,6 +768,7 @@ export function NutritionPage() {
                   <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
                 </div>
               )}
+              <RestrictionsNotice items={profileItems} />
               <EmptyState
                 icon={<CalendarDays size={36} />}
                 title="No weekly plan yet"

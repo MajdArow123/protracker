@@ -33,6 +33,13 @@ public class ProfileController : ApiControllerBase
         return Success(new ProfilePictureResponse { ProfilePictureUrl = null });
     }
 
+    [HttpPost("onboarding-complete")]
+    public async Task<ActionResult> CompleteOnboarding()
+    {
+        await _service.CompleteOnboardingAsync(User);
+        return Success(new GenericMessageResponse { Message = "Onboarding complete." });
+    }
+
     [HttpPost("change-password")]
     public async Task<ActionResult> ChangePassword(ChangePasswordRequest request)
     {

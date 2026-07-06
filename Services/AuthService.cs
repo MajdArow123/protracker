@@ -128,6 +128,8 @@ public class AuthService : IAuthService
             EmergencyContactName = NullIfBlank(request.EmergencyContactName),
             EmergencyContactPhone = NullIfBlank(request.EmergencyContactPhone),
             EmergencyContactRelationship = NullIfBlank(request.EmergencyContactRelationship),
+            // The join wizard collects everything onboarding would ask for — don't re-onboard.
+            HasCompletedOnboarding = true,
         };
         var created = await _userManager.CreateAsync(user, request.Password);
         if (!created.Succeeded)

@@ -9,6 +9,11 @@ import { useCoachNotes } from '../../hooks/useCoachNotes';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
+import { OnboardingModal } from '../../components/profile/OnboardingModal';
+import { ProfileCompletionReminder } from '../../components/profile/ProfileCompletionReminder';
+import { useProfile } from '../../hooks/useProfile';
+import { usePlayerNutritionProfile } from '../../hooks/useNutrition';
+import { computeProfileCompletion } from '../../utils/profileCompletion';
 import { useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
@@ -66,6 +71,8 @@ export function PlayerDashboardPage() {
   const { data: coachFeedback } = useCoachNotes(playerId);
   const { data: recoveryPlan } = usePlayerRecoveryPlan(playerId);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const { data: profile } = useProfile();
+  const { data: dietaryItems = [] } = usePlayerNutritionProfile(playerId ?? 0);
 
   // One-time welcome banner set by the join-code registration flow.
   const [welcome, setWelcome] = useState<{ team: string; name: string } | null>(() => {
@@ -98,6 +105,10 @@ export function PlayerDashboardPage() {
 
   const avgScore = data?.latestAverageScore;
 
+  // Onboarding + completion reminder (Feature: athlete onboarding improvements)
+  const completion = profile ? computeProfileCompletion(profile, { dietaryCount: dietaryItems.length }) : null;
+  const showOnboarding = !!profile && !profile.hasCompletedOnboarding && (completion?.percent ?? 100) < 50;
+
   const latestScores = latestAssessment?.statScores ?? [];
   const bestStat = latestScores.length
     ? latestScores.reduce((best, s) => (s.score > best.score ? s : best))
@@ -113,6 +124,14 @@ export function PlayerDashboardPage() {
       transition={{ duration: 0.3 }}
       className="flex-1 p-4 lg:p-6 space-y-6"
     >
+      {/* First-login onboarding (photo → physicals → dietary) */}
+      {showOnboarding && <OnboardingModal profile={profile!} />}
+
+      {/* Profile completion nudge (< 80%, dismissible for 7 days) */}
+      {!showOnboarding && profile?.hasCompletedOnboarding && completion && (
+        <ProfileCompletionReminder completion={completion} />
+      )}
+
       {/* Welcome banner (shown once after joining via a team code) */}
       {welcome && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}

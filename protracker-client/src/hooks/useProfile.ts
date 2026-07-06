@@ -49,6 +49,14 @@ export function useRemoveProfilePicture() {
   });
 }
 
+export function useCompleteOnboarding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: profileApi.completeOnboarding,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['profile'] }),
+  });
+}
+
 export function useChangePassword() {
   return useMutation({
     mutationFn: ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) =>

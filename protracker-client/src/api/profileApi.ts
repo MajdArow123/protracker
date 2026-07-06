@@ -69,6 +69,10 @@ export const profileApi = {
     await api.delete('/api/profile/picture');
   },
 
+  completeOnboarding: async (): Promise<void> => {
+    await api.post('/api/profile/onboarding-complete');
+  },
+
   changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
     await api.post('/api/profile/change-password', { currentPassword, newPassword });
   },

@@ -15,6 +15,7 @@ public interface IProfileService
     Task<string> SetPictureAsync(ClaimsPrincipal principal, IFormFile file);
     Task RemovePictureAsync(ClaimsPrincipal principal);
     Task ChangePasswordAsync(ClaimsPrincipal principal, ChangePasswordRequest request);
+    Task CompleteOnboardingAsync(ClaimsPrincipal principal);
     Task DeleteAccountAsync(ClaimsPrincipal principal, DeleteAccountRequest request);
 }
 
@@ -154,6 +155,15 @@ public class ProfileService : IProfileService
             throw new ValidationApiException(messages);
         }
         _logger.LogInformation("[Profile] Password changed for user {UserId}.", user.Id);
+    }
+
+    // Idempotent — called when the athlete finishes OR skips the first-login onboarding flow.
+    public async Task CompleteOnboardingAsync(ClaimsPrincipal principal)
+    {
+        var user = await RequireUserAsync(principal);
+        if (user.HasCompletedOnboarding) return;
+        user.HasCompletedOnboarding = true;
+        await _userManager.UpdateAsync(user);
     }
 
     public async Task DeleteAccountAsync(ClaimsPrincipal principal, DeleteAccountRequest request)
