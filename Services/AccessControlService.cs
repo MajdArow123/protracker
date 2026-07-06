@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Common;
 using ProTracker.Data;
+using ProTracker.Models;
 
 namespace ProTracker.Services;
 
@@ -22,6 +23,19 @@ public class AccessControlService : IAccessControlService
         return userId;
     }
 
+    public bool IsSoloAthlete(ClaimsPrincipal user) => user.IsInRole("SoloAthlete");
+
+    // Any athlete-like role owns exactly one player record (their own).
+    private static bool IsSelfOwnedAthlete(ClaimsPrincipal user) =>
+        user.IsInRole("Athlete") || user.IsInRole("SoloAthlete");
+
+    public async Task<Player> RequireOwnPlayerAsync(ClaimsPrincipal user)
+    {
+        var userId = RequireUserId(user);
+        return await _context.Players.FirstOrDefaultAsync(p => p.UserId == userId)
+            ?? throw new NotFoundApiException("No player record is linked to your account.");
+    }
+
     public async Task EnsureCanAccessTeamAsync(ClaimsPrincipal user, int teamId)
     {
         if (user.IsInRole("Admin"))
@@ -40,7 +54,7 @@ public class AccessControlService : IAccessControlService
             return;
         }
 
-        if (user.IsInRole("Athlete"))
+        if (IsSelfOwnedAthlete(user))
         {
             var userId = RequireUserId(user);
             var isOnTeam = await _context.Players.AnyAsync(p => p.TeamId == teamId && p.UserId == userId);
@@ -64,13 +78,16 @@ public class AccessControlService : IAccessControlService
         if (user.IsInRole("Coach"))
         {
             var userId = RequireUserId(user);
-            var hasScope = await _context.CoachTeamScopes.AnyAsync(s => s.TeamId == player.TeamId && s.CoachId == userId);
+            // Solo players (TeamId null) never match a coach scope, so coaches can't see them.
+            var hasScope = player.TeamId != null
+                && await _context.CoachTeamScopes.AnyAsync(s => s.TeamId == player.TeamId && s.CoachId == userId);
             if (!hasScope)
                 throw new ForbiddenApiException("You do not have access to this player.");
             return;
         }
 
-        if (user.IsInRole("Athlete"))
+        // Athletes and solo athletes may only ever touch their own player record.
+        if (IsSelfOwnedAthlete(user))
         {
             var userId = RequireUserId(user);
             if (player.UserId != userId)
@@ -102,8 +119,12 @@ public class AccessControlService : IAccessControlService
         if (user.IsInRole("Coach"))
             return await _context.CoachTeamScopes.Where(s => s.CoachId == userId).Select(s => s.TeamId).ToListAsync();
 
-        if (user.IsInRole("Athlete"))
-            return await _context.Players.Where(p => p.UserId == userId).Select(p => p.TeamId).Distinct().ToListAsync();
+        if (IsSelfOwnedAthlete(user))
+            return await _context.Players
+                .Where(p => p.UserId == userId && p.TeamId != null)
+                .Select(p => p.TeamId!.Value)
+                .Distinct()
+                .ToListAsync();
 
         return new List<int>();
     }

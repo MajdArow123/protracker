@@ -26,8 +26,13 @@ public class MatchResult
 {
     public int Id { get; set; }
 
-    public int TeamId { get; set; }
-    public Team Team { get; set; } = null!;
+    // Exactly one of TeamId / PlayerId is set: team matches are the coach flow,
+    // player-scoped matches are logged by a solo athlete for themselves.
+    public int? TeamId { get; set; }
+    public Team? Team { get; set; }
+
+    public int? PlayerId { get; set; }
+    public Player? Player { get; set; }
 
     [Required]
     public string OpponentName { get; set; } = "";

@@ -55,7 +55,7 @@ public class MessageService : IMessageService
             // Every athlete (linked player) on the coach's scoped teams.
             var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
             var players = await _context.Players
-                .Where(p => teamIds.Contains(p.TeamId) && p.UserId != null)
+                .Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value) && p.UserId != null)
                 .Select(p => new { p.UserId, p.FullName })
                 .ToListAsync();
             foreach (var p in players)
@@ -207,7 +207,7 @@ public class MessageService : IMessageService
 
         if (user.IsInRole("Coach"))
         {
-            var ok = await _context.Players.AnyAsync(p => p.UserId == otherUserId && teamIds.Contains(p.TeamId));
+            var ok = await _context.Players.AnyAsync(p => p.UserId == otherUserId && p.TeamId != null && teamIds.Contains(p.TeamId.Value));
             if (!ok) throw new ForbiddenApiException("You can only message athletes on your teams.");
             return;
         }

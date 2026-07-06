@@ -36,24 +36,60 @@ public class AssessmentService : IAssessmentService
 
     public async Task<List<AssessmentPeriodDto>> GetAccessiblePeriodsAsync(ClaimsPrincipal user)
     {
+        // Solo athletes see their own player-scoped periods; everyone still sees
+        // the periods of teams they can access (a connected ex-solo athlete has both).
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
-        return await _context.AssessmentPeriods.Where(p => teamIds.Contains(p.TeamId))
-            .Select(ToPeriodDtoExpr()).ToListAsync();
+        var query = _context.AssessmentPeriods
+            .Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value));
+
+        if (_access.IsSoloAthlete(user) || user.IsInRole("Athlete"))
+        {
+            var userId = _access.RequireUserId(user);
+            query = _context.AssessmentPeriods.Where(p =>
+                (p.TeamId != null && teamIds.Contains(p.TeamId.Value))
+                || (p.PlayerId != null && p.Player!.UserId == userId));
+        }
+
+        return await query.Select(ToPeriodDtoExpr()).ToListAsync();
+    }
+
+    // Team-scoped periods require team access; player-scoped (solo) periods require
+    // ownership of that player.
+    private async Task EnsureCanAccessPeriodAsync(ClaimsPrincipal user, AssessmentPeriod period)
+    {
+        if (period.PlayerId != null)
+            await _access.EnsureCanAccessPlayerAsync(user, period.PlayerId.Value);
+        else if (period.TeamId != null)
+            await _access.EnsureCanAccessTeamAsync(user, period.TeamId.Value);
+        else
+            throw new ForbiddenApiException();
     }
 
     public async Task<AssessmentPeriodDto> GetPeriodByIdAsync(ClaimsPrincipal user, int id)
     {
         var period = await _context.AssessmentPeriods.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new NotFoundApiException($"Assessment period {id} was not found.");
-        await _access.EnsureCanAccessTeamAsync(user, period.TeamId);
+        await EnsureCanAccessPeriodAsync(user, period);
         return ToPeriodDto(period);
     }
 
     public async Task<AssessmentPeriodDto> CreatePeriodAsync(ClaimsPrincipal user, CreateAssessmentPeriodDto dto)
     {
-        await _access.EnsureCanAccessTeamAsync(user, dto.TeamId);
+        AssessmentPeriod period;
+        if (dto.TeamId is int teamId)
+        {
+            await _access.EnsureCanAccessTeamAsync(user, teamId);
+            period = new AssessmentPeriod { Name = dto.Name, StartDate = dto.StartDate, EndDate = dto.EndDate, TeamId = teamId };
+        }
+        else
+        {
+            // No team = a solo athlete creating a personal period for themselves.
+            if (!_access.IsSoloAthlete(user))
+                throw new ValidationApiException("TeamId is required.");
+            var player = await _access.RequireOwnPlayerAsync(user);
+            period = new AssessmentPeriod { Name = dto.Name, StartDate = dto.StartDate, EndDate = dto.EndDate, PlayerId = player.Id };
+        }
 
-        var period = new AssessmentPeriod { Name = dto.Name, StartDate = dto.StartDate, EndDate = dto.EndDate, TeamId = dto.TeamId };
         _context.AssessmentPeriods.Add(period);
         await _context.SaveChangesAsync();
         return ToPeriodDto(period);
@@ -63,7 +99,7 @@ public class AssessmentService : IAssessmentService
     {
         var period = await _context.AssessmentPeriods.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new NotFoundApiException($"Assessment period {id} was not found.");
-        await _access.EnsureCanAccessTeamAsync(user, period.TeamId);
+        await EnsureCanAccessPeriodAsync(user, period);
 
         period.Name = dto.Name;
         period.StartDate = dto.StartDate;
@@ -76,7 +112,7 @@ public class AssessmentService : IAssessmentService
     {
         var period = await _context.AssessmentPeriods.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new NotFoundApiException($"Assessment period {id} was not found.");
-        await _access.EnsureCanAccessTeamAsync(user, period.TeamId);
+        await EnsureCanAccessPeriodAsync(user, period);
 
         _context.AssessmentPeriods.Remove(period);
         await _context.SaveChangesAsync();
@@ -84,12 +120,18 @@ public class AssessmentService : IAssessmentService
 
     public async Task<List<PlayerAssessmentDto>> GetAccessibleAssessmentsAsync(ClaimsPrincipal user)
     {
+        if (_access.IsSoloAthlete(user))
+        {
+            var player = await _access.RequireOwnPlayerAsync(user);
+            return await GetAssessmentsForPlayerAsync(user, player.Id);
+        }
+
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
         var assessments = await _context.PlayerAssessments
             .Include(a => a.AssessmentPeriod)
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
             .Include(a => a.Player)
-            .Where(a => teamIds.Contains(a.Player.TeamId))
+            .Where(a => a.Player.TeamId != null && teamIds.Contains(a.Player.TeamId.Value))
             .ToListAsync();
         return assessments.Select(ToAssessmentDto).ToList();
     }
@@ -118,13 +160,27 @@ public class AssessmentService : IAssessmentService
     {
         await _access.EnsureCanAccessPlayerAsync(user, dto.PlayerId);
 
-        var period = await _context.AssessmentPeriods.FirstOrDefaultAsync(p => p.Id == dto.AssessmentPeriodId)
-            ?? throw new ValidationApiException($"Assessment period {dto.AssessmentPeriodId} does not exist.");
+        // Solo athletes may omit the period (0): their "Personal Training" period is
+        // created on first use and reused after that.
+        AssessmentPeriod period;
+        if (dto.AssessmentPeriodId == 0)
+        {
+            if (!_access.IsSoloAthlete(user))
+                throw new ValidationApiException("AssessmentPeriodId is required.");
+            period = await GetOrCreatePersonalPeriodAsync(dto.PlayerId);
+        }
+        else
+        {
+            period = await _context.AssessmentPeriods.FirstOrDefaultAsync(p => p.Id == dto.AssessmentPeriodId)
+                ?? throw new ValidationApiException($"Assessment period {dto.AssessmentPeriodId} does not exist.");
+            // A period must belong to the player being assessed (their team's, or their own).
+            await EnsureCanAccessPeriodAsync(user, period);
+        }
 
         var assessment = new PlayerAssessment
         {
             PlayerId = dto.PlayerId,
-            AssessmentPeriodId = dto.AssessmentPeriodId,
+            AssessmentPeriodId = period.Id,
             DateRecorded = dto.DateRecorded,
             Notes = dto.Notes
         };
@@ -169,6 +225,27 @@ public class AssessmentService : IAssessmentService
         await _context.SaveChangesAsync();
     }
 
+    // The long-running catch-all period a solo athlete's self-assessments live in.
+    private async Task<AssessmentPeriod> GetOrCreatePersonalPeriodAsync(int playerId)
+    {
+        var existing = await _context.AssessmentPeriods
+            .Where(p => p.PlayerId == playerId)
+            .OrderByDescending(p => p.EndDate)
+            .FirstOrDefaultAsync();
+        if (existing != null) return existing;
+
+        var period = new AssessmentPeriod
+        {
+            Name = "Personal Training",
+            PlayerId = playerId,
+            StartDate = DateTime.UtcNow.Date,
+            EndDate = DateTime.UtcNow.Date.AddYears(5),
+        };
+        _context.AssessmentPeriods.Add(period);
+        await _context.SaveChangesAsync();
+        return period;
+    }
+
     private async Task<PlayerAssessment> LoadAssessmentAsync(int id) =>
         await _context.PlayerAssessments
             .Include(a => a.AssessmentPeriod)
@@ -182,11 +259,12 @@ public class AssessmentService : IAssessmentService
         Name = p.Name,
         StartDate = p.StartDate,
         EndDate = p.EndDate,
-        TeamId = p.TeamId
+        TeamId = p.TeamId,
+        PlayerId = p.PlayerId
     };
 
     private static System.Linq.Expressions.Expression<Func<AssessmentPeriod, AssessmentPeriodDto>> ToPeriodDtoExpr() =>
-        p => new AssessmentPeriodDto { Id = p.Id, Name = p.Name, StartDate = p.StartDate, EndDate = p.EndDate, TeamId = p.TeamId, SeasonId = p.SeasonId };
+        p => new AssessmentPeriodDto { Id = p.Id, Name = p.Name, StartDate = p.StartDate, EndDate = p.EndDate, TeamId = p.TeamId, PlayerId = p.PlayerId, SeasonId = p.SeasonId };
 
     private static PlayerAssessmentDto ToAssessmentDto(PlayerAssessment a) => new()
     {

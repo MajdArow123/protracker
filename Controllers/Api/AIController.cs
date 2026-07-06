@@ -13,7 +13,7 @@ using ProTracker.Services;
 namespace ProTracker.Controllers.Api;
 
 [Route("api/ai")]
-[Authorize(Roles = "Coach,Admin")]
+[Authorize(Roles = "Coach,Admin,SoloAthlete")]
 public class AIController : ApiControllerBase, IAsyncActionFilter
 {
     private readonly ApplicationDbContext _context;

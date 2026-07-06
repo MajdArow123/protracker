@@ -96,9 +96,21 @@ public class InjuryService : IInjuryService
 
     public async Task<List<InjuryRecordDto>> GetActiveForCoachAsync(ClaimsPrincipal user)
     {
-        var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
-        var injuries = await _context.InjuryRecords.Include(i => i.Player)
-            .Where(i => teamIds.Contains(i.Player.TeamId) && i.RecoveryStatus != RecoveryStatus.FullyRecovered)
+        // Solo athletes get their own active injuries; coaches get their teams'.
+        var query = _context.InjuryRecords.Include(i => i.Player).AsQueryable();
+        if (_access.IsSoloAthlete(user))
+        {
+            var userId = _access.RequireUserId(user);
+            query = query.Where(i => i.Player.UserId == userId);
+        }
+        else
+        {
+            var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
+            query = query.Where(i => i.Player.TeamId != null && teamIds.Contains(i.Player.TeamId.Value));
+        }
+
+        var injuries = await query
+            .Where(i => i.RecoveryStatus != RecoveryStatus.FullyRecovered)
             .OrderByDescending(i => i.Severity)
             .ThenByDescending(i => i.InjuryDate)
             .ToListAsync();

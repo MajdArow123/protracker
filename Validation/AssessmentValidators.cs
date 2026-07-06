@@ -8,7 +8,8 @@ public class CreateAssessmentPeriodDtoValidator : AbstractValidator<CreateAssess
     public CreateAssessmentPeriodDtoValidator()
     {
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.TeamId).GreaterThan(0);
+        // Null TeamId = a solo athlete's personal period (ownership enforced in the service).
+        RuleFor(x => x.TeamId).GreaterThan(0).When(x => x.TeamId.HasValue);
         RuleFor(x => x.EndDate).GreaterThanOrEqualTo(x => x.StartDate)
             .WithMessage("EndDate must be on or after StartDate.");
     }
@@ -19,7 +20,8 @@ public class CreatePlayerAssessmentDtoValidator : AbstractValidator<CreatePlayer
     public CreatePlayerAssessmentDtoValidator()
     {
         RuleFor(x => x.PlayerId).GreaterThan(0);
-        RuleFor(x => x.AssessmentPeriodId).GreaterThan(0);
+        // 0 = solo athlete's auto-created personal period (rejected for coaches in the service).
+        RuleFor(x => x.AssessmentPeriodId).GreaterThanOrEqualTo(0);
         RuleFor(x => x.DateRecorded).NotEqual(default(DateTime))
             .WithMessage("DateRecorded must be a valid date.");
         RuleForEach(x => x.StatScores).SetValidator(new CreatePlayerStatScoreDtoValidator());

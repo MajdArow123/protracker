@@ -13,8 +13,13 @@ public class AssessmentPeriod
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
 
-    public int TeamId { get; set; }
-    public Team Team { get; set; } = null!;
+    // Exactly one of TeamId / PlayerId is set: team-scoped periods are the coach flow,
+    // player-scoped periods belong to a solo athlete ("Personal Training").
+    public int? TeamId { get; set; }
+    public Team? Team { get; set; }
+
+    public int? PlayerId { get; set; }
+    public Player? Player { get; set; }
 
     // Optional link to a Season, so a season summary can span the periods within it.
     public int? SeasonId { get; set; }

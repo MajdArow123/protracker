@@ -98,8 +98,8 @@ public class PlayerTaskService : IPlayerTaskService
 
         await _context.Entry(task).Reference(t => t.Player).LoadAsync();
 
-        // Notify the athlete their coach assigned a task.
-        if (!string.IsNullOrEmpty(task.Player.UserId))
+        // Notify the athlete their coach assigned a task (skip self-assigned solo tasks).
+        if (!string.IsNullOrEmpty(task.Player.UserId) && task.Player.UserId != userId)
             _push.SendToUser(task.Player.UserId, new PushPayload
             {
                 Title = "New task assigned",

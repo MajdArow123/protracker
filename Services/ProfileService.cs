@@ -71,9 +71,9 @@ public class ProfileService : IProfileService
         if (!result.Succeeded)
             throw new ValidationApiException(result.Errors.Select(e => e.Description));
 
-        // Athletes may edit their own physicals — these live on the Player record so the
-        // coach's views stay in sync.
-        if (roles.Contains("Athlete"))
+        // Athletes (team-managed or solo) may edit their own physicals — these live on the
+        // Player record so the coach's views stay in sync.
+        if (roles.Contains("Athlete") || roles.Contains("SoloAthlete"))
         {
             var player = await _context.Players.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (player != null)
@@ -178,9 +178,17 @@ public class ProfileService : IProfileService
         if (roles.Contains("Coach") && await _context.Teams.AnyAsync(t => t.CoachId == user.Id))
             throw new ValidationApiException("Delete or transfer your teams before deleting your account.");
 
-        // Unlink (not delete) the athlete's player record — assessments/history stay with the coach.
+        // Unlink (not delete) the athlete's player record — assessments/history stay with the
+        // coach. A solo player has no coach to keep history for, so delete it (cascades wipe
+        // their assessments, plans, tasks, etc.).
         var players = await _context.Players.Where(p => p.UserId == user.Id).ToListAsync();
-        foreach (var p in players) p.UserId = null;
+        foreach (var p in players)
+        {
+            if (p.IsSolo && p.TeamId == null)
+                _context.Players.Remove(p);
+            else
+                p.UserId = null;
+        }
 
         var refreshTokens = await _context.RefreshTokens.Where(t => t.UserId == user.Id).ToListAsync();
         _context.RefreshTokens.RemoveRange(refreshTokens);
@@ -222,7 +230,7 @@ public class ProfileService : IProfileService
             HasCompletedOnboarding = user.HasCompletedOnboarding,
         };
 
-        if (roles.Contains("Athlete"))
+        if (roles.Contains("Athlete") || roles.Contains("SoloAthlete"))
         {
             var player = await _context.Players
                 .Include(p => p.Team).Include(p => p.Position).Include(p => p.Sport)

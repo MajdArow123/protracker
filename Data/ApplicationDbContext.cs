@@ -61,6 +61,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<SportStatCategory> SportStatCategories => Set<SportStatCategory>();
     public DbSet<Team> Teams => Set<Team>();
     public DbSet<Player> Players => Set<Player>();
+    public DbSet<SoloProfile> SoloProfiles => Set<SoloProfile>();
     public DbSet<CoachTeamScope> CoachTeamScopes => Set<CoachTeamScope>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
     public DbSet<Season> Seasons => Set<Season>();
@@ -137,6 +138,23 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Player>()
             .HasIndex(p => p.UserId);
 
+        // --- Solo athletes ---
+        builder.Entity<SoloProfile>()
+            .HasOne(s => s.Player)
+            .WithMany()
+            .HasForeignKey(s => s.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SoloProfile>()
+            .HasIndex(s => s.PlayerId)
+            .IsUnique();
+        builder.Entity<SoloProfile>()
+            .HasIndex(s => s.UserId);
+        builder.Entity<SoloProfile>()
+            .HasOne(s => s.Sport)
+            .WithMany()
+            .HasForeignKey(s => s.SportId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         // --- Access scoping ---
         builder.Entity<CoachTeamScope>()
             .HasOne(c => c.Team)
@@ -154,6 +172,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(t => t.AssessmentPeriods)
             .HasForeignKey(a => a.TeamId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // Solo athletes own player-scoped periods (TeamId null).
+        builder.Entity<AssessmentPeriod>()
+            .HasOne(a => a.Player)
+            .WithMany()
+            .HasForeignKey(a => a.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<AssessmentPeriod>()
+            .HasIndex(a => a.PlayerId);
 
         // Deleting a season unlinks its assessment periods (SetNull) rather than deleting them.
         builder.Entity<AssessmentPeriod>()
@@ -298,6 +325,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(m => m.TeamId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // Solo athletes own player-scoped matches (TeamId null).
+        builder.Entity<MatchResult>()
+            .HasOne(m => m.Player)
+            .WithMany()
+            .HasForeignKey(m => m.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<MatchResult>()
+            .HasIndex(m => m.PlayerId);
+
         builder.Entity<PlayerMatchRating>()
             .HasOne(r => r.MatchResult)
             .WithMany(m => m.Ratings)
@@ -317,6 +353,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<ScheduledSession>()
             .HasIndex(s => new { s.TeamId, s.StartTime });
+
+        // Solo athletes own player-scoped sessions (TeamId null).
+        builder.Entity<ScheduledSession>()
+            .HasOne(s => s.Player)
+            .WithMany()
+            .HasForeignKey(s => s.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ScheduledSession>()
+            .HasIndex(s => new { s.PlayerId, s.StartTime });
 
         builder.Entity<CoachNote>()
             .HasOne(n => n.Player)

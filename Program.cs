@@ -213,7 +213,7 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    foreach (var role in new[] { "Coach", "Athlete", "Admin", "Parent" })
+    foreach (var role in new[] { "Coach", "Athlete", "Admin", "Parent", "SoloAthlete" })
     {
         if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new IdentityRole(role));

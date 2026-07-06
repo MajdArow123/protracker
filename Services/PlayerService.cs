@@ -32,8 +32,18 @@ public class PlayerService : IPlayerService
 
     public async Task<List<PlayerDto>> GetAccessiblePlayersAsync(ClaimsPrincipal user)
     {
+        // A solo athlete's only accessible player is their own (they have no team).
+        if (_access.IsSoloAthlete(user))
+        {
+            var own = await _context.Players
+                .Include(p => p.Team).Include(p => p.Position)
+                .Where(p => p.UserId == _access.RequireUserId(user))
+                .ToListAsync();
+            return own.Select(ToDto).ToList();
+        }
+
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
-        var players = await _context.Players.Where(p => teamIds.Contains(p.TeamId))
+        var players = await _context.Players.Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value))
             .Include(p => p.Team).Include(p => p.Position)
             .ToListAsync();
         return players.Select(ToDto).ToList();
@@ -159,7 +169,8 @@ public class PlayerService : IPlayerService
         ProfileImageUrl = p.ProfileImageUrl,
         JerseyNumber = p.JerseyNumber,
         Status = p.Status.ToString(),
-        JoinedViaCodeAt = p.JoinedViaCodeAt
+        JoinedViaCodeAt = p.JoinedViaCodeAt,
+        IsSolo = p.IsSolo
     };
 
     private static PlayerStatus? ParseStatus(string? status) =>
@@ -187,6 +198,7 @@ public class PlayerService : IPlayerService
             JerseyNumber = dto.JerseyNumber,
             Status = dto.Status,
             JoinedViaCodeAt = dto.JoinedViaCodeAt,
+            IsSolo = dto.IsSolo,
             InjuryNotes = p.InjuryNotes,
             Goals = p.Goals,
             CoachNotes = p.CoachNotes,

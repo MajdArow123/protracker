@@ -17,8 +17,13 @@ public class ScheduledSession
 {
     public int Id { get; set; }
 
-    public int TeamId { get; set; }
-    public Team Team { get; set; } = null!;
+    // Exactly one of TeamId / PlayerId is set: team sessions are the coach flow,
+    // player-scoped sessions belong to a solo athlete.
+    public int? TeamId { get; set; }
+    public Team? Team { get; set; }
+
+    public int? PlayerId { get; set; }
+    public Player? Player { get; set; }
 
     public string Title { get; set; } = "";
     public SessionType SessionType { get; set; }

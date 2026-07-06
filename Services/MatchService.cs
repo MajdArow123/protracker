@@ -15,6 +15,9 @@ public interface IMatchService
     Task DeleteAsync(ClaimsPrincipal user, int matchId);
     Task<MatchResultDto> SaveRatingsAsync(ClaimsPrincipal user, int matchId, SaveMatchRatingsDto dto);
     Task<List<PlayerMatchRatingDto>> GetPlayerRatingsAsync(ClaimsPrincipal user, int playerId);
+    // Solo athletes: personal (player-scoped, team-less) match log.
+    Task<List<MatchResultDto>> GetMySoloMatchesAsync(ClaimsPrincipal user);
+    Task<MatchResultDto> CreateForSelfAsync(ClaimsPrincipal user, CreateMatchResultDto dto);
 }
 
 public class MatchService : IMatchService
@@ -64,18 +67,77 @@ public class MatchService : IMatchService
         return ToDto(match);
     }
 
+    public async Task<List<MatchResultDto>> GetMySoloMatchesAsync(ClaimsPrincipal user)
+    {
+        var player = await _access.RequireOwnPlayerAsync(user);
+        var matches = await _context.MatchResults
+            .Include(m => m.Ratings).ThenInclude(r => r.Player)
+            .Where(m => m.PlayerId == player.Id)
+            .OrderByDescending(m => m.MatchDate)
+            .ToListAsync();
+        return matches.Select(ToDto).ToList();
+    }
+
+    public async Task<MatchResultDto> CreateForSelfAsync(ClaimsPrincipal user, CreateMatchResultDto dto)
+    {
+        var player = await _access.RequireOwnPlayerAsync(user);
+        var match = new MatchResult
+        {
+            PlayerId = player.Id,
+            OpponentName = dto.OpponentName.Trim(),
+            MatchDate = dto.MatchDate,
+            HomeScore = dto.HomeScore,
+            AwayScore = dto.AwayScore,
+            IsHome = dto.IsHome,
+            ScoreFormat = MatchResult.FormatForSport(player.SportId),
+            SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim(),
+            Venue = dto.Venue,
+            Competition = dto.Competition,
+            Notes = dto.Notes,
+        };
+        _context.MatchResults.Add(match);
+        await _context.SaveChangesAsync();
+
+        // "How did I play?" — stored as the athlete's own rating on their match.
+        if (dto.PersonalRating is decimal rating)
+        {
+            _context.PlayerMatchRatings.Add(new PlayerMatchRating
+            {
+                MatchResultId = match.Id,
+                PlayerId = player.Id,
+                Rating = Math.Clamp(rating, 1, 10),
+            });
+            await _context.SaveChangesAsync();
+        }
+
+        return ToDto(await LoadMatchAsync(match.Id));
+    }
+
+    // Team matches require team access; personal (solo) matches require player ownership.
+    private async Task EnsureCanManageMatchAsync(ClaimsPrincipal user, MatchResult match)
+    {
+        if (match.PlayerId != null)
+            await _access.EnsureCanAccessPlayerAsync(user, match.PlayerId.Value);
+        else if (match.TeamId != null)
+            await _access.EnsureCanAccessTeamAsync(user, match.TeamId.Value);
+        else
+            throw new ForbiddenApiException();
+    }
+
     public async Task<MatchResultDto> UpdateAsync(ClaimsPrincipal user, int matchId, CreateMatchResultDto dto)
     {
         var match = await LoadMatchAsync(matchId);
-        await _access.EnsureCanAccessTeamAsync(user, match.TeamId);
+        await EnsureCanManageMatchAsync(user, match);
 
         match.OpponentName = dto.OpponentName.Trim();
         match.MatchDate = dto.MatchDate;
         match.HomeScore = dto.HomeScore;
         match.AwayScore = dto.AwayScore;
         match.IsHome = dto.IsHome;
-        // Keep score format aligned with the team's sport (in case older rows predate it).
-        match.ScoreFormat = MatchResult.FormatForSport(match.Team?.SportId ?? 0);
+        // Keep score format aligned with the team's/player's sport (in case older rows predate it).
+        match.ScoreFormat = MatchResult.FormatForSport(
+            match.Team?.SportId
+            ?? await _context.Players.Where(p => p.Id == match.PlayerId).Select(p => p.SportId).FirstOrDefaultAsync());
         match.SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim();
         match.Venue = dto.Venue;
         match.Competition = dto.Competition;
@@ -87,7 +149,7 @@ public class MatchService : IMatchService
     public async Task DeleteAsync(ClaimsPrincipal user, int matchId)
     {
         var match = await LoadMatchAsync(matchId);
-        await _access.EnsureCanAccessTeamAsync(user, match.TeamId);
+        await EnsureCanManageMatchAsync(user, match);
         _context.MatchResults.Remove(match);
         await _context.SaveChangesAsync();
     }
@@ -95,10 +157,12 @@ public class MatchService : IMatchService
     public async Task<MatchResultDto> SaveRatingsAsync(ClaimsPrincipal user, int matchId, SaveMatchRatingsDto dto)
     {
         var match = await LoadMatchAsync(matchId);
-        await _access.EnsureCanAccessTeamAsync(user, match.TeamId);
+        await EnsureCanManageMatchAsync(user, match);
 
-        // Only players on this match's team may be rated.
-        var teamPlayerIds = await _context.Players.Where(p => p.TeamId == match.TeamId).Select(p => p.Id).ToListAsync();
+        // Only players on this match's team (or the solo owner themselves) may be rated.
+        var teamPlayerIds = match.PlayerId != null
+            ? new List<int> { match.PlayerId.Value }
+            : await _context.Players.Where(p => p.TeamId == match.TeamId).Select(p => p.Id).ToListAsync();
         var invalid = dto.Ratings.Select(r => r.PlayerId).Where(pid => !teamPlayerIds.Contains(pid)).ToList();
         if (invalid.Count > 0)
             throw new ValidationApiException($"Players {string.Join(", ", invalid)} are not on this team.");
@@ -167,6 +231,7 @@ public class MatchService : IMatchService
         {
             Id = m.Id,
             TeamId = m.TeamId,
+            PlayerId = m.PlayerId,
             TeamName = m.Team?.Name ?? "",
             OpponentName = m.OpponentName,
             MatchDate = m.MatchDate,

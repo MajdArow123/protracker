@@ -195,6 +195,204 @@ public class AuthService : IAuthService
         };
     }
 
+    // Solo athlete self-registration: account + team-less Player + SoloProfile + dietary
+    // rows in one transaction, then auto-login. No join code, no coach.
+    public async Task<RegisterSoloResponse> RegisterSoloAsync(RegisterSoloRequest request)
+    {
+        var email = (request.Email ?? "").Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@'))
+            throw new ValidationApiException("A valid email is required.");
+        if (string.IsNullOrWhiteSpace(request.FullName))
+            throw new ValidationApiException("Full name is required.");
+        if (await _userManager.FindByEmailAsync(email) != null)
+            throw new ValidationApiException("An account with this email already exists. Sign in instead.");
+
+        var age = ComputeAge(request.DateOfBirth);
+        if (age < 5 || age > 90)
+            throw new ValidationApiException("Please enter a valid date of birth.");
+        if (request.Height < 80 || request.Height > 250)
+            throw new ValidationApiException("Height must be between 80 and 250 cm.");
+        if (request.Weight < 20 || request.Weight > 250)
+            throw new ValidationApiException("Weight must be between 20 and 250 kg.");
+        if (request.JerseyNumber is < 0 or > 999)
+            throw new ValidationApiException("Jersey number must be between 0 and 999.");
+
+        var sport = await _context.Sports.FirstOrDefaultAsync(s => s.Id == request.SportId)
+            ?? throw new ValidationApiException("Please choose a sport.");
+        var position = await _context.Positions.FirstOrDefaultAsync(p => p.Id == request.PositionId)
+            ?? throw new ValidationApiException("Please choose a position.");
+        if (position.SportId != sport.Id)
+            throw new ValidationApiException("That position does not belong to the chosen sport.");
+
+        if (!Enum.TryParse<SkillLevel>(request.SkillLevel, true, out var skillLevel))
+            throw new ValidationApiException("Please choose a skill level.");
+        if (!Enum.TryParse<TrainingFrequency>(request.TrainingFrequency, true, out var frequency))
+            throw new ValidationApiException("Please choose a training frequency.");
+
+        // Parse dietary restrictions up front so a bad payload fails before any writes.
+        var restrictions = new List<PlayerNutritionProfile>();
+        foreach (var r in request.DietaryRestrictions ?? new())
+        {
+            if (!Enum.TryParse<NutritionPreferenceType>(r.Type, true, out var type)
+                || !Enum.TryParse<NutritionCategory>(r.Category, true, out var category)
+                || !Enum.TryParse<NutritionSeverity>(r.Severity, true, out var severity))
+                throw new ValidationApiException("One of the dietary restrictions is invalid.");
+            restrictions.Add(new PlayerNutritionProfile
+            {
+                PreferenceType = type,
+                Category = category,
+                SpecificItem = string.IsNullOrWhiteSpace(r.SpecificItem) ? null : r.SpecificItem.Trim(),
+                Severity = severity,
+            });
+        }
+
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            DisplayName = request.FullName.Trim(),
+            PhoneNumber = NullIfBlank(request.Phone),
+            EmergencyContactName = NullIfBlank(request.EmergencyContactName),
+            EmergencyContactPhone = NullIfBlank(request.EmergencyContactPhone),
+            EmergencyContactRelationship = NullIfBlank(request.EmergencyContactRelationship),
+            // The solo wizard collects everything onboarding would ask for — don't re-onboard.
+            HasCompletedOnboarding = true,
+        };
+        var created = await _userManager.CreateAsync(user, request.Password);
+        if (!created.Succeeded)
+            throw new ValidationApiException(string.Join("; ", created.Errors.Select(e => e.Description)));
+        await _userManager.AddToRoleAsync(user, "SoloAthlete");
+
+        var player = new Player
+        {
+            FullName = request.FullName.Trim(),
+            Age = age,
+            DateOfBirth = request.DateOfBirth,
+            Height = request.Height,
+            Weight = request.Weight,
+            SportId = sport.Id,
+            TeamId = null,
+            PositionId = position.Id,
+            JerseyNumber = request.JerseyNumber,
+            FitnessLevel = 5, // neutral default until assessments say otherwise
+            Goals = NullIfBlank(request.Goals),
+            UserId = user.Id,
+            IsSolo = true,
+            SoloUserId = user.Id,
+        };
+        _context.Players.Add(player);
+        await _context.SaveChangesAsync();
+
+        _context.SoloProfiles.Add(new SoloProfile
+        {
+            PlayerId = player.Id,
+            UserId = user.Id,
+            SportId = sport.Id,
+            SkillLevel = skillLevel,
+            TrainingFrequency = frequency,
+            Goals = NullIfBlank(request.Goals),
+            Motivation = NullIfBlank(request.Motivation),
+            CreatedAt = DateTime.UtcNow,
+        });
+
+        foreach (var r in restrictions)
+        {
+            r.PlayerId = player.Id;
+            _context.PlayerNutritionProfiles.Add(r);
+        }
+
+        await _context.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var accessToken = _tokenService.CreateAccessToken(user, roles);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user.Id);
+
+        return new RegisterSoloResponse
+        {
+            User = ToUserInfo(user, roles),
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            PlayerId = player.Id,
+            SportName = sport.Name,
+        };
+    }
+
+    // A solo athlete joins a coach's team via a join code. Their player record (and every
+    // FK hanging off it — assessments, plans, tasks, matches…) is preserved; only the
+    // team link and role change. Fresh tokens are returned because the role is in the JWT.
+    public async Task<ConnectCoachResponse> ConnectCoachAsync(ClaimsPrincipal principal, ConnectCoachRequest request)
+    {
+        var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? throw new UnauthorizedApiException();
+        var user = await _userManager.FindByIdAsync(userId)
+            ?? throw new UnauthorizedApiException();
+
+        var player = await _context.Players.FirstOrDefaultAsync(p => p.UserId == userId && p.IsSolo)
+            ?? throw new ValidationApiException("No solo player record is linked to your account.");
+        if (player.TeamId != null)
+            throw new ValidationApiException("You are already on a team.");
+
+        var code = (request.Code ?? "").Trim().ToUpperInvariant();
+        var joinCode = await _context.TeamJoinCodes
+            .Include(c => c.Team)
+            .FirstOrDefaultAsync(c => c.Code == code);
+        if (joinCode == null || !joinCode.IsActive
+            || (joinCode.ExpiresAt.HasValue && joinCode.ExpiresAt.Value < DateTime.UtcNow)
+            || (joinCode.MaxUses.HasValue && joinCode.UseCount >= joinCode.MaxUses.Value))
+            throw new ValidationApiException("This join code is invalid, expired, or no longer active. Ask the coach for a new one.");
+
+        if (joinCode.Team.SportId != player.SportId)
+            throw new ValidationApiException("This team plays a different sport than your solo profile. You can only join a team in your own sport.");
+
+        await using var tx = await _context.Database.BeginTransactionAsync();
+
+        player.TeamId = joinCode.TeamId;
+        player.IsSolo = false;
+        player.JoinedViaCodeAt = DateTime.UtcNow;
+        joinCode.UseCount++;
+
+        // If the coach emailed this athlete an invite for this team, mark it accepted.
+        var email = (user.Email ?? "").ToLowerInvariant();
+        var pendingInvites = await _context.AthleteInvites
+            .Where(i => i.TeamId == joinCode.TeamId && i.Email == email && i.AcceptedAt == null)
+            .ToListAsync();
+        foreach (var inv in pendingInvites) inv.AcceptedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Swap the role: they're now a coach-managed athlete.
+        await _userManager.RemoveFromRoleAsync(user, "SoloAthlete");
+        if (!await _userManager.IsInRoleAsync(user, "Athlete"))
+            await _userManager.AddToRoleAsync(user, "Athlete");
+
+        await tx.CommitAsync();
+
+        _push.SendToUser(joinCode.Team.CoachId, new PushPayload
+        {
+            Title = "New athlete joined",
+            Body = $"{player.FullName} joined {joinCode.Team.Name}",
+            Url = $"/players/{player.Id}",
+            Tag = $"athlete-joined-{player.Id}",
+        });
+
+        var roles = await _userManager.GetRolesAsync(user);
+        var accessToken = _tokenService.CreateAccessToken(user, roles);
+        var refreshToken = await _tokenService.CreateRefreshTokenAsync(user.Id);
+
+        return new ConnectCoachResponse
+        {
+            User = ToUserInfo(user, roles),
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            TeamName = joinCode.Team.Name,
+            TeamId = joinCode.TeamId,
+            PlayerId = player.Id,
+        };
+    }
+
     private static int ComputeAge(DateTime dateOfBirth)
     {
         var today = DateTime.UtcNow.Date;

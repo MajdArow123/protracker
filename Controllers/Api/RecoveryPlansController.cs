@@ -20,7 +20,7 @@ public class RecoveryPlansController : ApiControllerBase
     public async Task<ActionResult> GetTemplates() => Success(await _service.GetTemplatesAsync());
 
     [HttpPost("injuries/{injuryId}/recovery-plan/from-template/{templateId}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> ApplyTemplate(int injuryId, int templateId)
         => Success(await _service.ApplyTemplateAsync(User, injuryId, templateId));
 
@@ -31,23 +31,23 @@ public class RecoveryPlansController : ApiControllerBase
     public async Task<ActionResult> GetActiveForPlayer(int playerId) => Success(await _service.GetActiveForPlayerAsync(User, playerId));
 
     [HttpPost("injuries/{injuryId}/recovery-plan")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Create(int injuryId, CreateRecoveryPlanDto dto) => Created(await _service.CreateAsync(User, injuryId, dto));
 
     [HttpPut("recovery-plans/{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Update(int id, UpdateRecoveryPlanDto dto) => Success(await _service.UpdateAsync(User, id, dto));
 
     [HttpPost("recovery-plans/{id}/exercises")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> AddExercise(int id, CreateRecoveryExerciseDto dto) => Created(await _service.AddExerciseAsync(User, id, dto));
 
     [HttpPut("recovery-exercises/{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> UpdateExercise(int id, CreateRecoveryExerciseDto dto) => Success(await _service.UpdateExerciseAsync(User, id, dto));
 
     [HttpDelete("recovery-exercises/{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> DeleteExercise(int id) => Success(await _service.DeleteExerciseAsync(User, id));
 
     // Athletes (own) and coaches may mark exercises complete.
@@ -55,10 +55,10 @@ public class RecoveryPlansController : ApiControllerBase
     public async Task<ActionResult> CompleteExercise(int id, CompleteRecoveryExerciseDto dto) => Success(await _service.CompleteExerciseAsync(User, id, dto));
 
     [HttpPost("recovery-plans/{id}/milestones")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> AddMilestone(int id, CreateRecoveryMilestoneDto dto) => Created(await _service.AddMilestoneAsync(User, id, dto));
 
     [HttpPatch("recovery-milestones/{id}/achieve")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> AchieveMilestone(int id, AchieveMilestoneDto dto) => Success(await _service.AchieveMilestoneAsync(User, id, dto));
 }

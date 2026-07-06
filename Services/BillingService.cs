@@ -72,7 +72,7 @@ public class BillingService : IBillingService
         var sub = await GetOrCreateAsync(coachId);
         var limits = PlanLimits.For(sub.Plan);
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
-        var players = teamIds.Count == 0 ? 0 : await _context.Players.CountAsync(p => teamIds.Contains(p.TeamId));
+        var players = teamIds.Count == 0 ? 0 : await _context.Players.CountAsync(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value));
 
         return new BillingInfoDto
         {
@@ -112,13 +112,17 @@ public class BillingService : IBillingService
         var max = PlanLimits.For(plan).MaxPlayers;
         if (max == null) return;
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
-        var count = teamIds.Count == 0 ? 0 : await _context.Players.CountAsync(p => teamIds.Contains(p.TeamId));
+        var count = teamIds.Count == 0 ? 0 : await _context.Players.CountAsync(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value));
         if (count >= max)
             throw new PlanLimitApiException($"Your Free plan is limited to {max} players. Upgrade to Pro for unlimited players.");
     }
 
     public async Task EnsureAiAllowedAsync(ClaimsPrincipal user)
     {
+        // Solo athletes get AI on any plan: the coach plan limits (team/player counts)
+        // don't map onto a single self-managed athlete, and AI nutrition/recovery is the
+        // core of the solo product. Revisit if a paid solo tier is introduced.
+        if (_access.IsSoloAthlete(user)) return;
         if (!PlanLimits.For(await GetPlanAsync(user)).Ai)
             throw new PlanLimitApiException("AI features are available on the Pro and Team plans. Upgrade to unlock them.");
     }

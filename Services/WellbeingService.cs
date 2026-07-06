@@ -133,7 +133,7 @@ public class WellbeingService : IWellbeingService
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
 
         var players = await _context.Players
-            .Where(p => teamIds.Contains(p.TeamId))
+            .Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value))
             .Include(p => p.Team)
             .ToListAsync();
         var playerIds = players.Select(p => p.Id).ToList();

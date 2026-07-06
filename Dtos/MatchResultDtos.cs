@@ -27,7 +27,9 @@ public class PlayerMatchRatingDto
 public class MatchResultDto
 {
     public int Id { get; set; }
-    public int TeamId { get; set; }
+    // Null for a solo athlete's personal match.
+    public int? TeamId { get; set; }
+    public int? PlayerId { get; set; }
     public string TeamName { get; set; } = "";
     public string OpponentName { get; set; } = "";
     public DateTime MatchDate { get; set; }
@@ -58,6 +60,8 @@ public class CreateMatchResultDto
     public string? Venue { get; set; }
     public string? Competition { get; set; }
     public string? Notes { get; set; }
+    // Solo matches only: "how did I play?" (1-10) — stored as the athlete's own PlayerMatchRating.
+    public decimal? PersonalRating { get; set; }
 }
 
 public class CreatePlayerMatchRatingDto

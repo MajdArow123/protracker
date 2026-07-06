@@ -6,7 +6,9 @@ public class AssessmentPeriodDto
     public string Name { get; set; } = "";
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public int TeamId { get; set; }
+    // Team-scoped (coach flow) XOR player-scoped (solo athlete's personal periods).
+    public int? TeamId { get; set; }
+    public int? PlayerId { get; set; }
     public int? SeasonId { get; set; }
 }
 
@@ -15,7 +17,8 @@ public class CreateAssessmentPeriodDto
     public string Name { get; set; } = "";
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public int TeamId { get; set; }
+    // Omitted/null by solo athletes: the period is created against their own player.
+    public int? TeamId { get; set; }
 }
 
 public class PlayerAssessmentDto
@@ -32,6 +35,8 @@ public class PlayerAssessmentDto
 public class CreatePlayerAssessmentDto
 {
     public int PlayerId { get; set; }
+    // 0/omitted is allowed only for solo athletes: their "Personal Training" period
+    // is auto-created (or reused) on save.
     public int AssessmentPeriodId { get; set; }
     public DateTime DateRecorded { get; set; }
     public string? Notes { get; set; }

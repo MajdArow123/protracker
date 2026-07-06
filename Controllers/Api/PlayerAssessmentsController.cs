@@ -22,15 +22,15 @@ public class PlayerAssessmentsController : ApiControllerBase
     public async Task<ActionResult> GetById(int id) => Success(await _assessmentService.GetAssessmentByIdAsync(User, id));
 
     [HttpPost]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Create(CreatePlayerAssessmentDto dto) => Created(await _assessmentService.CreateAssessmentAsync(User, dto));
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Update(int id, CreatePlayerAssessmentDto dto) => Success(await _assessmentService.UpdateAssessmentAsync(User, id, dto));
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Delete(int id)
     {
         await _assessmentService.DeleteAssessmentAsync(User, id);

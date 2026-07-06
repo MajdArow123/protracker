@@ -19,10 +19,10 @@ public class NutritionGuidanceController : ApiControllerBase
     public async Task<ActionResult> GetForPlayer(int playerId) => Success(await _service.GetForPlayerAsync(User, playerId));
 
     [HttpPost]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Create(CreateNutritionGuidanceDto dto) => Created(await _service.CreateAsync(User, dto));
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Update(int id, CreateNutritionGuidanceDto dto) => Success(await _service.UpdateAsync(User, id, dto));
 }

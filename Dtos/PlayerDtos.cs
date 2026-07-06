@@ -8,8 +8,10 @@ public class PlayerDto
     public double Height { get; set; }
     public double Weight { get; set; }
     public int SportId { get; set; }
-    public int TeamId { get; set; }
+    // Null for solo athletes (no team until they connect to a coach).
+    public int? TeamId { get; set; }
     public string TeamName { get; set; } = "";
+    public bool IsSolo { get; set; }
     public int PositionId { get; set; }
     public string PositionName { get; set; } = "";
     public int FitnessLevel { get; set; }

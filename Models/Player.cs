@@ -27,8 +27,9 @@ public class Player
     public int SportId { get; set; }
     public Sport Sport { get; set; } = null!;
 
-    public int TeamId { get; set; }
-    public Team Team { get; set; } = null!;
+    // Null for solo athletes (no team until they connect to a coach via a join code).
+    public int? TeamId { get; set; }
+    public Team? Team { get; set; }
 
     public int PositionId { get; set; }
     public Position Position { get; set; } = null!;
@@ -56,4 +57,9 @@ public class Player
     // Set when the athlete self-enrolled via a team join code — used to surface a
     // "new athlete joined" notification to the coach. Null for coach-created players.
     public DateTime? JoinedViaCodeAt { get; set; }
+
+    // Solo athlete mode: a self-managed player with no team/coach. SoloUserId mirrors
+    // UserId while solo (kept even after joining a team, as a record of solo origin).
+    public bool IsSolo { get; set; }
+    public string? SoloUserId { get; set; }
 }

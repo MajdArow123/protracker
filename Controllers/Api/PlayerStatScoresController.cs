@@ -19,10 +19,10 @@ public class PlayerStatScoresController : ApiControllerBase
     public async Task<ActionResult> GetForAssessment(int assessmentId) => Success(await _statScoreService.GetForAssessmentAsync(User, assessmentId));
 
     [HttpPost]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Create(CreatePlayerStatScoreDto dto) => Created(await _statScoreService.CreateAsync(User, dto));
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Update(int id, CreatePlayerStatScoreDto dto) => Success(await _statScoreService.UpdateAsync(User, id, dto));
 }

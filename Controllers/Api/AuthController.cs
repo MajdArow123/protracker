@@ -36,6 +36,17 @@ public class AuthController : ApiControllerBase
         return Success(result);
     }
 
+    // Solo athlete self-registration (no team, no coach, no join code) — auto-login.
+    [HttpPost("register-solo")]
+    [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("join-validate")]
+    public async Task<ActionResult> RegisterSolo(RegisterSoloRequest request)
+    {
+        var result = await _authService.RegisterSoloAsync(request);
+        WriteAuthCookies(result.AccessToken, result.RefreshToken);
+        return Success(result);
+    }
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<ActionResult> Login(LoginRequest request)

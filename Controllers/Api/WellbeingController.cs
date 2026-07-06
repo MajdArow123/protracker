@@ -19,18 +19,18 @@ public class WellbeingController : ApiControllerBase
 
     // Athlete: my recent check-ins (default last 30 days).
     [HttpGet("wellbeing/mine")]
-    [Authorize(Roles = "Athlete")]
+    [Authorize(Roles = "Athlete,SoloAthlete")]
     public async Task<ActionResult> GetMine([FromQuery] int days = 30)
         => Success(await _service.GetMineAsync(User, days));
 
     // Athlete: today's check-in, or 200 with null body if not submitted yet.
     [HttpGet("wellbeing/today")]
-    [Authorize(Roles = "Athlete")]
+    [Authorize(Roles = "Athlete,SoloAthlete")]
     public async Task<ActionResult> GetToday() => Success(await _service.GetTodayAsync(User));
 
     // Athlete: submit (upsert) today's check-in.
     [HttpPost("wellbeing")]
-    [Authorize(Roles = "Athlete")]
+    [Authorize(Roles = "Athlete,SoloAthlete")]
     public async Task<ActionResult> Submit(CreateWellbeingCheckinDto dto)
         => Success(await _service.SubmitAsync(User, dto));
 
