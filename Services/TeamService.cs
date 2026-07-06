@@ -15,6 +15,8 @@ public interface ITeamService
     Task<TeamDto> UpdateAsync(ClaimsPrincipal user, int id, TeamUpdateDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int id);
     Task<List<PlayerDto>> GetPlayersAsync(ClaimsPrincipal user, int id);
+    Task<string> SetPhotoAsync(ClaimsPrincipal user, int id, IFormFile file);
+    Task RemovePhotoAsync(ClaimsPrincipal user, int id);
 }
 
 public class TeamService : ITeamService
@@ -22,12 +24,14 @@ public class TeamService : ITeamService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IBillingService _billing;
+    private readonly IImageService _images;
 
-    public TeamService(ApplicationDbContext context, IAccessControlService access, IBillingService billing)
+    public TeamService(ApplicationDbContext context, IAccessControlService access, IBillingService billing, IImageService images)
     {
         _context = context;
         _access = access;
         _billing = billing;
+        _images = images;
     }
 
     public async Task<List<TeamDto>> GetAccessibleTeamsAsync(ClaimsPrincipal user)
@@ -59,6 +63,7 @@ public class TeamService : ITeamService
             SportName = dto.SportName,
             CoachId = dto.CoachId,
             PlayerCount = dto.PlayerCount,
+            PhotoUrl = dto.PhotoUrl,
             Players = team.Players.Select(PlayerService.ToDto).ToList()
         };
     }
@@ -126,6 +131,27 @@ public class TeamService : ITeamService
         return players.Select(PlayerService.ToDto).ToList();
     }
 
+    public async Task<string> SetPhotoAsync(ClaimsPrincipal user, int id, IFormFile file)
+    {
+        await _access.EnsureCanAccessTeamAsync(user, id);
+        var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == id)
+            ?? throw new NotFoundApiException($"Team {id} was not found.");
+
+        team.PhotoUrl = await _images.ToSquareJpegDataUrlAsync(file, 400);
+        await _context.SaveChangesAsync();
+        return team.PhotoUrl;
+    }
+
+    public async Task RemovePhotoAsync(ClaimsPrincipal user, int id)
+    {
+        await _access.EnsureCanAccessTeamAsync(user, id);
+        var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == id)
+            ?? throw new NotFoundApiException($"Team {id} was not found.");
+
+        team.PhotoUrl = null;
+        await _context.SaveChangesAsync();
+    }
+
     private static TeamDto ToDto(Team t) => new()
     {
         Id = t.Id,
@@ -133,6 +159,7 @@ public class TeamService : ITeamService
         SportId = t.SportId,
         SportName = t.Sport?.Name ?? "",
         CoachId = t.CoachId,
-        PlayerCount = t.Players?.Count ?? 0
+        PlayerCount = t.Players?.Count ?? 0,
+        PhotoUrl = t.PhotoUrl
     };
 }

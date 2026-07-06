@@ -17,6 +17,9 @@ public class Team
     [Required]
     public string CoachId { get; set; } = "";
 
+    // Team photo (400px square JPEG as a base64 data URL), uploaded by the coach.
+    public string? PhotoUrl { get; set; }
+
     public List<Player> Players { get; set; } = new();
     public List<CoachTeamScope> CoachScopes { get; set; } = new();
     public List<AssessmentPeriod> AssessmentPeriods { get; set; } = new();

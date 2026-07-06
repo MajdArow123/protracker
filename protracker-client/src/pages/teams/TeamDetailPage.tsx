@@ -23,6 +23,7 @@ import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSecti
 import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
 import { TeamSeasonsSection } from '../../components/seasons/TeamSeasonsSection';
 import { TeamInviteSection } from '../../components/teams/TeamInviteSection';
+import { TeamPhotoBadge } from '../../components/teams/TeamPhotoBadge';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
@@ -247,6 +248,8 @@ export function TeamDetailPage() {
           </div>
 
           <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 min-w-0">
+              <TeamPhotoBadge teamId={teamId} teamName={team.name} photoUrl={team.photoUrl} isCoach={isCoach} />
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -258,6 +261,7 @@ export function TeamDetailPage() {
                   </span>
                 ) : null}
               </div>
+            </div>
             </div>
             <AvgScoreRingBadge score={avgTeamScore} />
           </div>

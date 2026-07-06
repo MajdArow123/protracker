@@ -149,6 +149,7 @@ export interface Team {
   sportName: string;
   coachId: string;   // UUID
   playerCount?: number;
+  photoUrl?: string | null;
 }
 
 export interface Player {

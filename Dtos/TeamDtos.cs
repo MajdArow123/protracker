@@ -8,6 +8,7 @@ public class TeamDto
     public string SportName { get; set; } = "";
     public string CoachId { get; set; } = "";
     public int PlayerCount { get; set; }
+    public string? PhotoUrl { get; set; }
 }
 
 public class TeamWithPlayersDto : TeamDto

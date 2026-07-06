@@ -38,4 +38,18 @@ public class TeamsController : ApiControllerBase
 
     [HttpGet("{id}/players")]
     public async Task<ActionResult> GetPlayers(int id) => Success(await _teamService.GetPlayersAsync(User, id));
+
+    [HttpPost("{id}/photo")]
+    [Authorize(Roles = "Coach,Admin")]
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<ActionResult> UploadPhoto(int id, IFormFile file) =>
+        Success(new { photoUrl = await _teamService.SetPhotoAsync(User, id, file) });
+
+    [HttpDelete("{id}/photo")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> RemovePhoto(int id)
+    {
+        await _teamService.RemovePhotoAsync(User, id);
+        return NoContentSuccess();
+    }
 }

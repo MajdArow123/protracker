@@ -183,6 +183,8 @@ builder.Services.AddScoped<IWellbeingService, WellbeingService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddSingleton<IImageService, ImageService>();
 builder.Services.AddSingleton<IPushService, PushService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddSignalR();

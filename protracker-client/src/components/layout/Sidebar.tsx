@@ -9,6 +9,7 @@ import { useToast } from '../../context/ToastContext';
 import { useTeams } from '../../hooks/useTeams';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
+import { useProfile } from '../../hooks/useProfile';
 import { clsx } from 'clsx';
 
 interface NavItem {
@@ -78,6 +79,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const profilePath = user?.role === 'Coach' ? '/profile' : user?.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard/profile';
   const { badges } = useNotifications();
   const { data: unreadMessages = 0 } = useUnreadMessageCount();
+  const { data: profile } = useProfile();
   const navBadge = (to: string) => to === '/messages' ? unreadMessages : (badges[to] ?? 0);
 
   const handleLogout = async () => {
@@ -188,9 +190,13 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
 
         {/* User card */}
         <div className="mt-2 pt-3 border-t border-gray-800 flex items-center gap-3 px-2 py-2">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs font-bold">
-            {user?.fullName ? getInitials(user.fullName) : '?'}
-          </div>
+          {profile?.profilePictureUrl ? (
+            <img src={profile.profilePictureUrl} alt={user?.fullName ?? 'You'} className="flex-shrink-0 w-8 h-8 rounded-full object-cover border border-indigo-500/30" />
+          ) : (
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs font-bold">
+              {user?.fullName ? getInitials(user.fullName) : '?'}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-gray-200 truncate">{user?.fullName}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
