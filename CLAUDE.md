@@ -288,7 +288,85 @@ provider) logs `[PasswordReset] ... Reset link: {url}` to Railway logs. Frontend
 meter; disabled-until-valid) + a "Forgot your password?" link on login. Env vars:
 `FRONTEND_URL`, `SMTP_HOST/PORT/USER/PASS`, `EMAIL_FROM`.
 
+## Self-enrollment & profile round (COMPLETE, deployed) — 4 features
+
+Four features, each its own commit, curl-verified locally + browser-verified on
+production (coach generating a join code → athlete registering through it).
+
+- **Feature 1 — Team join codes & athlete self-enrollment** (commit `bf8f909`).
+  `TeamJoinCode` (8-char team-prefixed codes, e.g. `CTYFX33Z`; no 0/O/1/I; optional
+  expiry/max-uses; **one active per team** — regenerating retires old ones) +
+  `AthleteInvite` (pending email invites); migration `AddTeamJoinCodes` also added
+  `Player.JerseyNumber/DateOfBirth/JoinedViaCodeAt` and ApplicationUser emergency-contact
+  fields. `JoinCodesController` (`[Route("api")]` style): coach generate/list/deactivate
+  + invite-athlete (emails the join link; SMTP log fallback) + athlete-invites; public
+  `GET /api/join-codes/validate/{code}` returns team/sport/coach **plus the sport's
+  positions** (so the public wizard needs no authed calls). `POST /api/auth/register-athlete`
+  creates user (Athlete role) + Player + dietary `PlayerNutritionProfile` rows in one
+  transaction, bumps `UseCount`, marks matching invites accepted, web-pushes the coach,
+  returns tokens. **Per-IP rate limiting (20/min, `AddRateLimiter` policy "join-validate")**
+  on the two public endpoints. Frontend: `/join/{code}` 6-step wizard (team preview with
+  sport gradient → account → physicals with unit toggles + sport positions → dietary →
+  emergency contact → review), `/register` code-entry page, coach "Invite & Join" card on
+  team detail (QR via `qrcode.react`, copy/share/download-QR, regenerate/deactivate,
+  pending invites), athlete-dashboard welcome banner (sessionStorage `pt_welcome`), and a
+  coach bell notification "New athlete joined" derived from `JoinedViaCodeAt` (7-day
+  window, `joinedKey` in seenNotifications; `usePlayers` gained an `enabled` param).
+- **Feature 2 — Profile redesign** (commit `b4e1354`, migration `AddProfileFields`).
+  ApplicationUser: `ProfilePictureUrl`, `Bio`, `CoachingExperience`, `Certifications`,
+  `Specialization`, `HasCompletedOnboarding`; `Team.PhotoUrl`. `ImageService`
+  (**SixLabors.ImageSharp pinned to 3.1.12** — see gotchas) center-crops uploads to
+  400x400 JPEG stored as **base64 data URLs in the DB** (Railway has no persistent disk).
+  `ProfileController` `/api/profile`: role-aware GET (athletes get linked-player fields),
+  PUT (athlete DOB/height/weight/jersey edits sync to the Player row; also keeps
+  `Player.FullName` aligned with DisplayName), picture POST/DELETE (mirrored to
+  `Player.ProfileImageUrl`), **real** change-password, delete-account (password + typed
+  DELETE; coach blocked while owning teams; athlete player row is **unlinked, not
+  deleted**). Team photo endpoints on TeamsController. Both profile pages rebuilt:
+  `EditableAvatar` (hover overlay, drag & drop, preview-before-save), completion card
+  (`utils/profileCompletion.ts`, weighted per role), two-column layout, emergency
+  contact, athlete dietary add/remove, sidebar avatar shows the photo, `TeamPhotoBadge`
+  in the team hero.
+- **Feature 3 — Athlete onboarding** (commit `7f6b75f`). `OnboardingModal` (3 steps:
+  photo → physicals → dietary) on the athlete dashboard when `!hasCompletedOnboarding`
+  && completion < 50%; finishing OR skipping hits idempotent
+  `POST /api/profile/onboarding-complete`. **Join-code registrations set
+  `HasCompletedOnboarding=true` up front.** `ProfileCompletionReminder` dashboard card
+  (< 80%, dismiss = 7 days via localStorage). Weekly AI plan UI shows a
+  `RestrictionsNotice` chip strip ("Generating plan respecting: …") — backend already
+  injected restrictions into the prompt; this just surfaces it.
+- **Feature 4 — Jersey/status/team details** (commit `857fbd9`, migration
+  `AddPlayerStatusTeamDetails`). `PlayerStatus` enum (Active/Injured/Suspended/Inactive)
+  on Player — explicit coach-set status, default Active, update DTO treats null as
+  "unchanged". `Team.FoundedYear` (1850–now) + `Team.Description` (≤500). Shared
+  `PlayerStatusBadge` (hidden while Active on list cards, always on detail hero);
+  "#7 Name" on roster/players cards, big `#N` hero badge, jersey in the compare tool;
+  Founded/Description on team forms; team hero gained "Est. YYYY" + W–D–L record chips
+  (computed client-side from `useTeamMatches`).
+
 ## Architecture decisions & gotchas (read before touching related code)
+
+- **SixLabors.ImageSharp is pinned to 3.1.12.** Version 4.x fails the build outright
+  without a paid license key (`No Six Labors license found`). 3.x is free under their
+  split license for this use. Don't `dotnet add package SixLabors.ImageSharp` without a
+  version — it'll pull 4.x and break the build.
+- **Profile/team images are base64 data URLs in the DB** (400x400 JPEG, ~4-60KB), not
+  files — Railway containers have no persistent disk. Anything rendering an avatar just
+  uses the string as `img src`.
+- **Join codes are compared normalized-uppercase** and generated from a 0/O/1/I-free
+  alphabet. Only one code per team is active; `JoinCodeService.GenerateAsync` retires
+  previous actives. The public validate/register endpoints sit behind the
+  "join-validate" fixed-window rate limiter (20/min/IP) — registered in `Program.cs`,
+  `app.UseRateLimiter()` after `UseRouting`.
+- **Nutrition-profile mutations allow role Athlete** (not just Coach/Admin) since the
+  profile/onboarding features — the service's `EnsureCanAccessPlayerAsync` scopes
+  athletes to their own player (verified 403 otherwise). Don't "fix" the controller
+  attribute back to coach-only.
+- **Athlete profile edits write through to the Player row** (`ProfileService.UpdateAsync`:
+  height/weight/DOB→Age/jersey + FullName). If you add athlete-editable fields, follow
+  that pattern or coach views will go stale.
+- **`register-athlete` sets `HasCompletedOnboarding=true`**; only coach-created athletes
+  see the first-login OnboardingModal (shown when completion < 50%).
 
 - **Identity password rules were set explicitly** in `Program.cs` (`options.Password`):
   **min 8, one uppercase, one digit** — lowercase/non-alphanumeric NOT required. This
@@ -352,6 +430,20 @@ meter; disabled-until-valid) + a "Forgot your password?" link on login. Env vars
   design spec — keep new chart tooltips consistent.
 
 ## Current status
+
+**Self-enrollment & profile round complete (latest).** The 4 features above (team join
+codes + QR self-enrollment, profile redesign with photo upload, athlete onboarding,
+jersey/status/team details) are implemented, `npm run build` + `oxlint` clean, backend
+`dotnet test` 34/34, pushed to `main` as 4 commits (migrations `AddTeamJoinCodes`,
+`AddProfileFields`, `AddPlayerStatusTeamDetails` auto-applied on Railway). Every endpoint
+curl-verified locally (join-code generate/validate/register incl. rate-limit 429s and
+authz 403s, profile GET/PUT/picture/change-password, team details validation) and the
+full join flow browser-verified on production: coach generated a join code with QR on
+the team page, an athlete registered through the /join/{code} wizard on the live site,
+landed on the dashboard with the welcome banner, appeared on the coach's roster with
+jersey number, and triggered the coach's "New athlete joined" bell notification. Test
+data cleaned up (test athlete deleted their own account via the new danger zone; coach
+deleted the player + deactivated the code).
 
 **Phase 10 complete — production ready.** The 7-section polish sprint above (code
 splitting, mobile/bottom-nav, skeletons + error/empty states, animations, error
