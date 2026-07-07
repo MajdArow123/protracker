@@ -361,6 +361,14 @@ public class AuthService : IAuthService
             .ToListAsync();
         foreach (var inv in pendingInvites) inv.AcceptedAt = DateTime.UtcNow;
 
+        // Hand the athlete's self-assigned tasks to the coach: the coach task board only
+        // shows tasks the coach owns, and the (now managed) athlete keeps seeing them via
+        // their player-scoped "my tasks" view either way.
+        var selfTasks = await _context.PlayerTasks
+            .Where(t => t.PlayerId == player.Id && t.CoachId == userId)
+            .ToListAsync();
+        foreach (var t in selfTasks) t.CoachId = joinCode.Team.CoachId;
+
         await _context.SaveChangesAsync();
 
         // Swap the role: they're now a coach-managed athlete.

@@ -102,9 +102,9 @@ export const soloApi = {
   createMatch: (data: CreateMatchInput & { personalRating?: number }): Promise<MatchResult> =>
     api.post<MatchResult>('/api/solo/matches', data).then(r => r.data),
 
-  // Converts the solo account into a coach-managed athlete (role changes → the
-  // backend issues fresh tokens, which the axios layer stores from the response).
-  connectCoach: async (code: string): Promise<ConnectCoachResult> => {
+  // Converts the solo account into a coach-managed athlete. The role changes, so the
+  // backend issues fresh tokens — the caller must store them and re-bootstrap auth.
+  connectCoach: async (code: string): Promise<ConnectCoachResult & { accessToken: string; refreshToken: string }> => {
     const res = await api.post<ConnectCoachResult & { accessToken: string; refreshToken: string }>('/api/solo/connect-coach', { code });
     return res.data;
   },

@@ -3,7 +3,7 @@ import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity, CalendarDays, CheckSquare, ChevronRight, ClipboardList, Clock, Dumbbell,
-  Flame, MapPin, Pencil, Salad, Sparkles, Target, TrendingUp, Trophy, X,
+  Flame, MapPin, Pencil, Salad, Sparkles, Target, TrendingUp, Trophy, Users, X,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,7 @@ import { useMyTasks } from '../../hooks/useTasks';
 import { useSoloProfile, useSoloSessions, useSoloMatches, useUpdateSoloProfile } from '../../hooks/useSolo';
 import { useMyWellbeing } from '../../hooks/useWellbeing';
 import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
+import { ConnectCoachModal } from '../../components/solo/ConnectCoachModal';
 import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -88,6 +89,12 @@ export function SoloDashboardPage() {
 
   const [editingGoals, setEditingGoals] = useState(false);
   const [goalsDraft, setGoalsDraft] = useState('');
+  const [joinOpen, setJoinOpen] = useState(false);
+  const [joinBannerDismissed, setJoinBannerDismissed] = useState(() => localStorage.getItem('pt_solo_join_banner') === 'dismissed');
+  const dismissJoinBanner = () => {
+    localStorage.setItem('pt_solo_join_banner', 'dismissed');
+    setJoinBannerDismissed(true);
+  };
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -417,6 +424,35 @@ export function SoloDashboardPage() {
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 italic">"{soloProfile.motivation}"</p>
         )}
       </motion.div>
+
+      {/* Join-a-team nudge (dismissible) */}
+      {!joinBannerDismissed && (
+        <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}
+          className="rounded-2xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10 p-4">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex p-2 rounded-xl bg-indigo-500/10 flex-shrink-0">
+                <Users size={16} className="text-indigo-500" />
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
+                Training solo? <span className="font-semibold text-gray-900 dark:text-white">Join a team</span> to get personalized coaching — your history comes with you.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setJoinOpen(true)}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors cursor-pointer">
+                Enter Join Code
+              </button>
+              <button onClick={dismissJoinBanner} aria-label="Dismiss"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer">
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      <ConnectCoachModal isOpen={joinOpen} onClose={() => setJoinOpen(false)} />
     </motion.div>
   );
 }

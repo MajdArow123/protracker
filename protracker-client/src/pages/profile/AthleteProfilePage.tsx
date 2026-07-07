@@ -16,6 +16,7 @@ import { EditableAvatar } from '../../components/profile/ProfileAvatar';
 import { ProfileCompletionCard } from '../../components/profile/ProfileCompletionCard';
 import { AccountSettingsSection } from '../../components/profile/AccountSettingsSection';
 import { computeProfileCompletion } from '../../utils/profileCompletion';
+import { ConnectCoachModal } from '../../components/solo/ConnectCoachModal';
 import {
   cmToFtIn, ftInToCm, kgToLb, lbToKg, formatHeight, formatWeight,
   getStoredHeightUnit, getStoredWeightUnit,
@@ -72,6 +73,7 @@ export function AthleteProfilePage() {
   const updateProfile = useUpdateProfile();
 
   const [editing, setEditing] = useState(false);
+  const [joinOpen, setJoinOpen] = useState(false);
   const [form, setForm] = useState({
     displayName: '', phoneNumber: '', bio: '', dateOfBirth: '',
     emergencyContactName: '', emergencyContactPhone: '', emergencyContactRelationship: '',
@@ -492,11 +494,32 @@ export function AthleteProfilePage() {
           <p className="text-[11px] text-gray-400 mt-2">Visible to your coach in case something happens at training or a match.</p>
         </motion.div>
 
+        {/* ── Join a team (solo athletes only) ── */}
+        {profile.roles.includes('SoloAthlete') && (
+          <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}
+            className="rounded-2xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10 p-5">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <h3 className="font-bold text-gray-900 dark:text-white">Currently training solo</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                  Want to join a team? Enter a join code from your coach — all your history comes with you.
+                </p>
+              </div>
+              <button onClick={() => setJoinOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
+                <Users size={15} /> Enter Join Code
+              </button>
+            </div>
+          </motion.div>
+        )}
+
         {/* ── Account settings ── */}
-        <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
+        <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>
           <AccountSettingsSection isCoach={false} />
         </motion.div>
       </div>
+
+      <ConnectCoachModal isOpen={joinOpen} onClose={() => setJoinOpen(false)} />
     </PageWrapper>
   );
 }
