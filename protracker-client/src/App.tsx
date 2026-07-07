@@ -17,8 +17,9 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
-  RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage, SoloComingSoonPage,
+  RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage,
   SoloAssessmentPage, SoloNutritionPage, SoloTrainingPage, SoloMatchesPage,
+  SoloRecoveryPage, SoloTasksPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -120,8 +121,7 @@ function AppRoutes() {
           </Route>
           <Route element={<ProtectedRoute roles={['SoloAthlete']} />}>
             <Route path="/solo-dashboard" element={<SoloDashboardPage />} />
-            {/* Interim: tasks reuses the athlete My Tasks page until the solo tasks page ships. */}
-            <Route path="/solo/tasks" element={<MyTasksPage />} />
+            <Route path="/solo/tasks" element={<SoloTasksPage />} />
             <Route path="/solo/profile" element={<AthleteProfilePage />} />
             {/* My Performance reuses the athlete stats/history page (player-scoped, role-agnostic). */}
             <Route path="/solo/performance" element={<PlayerStatsPage />} />
@@ -129,7 +129,7 @@ function AppRoutes() {
             <Route path="/solo/nutrition" element={<SoloNutritionPage />} />
             <Route path="/solo/training" element={<SoloTrainingPage />} />
             <Route path="/solo/matches" element={<SoloMatchesPage />} />
-            <Route path="/solo/recovery" element={<SoloComingSoonPage />} />
+            <Route path="/solo/recovery" element={<SoloRecoveryPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['Parent']} />}>
             <Route path="/parent-dashboard" element={<ParentDashboardPage />} />

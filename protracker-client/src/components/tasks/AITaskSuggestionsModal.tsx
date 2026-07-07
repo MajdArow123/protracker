@@ -101,7 +101,9 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
       {!result && (
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            Pick an athlete and let AI analyse their weakest assessment areas, then suggest 5 targeted tasks you can assign in one click.
+            {lockedPlayerId
+              ? 'AI analyses the weakest assessment areas and suggests 5 targeted tasks you can add in one click.'
+              : 'Pick an athlete and let AI analyse their weakest assessment areas, then suggest 5 targeted tasks you can assign in one click.'}
           </p>
           {!lockedPlayerId && (
             <div>

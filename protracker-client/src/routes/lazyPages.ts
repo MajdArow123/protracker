@@ -50,11 +50,12 @@ export const AthleteProfilePage = named(() => import('../pages/profile/AthletePr
 
 // Solo athlete
 export const SoloDashboardPage = named(() => import('../pages/dashboard/SoloDashboardPage'), 'SoloDashboardPage');
-export const SoloComingSoonPage = named(() => import('../pages/solo/SoloComingSoonPage'), 'SoloComingSoonPage');
 export const SoloAssessmentPage = named(() => import('../pages/solo/SoloAssessmentPage'), 'SoloAssessmentPage');
 export const SoloNutritionPage = named(() => import('../pages/solo/SoloNutritionPage'), 'SoloNutritionPage');
 export const SoloTrainingPage = named(() => import('../pages/solo/SoloTrainingPage'), 'SoloTrainingPage');
 export const SoloMatchesPage = named(() => import('../pages/solo/SoloMatchesPage'), 'SoloMatchesPage');
+export const SoloRecoveryPage = named(() => import('../pages/solo/SoloRecoveryPage'), 'SoloRecoveryPage');
+export const SoloTasksPage = named(() => import('../pages/solo/SoloTasksPage'), 'SoloTasksPage');
 
 // Parent portal
 export const ParentInviteAcceptPage = named(() => import('../pages/parent/ParentInviteAcceptPage'), 'ParentInviteAcceptPage');

@@ -9,6 +9,7 @@ import { AssignTaskModal } from '../../components/tasks/AssignTaskModal';
 import { AITaskSuggestionsModal } from '../../components/tasks/AITaskSuggestionsModal';
 import { groupTasks, taskStats, CATEGORY_ORDER } from '../../components/tasks/taskUtils';
 import { useCoachTasks, useDeleteTask } from '../../hooks/useTasks';
+import { useMyPlayerId } from '../../hooks/useDashboard';
 import { usePlayers } from '../../hooks/usePlayers';
 import { ExportMenu, type ExportOption } from '../../components/ui/ExportMenu';
 import { exportCsv, todayStamp, csvDate, type CsvRow } from '../../utils/csv';
@@ -28,10 +29,13 @@ const BUCKET_ACCENT: Record<string, string> = {
 
 type StatusFilter = 'all' | 'pending' | 'completed';
 
-export function TasksPage() {
+// `self` = solo-athlete mode: same page, but every task is your own — the player
+// picker disappears, both modals lock to your player, and the wording turns personal.
+export function TasksPage({ self = false }: { self?: boolean }) {
   const { addToast } = useToast();
   const navigate = useNavigate();
   const { data: players = [] } = usePlayers();
+  const { data: myPlayerId } = useMyPlayerId();
   const [playerFilter, setPlayerFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<'all' | TaskPriority>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -96,16 +100,18 @@ export function TasksPage() {
 
   return (
     <PageWrapper
-      title="Tasks"
+      title={self ? 'My Tasks' : 'Tasks'}
       actions={
         <div className="flex gap-2">
           <ExportMenu options={exportOptions} onError={msg => addToast(msg, 'error')} />
+          {!self && (
           <button
             onClick={() => navigate('/tasks/analytics')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-all cursor-pointer"
           >
             <BarChart3 size={16} /> Analytics
           </button>
+          )}
           <button
             onClick={() => setAiOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
@@ -116,7 +122,7 @@ export function TasksPage() {
             onClick={() => { setEditTask(null); setAssignOpen(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer"
           >
-            <Plus size={16} /> Assign Task
+            <Plus size={16} /> {self ? 'New Task' : 'Assign Task'}
           </button>
         </div>
       }
@@ -132,6 +138,7 @@ export function TasksPage() {
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-3">
+        {!self && (
         <div className="w-44">
           <Select
             value={playerFilter}
@@ -139,6 +146,7 @@ export function TasksPage() {
             options={[{ value: '', label: 'All Players' }, ...players.map(p => ({ value: String(p.id), label: p.fullName }))]}
           />
         </div>
+        )}
         {/* Priority pills */}
         <div className="flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
           {priorityPills.map(p => (
@@ -179,8 +187,8 @@ export function TasksPage() {
         <EmptyState
           icon={<ClipboardList size={40} />}
           title={anyFilter ? 'No tasks match your filters' : 'No tasks yet'}
-          description={anyFilter ? 'Try clearing filters.' : 'Assign drills and tasks to your players to track their progress.'}
-          action={anyFilter ? undefined : { label: 'Assign Task', onClick: () => { setEditTask(null); setAssignOpen(true); } }}
+          description={anyFilter ? 'Try clearing filters.' : self ? 'Set yourself drills and to-dos — small daily wins add up.' : 'Assign drills and tasks to your players to track their progress.'}
+          action={anyFilter ? undefined : { label: self ? 'New Task' : 'Assign Task', onClick: () => { setEditTask(null); setAssignOpen(true); } }}
         />
       ) : (
         <div className="space-y-6">
@@ -200,7 +208,7 @@ export function TasksPage() {
                       <TaskCard
                         key={task.id}
                         task={task}
-                        showPlayer
+                        showPlayer={!self}
                         onEdit={() => { setEditTask(task); setAssignOpen(true); }}
                         onDelete={() => setDeleteTarget(task)}
                       />
@@ -218,12 +226,14 @@ export function TasksPage() {
         onClose={() => { setAssignOpen(false); setEditTask(null); }}
         players={players.map(p => ({ id: p.id, name: p.fullName }))}
         task={editTask}
+        lockedPlayerId={self ? myPlayerId : undefined}
       />
 
       <AITaskSuggestionsModal
         isOpen={aiOpen}
         onClose={() => setAiOpen(false)}
         players={players.map(p => ({ id: p.id, name: p.fullName }))}
+        lockedPlayerId={self ? myPlayerId : undefined}
       />
 
       <ConfirmModal
