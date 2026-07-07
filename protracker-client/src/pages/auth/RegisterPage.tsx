@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Activity, AlertCircle, ArrowRight, Ticket } from 'lucide-react';
+import { Activity, AlertCircle, ArrowRight, Ticket, User } from 'lucide-react';
 import { joinApi } from '../../api/joinApi';
 
 // Landing spot for athletes who were given a join code (rather than a direct /join/{code}
@@ -95,6 +95,26 @@ export function RegisterPage() {
             team's join link or QR code from their team page.
           </p>
         </div>
+
+        {/* No team? Solo mode */}
+        <div className="mt-4 flex items-center gap-3">
+          <div className="flex-1 h-px bg-gray-800" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">or</span>
+          <div className="flex-1 h-px bg-gray-800" />
+        </div>
+        <Link
+          to="/register/solo"
+          className="mt-4 flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-800/30 hover:border-indigo-500/50 hover:bg-indigo-600/10 p-4 transition-all group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center flex-shrink-0">
+            <User size={18} className="text-indigo-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">Train Solo</p>
+            <p className="text-xs text-gray-400">No coach? Track your own performance and improve at your own pace.</p>
+          </div>
+          <ArrowRight size={16} className="text-gray-600 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
+        </Link>
 
         <p className="text-center text-xs text-gray-500 mt-6">
           Already have an account? <Link to="/login" className="text-indigo-400 hover:underline">Sign in</Link>

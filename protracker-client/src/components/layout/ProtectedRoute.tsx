@@ -13,7 +13,7 @@ export function ProtectedRoute({ roles }: Props) {
   if (isLoading) return <PageSpinner />;
   if (!user) return <Navigate to="/login" replace />;
   if (roles && !roles.includes(user.role)) {
-    const home = user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard';
+    const home = user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : user.role === 'SoloAthlete' ? '/solo-dashboard' : '/player-dashboard';
     return <Navigate to={home} replace />;
   }
 

@@ -26,11 +26,11 @@ public class ScheduledSessionsController : ApiControllerBase
     public async Task<ActionResult> Create(int teamId, CreateScheduledSessionDto dto) => Created(await _service.CreateAsync(User, teamId, dto));
 
     [HttpPut("sessions/{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Update(int id, CreateScheduledSessionDto dto) => Success(await _service.UpdateAsync(User, id, dto));
 
     [HttpDelete("sessions/{id}")]
-    [Authorize(Roles = "Coach,Admin")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Delete(int id)
     {
         await _service.DeleteAsync(User, id);

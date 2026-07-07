@@ -36,6 +36,28 @@ public class SoloController : ApiControllerBase
         _matches = matches;
     }
 
+    // Public: the sports + their positions, for the pre-auth solo registration wizard
+    // (mirrors how join-code validation ships positions to the join wizard).
+    [HttpGet("sports")]
+    [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("join-validate")]
+    public async Task<ActionResult> GetSports()
+    {
+        var sports = await _context.Sports
+            .OrderBy(s => s.Id)
+            .Select(s => new SoloSportOptionDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Positions = s.Positions
+                    .OrderBy(p => p.Id)
+                    .Select(p => new PositionOptionDto { Id = p.Id, Name = p.Name })
+                    .ToList(),
+            })
+            .ToListAsync();
+        return Success(sports);
+    }
+
     // ─── Solo profile ────────────────────────────────────────────────────────
 
     [HttpGet("profile")]

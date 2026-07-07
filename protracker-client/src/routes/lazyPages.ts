@@ -15,6 +15,7 @@ export const LoginPage = named(() => import('../pages/auth/LoginPage'), 'LoginPa
 export const ForgotPasswordPage = named(() => import('../pages/auth/ForgotPasswordPage'), 'ForgotPasswordPage');
 export const RegisterPage = named(() => import('../pages/auth/RegisterPage'), 'RegisterPage');
 export const JoinTeamPage = named(() => import('../pages/auth/JoinTeamPage'), 'JoinTeamPage');
+export const SoloRegisterPage = named(() => import('../pages/auth/SoloRegisterPage'), 'SoloRegisterPage');
 export const ResetPasswordPage = named(() => import('../pages/auth/ResetPasswordPage'), 'ResetPasswordPage');
 export const NotFoundPage = named(() => import('../pages/NotFoundPage'), 'NotFoundPage');
 
@@ -47,6 +48,9 @@ export const PlayerImprovementDashPage = named(() => import('../pages/dashboard/
 export const MyTasksPage = named(() => import('../pages/tasks/MyTasksPage'), 'MyTasksPage');
 export const AthleteProfilePage = named(() => import('../pages/profile/AthleteProfilePage'), 'AthleteProfilePage');
 
+// Solo athlete
+export const SoloDashboardPage = named(() => import('../pages/dashboard/SoloDashboardPage'), 'SoloDashboardPage');
+
 // Parent portal
 export const ParentInviteAcceptPage = named(() => import('../pages/parent/ParentInviteAcceptPage'), 'ParentInviteAcceptPage');
 export const ParentDashboardPage = named(() => import('../pages/parent/ParentDashboardPage'), 'ParentDashboardPage');
@@ -56,8 +60,9 @@ export const ChildOverviewPage = named(() => import('../pages/parent/ChildOvervi
 export const MessagesPage = named(() => import('../pages/messages/MessagesPage'), 'MessagesPage');
 
 // Warm the dashboard chunk the instant login succeeds, before the redirect fires.
-export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent') {
+export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete') {
   if (role === 'Coach') import('../pages/dashboard/CoachDashboardPage');
   else if (role === 'Parent') import('../pages/parent/ParentDashboardPage');
+  else if (role === 'SoloAthlete') import('../pages/dashboard/SoloDashboardPage');
   else import('../pages/dashboard/PlayerDashboardPage');
 }

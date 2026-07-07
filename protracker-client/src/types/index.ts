@@ -1,4 +1,4 @@
-export type Role = 'Coach' | 'Athlete' | 'Parent';
+export type Role = 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete';
 
 export interface User {
   id: string;       // UUID from auth

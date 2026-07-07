@@ -17,7 +17,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
-  RegisterPage, JoinTeamPage,
+  RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -43,7 +43,7 @@ function RootRedirect() {
   const { user, isLoading } = useAuth();
   if (isLoading) return <PageSpinner />;
   if (!user) return <LandingPage />;
-  const home = user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard';
+  const home = user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : user.role === 'SoloAthlete' ? '/solo-dashboard' : '/player-dashboard';
   return <Navigate to={home} replace />;
 }
 
@@ -56,8 +56,13 @@ function AppRoutes() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/parent-invite" element={<ParentInviteAcceptPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/register/solo" element={<SoloRegisterPage />} />
       <Route path="/join/:code" element={<JoinTeamPage />} />
       <Route path="/" element={<RootRedirect />} />
+      {/* Solo dashboard lives outside AppLayout until the dedicated solo layout ships. */}
+      <Route element={<ProtectedRoute roles={['SoloAthlete']} />}>
+        <Route path="/solo-dashboard" element={<SoloDashboardPage />} />
+      </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           {/* Messaging is available to both roles */}

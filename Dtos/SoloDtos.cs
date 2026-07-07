@@ -53,6 +53,14 @@ public class UpdateSoloProfileRequest
     public string? Motivation { get; set; }
 }
 
+// Public option list for the solo registration wizard (sport step + position step).
+public class SoloSportOptionDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+    public List<PositionOptionDto> Positions { get; set; } = new();
+}
+
 // POST /api/solo/connect-coach — a solo athlete joins a team via a coach's join code.
 public class ConnectCoachRequest
 {

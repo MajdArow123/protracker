@@ -35,7 +35,7 @@ public class PlayersController : ApiControllerBase
 
     /// <summary>Resolves the logged-in athlete's own player record without iterating teammates.</summary>
     [HttpGet("me")]
-    [Authorize(Roles = "Athlete,Admin")]
+    [Authorize(Roles = "Athlete,Admin,SoloAthlete")]
     public async Task<ActionResult> GetMe() => Success(await _playerService.GetMyPlayerAsync(User));
 
     [HttpGet("{id:int}")]

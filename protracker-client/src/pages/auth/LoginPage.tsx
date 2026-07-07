@@ -74,7 +74,7 @@ export function LoginPage() {
     try {
       const user = await login(email, password);
       preloadDashboard(user.role); // warm the dashboard chunk before redirecting
-      navigate(user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : '/player-dashboard');
+      navigate(user.role === 'Coach' ? '/dashboard' : user.role === 'Parent' ? '/parent-dashboard' : user.role === 'SoloAthlete' ? '/solo-dashboard' : '/player-dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Invalid email or password');
     } finally {
@@ -365,6 +365,10 @@ export function LoginPage() {
 
                   <button type="button" onClick={() => navigate('/register')} className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer mt-1">
                     Athlete with a team join code? <span className="text-indigo-400 font-semibold">Join your team</span>
+                  </button>
+
+                  <button type="button" onClick={() => navigate('/register/solo')} className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
+                    Train Solo — no coach required? <span className="text-indigo-400 font-semibold">Start solo</span>
                   </button>
                 </motion.form>
               )}

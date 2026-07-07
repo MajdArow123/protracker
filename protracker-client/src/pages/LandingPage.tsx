@@ -226,6 +226,22 @@ export function LandingPage() {
             </button>
           </motion.div>
 
+          <motion.p
+            custom={4}
+            initial="hidden"
+            animate="show"
+            variants={fadeUp}
+            className="mt-6 text-sm text-gray-500"
+          >
+            Are you a solo athlete? Track your progress without a team.{' '}
+            <button
+              onClick={() => navigate('/register/solo')}
+              className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer"
+            >
+              Start Solo Training →
+            </button>
+          </motion.p>
+
           <motion.div
             custom={4}
             initial="hidden"
