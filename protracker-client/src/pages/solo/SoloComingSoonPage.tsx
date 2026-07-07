@@ -1,12 +1,11 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Dumbbell, Heart, Salad, TrendingUp, Trophy, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, Dumbbell, Heart, TrendingUp, Trophy, type LucideIcon } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 
 // Interim landing for solo sections that ship in the next updates. Each route is
 // replaced by its real page as the solo build-out progresses — keep the copy honest.
 const SECTIONS: Record<string, { title: string; desc: string; icon: LucideIcon }> = {
-  '/solo/nutrition': { title: 'Nutrition', desc: 'Generate AI meal plans and manage your dietary profile.', icon: Salad },
   '/solo/training': { title: 'Training', desc: 'Schedule and track your personal training sessions.', icon: Dumbbell },
   '/solo/matches': { title: 'Matches', desc: 'Log match results and rate your own performance.', icon: Trophy },
   '/solo/recovery': { title: 'Recovery', desc: 'Track injuries and follow guided recovery programs.', icon: Heart },

@@ -85,7 +85,6 @@ export function PlayerNutritionDashPage() {
           <WeeklyNutritionPlanView
             plan={weeklyPlan}
             canSwap={true}
-            isCoach={false}
             playerId={playerId!}
           />
         )

@@ -80,9 +80,9 @@ const CHIP_CATEGORY_LABELS: Record<string, string> = {
   NoEggs: 'No Eggs', NoFish: 'No Fish', NoRedMeat: 'No Red Meat',
 };
 
-// Shown around AI plan generation so the coach sees the athlete's restrictions are
-// applied automatically — no need to re-enter them.
-function RestrictionsNotice({ items, generating }: { items: NutritionProfileItem[]; generating?: boolean }) {
+// Shown around AI plan generation so the caller sees the restrictions are applied
+// automatically — no need to re-enter them ("self" = the athlete viewing their own).
+function RestrictionsNotice({ items, generating, self }: { items: NutritionProfileItem[]; generating?: boolean; self?: boolean }) {
   if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-900/40">
@@ -101,7 +101,7 @@ function RestrictionsNotice({ items, generating }: { items: NutritionProfileItem
         </span>
       ))}
       <span className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60 w-full text-center mt-0.5">
-        Loaded from the athlete's dietary profile — nothing to re-enter.
+        {self ? 'Loaded from your dietary profile — nothing to re-enter.' : "Loaded from the athlete's dietary profile — nothing to re-enter."}
       </span>
     </div>
   );
@@ -402,14 +402,40 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
   );
 }
 
+// Coach route shell: /players/:id/nutrition
 export function NutritionPage() {
   const { id } = useParams<{ id: string }>();
   const playerId = Number(id);
   const navigate = useNavigate();
+  const { data: player, isLoading: loadingPlayer } = usePlayer(playerId);
+
+  if (loadingPlayer) return <div className="flex-1 p-4 lg:p-6"><StatGridSkeleton count={2} /></div>;
+
+  return (
+    <NutritionManager
+      playerId={playerId}
+      title={`Nutrition — ${player?.fullName ?? ''}`}
+      actions={
+        <button onClick={() => navigate(`/players/${id}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">
+          <ArrowLeft size={15} /> Back
+        </button>
+      }
+    />
+  );
+}
+
+// Shared three-tab manager (Dietary Profile / Nutrition Guidance / Weekly Plan).
+// Rendered by the coach page and by the solo athlete's "My Nutrition"; `self`
+// enables food swapping and switches the wording to first person.
+export function NutritionManager({ playerId, self = false, title, actions }: {
+  playerId: number;
+  self?: boolean;
+  title: string;
+  actions?: React.ReactNode;
+}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const { addToast: showToast } = useToast();
 
-  const { data: player, isLoading: loadingPlayer } = usePlayer(playerId);
   const { data: profileItems = [], isLoading: loadingProfile } = usePlayerNutritionProfile(playerId);
   const { data: guidanceList = [] } = usePlayerNutritionGuidance(playerId);
   const { data: weeklyPlan, isLoading: loadingWeekly } = useWeeklyNutritionPlan(playerId);
@@ -522,20 +548,13 @@ export function NutritionPage() {
   const hardRestrictions = profileItems.filter(r => r.severity === 'Hard');
   const consideredLabels = profileItems.map(r => r.specificItem || r.category).slice(0, 5);
 
-  if (loadingPlayer || loadingProfile) return <div className="flex-1 p-4 lg:p-6"><StatGridSkeleton count={2} /></div>;
+  if (loadingProfile) return <div className="flex-1 p-4 lg:p-6"><StatGridSkeleton count={2} /></div>;
 
   const isItemFormOpen = showNewItem || !!editingItem;
   const isGuidanceFormOpen = showNewGuidance || !!editingGuidance;
 
   return (
-    <PageWrapper
-      title={`Nutrition — ${player?.fullName ?? ''}`}
-      actions={
-        <button onClick={() => navigate(`/players/${id}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">
-          <ArrowLeft size={15} /> Back
-        </button>
-      }
-    >
+    <PageWrapper title={title} actions={actions}>
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800/50 rounded-2xl w-fit">
         {([['profile', 'Dietary Profile'], ['guidance', 'Nutrition Guidance'], ['weekly', 'Weekly Plan']] as [Tab, string][]).map(([t, label]) => (
@@ -745,7 +764,7 @@ export function NutritionPage() {
             <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}</div>
           ) : generateWeekly.isPending ? (
             <>
-            <RestrictionsNotice items={profileItems} generating />
+            <RestrictionsNotice items={profileItems} generating self={self} />
             <AILoadingPanel
               primaryText="Generating your weekly plan..."
               messages={[
@@ -768,12 +787,12 @@ export function NutritionPage() {
                   <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
                 </div>
               )}
-              <RestrictionsNotice items={profileItems} />
+              <RestrictionsNotice items={profileItems} self={self} />
               <EmptyState
                 icon={<CalendarDays size={36} />}
                 title="No weekly plan yet"
-                description="Generate a personalized 7-day meal plan for this player using AI"
-                action={{ label: 'Generate with AI', onClick: handleGenerateWeekly }}
+                description={self ? 'Generate your personalized 7-day meal plan using AI' : 'Generate a personalized 7-day meal plan for this player using AI'}
+                action={{ label: self ? 'Generate My Weekly Plan' : 'Generate with AI', onClick: handleGenerateWeekly }}
               />
             </div>
           ) : (
@@ -791,8 +810,7 @@ export function NutritionPage() {
               )}
               <WeeklyNutritionPlanView
                 plan={weeklyPlan}
-                canSwap={false}
-                isCoach={true}
+                canSwap={self}
                 playerId={playerId}
                 onGenerate={handleGenerateWeekly}
                 isGenerating={generateWeekly.isPending}

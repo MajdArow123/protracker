@@ -132,13 +132,12 @@ function MacroBar({ label, grams, pct, color }: { label: string; grams: number; 
 interface Props {
   plan: WeeklyNutritionPlan;
   canSwap?: boolean;
-  isCoach?: boolean;
   onGenerate?: () => void;
   isGenerating?: boolean;
   playerId: number;
 }
 
-export function WeeklyNutritionPlanView({ plan, canSwap = false, isCoach = false, onGenerate, isGenerating, playerId }: Props) {
+export function WeeklyNutritionPlanView({ plan, canSwap = false, onGenerate, isGenerating, playerId }: Props) {
   const [selectedDay, setSelectedDay] = useState(0);
   const [swapItem, setSwapItem] = useState<PlannedMealItem | null>(null);
 
@@ -161,7 +160,7 @@ export function WeeklyNutritionPlanView({ plan, canSwap = false, isCoach = false
             )}
           </p>
         </div>
-        {isCoach && onGenerate && (
+        {onGenerate && (
           <button
             onClick={onGenerate}
             disabled={isGenerating}

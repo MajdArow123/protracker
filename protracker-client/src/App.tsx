@@ -18,7 +18,7 @@ import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
   RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage, SoloComingSoonPage,
-  SoloAssessmentPage,
+  SoloAssessmentPage, SoloNutritionPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -126,7 +126,7 @@ function AppRoutes() {
             {/* My Performance reuses the athlete stats/history page (player-scoped, role-agnostic). */}
             <Route path="/solo/performance" element={<PlayerStatsPage />} />
             <Route path="/solo/assessment" element={<SoloAssessmentPage />} />
-            <Route path="/solo/nutrition" element={<SoloComingSoonPage />} />
+            <Route path="/solo/nutrition" element={<SoloNutritionPage />} />
             <Route path="/solo/training" element={<SoloComingSoonPage />} />
             <Route path="/solo/matches" element={<SoloComingSoonPage />} />
             <Route path="/solo/recovery" element={<SoloComingSoonPage />} />
