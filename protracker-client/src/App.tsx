@@ -18,7 +18,7 @@ import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
   RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage, SoloComingSoonPage,
-  SoloAssessmentPage, SoloNutritionPage,
+  SoloAssessmentPage, SoloNutritionPage, SoloTrainingPage, SoloMatchesPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -127,8 +127,8 @@ function AppRoutes() {
             <Route path="/solo/performance" element={<PlayerStatsPage />} />
             <Route path="/solo/assessment" element={<SoloAssessmentPage />} />
             <Route path="/solo/nutrition" element={<SoloNutritionPage />} />
-            <Route path="/solo/training" element={<SoloComingSoonPage />} />
-            <Route path="/solo/matches" element={<SoloComingSoonPage />} />
+            <Route path="/solo/training" element={<SoloTrainingPage />} />
+            <Route path="/solo/matches" element={<SoloMatchesPage />} />
             <Route path="/solo/recovery" element={<SoloComingSoonPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['Parent']} />}>

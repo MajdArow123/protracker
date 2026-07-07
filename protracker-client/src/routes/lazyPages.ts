@@ -53,6 +53,8 @@ export const SoloDashboardPage = named(() => import('../pages/dashboard/SoloDash
 export const SoloComingSoonPage = named(() => import('../pages/solo/SoloComingSoonPage'), 'SoloComingSoonPage');
 export const SoloAssessmentPage = named(() => import('../pages/solo/SoloAssessmentPage'), 'SoloAssessmentPage');
 export const SoloNutritionPage = named(() => import('../pages/solo/SoloNutritionPage'), 'SoloNutritionPage');
+export const SoloTrainingPage = named(() => import('../pages/solo/SoloTrainingPage'), 'SoloTrainingPage');
+export const SoloMatchesPage = named(() => import('../pages/solo/SoloMatchesPage'), 'SoloMatchesPage');
 
 // Parent portal
 export const ParentInviteAcceptPage = named(() => import('../pages/parent/ParentInviteAcceptPage'), 'ParentInviteAcceptPage');

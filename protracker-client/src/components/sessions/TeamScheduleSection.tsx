@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useToast } from '../../context/ToastContext';
 import { useTeamSessions, useCreateSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
+import { useSoloSessions, useCreateSoloSession } from '../../hooks/useSolo';
 import type { ScheduledSession, SessionType } from '../../types';
 
 const SESSION_TYPES: { value: SessionType; label: string }[] = [
@@ -50,11 +51,12 @@ function toLocalInput(s: string) {
 }
 
 // ── Create / edit modal ──────────────────────────────────────────────────────
-function SessionModal({ teamId, session, defaultDate, isOpen, onClose }: {
-  teamId: number; session: ScheduledSession | null; defaultDate: Date | null; isOpen: boolean; onClose: () => void;
+function SessionModal({ teamId, solo, session, defaultDate, isOpen, onClose }: {
+  teamId?: number; solo?: boolean; session: ScheduledSession | null; defaultDate: Date | null; isOpen: boolean; onClose: () => void;
 }) {
   const { addToast } = useToast();
   const createSession = useCreateSession();
+  const createSoloSession = useCreateSoloSession();
   const updateSession = useUpdateSession();
   const isEdit = !!session;
 
@@ -102,8 +104,11 @@ function SessionModal({ teamId, session, defaultDate, isOpen, onClose }: {
       if (isEdit && session) {
         await updateSession.mutateAsync({ id: session.id, data: payload });
         addToast('Session updated', 'success');
+      } else if (solo) {
+        await createSoloSession.mutateAsync(payload);
+        addToast('Session scheduled', 'success');
       } else {
-        await createSession.mutateAsync({ teamId, data: payload });
+        await createSession.mutateAsync({ teamId: teamId!, data: payload });
         addToast('Session scheduled', 'success');
       }
       onClose();
@@ -112,7 +117,7 @@ function SessionModal({ teamId, session, defaultDate, isOpen, onClose }: {
     }
   }
 
-  const saving = createSession.isPending || updateSession.isPending;
+  const saving = createSession.isPending || createSoloSession.isPending || updateSession.isPending;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Session' : 'Schedule Session'}>
@@ -154,8 +159,12 @@ function SessionModal({ teamId, session, defaultDate, isOpen, onClose }: {
 }
 
 // ── Section ──────────────────────────────────────────────────────────────────
-export function TeamScheduleSection({ teamId, isCoach }: { teamId: number; isCoach: boolean; }) {
-  const { data: sessions = [], isLoading } = useTeamSessions(teamId);
+export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?: number; isCoach: boolean; solo?: boolean; }) {
+  const { data: teamSessions = [], isLoading: loadingTeam } = useTeamSessions(solo ? null : teamId);
+  const { data: soloSessions = [], isLoading: loadingSolo } = useSoloSessions(solo);
+  const sessions = solo ? soloSessions : teamSessions;
+  const isLoading = solo ? loadingSolo : loadingTeam;
+  const canManage = isCoach || solo;
   const deleteSession = useDeleteSession();
   const { addToast } = useToast();
 
@@ -200,7 +209,7 @@ export function TeamScheduleSection({ teamId, isCoach }: { teamId: number; isCoa
             <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="px-2 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">Today</button>
             <button onClick={() => shiftWeek(1)} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"><ChevronRight size={16} /></button>
           </div>
-          {isCoach && (
+          {canManage && (
             <button onClick={() => openCreate(null)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
               <Plus size={13} /> Schedule
@@ -228,7 +237,7 @@ export function TeamScheduleSection({ teamId, isCoach }: { teamId: number; isCoa
                     <p className="text-[10px] font-semibold uppercase text-gray-400">{d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
                     <p className={clsx('text-sm font-bold', isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-white')}>{d.getDate()}</p>
                   </div>
-                  {isCoach && (
+                  {canManage && (
                     <button onClick={() => openCreate(d)} className="p-1 rounded-lg text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Plus size={13} /></button>
                   )}
                 </div>
@@ -237,7 +246,7 @@ export function TeamScheduleSection({ teamId, isCoach }: { teamId: number; isCoa
                     <div key={s.id} className={clsx('group rounded-lg border px-2 py-1.5 text-left', TYPE_STYLES[s.sessionType])}>
                       <div className="flex items-start justify-between gap-1">
                         <p className="text-xs font-bold leading-tight">{s.title}</p>
-                        {isCoach && (
+                        {canManage && (
                           <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                             <button onClick={() => { setEditSession(s); setDefaultDate(null); setModalOpen(true); }} className="p-0.5 hover:text-indigo-600 cursor-pointer"><Pencil size={11} /></button>
                             <button onClick={() => setDeleteTarget(s)} className="p-0.5 hover:text-red-600 cursor-pointer"><Trash2 size={11} /></button>
@@ -260,9 +269,9 @@ export function TeamScheduleSection({ teamId, isCoach }: { teamId: number; isCoa
         </div>
       )}
 
-      {isCoach && (
+      {canManage && (
         <>
-          <SessionModal teamId={teamId} session={editSession} defaultDate={defaultDate} isOpen={modalOpen}
+          <SessionModal teamId={teamId} solo={solo} session={editSession} defaultDate={defaultDate} isOpen={modalOpen}
             onClose={() => { setModalOpen(false); setEditSession(null); setDefaultDate(null); }} />
           <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}
             onConfirm={async () => { if (!deleteTarget) return; try { await deleteSession.mutateAsync(deleteTarget.id); addToast('Session deleted', 'success'); } catch (err) { addToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteTarget(null); } }}
