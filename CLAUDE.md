@@ -344,7 +344,87 @@ production (coach generating a join code → athlete registering through it).
   Founded/Description on team forms; team hero gained "Est. YYYY" + W–D–L record chips
   (computed client-side from `useTeamMatches`).
 
+## Phase A — Solo Athlete Mode (COMPLETE, deployed) — 9 sections
+
+Opens ProTracker to individual athletes with no coach: a **SoloAthlete** role that can
+do everything a coach does, for exactly one player (themselves), with an optional
+upgrade path onto a team. 9 commits (`e9db7f9`…`d9369d6`), each section curl- and/or
+browser-verified as it landed. NOTE: a Stripe **billing system** (CoachSubscription,
+Free/Pro/Team plans, BillingController) exists in the codebase from an undocumented
+session — solo work had to integrate with it (see gotchas).
+
+- **S1 — Role, data model, authorization** (migration `AddSoloAthlete`). New seeded
+  role `SoloAthlete`. `Player.IsSolo` + `SoloUserId`; **`Player.TeamId` is now
+  nullable** (solo players are team-less — every `teamIds.Contains(p.TeamId)` query
+  got a null-guard). New `SoloProfile` (SportId, `SkillLevel` Beginner→Elite,
+  `TrainingFrequency` Daily→Occasionally, Goals, Motivation, IsPublic). Also made
+  `AssessmentPeriod`/`ScheduledSession`/`MatchResult` nullable-TeamId + optional
+  `PlayerId` (player-scoped = solo-owned) in the same migration. Authorization is
+  centralized: `AccessControlService` treats SoloAthlete like Athlete (own player
+  only), gained `IsSoloAthlete()` + `RequireOwnPlayerAsync()`; coaches can never see
+  team-less players. Controller role attributes widened (`Coach,Admin,SoloAthlete`)
+  across assessments/periods/stat-scores/tasks/injuries/recovery/nutrition/wellbeing/
+  AI + `players/me` + shared session/match PUT/DELETE. `POST /api/auth/register-solo`
+  ([AllowAnonymous], "join-validate" rate limit) creates user+player+SoloProfile+
+  dietary rows in one transaction and auto-logs-in. `SoloController` (`/api/solo`):
+  public `GET sports` (sports+positions for the pre-auth wizard), profile GET/PUT,
+  personal sessions/matches GET/POST, and `POST connect-coach`.
+- **S2 — Registration wizard.** `/register/solo` 7-step wizard (Account → Sport cards
+  → Position/Skill/Frequency → Physicals w/ unit toggles → Goals → Dietary → Review),
+  modeled on the join-code wizard; entry points on `/register`, login sign-up tab,
+  and the landing hero. `Role` type + routing guards know `SoloAthlete`.
+- **S3 — Solo dashboard + layout.** "Solo Training" sidebar (Dashboard/My Performance/
+  Assessments/Nutrition/Training/Matches/Recovery/Tasks) + mobile bottom nav +
+  solo-aware notifications. `/solo-dashboard`: greeting hero with sport/skill badges +
+  **activity day-streak** (sessions ∪ matches ∪ check-ins ∪ assessments), stat cards,
+  2×2 quick actions, last-5-assessments trend chart, This Week, wellbeing widget,
+  inline-editable Goals (syncs to `Player.Goals` for AI prompts).
+- **S4 — Self-assessment.** `/solo/assessment` = coach sliders/ring UX for yourself;
+  `assessmentPeriodId: 0` → backend auto-creates/reuses a **"Personal Training"**
+  player-scoped period. History timeline + summary cards. Slider/ring extracted to
+  shared `components/assessments/ScoreWidgets.tsx`. `/solo/performance` reuses the
+  athlete My Stats page.
+- **S5 — Nutrition.** Coach `NutritionPage` refactored into shell + exported
+  **`NutritionManager({playerId, self, title})`** — solo renders it with `self`
+  (enables food swap, first-person copy). `WeeklyNutritionPlanView` regenerate button
+  keys off `onGenerate` (dropped the `isCoach` prop).
+- **S6 — Training & matches.** `TeamScheduleSection` gained a `solo` prop (personal
+  calendar, full manage rights, creates via `/api/solo/sessions`). New
+  `/solo/matches`: sport-aware score labels, optional **PersonalRating 1-10** stored
+  as the athlete's own `PlayerMatchRating`, W-D-L record cards. Solo query keys live
+  under the shared `['sessions']`/`['matches']` roots so shared mutations invalidate.
+- **S7 — Recovery & tasks.** `/solo/recovery`: own injuries CRUD + `RecoveryPlanModal`
+  with `isCoach={true}` (solo = their own coach: manual/template/AI plan + exercise
+  completion). `/solo/tasks`: coach `TasksPage` gained a `self` mode (no player
+  filter/analytics, both modals `lockedPlayerId`, personal wording).
+- **S8 — Connect to coach.** `ConnectCoachModal` (profile card + dismissible dashboard
+  banner): code → team preview → join. Sport mismatch blocked client+server. On join:
+  role flips to Athlete (fresh tokens stored, hard reload to /player-dashboard), ALL
+  history preserved (playerId FKs), self-assigned **tasks are handed to the coach**
+  (CoachId reassigned) so they show on the coach's board.
+- **S9 — Landing.** Hero = three role cards (Coach → `/login?tab=register` deep link,
+  Team Athlete → `/register`, Solo → `/register/solo`); "Works for" chips on feature
+  cards (Solo + Team / Teams); solo-athlete testimonial.
+
 ## Architecture decisions & gotchas (read before touching related code)
+
+- **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
+  players by team must null-guard (`p.TeamId != null && teamIds.Contains(p.TeamId.Value)`).
+  Same for `AssessmentPeriod`/`ScheduledSession`/`MatchResult`, which are team-scoped
+  XOR player-scoped (`PlayerId` set = a solo athlete's personal record; ownership
+  checks branch accordingly).
+- **SoloAthlete bypasses the AI billing gate** (`BillingService.EnsureAiAllowedAsync`
+  returns early for the role): coach plan limits don't map onto a market-of-one
+  athlete and AI is the core of the solo product. Revisit if a paid solo tier ships.
+  Everything else billing-related stays coach-scoped.
+- **Coach task boards only show tasks the coach owns** (`CoachId` = creator). Solo
+  athletes self-assign (CoachId = their own user id); on connect-coach those tasks'
+  CoachId is reassigned to the team's coach so they surface for the coach.
+- **Deleting a solo account deletes the solo player** (cascade wipes their data);
+  managed athletes still only get unlinked (coach keeps history) — see
+  `ProfileService.DeleteAccountAsync`.
+- **`register-solo` sets `HasCompletedOnboarding=true`** (wizard collects everything),
+  same as `register-athlete`.
 
 - **SixLabors.ImageSharp is pinned to 3.1.12.** Version 4.x fails the build outright
   without a paid license key (`No Six Labors license found`). 3.x is free under their
@@ -431,7 +511,19 @@ production (coach generating a join code → athlete registering through it).
 
 ## Current status
 
-**Self-enrollment & profile round complete (latest).** The 4 features above (team join
+**Phase A — Solo Athlete Mode complete (latest).** All 9 sections above are
+implemented, pushed to `main` as 9 commits (migration `AddSoloAthlete` auto-applied on
+Railway), 34/34 backend tests passing, `npm run build` + `oxlint` clean throughout.
+Verified locally section by section: a 27-check curl authz suite (solo isolation, coach
+⇄ solo 403s, role-gate integrity for managed athletes), the full 7-step wizard, solo
+dashboard/assessments/nutrition (real AI weekly plan respecting a peanut hard-allergy +
+food swap)/training/matches/recovery (real AI recovery program, 5 weeks × 20 exercises)
+/tasks (AI suggestions from real weak areas), and the solo→coached conversion twice
+(sport-mismatch guard, role flip with fresh tokens, full history + task handoff visible
+to the coach). Production verification of the solo journey was run after deploy (see
+that session's report). All local test data cleaned up.
+
+**Self-enrollment & profile round complete.** The 4 features above (team join
 codes + QR self-enrollment, profile redesign with photo upload, athlete onboarding,
 jersey/status/team details) are implemented, `npm run build` + `oxlint` clean, backend
 `dotnet test` 34/34, pushed to `main` as 4 commits (migrations `AddTeamJoinCodes`,
