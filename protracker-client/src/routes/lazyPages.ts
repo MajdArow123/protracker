@@ -51,6 +51,7 @@ export const AthleteProfilePage = named(() => import('../pages/profile/AthletePr
 // Solo athlete
 export const SoloDashboardPage = named(() => import('../pages/dashboard/SoloDashboardPage'), 'SoloDashboardPage');
 export const SoloComingSoonPage = named(() => import('../pages/solo/SoloComingSoonPage'), 'SoloComingSoonPage');
+export const SoloAssessmentPage = named(() => import('../pages/solo/SoloAssessmentPage'), 'SoloAssessmentPage');
 
 // Parent portal
 export const ParentInviteAcceptPage = named(() => import('../pages/parent/ParentInviteAcceptPage'), 'ParentInviteAcceptPage');
