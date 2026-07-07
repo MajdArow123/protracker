@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import {
@@ -49,7 +49,9 @@ function PasswordStrength({ password }: { password: string }) {
 export function LoginPage() {
   const { login, register } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<AuthTab>('signin');
+  const [searchParams] = useSearchParams();
+  // Landing-page role cards deep-link straight into the sign-up tab.
+  const [tab, setTab] = useState<AuthTab>(searchParams.get('tab') === 'register' ? 'register' : 'signin');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

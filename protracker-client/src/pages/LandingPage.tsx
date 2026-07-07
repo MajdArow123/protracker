@@ -6,7 +6,7 @@ import {
   Activity, BarChart3, Brain, Salad, ShieldAlert,
   Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
   Target, Heart, CheckCircle, Circle, CheckSquare, MessageSquare,
-  CalendarDays, HeartPulse, Code2, Globe,
+  CalendarDays, HeartPulse, Code2, Globe, Shield, User, UsersRound,
 } from 'lucide-react';
 import { CountUp } from '../components/ui/CountUp';
 
@@ -19,17 +19,52 @@ const fadeUp: Variants = {
   }),
 };
 
+// works: who the feature applies to — 'Both' (solo + team), 'Team' (coach-managed only).
 const FEATURES = [
-  { icon: Brain, title: 'AI-Powered Insights', desc: 'Generate personalized improvement plans, weekly nutrition schedules, and injury recovery programs using Claude AI. Get smart task suggestions based on each athlete\'s weak areas.', color: 'from-purple-500 to-violet-500' },
-  { icon: BarChart3, title: 'Performance Analytics', desc: 'Track athlete assessments across multiple categories with gradient sliders. View trend charts, radar skill profiles, and compare progress over time.', color: 'from-indigo-500 to-blue-500' },
-  { icon: ShieldAlert, title: 'Injury & Recovery Tracking', desc: 'Log injuries with severity levels and assign structured recovery programs. AI generates sport-specific rehab exercises week by week.', color: 'from-red-500 to-rose-500' },
-  { icon: CheckSquare, title: 'Task Management', desc: 'Assign targeted training tasks to athletes with priority levels and due dates. AI suggests tasks based on assessment weak areas. Track completion rates.', color: 'from-cyan-500 to-teal-500' },
-  { icon: MessageSquare, title: 'Direct Messaging', desc: 'Built-in coach-to-athlete messaging with real-time updates. Share notes privately or with the athlete. Keep communication organized.', color: 'from-blue-500 to-indigo-500' },
-  { icon: Salad, title: 'Nutrition Planning', desc: 'Generate 7-day AI meal plans tailored to the athlete\'s sport, position, and dietary restrictions. Athletes can swap foods for nutritionally equivalent alternatives.', color: 'from-green-500 to-emerald-500' },
-  { icon: CalendarDays, title: 'Training Scheduler', desc: 'Plan weekly training sessions with a calendar view. Athletes see upcoming sessions on their dashboard. Track session completion.', color: 'from-orange-500 to-amber-500' },
-  { icon: Trophy, title: 'Match Results', desc: 'Log match scores with sport-aware formatting — sets for volleyball/tennis, points for basketball, goals for soccer. Rate individual player performance.', color: 'from-amber-500 to-yellow-500' },
-  { icon: Dumbbell, title: 'Multi-Sport Support', desc: 'Built for Basketball, Soccer, Volleyball, Beach Volleyball, and Tennis. Sport-specific positions, stats, scoring, and color themes throughout.', color: 'from-fuchsia-500 to-pink-500' },
-  { icon: HeartPulse, title: 'Wellbeing Check-ins', desc: 'Athletes submit daily check-ins rating their energy, sleep, and overall feeling. Coaches see trends and get alerts when athletes report pain during recovery.', color: 'from-rose-500 to-pink-500' },
+  { icon: Brain, title: 'AI-Powered Insights', desc: 'Generate personalized improvement plans, weekly nutrition schedules, and injury recovery programs using Claude AI. Get smart task suggestions based on each athlete\'s weak areas.', color: 'from-purple-500 to-violet-500', works: 'Both' },
+  { icon: BarChart3, title: 'Performance Analytics', desc: 'Track athlete assessments across multiple categories with gradient sliders. View trend charts, radar skill profiles, and compare progress over time.', color: 'from-indigo-500 to-blue-500', works: 'Both' },
+  { icon: ShieldAlert, title: 'Injury & Recovery Tracking', desc: 'Log injuries with severity levels and assign structured recovery programs. AI generates sport-specific rehab exercises week by week.', color: 'from-red-500 to-rose-500', works: 'Both' },
+  { icon: CheckSquare, title: 'Task Management', desc: 'Assign targeted training tasks to athletes with priority levels and due dates. AI suggests tasks based on assessment weak areas. Track completion rates.', color: 'from-cyan-500 to-teal-500', works: 'Both' },
+  { icon: MessageSquare, title: 'Direct Messaging', desc: 'Built-in coach-to-athlete messaging with real-time updates. Share notes privately or with the athlete. Keep communication organized.', color: 'from-blue-500 to-indigo-500', works: 'Team' },
+  { icon: Salad, title: 'Nutrition Planning', desc: 'Generate 7-day AI meal plans tailored to the athlete\'s sport, position, and dietary restrictions. Athletes can swap foods for nutritionally equivalent alternatives.', color: 'from-green-500 to-emerald-500', works: 'Both' },
+  { icon: CalendarDays, title: 'Training Scheduler', desc: 'Plan weekly training sessions with a calendar view. Athletes see upcoming sessions on their dashboard. Track session completion.', color: 'from-orange-500 to-amber-500', works: 'Both' },
+  { icon: Trophy, title: 'Match Results', desc: 'Log match scores with sport-aware formatting — sets for volleyball/tennis, points for basketball, goals for soccer. Rate individual player performance.', color: 'from-amber-500 to-yellow-500', works: 'Both' },
+  { icon: Dumbbell, title: 'Multi-Sport Support', desc: 'Built for Basketball, Soccer, Volleyball, Beach Volleyball, and Tennis. Sport-specific positions, stats, scoring, and color themes throughout.', color: 'from-fuchsia-500 to-pink-500', works: 'Both' },
+  { icon: HeartPulse, title: 'Wellbeing Check-ins', desc: 'Athletes submit daily check-ins rating their energy, sleep, and overall feeling. Coaches see trends and get alerts when athletes report pain during recovery.', color: 'from-rose-500 to-pink-500', works: 'Both' },
+];
+
+// The three ways into ProTracker, front and center on the hero.
+const ROLE_PATHS = [
+  {
+    icon: Shield,
+    title: "I'm a Coach",
+    desc: 'Manage your team, track athlete performance, generate AI nutrition and recovery plans.',
+    cta: 'Get Started as Coach',
+    to: '/login?tab=register',
+    accent: 'from-indigo-600/20 to-blue-600/10 border-indigo-500/30 hover:border-indigo-400/60',
+    iconBg: 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300',
+    button: 'bg-indigo-600 hover:bg-indigo-500',
+  },
+  {
+    icon: UsersRound,
+    title: "I'm on a Team",
+    desc: 'Join your team with a code from your coach, view your progress, complete tasks and goals.',
+    cta: 'Join My Team',
+    to: '/register',
+    accent: 'from-emerald-600/20 to-teal-600/10 border-emerald-500/30 hover:border-emerald-400/60',
+    iconBg: 'bg-emerald-500/20 border-emerald-500/30 text-emerald-300',
+    button: 'bg-emerald-600 hover:bg-emerald-500',
+  },
+  {
+    icon: User,
+    title: 'I Train Solo',
+    desc: 'No coach? No problem. Track your own performance, generate AI meal plans, and improve at your own pace.',
+    cta: 'Start Solo Training',
+    to: '/register/solo',
+    accent: 'from-purple-600/20 to-violet-600/10 border-purple-500/30 hover:border-purple-400/60',
+    iconBg: 'bg-purple-500/20 border-purple-500/30 text-purple-300',
+    button: 'bg-purple-600 hover:bg-purple-500',
+  },
 ];
 
 const ABOUT_STATS = [
@@ -90,6 +125,14 @@ const TESTIMONIALS = [
     sport: 'Tennis',
     quote: 'I\'ve tried many platforms, but nothing comes close to ProTracker\'s depth of analytics and ease of use.',
     avatar: 'CR',
+    stars: 5,
+  },
+  {
+    name: 'Aisha Diallo',
+    role: 'Solo Athlete',
+    sport: 'Basketball',
+    quote: 'Perfect for recreational players who want to take their game seriously without being on a formal team. I track everything myself — and it just works.',
+    avatar: 'AD',
     stars: 5,
   },
 ];
@@ -200,30 +243,37 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            The professional sports analytics platform built for coaches who demand excellence.
+            The professional sports analytics platform for coaches, team athletes, and solo athletes.
             AI-powered insights, real-time tracking, and data-driven performance management.
           </motion.p>
 
+          {/* Three ways in: coach, team athlete, solo athlete */}
           <motion.div
             custom={3}
             initial="hidden"
             animate="show"
             variants={fadeUp}
-            className="flex items-center justify-center gap-4 flex-wrap"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left"
           >
-            <button
-              onClick={() => navigate('/login')}
-              className="group flex items-center gap-2 px-8 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-lg transition-all hover:shadow-2xl hover:shadow-indigo-500/30 hover:scale-105 cursor-pointer"
-            >
-              Get Started Free
-              <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
-            </button>
-            <button
-              onClick={() => navigate('/login')}
-              className="flex items-center gap-2 px-8 py-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-semibold text-lg transition-all cursor-pointer"
-            >
-              Sign In
-            </button>
+            {ROLE_PATHS.map((r) => (
+              <div
+                key={r.title}
+                className={`group flex flex-col rounded-2xl bg-gradient-to-br ${r.accent} border p-5 transition-all hover:shadow-xl hover:shadow-black/20`}
+              >
+                <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl border ${r.iconBg} mb-3`}>
+                  <r.icon size={19} />
+                </div>
+                <h3 className="text-base font-bold text-white mb-1.5">{r.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed flex-1">{r.desc}</p>
+                <button
+                  onClick={() => navigate(r.to)}
+                  className={`mt-4 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl ${r.button} text-white font-semibold text-sm transition-all cursor-pointer group-hover:shadow-lg`}
+                >
+                  {r.cta}
+                  <ChevronRight size={15} />
+                </button>
+              </div>
+            ))}
           </motion.div>
 
           <motion.p
@@ -233,17 +283,14 @@ export function LandingPage() {
             variants={fadeUp}
             className="mt-6 text-sm text-gray-500"
           >
-            Are you a solo athlete? Track your progress without a team.{' '}
-            <button
-              onClick={() => navigate('/register/solo')}
-              className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer"
-            >
-              Start Solo Training →
+            Already have an account?{' '}
+            <button onClick={() => navigate('/login')} className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer">
+              Sign in →
             </button>
           </motion.p>
 
           <motion.div
-            custom={4}
+            custom={5}
             initial="hidden"
             animate="show"
             variants={fadeUp}
@@ -319,6 +366,14 @@ export function LandingPage() {
                 variants={fadeUp}
                 className="group relative p-6 rounded-2xl bg-gray-900/50 border border-gray-800 hover:border-gray-600 transition-all hover:shadow-xl hover:shadow-black/20 cursor-default"
               >
+                <span className={clsx(
+                  'absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full border',
+                  f.works === 'Both'
+                    ? 'text-purple-300 bg-purple-500/10 border-purple-500/30'
+                    : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
+                )}>
+                  {f.works === 'Both' ? 'Solo + Team' : 'Teams'}
+                </span>
                 <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} mb-4 shadow-lg`}>
                   <f.icon size={22} className="text-white" />
                 </div>
@@ -427,11 +482,11 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-black tracking-tight mb-3">Coaches love ProTracker</h2>
-            <p className="text-gray-400">Join hundreds of coaches already transforming their programs.</p>
+            <h2 className="text-3xl font-black tracking-tight mb-3">Coaches and athletes love ProTracker</h2>
+            <p className="text-gray-400">From full squads to solo grinders — join the players already transforming their game.</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {TESTIMONIALS.map((t, i) => (
               <motion.div
                 key={t.name}
