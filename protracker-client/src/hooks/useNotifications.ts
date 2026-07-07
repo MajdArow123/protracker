@@ -40,14 +40,15 @@ export function useNotifications(): NotificationSummary {
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
   const isAthlete = user?.role === 'Athlete';
+  const isSolo = user?.role === 'SoloAthlete';
   const seenVersion = useSeenVersion(); // re-run when the seen set changes
 
   const { data: coachTasks = [] } = useCoachTasks(undefined, isCoach);
   const { data: activeInjuries = [] } = useActiveInjuries(isCoach);
   // Players are already cached for coaches (list/teams pages); used for join alerts.
   const { data: players = [] } = usePlayers(isCoach);
-  const { data: myTasks = [] } = useMyTasks(isAthlete);
-  const { data: mySessions = [] } = useMySessions(isAthlete);
+  const { data: myTasks = [] } = useMyTasks(isAthlete || isSolo);
+  const { data: mySessions = [] } = useMySessions(isAthlete || isSolo);
 
   return useMemo<NotificationSummary>(() => {
     const raw: NotificationItem[] = [];
@@ -88,7 +89,7 @@ export function useNotifications(): NotificationSummary {
       }));
     }
 
-    if (isAthlete) {
+    if (isAthlete || isSolo) {
       myTasks.filter(t => !t.isCompleted).forEach(t => {
         const overdue = isOverdue(t.dueDate);
         raw.push({
@@ -98,7 +99,7 @@ export function useNotifications(): NotificationSummary {
           title: overdue ? 'Task overdue' : 'Task to do',
           detail: t.title,
           severity: overdue ? 'high' : 'medium',
-          to: '/player-dashboard/tasks',
+          to: isSolo ? '/solo/tasks' : '/player-dashboard/tasks',
           timestamp: t.dueDate ? new Date(t.dueDate).getTime() : Number.MAX_SAFE_INTEGER,
         });
       });
@@ -113,7 +114,7 @@ export function useNotifications(): NotificationSummary {
         title: 'Upcoming session',
         detail: `${s.title} · ${new Date(s.startTime).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' })}`,
         severity: 'low',
-        to: '/player-dashboard',
+        to: isSolo ? '/solo-dashboard' : '/player-dashboard',
         timestamp: new Date(s.startTime).getTime(),
       }));
     }
@@ -134,5 +135,5 @@ export function useNotifications(): NotificationSummary {
 
     return { items, count: items.length, badges, markAllSeen };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCoach, isAthlete, coachTasks, activeInjuries, players, myTasks, mySessions, seenVersion]);
+  }, [isCoach, isAthlete, isSolo, coachTasks, activeInjuries, players, myTasks, mySessions, seenVersion]);
 }

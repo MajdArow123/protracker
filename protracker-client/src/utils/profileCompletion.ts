@@ -17,7 +17,7 @@ export function computeProfileCompletion(
   profile: Profile,
   opts: { dietaryCount?: number } = {},
 ): ProfileCompletion {
-  const isAthlete = profile.roles.includes('Athlete');
+  const isAthlete = profile.roles.includes('Athlete') || profile.roles.includes('SoloAthlete');
   const items: CompletionItem[] = [
     { label: 'Add a profile photo', points: 15, done: !!profile.profilePictureUrl },
     { label: 'Full name', points: 10, done: !!profile.displayName?.trim() },

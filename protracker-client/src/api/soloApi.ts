@@ -1,5 +1,8 @@
 import api from './axiosInstance';
 import type { DietaryRestrictionInput, PositionOption } from './joinApi';
+import type { ScheduledSession, MatchResult } from '../types';
+import type { CreateSessionInput } from './sessionsApi';
+import type { CreateMatchInput } from './matchesApi';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -85,6 +88,19 @@ export const soloApi = {
     const res = await api.put<SoloProfile>('/api/solo/profile', patch);
     return res.data;
   },
+
+  // Personal (player-scoped, team-less) training sessions & matches.
+  getSessions: (): Promise<ScheduledSession[]> =>
+    api.get<ScheduledSession[]>('/api/solo/sessions').then(r => r.data),
+
+  createSession: (data: CreateSessionInput): Promise<ScheduledSession> =>
+    api.post<ScheduledSession>('/api/solo/sessions', data).then(r => r.data),
+
+  getMatches: (): Promise<MatchResult[]> =>
+    api.get<MatchResult[]>('/api/solo/matches').then(r => r.data),
+
+  createMatch: (data: CreateMatchInput & { personalRating?: number }): Promise<MatchResult> =>
+    api.post<MatchResult>('/api/solo/matches', data).then(r => r.data),
 
   // Converts the solo account into a coach-managed athlete (role changes → the
   // backend issues fresh tokens, which the axios layer stores from the response).

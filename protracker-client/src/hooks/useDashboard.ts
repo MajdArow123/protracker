@@ -20,7 +20,7 @@ export function useMyPlayerId() {
       const player = await playersApi.getMyPlayer();
       return player.id;
     },
-    enabled: !!user && user.role === 'Athlete',
+    enabled: !!user && (user.role === 'Athlete' || user.role === 'SoloAthlete'),
     staleTime: Infinity,
   });
 }

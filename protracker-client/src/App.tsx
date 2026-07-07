@@ -17,7 +17,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
-  RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage,
+  RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage, SoloComingSoonPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
@@ -59,10 +59,6 @@ function AppRoutes() {
       <Route path="/register/solo" element={<SoloRegisterPage />} />
       <Route path="/join/:code" element={<JoinTeamPage />} />
       <Route path="/" element={<RootRedirect />} />
-      {/* Solo dashboard lives outside AppLayout until the dedicated solo layout ships. */}
-      <Route element={<ProtectedRoute roles={['SoloAthlete']} />}>
-        <Route path="/solo-dashboard" element={<SoloDashboardPage />} />
-      </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           {/* Messaging is available to both roles */}
@@ -120,6 +116,18 @@ function AppRoutes() {
             <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
             {/* Athlete can view their team in read-only mode */}
             <Route path="/player-dashboard/team/:id" element={<TeamDetailPage />} />
+          </Route>
+          <Route element={<ProtectedRoute roles={['SoloAthlete']} />}>
+            <Route path="/solo-dashboard" element={<SoloDashboardPage />} />
+            {/* Interim: tasks reuses the athlete My Tasks page until the solo tasks page ships. */}
+            <Route path="/solo/tasks" element={<MyTasksPage />} />
+            <Route path="/solo/profile" element={<AthleteProfilePage />} />
+            <Route path="/solo/performance" element={<SoloComingSoonPage />} />
+            <Route path="/solo/assessment" element={<SoloComingSoonPage />} />
+            <Route path="/solo/nutrition" element={<SoloComingSoonPage />} />
+            <Route path="/solo/training" element={<SoloComingSoonPage />} />
+            <Route path="/solo/matches" element={<SoloComingSoonPage />} />
+            <Route path="/solo/recovery" element={<SoloComingSoonPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['Parent']} />}>
             <Route path="/parent-dashboard" element={<ParentDashboardPage />} />

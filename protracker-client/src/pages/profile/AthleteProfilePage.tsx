@@ -182,7 +182,7 @@ export function AthleteProfilePage() {
                 </h1>
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mt-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-600/15 border border-emerald-500/30 text-emerald-500 text-xs font-semibold">
-                    <Activity size={11} /> Athlete
+                    <Activity size={11} /> {profile.roles.includes('SoloAthlete') ? 'Solo Athlete' : 'Athlete'}
                   </span>
                   {profile.sportName && (
                     <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-semibold">{profile.sportName}</span>
@@ -373,7 +373,7 @@ export function AthleteProfilePage() {
                   {avgScore != null ? `${avgScore.toFixed(1)}/10` : 'No assessments yet'}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-400 pt-1">Position and fitness level are managed by your coach.</p>
+              <p className="text-[11px] text-gray-400 pt-1">{profile.roles.includes('SoloAthlete') ? 'Fitness level updates as you log assessments.' : 'Position and fitness level are managed by your coach.'}</p>
             </div>
           </div>
         </motion.div>

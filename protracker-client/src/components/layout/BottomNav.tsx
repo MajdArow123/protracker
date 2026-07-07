@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad, Heart } from 'lucide-react';
+import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad, Heart, Dumbbell, User } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
@@ -28,6 +28,14 @@ const athleteItems: Item[] = [
   { to: '/player-dashboard/nutrition', label: 'Nutrition', icon: Salad },
 ];
 
+const soloItems: Item[] = [
+  { to: '/solo-dashboard', label: 'Home', icon: Home, end: true },
+  { to: '/solo/performance', label: 'Performance', icon: TrendingUp },
+  { to: '/solo/nutrition', label: 'Nutrition', icon: Salad },
+  { to: '/solo/training', label: 'Training', icon: Dumbbell },
+  { to: '/solo/profile', label: 'Profile', icon: User },
+];
+
 const parentItems: Item[] = [
   { to: '/parent-dashboard', label: 'My Children', icon: Heart, end: true },
 ];
@@ -38,7 +46,7 @@ export function BottomNav() {
   const { user } = useAuth();
   const { data: unread = 0 } = useUnreadMessageCount();
   if (!user) return null;
-  const items = user.role === 'Coach' ? coachItems : user.role === 'Parent' ? parentItems : athleteItems;
+  const items = user.role === 'Coach' ? coachItems : user.role === 'Parent' ? parentItems : user.role === 'SoloAthlete' ? soloItems : athleteItems;
 
   return (
     <nav className="md:hidden flex-shrink-0 flex items-stretch border-t border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]">

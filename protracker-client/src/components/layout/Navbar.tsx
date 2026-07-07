@@ -70,7 +70,7 @@ export function Navbar({ onMenuClick }: Props) {
 
         {user && (
           <Link
-            to={user.role === 'Coach' ? '/profile' : '/player-dashboard/profile'}
+            to={user.role === 'Coach' ? '/profile' : user.role === 'SoloAthlete' ? '/solo/profile' : '/player-dashboard/profile'}
             className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
           >
             <div className="w-7 h-7 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-500 dark:text-indigo-400 text-xs font-bold flex-shrink-0">
@@ -84,7 +84,7 @@ export function Navbar({ onMenuClick }: Props) {
                 variant={user.role === 'Coach' ? 'info' : 'success'}
                 className="mt-0.5 text-[10px]"
               >
-                {user.role}
+                {user.role === 'SoloAthlete' ? 'Solo Athlete' : user.role}
               </Badge>
             </div>
           </Link>
