@@ -27,11 +27,13 @@ public class AssessmentService : IAssessmentService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IPersonalGoalService _goals;
 
-    public AssessmentService(ApplicationDbContext context, IAccessControlService access)
+    public AssessmentService(ApplicationDbContext context, IAccessControlService access, IPersonalGoalService goals)
     {
         _context = context;
         _access = access;
+        _goals = goals;
     }
 
     public async Task<List<AssessmentPeriodDto>> GetAccessiblePeriodsAsync(ClaimsPrincipal user)
@@ -197,6 +199,12 @@ public class AssessmentService : IAssessmentService
             });
         }
         await _context.SaveChangesAsync();
+
+        // Auto-link: update any active Performance goals tied to these stat categories.
+        var categoryScores = dto.StatScores
+            .GroupBy(s => s.SportStatCategoryId)
+            .ToDictionary(g => g.Key, g => g.Last().Score);
+        await _goals.SyncFromAssessmentAsync(dto.PlayerId, categoryScores);
 
         assessment.AssessmentPeriod = period;
         return await GetAssessmentByIdAsync(user, assessment.Id);

@@ -233,6 +233,152 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
         return list;
     }
 
+    // ─── Goal Suggestions ─────────────────────────────────────────────────────
+
+    // Suggests 3-5 SMART goals from the player's weakest assessment areas + sport/position.
+    // Each suggestion is linked back to its stat category so accepting it enables assessment
+    // auto-tracking. Coach/solo only (matches the rest of this controller).
+    [HttpPost("goal-suggestions/{playerId}")]
+    public async Task<ActionResult> GenerateGoalSuggestions(int playerId)
+    {
+        await _access.EnsureCanAccessPlayerAsync(User, playerId);
+
+        var player = await _context.Players
+            .Include(p => p.Sport)
+            .Include(p => p.Position)
+            .FirstOrDefaultAsync(p => p.Id == playerId)
+            ?? throw new NotFoundApiException($"Player {playerId} not found.");
+
+        var latestAssessment = await _context.PlayerAssessments
+            .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
+            .Where(a => a.PlayerId == playerId)
+            .OrderByDescending(a => a.DateRecorded)
+            .FirstOrDefaultAsync();
+
+        // Weakest categories drive the suggestions — bottom 4 by score.
+        var weakScores = (latestAssessment?.StatScores ?? new List<PlayerStatScore>())
+            .OrderBy(s => s.Score)
+            .Take(4)
+            .ToList();
+        var weakAreas = weakScores
+            .Select(s => $"{s.SportStatCategory.Name}: {s.Score}/10")
+            .ToList();
+        // name (lowercased) -> (categoryId, currentScore) for linking accepted suggestions.
+        var catByName = weakScores
+            .GroupBy(s => s.SportStatCategory.Name.ToLowerInvariant())
+            .ToDictionary(g => g.Key, g => (g.First().SportStatCategory.Id, g.First().Score));
+
+        var weakAreasText = weakAreas.Any()
+            ? string.Join("\n", weakAreas.Select(w => $"- {w}"))
+            : "- No assessment data yet; suggest well-rounded foundational goals.";
+
+        var prompt = BuildGoalSuggestionsPrompt(player, weakAreasText);
+        const string prefill = "[";
+
+        List<GoalSuggestionDto>? suggestions = null;
+        string lastRaw = "";
+        for (var attempt = 1; attempt <= 2 && suggestions == null; attempt++)
+        {
+            lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 2000, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
+            try
+            {
+                suggestions = ParseGoalSuggestions(lastRaw, catByName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Goal suggestions parse failed (attempt {Attempt})", attempt);
+            }
+        }
+
+        if (suggestions == null || suggestions.Count == 0)
+        {
+            _logger.LogError("Failed to parse AI goal suggestions after retries: {Raw}", lastRaw);
+            return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
+        }
+
+        _logger.LogInformation("AI goal suggestions generated for player {PlayerId}", playerId);
+        return Success(new GoalSuggestionsDto
+        {
+            PlayerId = playerId,
+            PlayerName = player.FullName,
+            WeakAreas = weakAreas,
+            Suggestions = suggestions,
+        });
+    }
+
+    private static string BuildGoalSuggestionsPrompt(Player p, string weakAreasText)
+    {
+        return "You are an elite sports performance coach. Suggest 4 specific, measurable personal goals "
+            + "to help this athlete improve, based on their weakest assessment areas. Goals should be "
+            + "achievable in the given timeline and motivating.\n\n"
+            + $"Athlete: {p.FullName}\n"
+            + $"Sport: {p.Sport.Name}\n"
+            + $"Position: {p.Position.Name}\n"
+            + $"Age: {p.Age}\n"
+            + $"Fitness level: {p.FitnessLevel}/10\n\n"
+            + "Weakest assessment areas (score out of 10, lowest first):\n"
+            + weakAreasText + "\n\n"
+            + "Return ONLY a JSON array of exactly 4 goal objects, no other text. Each object:\n"
+            + "{\"title\": string (short, e.g. \"Improve passing to 8.0\"), "
+            + "\"description\": string (1 sentence on how to get there), "
+            + "\"category\": \"Performance|Fitness|Nutrition|Mental|Technical|Tactical|Other\", "
+            + "\"targetValue\": number (a realistic target on the 0-10 assessment scale, ~1.5-2.5 above current), "
+            + "\"unit\": \"score\", "
+            + "\"focusArea\": string (the EXACT weak category name this goal targets, verbatim), "
+            + "\"timelineWeeks\": number (4-12)}\n\n"
+            + "Make every goal specific to this sport and position. Prioritise the lowest-scoring areas. "
+            + "Use category \"Performance\" for assessment-score goals. "
+            + "I have pre-started the JSON with [ — continue from there and close with ].";
+    }
+
+    private static List<GoalSuggestionDto> ParseGoalSuggestions(string raw, IReadOnlyDictionary<string, (int Id, decimal Score)> catByName)
+    {
+        string GetStr(JsonElement el, string name, string fallback = "") =>
+            el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? (v.GetString() ?? fallback) : fallback;
+        decimal? GetDec(JsonElement el, string name) =>
+            el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDecimal() : null;
+        int? GetInt(JsonElement el, string name) =>
+            el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt32() : null;
+
+        var root = JsonDocument.Parse(raw).RootElement;
+        if (root.ValueKind != JsonValueKind.Array)
+            throw new JsonException("Expected a JSON array of goal suggestions.");
+
+        var list = new List<GoalSuggestionDto>();
+        foreach (var el in root.EnumerateArray())
+        {
+            if (el.ValueKind != JsonValueKind.Object) continue;
+
+            var title = GetStr(el, "title").Trim();
+            if (string.IsNullOrEmpty(title)) continue;
+
+            Enum.TryParse<GoalCategory>(GetStr(el, "category", "Performance"), ignoreCase: true, out var category);
+            var focus = GetStr(el, "focusArea").Trim();
+
+            int? linkedId = null;
+            decimal? current = null;
+            if (!string.IsNullOrEmpty(focus) && catByName.TryGetValue(focus.ToLowerInvariant(), out var match))
+            {
+                linkedId = match.Id;
+                current = match.Score;
+            }
+
+            list.Add(new GoalSuggestionDto
+            {
+                Title = title,
+                Description = GetStr(el, "description").Trim() is { Length: > 0 } d ? d : null,
+                Category = category,
+                TargetValue = GetDec(el, "targetValue"),
+                CurrentValue = current,
+                Unit = GetStr(el, "unit").Trim() is { Length: > 0 } u ? u : "score",
+                LinkedStatCategoryId = linkedId,
+                TimelineWeeks = GetInt(el, "timelineWeeks"),
+                FocusArea = string.IsNullOrEmpty(focus) ? null : focus,
+            });
+        }
+        return list;
+    }
+
     // ─── Nutrition Guidance ───────────────────────────────────────────────────
 
     [HttpPost("nutrition-guidance/{playerId}")]

@@ -11,6 +11,16 @@ export function usePlayers(enabled = true) {
   });
 }
 
+// The current athlete/solo athlete's own player record (id + sport, etc.) via /api/players/me.
+export function useMyPlayer(enabled = true) {
+  return useQuery({
+    queryKey: ['players', 'me'],
+    queryFn: playersApi.getMyPlayer,
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function usePlayer(id: number | undefined) {
   return useQuery({
     queryKey: ['players', id],

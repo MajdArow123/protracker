@@ -64,6 +64,8 @@ export const ChildOverviewPage = named(() => import('../pages/parent/ChildOvervi
 
 // Shared
 export const MessagesPage = named(() => import('../pages/messages/MessagesPage'), 'MessagesPage');
+// Personal goals (coach / athlete / solo — one shared page, role-aware).
+export const GoalsPage = named(() => import('../pages/goals/GoalsPage'), 'GoalsPage');
 
 // Warm the dashboard chunk the instant login succeeds, before the redirect fires.
 export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete') {

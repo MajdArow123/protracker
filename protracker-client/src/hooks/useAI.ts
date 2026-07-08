@@ -34,3 +34,9 @@ export function useGenerateTaskSuggestions() {
     mutationFn: (playerId: number) => aiApi.generateTaskSuggestions(playerId),
   });
 }
+
+export function useGenerateGoalSuggestions() {
+  return useMutation({
+    mutationFn: (playerId: number) => aiApi.generateGoalSuggestions(playerId),
+  });
+}

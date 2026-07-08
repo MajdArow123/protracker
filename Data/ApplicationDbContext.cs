@@ -52,6 +52,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RecoveryMilestone> RecoveryMilestones => Set<RecoveryMilestone>();
     public DbSet<PlayerMatchRating> PlayerMatchRatings => Set<PlayerMatchRating>();
     public DbSet<WellbeingCheckin> WellbeingCheckins => Set<WellbeingCheckin>();
+    public DbSet<PersonalGoal> PersonalGoals => Set<PersonalGoal>();
+    public DbSet<GoalMilestone> GoalMilestones => Set<GoalMilestone>();
+    public DbSet<GoalProgress> GoalProgress => Set<GoalProgress>();
     public DbSet<RecoveryTemplate> RecoveryTemplates => Set<RecoveryTemplate>();
     public DbSet<RecoveryTemplateExercise> RecoveryTemplateExercises => Set<RecoveryTemplateExercise>();
     public DbSet<RecoveryTemplateMilestone> RecoveryTemplateMilestones => Set<RecoveryTemplateMilestone>();
@@ -427,6 +430,24 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<WellbeingCheckin>()
             .HasIndex(c => new { c.PlayerId, c.Date })
             .IsUnique();
+
+        builder.Entity<PersonalGoal>()
+            .HasOne(g => g.Player)
+            .WithMany()
+            .HasForeignKey(g => g.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<PersonalGoal>()
+            .HasIndex(g => g.PlayerId);
+        builder.Entity<GoalMilestone>()
+            .HasOne(m => m.PersonalGoal)
+            .WithMany(g => g.Milestones)
+            .HasForeignKey(m => m.PersonalGoalId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<GoalProgress>()
+            .HasOne(p => p.PersonalGoal)
+            .WithMany(g => g.ProgressEntries)
+            .HasForeignKey(p => p.PersonalGoalId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

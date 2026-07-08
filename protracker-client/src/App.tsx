@@ -29,6 +29,7 @@ import {
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
+  GoalsPage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -72,6 +73,7 @@ function AppRoutes() {
             <Route path="/teams/:id" element={<TeamDetailPage />} />
             <Route path="/teams/:id/edit" element={<TeamFormPage />} />
             <Route path="/players" element={<PlayersPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/tasks/analytics" element={<TaskAnalyticsPage />} />
             <Route path="/players/new" element={<PlayerFormPage />} />
@@ -115,12 +117,14 @@ function AppRoutes() {
               element={<PlayerImprovementDashPage />}
             />
             <Route path="/player-dashboard/tasks" element={<MyTasksPage />} />
+            <Route path="/player-dashboard/goals" element={<GoalsPage />} />
             <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
             {/* Athlete can view their team in read-only mode */}
             <Route path="/player-dashboard/team/:id" element={<TeamDetailPage />} />
           </Route>
           <Route element={<ProtectedRoute roles={['SoloAthlete']} />}>
             <Route path="/solo-dashboard" element={<SoloDashboardPage />} />
+            <Route path="/solo/goals" element={<GoalsPage />} />
             <Route path="/solo/tasks" element={<SoloTasksPage />} />
             <Route path="/solo/profile" element={<AthleteProfilePage />} />
             {/* My Performance reuses the athlete stats/history page (player-scoped, role-agnostic). */}
