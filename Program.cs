@@ -182,6 +182,7 @@ builder.Services.AddScoped<IRecoveryPlanService, RecoveryPlanService>();
 builder.Services.AddScoped<IWellbeingService, WellbeingService>();
 builder.Services.AddScoped<IPersonalGoalService, PersonalGoalService>();
 builder.Services.AddScoped<IJournalService, JournalService>();
+builder.Services.AddScoped<IPublicProfileService, PublicProfileService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();

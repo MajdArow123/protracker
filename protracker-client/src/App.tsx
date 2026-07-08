@@ -29,7 +29,7 @@ import {
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
-  GoalsPage, JournalPage,
+  GoalsPage, JournalPage, PublicProfilePage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -61,6 +61,8 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/solo" element={<SoloRegisterPage />} />
       <Route path="/join/:code" element={<JoinTeamPage />} />
+      {/* Public shareable athlete profile — no auth required. */}
+      <Route path="/player/:slug" element={<PublicProfilePage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

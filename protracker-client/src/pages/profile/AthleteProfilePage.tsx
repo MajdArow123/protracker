@@ -15,6 +15,7 @@ import { DetailSkeleton } from '../../components/ui/Skeleton';
 import { EditableAvatar } from '../../components/profile/ProfileAvatar';
 import { ProfileCompletionCard } from '../../components/profile/ProfileCompletionCard';
 import { AccountSettingsSection } from '../../components/profile/AccountSettingsSection';
+import { PublicProfileSettingsSection } from '../../components/profile/PublicProfileSettingsSection';
 import { computeProfileCompletion } from '../../utils/profileCompletion';
 import { ConnectCoachModal } from '../../components/solo/ConnectCoachModal';
 import {
@@ -513,8 +514,13 @@ export function AthleteProfilePage() {
           </motion.div>
         )}
 
-        {/* ── Account settings ── */}
+        {/* ── Public profile / sharing ── */}
         <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>
+          <PublicProfileSettingsSection />
+        </motion.div>
+
+        {/* ── Account settings ── */}
+        <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}>
           <AccountSettingsSection isCoach={false} />
         </motion.div>
       </div>

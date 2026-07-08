@@ -19,6 +19,7 @@ import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageWrapper } from '../../components/layout/PageWrapper';
+import { ShareProgressButton } from '../../components/profile/ShareProgressButton';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -212,12 +213,15 @@ export function SoloDashboardPage() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-2.5">
-              <Flame size={20} className={streak > 0 ? 'text-orange-300' : 'text-white/50'} />
-              <div>
-                <p className="text-xl font-black leading-none">{streak}</p>
-                <p className="text-[10px] text-indigo-100 uppercase tracking-wide font-semibold mt-0.5">day streak</p>
+            <div className="flex flex-col items-end gap-2.5">
+              <div className="flex items-center gap-2.5 rounded-2xl bg-white/10 border border-white/20 px-4 py-2.5">
+                <Flame size={20} className={streak > 0 ? 'text-orange-300' : 'text-white/50'} />
+                <div>
+                  <p className="text-xl font-black leading-none">{streak}</p>
+                  <p className="text-[10px] text-indigo-100 uppercase tracking-wide font-semibold mt-0.5">day streak</p>
+                </div>
               </div>
+              <ShareProgressButton />
             </div>
           </div>
         </div>

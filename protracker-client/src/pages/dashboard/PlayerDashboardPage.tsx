@@ -9,6 +9,7 @@ import { useCoachNotes } from '../../hooks/useCoachNotes';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
+import { ShareProgressButton } from '../../components/profile/ShareProgressButton';
 import { OnboardingModal } from '../../components/profile/OnboardingModal';
 import { ProfileCompletionReminder } from '../../components/profile/ProfileCompletionReminder';
 import { useProfile } from '../../hooks/useProfile';
@@ -156,13 +157,16 @@ export function PlayerDashboardPage() {
       <motion.div custom={0} initial="hidden" animate="show" variants={fadeUp}>
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 p-6 text-white">
           <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 text-indigo-200 text-sm mb-2">
-              <Zap size={14} />
-              Ready to train?
+          <div className="relative z-10 flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 text-indigo-200 text-sm mb-2">
+                <Zap size={14} />
+                Ready to train?
+              </div>
+              <h1 className="text-2xl font-black tracking-tight">Hi, {firstName}</h1>
+              <p className="text-indigo-200 text-sm mt-1">Keep pushing — your next level is within reach.</p>
             </div>
-            <h1 className="text-2xl font-black tracking-tight">Hi, {firstName}</h1>
-            <p className="text-indigo-200 text-sm mt-1">Keep pushing — your next level is within reach.</p>
+            <ShareProgressButton />
           </div>
         </div>
       </motion.div>

@@ -68,6 +68,8 @@ export const MessagesPage = named(() => import('../pages/messages/MessagesPage')
 export const GoalsPage = named(() => import('../pages/goals/GoalsPage'), 'GoalsPage');
 // Progress journal (athlete / solo).
 export const JournalPage = named(() => import('../pages/journal/JournalPage'), 'JournalPage');
+// Public shareable athlete profile (no auth).
+export const PublicProfilePage = named(() => import('../pages/public/PublicProfilePage'), 'PublicProfilePage');
 
 // Warm the dashboard chunk the instant login succeeds, before the redirect fires.
 export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete') {
