@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
@@ -9,6 +9,9 @@ import { EmptyState } from '../ui/EmptyState';
 import { SPORT_SHORT } from './drillUtils';
 import { useDrills } from '../../hooks/useDrills';
 import { useSports } from '../../hooks/useSports';
+import { useTeams } from '../../hooks/useTeams';
+import { useMyPlayer } from '../../hooks/usePlayers';
+import { useAuth } from '../../context/AuthContext';
 import type { Drill } from '../../types';
 
 interface PlayerOption { id: number; name: string; }
@@ -23,14 +26,28 @@ interface Props {
 
 // Compact drill browser shown from the Tasks page — pick a drill, then assign it as a task.
 export function DrillLibraryModal({ isOpen, onClose, players, lockedPlayerId, defaultSportId }: Props) {
+  const { user } = useAuth();
+  const isCoach = user?.role === 'Coach';
+  const isAdmin = user?.role === 'Admin';
   const { data: sports = [] } = useSports();
+  const { data: coachTeams = [] } = useTeams(isCoach && isOpen);
+  const { data: myPlayer } = useMyPlayer(!isCoach && isOpen);
+
+  // Same sport-scoping as the library page: locked to the user's sport unless admin / multi-sport coach.
+  const coachSports = useMemo(() => [...new Set(coachTeams.map(t => t.sportId))], [coachTeams]);
+  const showSportPills = isAdmin || (isCoach && coachSports.length !== 1);
+  const lockedSportId = showSportPills ? undefined : (isCoach ? coachSports[0] : myPlayer?.sportId) ?? defaultSportId;
+
   const [search, setSearch] = useState('');
-  const [sportId, setSportId] = useState<number | null>(defaultSportId ?? null);
+  const [sportId, setSportId] = useState<number | null>(null);
   const [assigning, setAssigning] = useState<Drill | null>(null);
 
+  const effectiveSportId = showSportPills ? sportId : (lockedSportId ?? null);
+  const sportReady = showSportPills || lockedSportId != null;
+
   const { data, isLoading } = useDrills(
-    { sport: sportId, search: search.trim() || undefined, pageSize: 60 },
-    isOpen,
+    { sport: effectiveSportId, search: search.trim() || undefined, pageSize: 60 },
+    isOpen && sportReady,
   );
   const drills = data?.items ?? [];
 
@@ -43,12 +60,14 @@ export function DrillLibraryModal({ isOpen, onClose, players, lockedPlayerId, de
             <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drills…"
               className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-white" />
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => setSportId(null)} className={pill(sportId === null)}>All</button>
-            {sports.map(s => (
-              <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{SPORT_SHORT[s.id] ?? s.name}</button>
-            ))}
-          </div>
+          {showSportPills && (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button onClick={() => setSportId(null)} className={pill(sportId === null)}>All</button>
+              {sports.map(s => (
+                <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{SPORT_SHORT[s.id] ?? s.name}</button>
+              ))}
+            </div>
+          )}
 
           <div className="max-h-[55vh] overflow-y-auto -mx-1 px-1">
             {isLoading ? (

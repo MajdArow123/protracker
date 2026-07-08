@@ -74,7 +74,7 @@ export const PublicProfilePage = named(() => import('../pages/public/PublicProfi
 export const DrillLibraryPage = named(() => import('../pages/drills/DrillLibraryPage'), 'DrillLibraryPage');
 
 // Warm the dashboard chunk the instant login succeeds, before the redirect fires.
-export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete') {
+export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete' | 'Admin') {
   if (role === 'Coach') import('../pages/dashboard/CoachDashboardPage');
   else if (role === 'Parent') import('../pages/parent/ParentDashboardPage');
   else if (role === 'SoloAthlete') import('../pages/dashboard/SoloDashboardPage');

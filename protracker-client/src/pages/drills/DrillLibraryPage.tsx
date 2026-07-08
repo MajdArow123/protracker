@@ -39,8 +39,15 @@ export function DrillLibraryPage() {
   const { data: myPlayer } = useMyPlayer(!isCoach);
   const { data: players = [] } = usePlayers(isCoach);
 
-  // Default the sport filter to the user's own sport.
-  const ownSportId = isCoach ? coachTeams[0]?.sportId : myPlayer?.sportId;
+  const isAdmin = user?.role === 'Admin';
+
+  // Sport scoping: a coach only ever sees their team sport; solo / team athletes only their
+  // own sport. Sport pills (and the ability to switch) appear only for an admin or the edge-
+  // case coach whose teams span multiple sports.
+  const coachSports = useMemo(() => [...new Set(coachTeams.map(t => t.sportId))], [coachTeams]);
+  const showSportPills = isAdmin || (isCoach && coachSports.length !== 1);
+  const lockedSportId = showSportPills ? undefined : (isCoach ? coachSports[0] : myPlayer?.sportId);
+  const defaultSportId = isCoach ? coachSports[0] : myPlayer?.sportId;
 
   const [tab, setTab] = useState<'all' | 'mine'>('all');
   const [search, setSearch] = useState('');
@@ -51,16 +58,21 @@ export function DrillLibraryPage() {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [page, setPage] = useState(1);
 
-  // Apply the user's own sport as the initial filter once it resolves.
+  // Multi-sport/admin: default the pill selection to the user's first sport once known.
   useEffect(() => {
-    if (ownSportId) setSportId(ownSportId);
-  }, [ownSportId]);
+    if (showSportPills && defaultSportId) setSportId(defaultSportId);
+  }, [showSportPills, defaultSportId]);
+
+  // The sport actually applied: locked users can never leave their sport.
+  const effectiveSportId = showSportPills ? sportId : (lockedSportId ?? null);
+  // Wait until the locked sport is known before querying, so no other-sport drills flash in.
+  const sportReady = showSportPills || lockedSportId != null;
 
   // Server-side: sport / search / favorited / mine (fetch all matching, refine client-side).
   const { data, isLoading, isError, refetch } = useDrills({
-    sport: sportId, search: search.trim() || undefined,
+    sport: effectiveSportId, search: search.trim() || undefined,
     favorited: favoritesOnly, mine: tab === 'mine', pageSize: 200,
-  });
+  }, sportReady);
   const allDrills = data?.items ?? [];
 
   const filtered = useMemo(() => allDrills.filter(d =>
@@ -69,7 +81,7 @@ export function DrillLibraryPage() {
     matchesDuration(d.durationMinutes, duration),
   ), [allDrills, categories, difficulty, duration]);
 
-  useEffect(() => { setPage(1); }, [sportId, search, tab, favoritesOnly, difficulty, duration, categories]);
+  useEffect(() => { setPage(1); }, [effectiveSportId, search, tab, favoritesOnly, difficulty, duration, categories]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -123,13 +135,16 @@ export function DrillLibraryPage() {
 
       {/* Filter bar */}
       <div className="space-y-3 mb-5">
-        {/* Sport */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <button onClick={() => setSportId(null)} className={pill(sportId === null)}>All Sports</button>
-          {sports.map(s => (
-            <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{SPORT_SHORT[s.id] ?? s.name}</button>
-          ))}
-        </div>
+        {/* Sport — only shown for admins or coaches spanning multiple sports; everyone else
+            is locked to their own sport (no pills). */}
+        {showSportPills && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button onClick={() => setSportId(null)} className={pill(sportId === null)}>All Sports</button>
+            {sports.map(s => (
+              <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{SPORT_SHORT[s.id] ?? s.name}</button>
+            ))}
+          </div>
+        )}
         {/* Category (multi) + difficulty + duration + favorites */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {CATEGORY_ORDER.map(c => (
@@ -204,7 +219,7 @@ export function DrillLibraryPage() {
         players={players.map(p => ({ id: p.id, name: p.fullName }))}
         lockedPlayerId={isSolo ? myPlayer?.id : undefined}
       />
-      <CreateDrillModal isOpen={createOpen} onClose={() => setCreateOpen(false)} drill={editing} defaultSportId={ownSportId} />
+      <CreateDrillModal isOpen={createOpen} onClose={() => setCreateOpen(false)} drill={editing} defaultSportId={defaultSportId} />
     </PageWrapper>
   );
 }
