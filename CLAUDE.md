@@ -406,6 +406,72 @@ session — solo work had to integrate with it (see gotchas).
   Team Athlete → `/register`, Solo → `/register/solo`); "Works for" chips on feature
   cards (Solo + Team / Teams); solo-athlete testimonial.
 
+## Phase B — Personal Goals & Progress (COMPLETE, deployed) — 4 sections
+
+Personal goal-setting, a reflective journal, public shareable profiles, and dashboard
+integration — for **coaches, team athletes, and solo athletes** (multi-sport; AI prompts
+always include the player's sport). 4 commits, each curl- + browser-verified.
+
+- **Section 1 — Personal goals** (migration `AddPersonalGoals`). `PersonalGoal`
+  (Category Performance/Fitness/Nutrition/Mental/Technical/Tactical/Other, Status Active/
+  Achieved/Paused/Abandoned, Priority, TargetValue/CurrentValue/Unit, `IsPrivate`) +
+  `GoalMilestone` + `GoalProgress` (Source Manual/Assessment/Match/Auto). Added a nullable
+  **`LinkedStatCategoryId`** (not in the original spec) so assessment auto-linking is exact,
+  not name-matched. `GoalsController` (`[Route("api")]`): athlete/solo `GET /api/goals`,
+  coach/owner `GET /api/players/{id}/goals` (coach sees **non-private only**), POST/PUT/
+  DELETE, `PATCH {id}/achieve`, milestones add/toggle, progress log/history, and (S4)
+  `GET /api/goals/overview` (coach). **Assessment auto-link**: `AssessmentService.
+  CreateAssessmentAsync` calls `IPersonalGoalService.SyncFromAssessmentAsync` — active
+  Performance goals whose `LinkedStatCategoryId` matches a saved stat category get an
+  `Assessment`-sourced `GoalProgress` + updated `CurrentValue` (+ milestone auto-achieve).
+  **Private-goal guard** lives in `PersonalGoalService.LoadAccessibleGoalAsync` (coach 403s
+  on a private goal even for their own player; a coach-set `IsPrivate` is silently
+  downgraded — only the owning athlete can make a goal private). **AI goal suggestions**
+  `POST /api/ai/goal-suggestions/{playerId}` (Haiku, sport/position-aware, links each
+  suggestion back to its weak stat category) — **on `AIController`, so Coach/Admin/SoloAthlete
+  only; team athletes (`Athlete`) have no AI access by existing architecture.** Frontend:
+  shared role-aware `GoalsPage` ("My Goals" / coach "Player Goals" with a player picker),
+  `GoalCard` (priority border, colored progress bar, milestone checklist, expandable
+  Recharts progress chart with a dashed target line), `GoalFormModal`, `LogProgressModal`,
+  `AIGoalSuggestionsModal`. Sidebar + routes for coach `/goals`, athlete
+  `/player-dashboard/goals`, solo `/solo/goals`.
+- **Section 2 — Progress journal** (migration `AddJournalEntries`). `JournalEntry` — **one
+  per player per calendar day** (unique `PlayerId+EntryDate`, upserted), Mood Great/Good/
+  Okay/Tough/Rough, energy 1-5, optional training rating, key learning, tomorrow focus,
+  normalized+deduped tags, **`IsPrivate` default true**. `JournalController`: athlete/solo
+  `GET /api/journal?days=`, `/today`, upsert `POST`, PUT/DELETE; coach `GET /api/players/
+  {id}/journal` returns **non-private only** (coach 403s on mutate — journal is athlete-owned,
+  never coach-writable). Frontend: `JournalPage` (today banner, **GitHub-style 3-month mood
+  heat map** — click a day to scroll to its entry, empty days disabled), `JournalEntryModal`
+  (mood-icon selector, energy dots, star rating, rotating **dismissable writing prompts**,
+  tag chips, privacy toggle), expandable `JournalEntryCard`, coach read-only **Journal tab**
+  on player detail (`CoachJournalTab`). Sidebar (BookOpen) + routes for athlete/solo.
+- **Section 3 — Public profile & progress sharing** (migration `AddPublicProfiles`).
+  `PublicProfile` — one per player, **unique URL-safe slug** generated from name+sport
+  (`lucas-ward-football-soccer`), immutable once created; `IsPublic` + per-section `Show*`
+  flags. `PublicProfileController`: athlete/solo `GET/PUT /api/profile/public` (lazy-created
+  with a stable slug); **anonymous, rate-limited (`join-validate`) `GET /api/public/{slug}`**
+  assembling header + assessment count/latest avg + skills radar + non-private goals +
+  non-private journal + match history, **each section gated by its flag** (private goals/
+  journal never leak; missing OR non-public slug both 404). Frontend: **dark-themed public
+  `/player/:slug` page** (outside `ProtectedRoute`) — hero, stat tiles, radar, goal bars,
+  journal, match table, "Connect on ProTracker" CTA, Web-Share/copy. `PublicProfileSettings
+  Section` on the athlete/solo profile (public toggle, link, **QR code** via `qrcode.react`,
+  per-section checkboxes, preview). `ShareProgressButton` on the athlete + solo dashboard
+  heroes (renders only when public). Public link uses `window.location.origin` (works in any
+  env).
+- **Section 4 — Dashboard integration.** `GET /api/goals/overview` (coach) → per-player
+  active-goal counts + avg completion (non-private). Athlete + solo dashboards: `GoalsMiniCard`
+  (top active goals w/ bars, "X of Y on track") + `JournalPromptCard` (write-today nudge /
+  "Good job writing today!"). Solo also: `ProgressThisMonthCard` (journal streak + goals
+  achieved this month). Coach dashboard: `TeamGoalsCard`. Coach player-detail: **Goals tab**
+  (`PlayerGoalsTab` — view/add/manage non-private goals + AI suggestions).
+
+Cross-cutting: goal/journal/public-profile privacy is centralized (coaches never see
+`IsPrivate` goals or journal entries; the anonymous public view double-filters on both the
+`IsPrivate` flag and the per-section `Show*` toggle). Query keys: `['goals']`, `['journal']`,
+`['publicProfile']` roots so mutations invalidate broadly.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -511,7 +577,26 @@ session — solo work had to integrate with it (see gotchas).
 
 ## Current status
 
-**Phase A — Solo Athlete Mode complete (latest).** All 9 sections above are
+**Phase B — Personal Goals & Progress complete (latest).** All 4 sections above are
+implemented, pushed to `main` as 4 commits (migrations `AddPersonalGoals`,
+`AddJournalEntries`, `AddPublicProfiles` auto-applied on Railway), 34/34 backend tests
+passing, `npm run build` + `oxlint` clean. Verified locally section by section:
+goal privacy (coach sees only non-private, 403 on private PUT/progress, coach-set private
+downgraded), assessment auto-link (linked Performance goal's CurrentValue updated 8.0→9.3
+with an Assessment progress point), milestone auto-achieve, real AI goal suggestions
+(sport-aware, linked to weak stat categories); journal upsert (one/day, no dupes), tag
+normalization, share→coach visibility + coach 403 on mutate, private-never-leaks; public
+profile lazy-create + slug, 404 while private, anonymous fetch with per-flag + non-private
+gating (private goal/journal never appear even with the flag on); coach goal-overview
+excludes private. Browser-verified as athlete (goal create → 76% amber bar → log progress
+7.3 → 86% green + chart with dashed target line; journal entry → heat-map square + coach
+Journal tab; public page dark-themed with radar/goals/journal/CTA; dashboard Share button +
+My Goals + journal prompt cards, all clean on full reload) and as coach (Player Goals
+dashboard card, player-detail Goals tab hiding the private goal). Production verification of
+the full journey (both solo and coached athlete) run after deploy — see that session's
+report. All local test data cleaned up.
+
+**Phase A — Solo Athlete Mode complete.** All 9 sections above are
 implemented, pushed to `main` as 9 commits (migration `AddSoloAthlete` auto-applied on
 Railway), 34/34 backend tests passing, `npm run build` + `oxlint` clean throughout.
 Verified locally section by section: a 27-check curl authz suite (solo isolation, coach
