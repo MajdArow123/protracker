@@ -472,6 +472,55 @@ Cross-cutting: goal/journal/public-profile privacy is centralized (coaches never
 `IsPrivate` flag and the per-section `Show*` toggle). Query keys: `['goals']`, `['journal']`,
 `['publicProfile']` roots so mutations invalidate broadly.
 
+## Phase C — Drill & Exercise Library (COMPLETE, deployed) — 4 sections
+
+A sport-specific drill/exercise library coaches and solo athletes browse, favorite, create,
+and assign as tasks; team athletes browse read-only. Multi-sport; AI prompts always include
+the player's sport. 4 commits, each curl- + browser-verified.
+
+- **Section 1 — Model & seeding** (migration `AddDrillLibrary`). `Drill` (multi-sport via a
+  comma-separated `SportIds` string; `DrillCategory` WarmUp/Technical/Tactical/Fitness/Strength/
+  Speed/Agility/Recovery/Mental/Cooldown — enum name `WarmUp` serialises as "WarmUp", frontend
+  label "Warm-up"; `DrillDifficulty` Beginner→Elite; duration/equipment/instructions/videoUrl/
+  `TargetStatCategories`; `IsBuiltIn` + nullable `CoachId`) + `DrillFavorite` (unique per
+  user+drill). `DrillSeeder` seeds **60 built-in drills** (15 soccer, 15 basketball, 10
+  volleyball, 10 beach, 10 tennis) with **real stat-category targets** so recommendations match
+  — idempotent (inserts only when no built-in drills exist), wired in `Program.cs` before
+  `DemoDataSeeder`. `DrillsController` (`[Route("api/drills")]`): paginated GET (filters sport/
+  category/difficulty/search/favorited/mine, **20/page** via a generic `PagedResult<T>`),
+  GET `{id}`, coach/solo POST/PUT/DELETE (custom drills; **built-ins immutable**), POST
+  `{id}/favorite` toggle, GET `favorites`, POST `{id}/assign` (creates a task — drill category
+  mapped to task category via `DrillService.MapCategory`). **Visibility: built-in to everyone,
+  custom to their creator only.** Sport filter is evaluated in memory (the comma-separated
+  column isn't SQL-translatable).
+- **Section 2 — Library UI.** Shared role-aware `DrillLibraryPage` (All/My Drills tabs, search,
+  sport pills **defaulting to the user's own sport**, multi-select category pills + difficulty/
+  duration/favorites filters, 3-col grid with client-side pagination). `DrillCard`,
+  `DrillDetailModal` (numbered instruction steps, target tags, video link, favorite, edit/delete
+  own, Assign), `AssignDrillModal` (player picker / locked for solo, priority, due date, note),
+  `CreateDrillModal` (multi-sport select, target-tag input). `DrillLibraryModal` reused by a
+  "Browse Library" button on the Tasks page. Sidebar "Drill Library" for all three roles;
+  dashboard quick-action cards (coach + solo). `useTeams` gained an `enabled` param.
+- **Section 3 — Smart recommendations.** Non-AI `GET /api/drills?recommended=true&playerId=X`
+  (drills for the player's sport whose targets hit their weakest assessment areas, **weakest
+  first**, `recommendTarget` set). AI `POST /api/ai/drill-recommendations/{playerId}` (Haiku,
+  sport-aware) picks + explains the top 5 drills, returns full drill data + reasoning + target +
+  priority. `DrillService` gained `GetWeakCategoryNamesAsync` + `GetManyAsync`; **`AIController`
+  injects `IDrillService`.** Frontend: `RecommendedDrillsSection` at the top of the library
+  (coach picks a player, solo/athlete = self; 3 badged cards + AI button), `AIDrillRecommendations
+  Modal`, and `GoalRecommendedDrills` wired into `GoalCard` (a goal linked to a stat category
+  shows matching drills with one-click Assign — **goals → drills → tasks**). AI is coach/solo
+  only; team athletes get the non-AI section read-only.
+- **Section 4 — Tracking & analytics** (migration `AddDrillIdToTasks`). `PlayerTask.DrillId`
+  set on drill-assign; `PlayerTaskDto` carries `DrillId` + resolved `DrillDifficulty` (batch-
+  loaded in the list methods). `GET /api/drills/{id}/stats` (times assigned/completed, rate,
+  player count — **scoped to the caller's own tasks**; `GET {id}` also populates `Usage`). `GET
+  /api/drills/analytics` (coach) — drill-vs-manual split, most-assigned/most-completed, completion
+  rate by category, drill count per player. Frontend: usage row in `DrillDetailModal`; "Drill
+  Usage" section on the task analytics page (stat cards + most-used bar, drill-vs-manual donut,
+  category bar — Recharts direct); `TaskCard` shows a teal "Drill · {difficulty}" badge; the
+  player-detail Tasks tab gains an All / Drill-based / Manual filter.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -577,7 +626,24 @@ Cross-cutting: goal/journal/public-profile privacy is centralized (coaches never
 
 ## Current status
 
-**Phase B — Personal Goals & Progress complete (latest).** All 4 sections above are
+**Phase C — Drill & Exercise Library complete (latest).** All 4 sections above are
+implemented, pushed to `main` as 4 commits (migrations `AddDrillLibrary`, `AddDrillIdToTasks`
+auto-applied on Railway; `DrillSeeder` seeds 60 built-in drills on boot), 34/34 backend tests
+passing, `npm run build` + `oxlint` clean. Verified locally section by section: 60 drills
+seeded (15/15/10/10/10 across the 5 sports), multi-sport filtering (drills only surface for
+their sport), pagination, favorites, custom-drill CRUD, drill→task assign (category mapped),
+authz (athlete browse/favorite ✅, create/assign 403; coach edit built-in 403), non-AI + real
+AI recommendations (weakest-area drills, sport-specific reasoning), goals→drills, assign→
+`DrillId`, `{id}/stats`, and `/analytics`. Browser-verified as coach: library page (filters/
+detail/assign), "Recommended for you" section + AI modal, goal recommended-drills, the task-
+analytics "Drill Usage" charts, and the player-detail Tasks All/Drill-based/Manual filter with
+"Drill · {difficulty}" badges. NOTE: a **local curl gotcha** — the sandbox doesn't flush the
+`-c` cookie jar before the next `-b` read in the same bash block, so multi-request scripts must
+`sync; sleep 1` after login (single calls are fine); the browser `fetch` path (valid session
+cookies) is the reliable alternative for verification. Production verification run after deploy
+(see that session's report). All local test data cleaned up.
+
+**Phase B — Personal Goals & Progress complete.** All 4 sections above are
 implemented, pushed to `main` as 4 commits (migrations `AddPersonalGoals`,
 `AddJournalEntries`, `AddPublicProfiles` auto-applied on Railway), 34/34 backend tests
 passing, `npm run build` + `oxlint` clean. Verified locally section by section:
