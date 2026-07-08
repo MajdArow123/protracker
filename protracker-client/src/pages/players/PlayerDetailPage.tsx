@@ -20,7 +20,7 @@ import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,
   Plus, Edit2, Activity, Dumbbell, ShieldAlert, Star,
-  Calendar, Clock, ChevronRight, CheckSquare, StickyNote, HeartPulse, GitCompare, UserPlus, BookOpen,
+  Calendar, Clock, ChevronRight, CheckSquare, StickyNote, HeartPulse, GitCompare, UserPlus, BookOpen, Target,
 } from 'lucide-react';
 import type { InjuryRecord, MatchPerformance, TrainingSession, PlayerTask } from '../../types';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
@@ -34,8 +34,9 @@ import { PlayerParentsTab } from '../../components/parents/PlayerParentsTab';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingTrendCard } from '../../components/wellbeing/WellbeingTrendCard';
 import { CoachJournalTab } from '../../components/journal/CoachJournalTab';
+import { PlayerGoalsTab } from '../../components/goals/PlayerGoalsTab';
 
-type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'wellbeing' | 'journal' | 'notes' | 'parents';
+type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'goals' | 'wellbeing' | 'journal' | 'notes' | 'parents';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
@@ -266,6 +267,7 @@ export function PlayerDetailPage() {
     { id: 'matches', label: 'Matches', icon: Star, count: matches.length },
     { id: 'training', label: 'Training', icon: Dumbbell, count: sessions.length },
     { id: 'tasks', label: 'Tasks', icon: CheckSquare, count: playerTasks.length },
+    { id: 'goals', label: 'Goals', icon: Target },
     { id: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
     { id: 'journal', label: 'Journal', icon: BookOpen },
     { id: 'notes', label: 'Notes', icon: StickyNote },
@@ -848,6 +850,11 @@ export function PlayerDetailPage() {
             <motion.div key="wellbeing" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <WellbeingTrendCard playerId={playerId} />
             </motion.div>
+          )}
+
+          {/* Goals tab (coach view + management of the player's non-private goals) */}
+          {tab === 'goals' && (
+            <PlayerGoalsTab playerId={playerId} sportId={player?.sportId} />
           )}
 
           {/* Journal tab (coach read-only view of the athlete's shared entries) */}

@@ -10,6 +10,7 @@ import { useActiveInjuries } from '../../hooks/useInjuries';
 import { useCoachTasks } from '../../hooks/useTasks';
 import { isSeen, markSeen, injuryKey, useSeenVersion } from '../../utils/seenNotifications';
 import { TeamWellbeingCard } from '../../components/wellbeing/TeamWellbeingCard';
+import { TeamGoalsCard } from '../../components/goals/TeamGoalsCard';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
@@ -351,6 +352,11 @@ export function CoachDashboardPage() {
       {/* Team Wellbeing */}
       <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
         <TeamWellbeingCard />
+      </motion.div>
+
+      {/* Player Goals overview */}
+      <motion.div custom={10.5} initial="hidden" animate="show" variants={fadeUp}>
+        <TeamGoalsCard />
       </motion.div>
 
       {/* Quick Actions */}

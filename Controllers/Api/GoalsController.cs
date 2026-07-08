@@ -28,6 +28,11 @@ public class GoalsController : ApiControllerBase
     public async Task<ActionResult> GetForPlayer(int playerId)
         => Success(await _service.GetForPlayerAsync(User, playerId));
 
+    // Coach dashboard "Player Goals" overview: per-player active-goal counts + avg progress.
+    [HttpGet("goals/overview")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetCoachOverview() => Success(await _service.GetCoachOverviewAsync(User));
+
     [HttpPost("goals")]
     [Authorize(Roles = "Athlete,SoloAthlete,Coach,Admin")]
     public async Task<ActionResult> Create(CreateGoalDto dto) => Created(await _service.CreateAsync(User, dto));

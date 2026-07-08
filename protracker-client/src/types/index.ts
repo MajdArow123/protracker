@@ -519,6 +519,20 @@ export interface GoalSuggestions {
   suggestions: GoalSuggestion[];
 }
 
+export interface CoachGoalOverviewRow {
+  playerId: number;
+  playerName: string;
+  activeGoals: number;
+  achievedGoals: number;
+  avgProgress?: number | null;
+}
+
+export interface CoachGoalOverview {
+  players: CoachGoalOverviewRow[];
+  totalActiveGoals: number;
+  playersWithGoals: number;
+}
+
 // ─── Progress journal (Phase B) ───────────────────────────────────────────────
 export type JournalMood = 'Great' | 'Good' | 'Okay' | 'Tough' | 'Rough';
 

@@ -1,6 +1,7 @@
 import api from './axiosInstance';
 import type {
   PersonalGoal, GoalMilestone, GoalProgress, GoalCategory, GoalStatus, GoalPriority,
+  CoachGoalOverview,
 } from '../types';
 
 export interface CreateGoalMilestoneInput {
@@ -50,6 +51,7 @@ export const goalsApi = {
   getMine: () => api.get<PersonalGoal[]>('/api/goals').then(r => r.data),
   getForPlayer: (playerId: number) =>
     api.get<PersonalGoal[]>(`/api/players/${playerId}/goals`).then(r => r.data),
+  getCoachOverview: () => api.get<CoachGoalOverview>('/api/goals/overview').then(r => r.data),
   create: (data: CreateGoalInput) => api.post<PersonalGoal>('/api/goals', data).then(r => r.data),
   update: (id: number, data: UpdateGoalInput) => api.put<PersonalGoal>(`/api/goals/${id}`, data).then(r => r.data),
   delete: (id: number) => api.delete(`/api/goals/${id}`),

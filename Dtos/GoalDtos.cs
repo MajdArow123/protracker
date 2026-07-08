@@ -121,3 +121,21 @@ public class GoalSuggestionsDto
     public List<string> WeakAreas { get; set; } = new();
     public List<GoalSuggestionDto> Suggestions { get; set; } = new();
 }
+
+// One row in the coach dashboard "Player Goals" overview card (non-private goals only).
+public class CoachGoalOverviewRowDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public int ActiveGoals { get; set; }
+    public int AchievedGoals { get; set; }
+    // Average completion (0-100) across the player's active goals.
+    public double? AvgProgress { get; set; }
+}
+
+public class CoachGoalOverviewDto
+{
+    public List<CoachGoalOverviewRowDto> Players { get; set; } = new();
+    public int TotalActiveGoals { get; set; }
+    public int PlayersWithGoals { get; set; }
+}

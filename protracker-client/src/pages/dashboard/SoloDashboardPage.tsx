@@ -20,6 +20,9 @@ import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { ShareProgressButton } from '../../components/profile/ShareProgressButton';
+import { GoalsMiniCard } from '../../components/goals/GoalsMiniCard';
+import { JournalPromptCard } from '../../components/journal/JournalPromptCard';
+import { ProgressThisMonthCard } from '../../components/journal/ProgressThisMonthCard';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -290,6 +293,17 @@ export function SoloDashboardPage() {
             </button>
           ))}
         </div>
+      </motion.div>
+
+      {/* Progress this month */}
+      <motion.div custom={5.3} initial="hidden" animate="show" variants={fadeUp}>
+        <ProgressThisMonthCard />
+      </motion.div>
+
+      {/* Goals + journal at-a-glance */}
+      <motion.div custom={5.6} initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <GoalsMiniCard goalsPath="/solo/goals" />
+        <JournalPromptCard journalPath="/solo/journal" />
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

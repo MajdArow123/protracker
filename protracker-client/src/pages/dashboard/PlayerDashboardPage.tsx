@@ -10,6 +10,8 @@ import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
 import { ShareProgressButton } from '../../components/profile/ShareProgressButton';
+import { GoalsMiniCard } from '../../components/goals/GoalsMiniCard';
+import { JournalPromptCard } from '../../components/journal/JournalPromptCard';
 import { OnboardingModal } from '../../components/profile/OnboardingModal';
 import { ProfileCompletionReminder } from '../../components/profile/ProfileCompletionReminder';
 import { useProfile } from '../../hooks/useProfile';
@@ -174,6 +176,12 @@ export function PlayerDashboardPage() {
       {/* Daily wellbeing check-in */}
       <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
         <WellbeingCheckinWidget />
+      </motion.div>
+
+      {/* Goals + journal at-a-glance */}
+      <motion.div custom={1.5} initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <GoalsMiniCard goalsPath="/player-dashboard/goals" />
+        <JournalPromptCard journalPath="/player-dashboard/journal" />
       </motion.div>
 
       {/* Team Announcements */}

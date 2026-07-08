@@ -22,6 +22,8 @@ public interface IPersonalGoalService
     Task<GoalProgressDto> LogProgressAsync(ClaimsPrincipal user, int goalId, LogGoalProgressDto dto);
     Task<List<GoalProgressDto>> GetProgressAsync(ClaimsPrincipal user, int goalId);
 
+    Task<CoachGoalOverviewDto> GetCoachOverviewAsync(ClaimsPrincipal user);
+
     // Called by the assessment flow: for each saved stat category, update any active
     // Performance goals linked to it (adds an Assessment progress point + CurrentValue).
     Task SyncFromAssessmentAsync(int playerId, IReadOnlyDictionary<int, decimal> categoryScores);
@@ -262,7 +264,63 @@ public class PersonalGoalService : IPersonalGoalService
         await _context.SaveChangesAsync();
     }
 
+    public async Task<CoachGoalOverviewDto> GetCoachOverviewAsync(ClaimsPrincipal user)
+    {
+        var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
+        var players = await _context.Players
+            .Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value))
+            .ToListAsync();
+        var playerIds = players.Select(p => p.Id).ToList();
+
+        // Coaches only ever see non-private goals.
+        var goals = await _context.PersonalGoals
+            .Include(g => g.Milestones)
+            .Where(g => playerIds.Contains(g.PlayerId) && !g.IsPrivate)
+            .ToListAsync();
+
+        var byPlayer = goals.GroupBy(g => g.PlayerId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var rows = new List<CoachGoalOverviewRowDto>();
+        foreach (var p in players)
+        {
+            if (!byPlayer.TryGetValue(p.Id, out var list) || list.Count == 0) continue;
+            var active = list.Where(g => g.Status == GoalStatus.Active).ToList();
+            var progresses = active.Select(CompletionPercent).Where(v => v != null).Select(v => v!.Value).ToList();
+            rows.Add(new CoachGoalOverviewRowDto
+            {
+                PlayerId = p.Id,
+                PlayerName = p.FullName,
+                ActiveGoals = active.Count,
+                AchievedGoals = list.Count(g => g.Status == GoalStatus.Achieved),
+                AvgProgress = progresses.Count > 0 ? Math.Round(progresses.Average(), 0) : null,
+            });
+        }
+
+        rows = rows
+            .OrderByDescending(r => r.ActiveGoals)
+            .ThenByDescending(r => r.AvgProgress ?? 0)
+            .ThenBy(r => r.PlayerName)
+            .ToList();
+
+        return new CoachGoalOverviewDto
+        {
+            Players = rows,
+            TotalActiveGoals = rows.Sum(r => r.ActiveGoals),
+            PlayersWithGoals = rows.Count,
+        };
+    }
+
     // ─── helpers ──────────────────────────────────────────────────────────────
+
+    // A goal's 0-100 completion: measured target if present, else milestone completion.
+    private static double? CompletionPercent(PersonalGoal g)
+    {
+        var pct = ComputeProgressPercent(g);
+        if (pct != null) return pct;
+        if (g.Milestones.Count > 0)
+            return Math.Round(g.Milestones.Count(m => m.IsAchieved) * 100.0 / g.Milestones.Count, 0);
+        return null;
+    }
 
     private static void AutoAchieveMilestones(PersonalGoal goal, decimal value)
     {

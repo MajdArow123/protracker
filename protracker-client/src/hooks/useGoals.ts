@@ -22,6 +22,14 @@ export function usePlayerGoals(playerId: number | undefined, enabled = true) {
   });
 }
 
+export function useCoachGoalOverview(enabled = true) {
+  return useQuery({
+    queryKey: ['goals', 'overview'],
+    queryFn: goalsApi.getCoachOverview,
+    enabled,
+  });
+}
+
 export function useGoalProgress(goalId: number | undefined, enabled = true) {
   return useQuery({
     queryKey: ['goals', 'progress', goalId],
