@@ -19,6 +19,7 @@ public interface IAssessmentService
     Task<PlayerAssessmentDto> GetAssessmentByIdAsync(ClaimsPrincipal user, int id);
     Task<List<PlayerAssessmentDto>> GetAssessmentsForPlayerAsync(ClaimsPrincipal user, int playerId);
     Task<PlayerAssessmentDto> CreateAssessmentAsync(ClaimsPrincipal user, CreatePlayerAssessmentDto dto);
+    Task<List<PlayerAssessmentDto>> BulkCreateAssessmentsAsync(ClaimsPrincipal user, BulkCreateAssessmentDto dto);
     Task<PlayerAssessmentDto> UpdateAssessmentAsync(ClaimsPrincipal user, int id, CreatePlayerAssessmentDto dto);
     Task DeleteAssessmentAsync(ClaimsPrincipal user, int id);
 }
@@ -208,6 +209,38 @@ public class AssessmentService : IAssessmentService
 
         assessment.AssessmentPeriod = period;
         return await GetAssessmentByIdAsync(user, assessment.Id);
+    }
+
+    // Creates assessments for many players in one transaction (bulk "assess full team"). Reuses
+    // the single-create path so access checks, period validation and goal auto-linking all apply.
+    public async Task<List<PlayerAssessmentDto>> BulkCreateAssessmentsAsync(ClaimsPrincipal user, BulkCreateAssessmentDto dto)
+    {
+        if (dto.Assessments.Count == 0)
+            throw new ValidationApiException("No player assessments were provided.");
+
+        var results = new List<PlayerAssessmentDto>();
+        await using var tx = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            foreach (var a in dto.Assessments)
+            {
+                results.Add(await CreateAssessmentAsync(user, new CreatePlayerAssessmentDto
+                {
+                    PlayerId = a.PlayerId,
+                    AssessmentPeriodId = dto.AssessmentPeriodId,
+                    DateRecorded = dto.DateRecorded,
+                    Notes = a.Notes,
+                    StatScores = a.StatScores,
+                }));
+            }
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+        return results;
     }
 
     public async Task<PlayerAssessmentDto> UpdateAssessmentAsync(ClaimsPrincipal user, int id, CreatePlayerAssessmentDto dto)

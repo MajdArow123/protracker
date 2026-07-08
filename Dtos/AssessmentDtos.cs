@@ -52,6 +52,21 @@ public class PlayerStatScoreDto
     public decimal Score { get; set; }
 }
 
+// Bulk assessment: one period + date, many players in a single transaction.
+public class BulkCreateAssessmentDto
+{
+    public int AssessmentPeriodId { get; set; }
+    public DateTime DateRecorded { get; set; }
+    public List<BulkPlayerAssessmentDto> Assessments { get; set; } = new();
+}
+
+public class BulkPlayerAssessmentDto
+{
+    public int PlayerId { get; set; }
+    public string? Notes { get; set; }
+    public List<CreatePlayerStatScoreDto> StatScores { get; set; } = new();
+}
+
 public class CreatePlayerStatScoreDto
 {
     public int PlayerAssessmentId { get; set; }

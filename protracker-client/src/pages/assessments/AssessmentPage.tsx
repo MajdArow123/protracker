@@ -13,7 +13,7 @@ import { useStatCategories } from '../../hooks/useSports';
 import { useAssessmentPeriods, useCreateAssessmentPeriod } from '../../hooks/useAssessmentPeriods';
 import { useCreateAssessment, usePlayerAssessments } from '../../hooks/useAssessments';
 import { ConfirmModal } from '../../components/ui/Modal';
-import { ArrowLeft, Plus, Trash2, TrendingUp, TrendingDown, Minus, Calendar, Trophy, AlertTriangle, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, TrendingUp, TrendingDown, Minus, Calendar, Trophy, AlertTriangle, BarChart3, Users } from 'lucide-react';
 import { assessmentsApi } from '../../api/assessmentsApi';
 import { useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
@@ -179,7 +179,7 @@ export function AssessmentPage() {
         </Button>
       }
     >
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 items-center">
         {(['new', 'history'] as Tab[]).map(t => (
           <button
             key={t}
@@ -193,6 +193,14 @@ export function AssessmentPage() {
             {t === 'new' ? 'New Assessment' : `History (${existingAssessments.length})`}
           </button>
         ))}
+        {player?.teamId && (
+          <button
+            onClick={() => navigate(`/teams/${player.teamId}/bulk-assessment`)}
+            className="ml-auto flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+          >
+            <Users size={15} /> Assess Full Team
+          </button>
+        )}
       </div>
 
       {tab === 'new' && (

@@ -28,6 +28,7 @@ export const PlayersPage = named(() => import('../pages/players/PlayersPage'), '
 export const PlayerDetailPage = named(() => import('../pages/players/PlayerDetailPage'), 'PlayerDetailPage');
 export const PlayerFormPage = named(() => import('../pages/players/PlayerFormPage'), 'PlayerFormPage');
 export const AssessmentPage = named(() => import('../pages/assessments/AssessmentPage'), 'AssessmentPage');
+export const BulkAssessmentPage = named(() => import('../pages/assessments/BulkAssessmentPage'), 'BulkAssessmentPage');
 export const ImprovementPage = named(() => import('../pages/improvement/ImprovementPage'), 'ImprovementPage');
 export const NutritionPage = named(() => import('../pages/nutrition/NutritionPage'), 'NutritionPage');
 export const FoodAlternativesPage = named(() => import('../pages/nutrition/FoodAlternativesPage'), 'FoodAlternativesPage');

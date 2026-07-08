@@ -28,7 +28,7 @@ import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
 import { useTeamMatches } from '../../hooks/useMatches';
 import { clsx } from 'clsx';
 import {
-  ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert,
+  ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert, ClipboardCheck,
   Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange,
 } from 'lucide-react';
 
@@ -241,6 +241,12 @@ export function TeamDetailPage() {
             {isCoach && (
               <div className="flex gap-2">
                 <ExportMenu options={exportOptions} variant="hero" onError={msg => showToast(msg, 'error')} />
+                <button
+                  onClick={() => navigate(`/teams/${id}/bulk-assessment`)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
+                >
+                  <ClipboardCheck size={14} /> Assess Full Team
+                </button>
                 <button
                   onClick={() => navigate(`/teams/${id}/edit`)}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"

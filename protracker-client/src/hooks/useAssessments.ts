@@ -9,6 +9,14 @@ export function usePlayerAssessments(playerId: number | null | undefined) {
   });
 }
 
+export function useBulkCreateAssessment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: assessmentsApi.bulkCreate,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['assessments'] }),
+  });
+}
+
 export function useCreateAssessment() {
   const qc = useQueryClient();
   return useMutation({

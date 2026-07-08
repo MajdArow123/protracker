@@ -25,6 +25,11 @@ public class PlayerAssessmentsController : ApiControllerBase
     [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Create(CreatePlayerAssessmentDto dto) => Created(await _assessmentService.CreateAssessmentAsync(User, dto));
 
+    // Bulk "assess full team": creates assessments for many players in one transaction.
+    [HttpPost("bulk")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> BulkCreate(BulkCreateAssessmentDto dto) => Created(await _assessmentService.BulkCreateAssessmentsAsync(User, dto));
+
     [HttpPut("{id}")]
     [Authorize(Roles = "Coach,Admin,SoloAthlete")]
     public async Task<ActionResult> Update(int id, CreatePlayerAssessmentDto dto) => Success(await _assessmentService.UpdateAssessmentAsync(User, id, dto));

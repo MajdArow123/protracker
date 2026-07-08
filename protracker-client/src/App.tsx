@@ -22,7 +22,7 @@ import {
   SoloRecoveryPage, SoloTasksPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
-  AssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
+  AssessmentPage, BulkAssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
   ReportsPage, PlayerReportPage, TeamReportPage, ComparePlayersPage,
   TasksPage, TaskAnalyticsPage, CoachProfilePage, BillingPage,
   PlayerDashboardPage, PlayerStatsPage, PlayerNutritionDashPage,
@@ -74,6 +74,7 @@ function AppRoutes() {
             <Route path="/teams/new" element={<TeamFormPage />} />
             <Route path="/teams/:id" element={<TeamDetailPage />} />
             <Route path="/teams/:id/edit" element={<TeamFormPage />} />
+            <Route path="/teams/:id/bulk-assessment" element={<BulkAssessmentPage />} />
             <Route path="/players" element={<PlayersPage />} />
             <Route path="/goals" element={<GoalsPage />} />
             <Route path="/drills" element={<DrillLibraryPage />} />
