@@ -10,6 +10,7 @@ import { DrillCard } from '../../components/drills/DrillCard';
 import { DrillDetailModal } from '../../components/drills/DrillDetailModal';
 import { AssignDrillModal } from '../../components/drills/AssignDrillModal';
 import { CreateDrillModal } from '../../components/drills/CreateDrillModal';
+import { RecommendedDrillsSection } from '../../components/drills/RecommendedDrillsSection';
 import {
   CATEGORY_ORDER, DIFFICULTY_ORDER, CATEGORY_LABEL, CATEGORY_BADGE, DIFFICULTY_BADGE, SPORT_SHORT,
   matchesDuration, type DurationFilter,
@@ -92,6 +93,14 @@ export function DrillLibraryPage() {
 
   return (
     <PageWrapper title="Drill Library" actions={actions}>
+      {/* Recommended for you / for a player */}
+      <RecommendedDrillsSection
+        isCoach={isCoach}
+        canAssign={canManage}
+        players={players.map(p => ({ id: p.id, name: p.fullName }))}
+        lockedPlayerId={isCoach ? undefined : myPlayer?.id}
+      />
+
       {/* Tabs + search */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         {canManage && (

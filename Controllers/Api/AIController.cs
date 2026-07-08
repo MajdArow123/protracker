@@ -22,6 +22,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
     private readonly IWeeklyNutritionPlanService _weeklyPlanService;
     private readonly IRecoveryPlanService _recoveryPlanService;
     private readonly IBillingService _billing;
+    private readonly IDrillService _drills;
     private readonly ILogger<AIController> _logger;
 
     public AIController(
@@ -31,6 +32,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
         IWeeklyNutritionPlanService weeklyPlanService,
         IRecoveryPlanService recoveryPlanService,
         IBillingService billing,
+        IDrillService drills,
         ILogger<AIController> logger)
     {
         _context = context;
@@ -39,6 +41,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
         _weeklyPlanService = weeklyPlanService;
         _recoveryPlanService = recoveryPlanService;
         _billing = billing;
+        _drills = drills;
         _logger = logger;
     }
 
@@ -375,6 +378,136 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
                 TimelineWeeks = GetInt(el, "timelineWeeks"),
                 FocusArea = string.IsNullOrEmpty(focus) ? null : focus,
             });
+        }
+        return list;
+    }
+
+    // ─── Drill Recommendations ────────────────────────────────────────────────
+
+    // Recommends drills from the library for the player's weakest assessment areas, ranked and
+    // explained by Claude. Sport-aware; coach/solo only (matches the rest of this controller).
+    [HttpPost("drill-recommendations/{playerId}")]
+    public async Task<ActionResult> GenerateDrillRecommendations(int playerId)
+    {
+        await _access.EnsureCanAccessPlayerAsync(User, playerId);
+
+        var player = await _context.Players
+            .Include(p => p.Sport)
+            .Include(p => p.Position)
+            .FirstOrDefaultAsync(p => p.Id == playerId)
+            ?? throw new NotFoundApiException($"Player {playerId} not found.");
+
+        var latestAssessment = await _context.PlayerAssessments
+            .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
+            .Where(a => a.PlayerId == playerId)
+            .OrderByDescending(a => a.DateRecorded)
+            .FirstOrDefaultAsync();
+
+        var weakScores = (latestAssessment?.StatScores ?? new List<PlayerStatScore>())
+            .OrderBy(s => s.Score)
+            .Take(3)
+            .ToList();
+        var weakAreas = weakScores.Select(s => $"{s.SportStatCategory.Name}: {s.Score}/10").ToList();
+        var weakNames = weakScores.Select(s => s.SportStatCategory.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        // Candidate drills: the player's sport, preferring ones targeting a weak area.
+        var sportDrills = (await _context.Drills.Where(d => d.IsBuiltIn).ToListAsync())
+            .Where(d => d.SportIds.Split(',', StringSplitOptions.RemoveEmptyEntries).Contains(player.SportId.ToString()))
+            .ToList();
+        bool HitsWeak(Drill d) => (d.TargetStatCategories ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(t => weakNames.Contains(t));
+        var candidates = sportDrills.Where(HitsWeak).ToList();
+        if (candidates.Count < 5) candidates = candidates.Concat(sportDrills.Where(d => !HitsWeak(d))).Distinct().ToList();
+        candidates = candidates.Take(14).ToList();
+
+        if (candidates.Count == 0)
+            return BadRequest(new { success = false, message = "No drills are available for this sport yet." });
+
+        var weakAreasText = weakAreas.Any() ? string.Join("\n", weakAreas.Select(w => $"- {w}"))
+            : "- No assessment data yet; recommend well-rounded foundational drills.";
+        var drillsText = string.Join("\n", candidates.Select(d =>
+            $"- id {d.Id}: \"{d.Name}\" [{d.Category}/{d.Difficulty}] targets: {d.TargetStatCategories ?? "general"}"));
+
+        var prompt = BuildDrillRecommendationsPrompt(player, weakAreasText, drillsText);
+        const string prefill = "[";
+
+        List<(int Id, string Reason, string? Target, TaskPriority Priority)>? recs = null;
+        string lastRaw = "";
+        var validIds = candidates.Select(c => c.Id).ToHashSet();
+        for (var attempt = 1; attempt <= 2 && recs == null; attempt++)
+        {
+            lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 1500, modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
+            try { recs = ParseDrillRecommendations(lastRaw, validIds); }
+            catch (Exception ex) { _logger.LogWarning(ex, "Drill recommendations parse failed (attempt {Attempt})", attempt); }
+        }
+
+        if (recs == null || recs.Count == 0)
+        {
+            _logger.LogError("Failed to parse AI drill recommendations after retries: {Raw}", lastRaw);
+            return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
+        }
+
+        // Fetch full drill data (order preserved) and attach reasoning.
+        var dtos = await _drills.GetManyAsync(User, recs.Select(r => r.Id));
+        var byId = recs.ToDictionary(r => r.Id);
+        var items = dtos.Select(d =>
+        {
+            var r = byId[d.Id];
+            d.RecommendReason = r.Reason;
+            d.RecommendTarget = r.Target;
+            return new DrillRecommendationItemDto { Drill = d, Reasoning = r.Reason, TargetCategory = r.Target, Priority = r.Priority };
+        }).ToList();
+
+        _logger.LogInformation("AI drill recommendations generated for player {PlayerId}", playerId);
+        return Success(new DrillRecommendationsDto
+        {
+            PlayerId = playerId,
+            PlayerName = player.FullName,
+            WeakAreas = weakAreas,
+            Recommendations = items,
+        });
+    }
+
+    private static string BuildDrillRecommendationsPrompt(Player p, string weakAreasText, string drillsText)
+    {
+        return "You are an elite sports performance coach. From the drill list below, pick the 5 drills that "
+            + "would most help this athlete improve their weakest areas, and explain why each helps.\n\n"
+            + $"Athlete: {p.FullName}\n"
+            + $"Sport: {p.Sport.Name}\n"
+            + $"Position: {p.Position.Name}\n"
+            + $"Age: {p.Age}\n\n"
+            + "Weakest assessment areas (lowest first):\n" + weakAreasText + "\n\n"
+            + "Available drills:\n" + drillsText + "\n\n"
+            + "Return ONLY a JSON array of exactly 5 objects, no other text. Each object:\n"
+            + "{\"drillId\": number (from the list above), "
+            + "\"reasoning\": string (one sentence on why this drill helps this athlete's weak areas), "
+            + "\"targetCategory\": string (the weak category it most targets), "
+            + "\"priority\": \"Low|Medium|High\" (High for the weakest areas)}\n\n"
+            + "Only use drillIds from the list. Prioritise drills targeting the lowest-scoring areas. "
+            + "I have pre-started the JSON with [ — continue from there and close with ].";
+    }
+
+    private static List<(int Id, string Reason, string? Target, TaskPriority Priority)> ParseDrillRecommendations(string raw, HashSet<int> validIds)
+    {
+        var root = JsonDocument.Parse(raw).RootElement;
+        if (root.ValueKind != JsonValueKind.Array) throw new JsonException("Expected a JSON array.");
+
+        string GetStr(JsonElement el, string name) =>
+            el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? (v.GetString() ?? "") : "";
+
+        var list = new List<(int, string, string?, TaskPriority)>();
+        var seen = new HashSet<int>();
+        foreach (var el in root.EnumerateArray())
+        {
+            if (el.ValueKind != JsonValueKind.Object) continue;
+            if (!el.TryGetProperty("drillId", out var idEl) || idEl.ValueKind != JsonValueKind.Number) continue;
+            var id = idEl.GetInt32();
+            if (!validIds.Contains(id) || !seen.Add(id)) continue;
+
+            Enum.TryParse<TaskPriority>(GetStr(el, "priority") is { Length: > 0 } ps ? ps : "Medium", ignoreCase: true, out var priority);
+            var target = GetStr(el, "targetCategory").Trim();
+            list.Add((id, GetStr(el, "reasoning").Trim(), string.IsNullOrEmpty(target) ? null : target, priority));
         }
         return list;
     }

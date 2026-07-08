@@ -15,6 +15,9 @@ public class DrillFilters
     public string? Search { get; set; }
     public bool Favorited { get; set; }
     public bool Mine { get; set; }
+    // recommended=true&playerId=X → drills matching the player's weakest assessment areas.
+    public bool Recommended { get; set; }
+    public int? PlayerId { get; set; }
     public int Page { get; set; } = 1;
     public int PageSize { get; set; } = 20;
 }
@@ -29,6 +32,11 @@ public interface IDrillService
     Task<bool> ToggleFavoriteAsync(ClaimsPrincipal user, int id);
     Task<List<DrillDto>> GetFavoritesAsync(ClaimsPrincipal user);
     Task<PlayerTaskDto> AssignAsync(ClaimsPrincipal user, int id, AssignDrillDto dto);
+
+    // Weakest assessment category names for a player (weakest first). Used by recommendations.
+    Task<List<string>> GetWeakCategoryNamesAsync(int playerId, int count);
+    // Full DrillDtos for a set of ids (visible to the caller), preserving the given order.
+    Task<List<DrillDto>> GetManyAsync(ClaimsPrincipal user, IEnumerable<int> ids);
 }
 
 public class DrillService : IDrillService
@@ -52,6 +60,10 @@ public class DrillService : IDrillService
     {
         var userId = _access.RequireUserId(user);
         var favIds = await FavoriteIdsAsync(userId);
+
+        // Recommendation mode: drills whose targets match the player's weakest assessment areas.
+        if (filters.Recommended && filters.PlayerId is int pid)
+            return await RecommendedAsync(user, userId, favIds, pid, filters);
 
         var query = VisibleDrills(userId);
 
@@ -206,7 +218,85 @@ public class DrillService : IDrillService
         });
     }
 
+    public async Task<List<string>> GetWeakCategoryNamesAsync(int playerId, int count)
+    {
+        var latest = await _context.PlayerAssessments
+            .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
+            .Where(a => a.PlayerId == playerId)
+            .OrderByDescending(a => a.DateRecorded)
+            .FirstOrDefaultAsync();
+        if (latest == null) return new();
+        return latest.StatScores
+            .OrderBy(s => s.Score)
+            .Take(count)
+            .Select(s => s.SportStatCategory.Name)
+            .ToList();
+    }
+
+    public async Task<List<DrillDto>> GetManyAsync(ClaimsPrincipal user, IEnumerable<int> ids)
+    {
+        var userId = _access.RequireUserId(user);
+        var idList = ids.ToList();
+        var favIds = await FavoriteIdsAsync(userId);
+        var sportNames = await SportNamesAsync();
+        var drills = await VisibleDrills(userId).Where(d => idList.Contains(d.Id)).ToListAsync();
+        // Preserve the requested order.
+        return idList
+            .Select(id => drills.FirstOrDefault(d => d.Id == id))
+            .Where(d => d != null)
+            .Select(d => ToDto(d!, userId, favIds, sportNames))
+            .ToList();
+    }
+
     // ─── helpers ──────────────────────────────────────────────────────────────
+
+    // Category-match recommendations (no AI): drills for the player's sport whose targets
+    // hit their weakest assessment areas, weakest area first.
+    private async Task<PagedResult<DrillDto>> RecommendedAsync(
+        ClaimsPrincipal user, string userId, HashSet<int> favIds, int playerId, DrillFilters filters)
+    {
+        await _access.EnsureCanAccessPlayerAsync(user, playerId);
+        var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == playerId)
+            ?? throw new NotFoundApiException($"Player {playerId} was not found.");
+
+        var weak = await GetWeakCategoryNamesAsync(playerId, 3);
+        // Rank of a category name (0 = weakest); lower is more relevant.
+        int Rank(string name)
+        {
+            var i = weak.FindIndex(w => string.Equals(w, name, StringComparison.OrdinalIgnoreCase));
+            return i < 0 ? int.MaxValue : i;
+        }
+
+        var sportNames = await SportNamesAsync();
+        var candidates = (await VisibleDrills(userId).ToListAsync())
+            .Where(d => ParseIds(d.SportIds).Contains(player.SportId))
+            .ToList();
+
+        // Best (lowest) weak-rank each drill hits.
+        var scored = candidates
+            .Select(d => new { Drill = d, Targets = ParseTags(d.TargetStatCategories) })
+            .Select(x => new { x.Drill, Best = x.Targets.Select(Rank).DefaultIfEmpty(int.MaxValue).Min(), x.Targets })
+            .Where(x => weak.Count == 0 || x.Best != int.MaxValue) // matched a weak area (if any exist)
+            .OrderBy(x => x.Best)
+            .ThenBy(x => x.Drill.Name)
+            .ToList();
+
+        var total = scored.Count;
+        var page = Math.Max(1, filters.Page);
+        var pageSize = Math.Clamp(filters.PageSize, 1, 100);
+        var items = scored.Skip((page - 1) * pageSize).Take(pageSize).Select(x =>
+        {
+            var dto = ToDto(x.Drill, userId, favIds, sportNames);
+            dto.RecommendTarget = x.Best == int.MaxValue ? null : weak[x.Best];
+            return dto;
+        }).ToList();
+
+        return new PagedResult<DrillDto>
+        {
+            Items = items, Page = page, PageSize = pageSize,
+            TotalCount = total, TotalPages = (int)Math.Ceiling(total / (double)pageSize),
+        };
+    }
 
     private async Task<Drill> LoadOwnedAsync(ClaimsPrincipal user, int id)
     {

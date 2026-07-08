@@ -7,6 +7,7 @@ import { clsx } from 'clsx';
 import { useAchieveGoal, useDeleteGoal, useAchieveMilestone } from '../../hooks/useGoals';
 import { useToast } from '../../context/ToastContext';
 import { GoalProgressChart } from './GoalProgressChart';
+import { GoalRecommendedDrills } from '../drills/GoalRecommendedDrills';
 import {
   CATEGORY_BADGE, STATUS_BADGE, PRIORITY_BORDER, progressColor, completionPercent, formatDate, daysUntil,
 } from './goalUtils';
@@ -16,11 +17,12 @@ interface Props {
   goal: PersonalGoal;
   canManage: boolean;
   showPlayerName?: boolean;
+  sportId?: number;
   onEdit: (goal: PersonalGoal) => void;
   onLogProgress: (goal: PersonalGoal) => void;
 }
 
-export function GoalCard({ goal, canManage, showPlayerName, onEdit, onLogProgress }: Props) {
+export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onLogProgress }: Props) {
   const { addToast } = useToast();
   const achieve = useAchieveGoal();
   const del = useDeleteGoal();
@@ -157,6 +159,11 @@ export function GoalCard({ goal, canManage, showPlayerName, onEdit, onLogProgres
             </button>
           )}
         </div>
+      )}
+
+      {/* Recommended drills (goals → drills → tasks) */}
+      {goal.linkedStatCategoryName && sportId && (
+        <GoalRecommendedDrills goal={goal} sportId={sportId} canAssign={canManage} />
       )}
 
       {/* Actions */}

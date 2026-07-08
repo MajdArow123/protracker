@@ -40,3 +40,9 @@ export function useGenerateGoalSuggestions() {
     mutationFn: (playerId: number) => aiApi.generateGoalSuggestions(playerId),
   });
 }
+
+export function useGenerateDrillRecommendations() {
+  return useMutation({
+    mutationFn: (playerId: number) => aiApi.generateDrillRecommendations(playerId),
+  });
+}

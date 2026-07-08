@@ -28,12 +28,15 @@ public class DrillsController : ApiControllerBase
         [FromQuery] string? search,
         [FromQuery] bool favorited = false,
         [FromQuery] bool mine = false,
+        [FromQuery] bool recommended = false,
+        [FromQuery] int? playerId = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
         => Success(await _service.ListAsync(User, new DrillFilters
         {
             SportId = sport, Category = category, Difficulty = difficulty, Search = search,
-            Favorited = favorited, Mine = mine, Page = page, PageSize = pageSize,
+            Favorited = favorited, Mine = mine, Recommended = recommended, PlayerId = playerId,
+            Page = page, PageSize = pageSize,
         }));
 
     [HttpGet("favorites")]

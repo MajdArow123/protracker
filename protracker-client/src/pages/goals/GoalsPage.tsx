@@ -140,6 +140,7 @@ export function GoalsPage() {
                   key={g.id}
                   goal={g}
                   canManage={canManage}
+                  sportId={sportId}
                   onEdit={openEdit}
                   onLogProgress={setLogging}
                 />

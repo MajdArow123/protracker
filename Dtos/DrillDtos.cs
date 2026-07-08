@@ -32,6 +32,9 @@ public class DrillDto
     public DateTime CreatedAt { get; set; }
     // Populated by the stats endpoint / analytics only (null in list responses).
     public DrillUsageDto? Usage { get; set; }
+    // Populated only in recommendation responses.
+    public string? RecommendReason { get; set; }
+    public string? RecommendTarget { get; set; }
 }
 
 public class CreateDrillDto
@@ -64,4 +67,22 @@ public class DrillUsageDto
     public int TimesCompleted { get; set; }
     public double CompletionRate { get; set; } // 0-100
     public int PlayerCount { get; set; }
+}
+
+// ─── AI drill recommendations (Section 3) ─────────────────────────────────────
+
+public class DrillRecommendationItemDto
+{
+    public DrillDto Drill { get; set; } = new();
+    public string Reasoning { get; set; } = "";
+    public string? TargetCategory { get; set; }
+    public TaskPriority Priority { get; set; } = TaskPriority.Medium;
+}
+
+public class DrillRecommendationsDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public List<string> WeakAreas { get; set; } = new();
+    public List<DrillRecommendationItemDto> Recommendations { get; set; } = new();
 }

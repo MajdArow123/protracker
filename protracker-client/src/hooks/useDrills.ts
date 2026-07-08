@@ -10,6 +10,15 @@ export function useDrills(filters: DrillFilters = {}, enabled = true) {
   });
 }
 
+// Non-AI recommendations: drills matching a player's weakest assessment areas.
+export function useRecommendedDrills(playerId: number | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['drills', 'recommended', playerId],
+    queryFn: () => drillsApi.recommended(playerId!),
+    enabled: !!playerId && enabled,
+  });
+}
+
 export function useDrill(id: number | undefined) {
   return useQuery({
     queryKey: ['drills', 'detail', id],

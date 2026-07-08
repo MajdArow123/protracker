@@ -49,6 +49,8 @@ function toQuery(f: DrillFilters): string {
 export const drillsApi = {
   list: (filters: DrillFilters = {}) =>
     api.get<PagedResult<Drill>>(`/api/drills${toQuery(filters)}`).then(r => r.data),
+  recommended: (playerId: number) =>
+    api.get<PagedResult<Drill>>(`/api/drills?recommended=true&playerId=${playerId}&pageSize=6`).then(r => r.data),
   get: (id: number) => api.get<Drill>(`/api/drills/${id}`).then(r => r.data),
   favorites: () => api.get<Drill[]>('/api/drills/favorites').then(r => r.data),
   create: (data: CreateDrillInput) => api.post<Drill>('/api/drills', data).then(r => r.data),

@@ -495,6 +495,20 @@ export interface PagedResult<T> {
   totalPages: number;
 }
 
+export interface DrillRecommendationItem {
+  drill: Drill;
+  reasoning: string;
+  targetCategory?: string | null;
+  priority: TaskPriority;
+}
+
+export interface DrillRecommendations {
+  playerId: number;
+  playerName: string;
+  weakAreas: string[];
+  recommendations: DrillRecommendationItem[];
+}
+
 // ─── Personal goals (Phase B) ─────────────────────────────────────────────────
 export type GoalCategory = 'Performance' | 'Fitness' | 'Nutrition' | 'Mental' | 'Technical' | 'Tactical' | 'Other';
 export type GoalStatus = 'Active' | 'Achieved' | 'Paused' | 'Abandoned';

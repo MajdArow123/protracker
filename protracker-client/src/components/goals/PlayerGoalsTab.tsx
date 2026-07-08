@@ -53,7 +53,7 @@ export function PlayerGoalsTab({ playerId, sportId }: Props) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {goals.map(g => (
-            <GoalCard key={g.id} goal={g} canManage onEdit={(goal) => { setEditing(goal); setFormOpen(true); }} onLogProgress={setLogging} />
+            <GoalCard key={g.id} goal={g} canManage sportId={sportId} onEdit={(goal) => { setEditing(goal); setFormOpen(true); }} onLogProgress={setLogging} />
           ))}
         </div>
       )}
