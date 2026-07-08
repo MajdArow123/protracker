@@ -30,8 +30,9 @@ public class CoachNoteService : ICoachNoteService
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
         var query = _context.CoachNotes.Where(n => n.PlayerId == playerId);
-        // Athletes only ever see shared notes; coaches/admins see everything.
-        if (!user.IsInRole("Coach") && !user.IsInRole("Admin"))
+        // Athletes only ever see shared notes; so do assistant coaches without the
+        // "view private notes" permission. Head coaches/admins see everything.
+        if (!await _access.CanViewPrivateNotesAsync(user, playerId))
             query = query.Where(n => !n.IsPrivate);
         var notes = await query.OrderByDescending(n => n.CreatedAt).ToListAsync();
         return notes.Select(ToDto).ToList();

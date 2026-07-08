@@ -23,6 +23,8 @@ import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSecti
 import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
 import { TeamSeasonsSection } from '../../components/seasons/TeamSeasonsSection';
 import { TeamInviteSection } from '../../components/teams/TeamInviteSection';
+import { CoachingStaffSection } from '../../components/teams/CoachingStaffSection';
+import { useMyCoachPermissions } from '../../hooks/useTeamCoaches';
 import { TeamPhotoBadge } from '../../components/teams/TeamPhotoBadge';
 import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
 import { useTeamMatches } from '../../hooks/useMatches';
@@ -87,6 +89,11 @@ export function TeamDetailPage() {
 
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
+  const { data: myPerms } = useMyCoachPermissions(teamId, isCoach);
+  // Head coaches get null-safe "all true" via the backend; assistants get their stored perms.
+  const canManageTeam = !isCoach || (myPerms?.canManageTeam ?? false);
+  const canManagePlayers = !isCoach || (myPerms?.canManagePlayers ?? false);
+  const canAssess = !isCoach || (myPerms?.canAssessPlayers ?? false);
   const { data: team, isLoading } = useTeam(teamId);
   const { data: allPlayers = [] } = usePlayers();
   const { data: report } = useTeamReport(teamId);
@@ -241,24 +248,30 @@ export function TeamDetailPage() {
             {isCoach && (
               <div className="flex gap-2">
                 <ExportMenu options={exportOptions} variant="hero" onError={msg => showToast(msg, 'error')} />
-                <button
-                  onClick={() => navigate(`/teams/${id}/bulk-assessment`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
-                >
-                  <ClipboardCheck size={14} /> Assess Full Team
-                </button>
-                <button
-                  onClick={() => navigate(`/teams/${id}/edit`)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
-                >
-                  <Edit size={14} /> Edit
-                </button>
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
-                >
-                  <Trash2 size={14} /> Delete
-                </button>
+                {canAssess && (
+                  <button
+                    onClick={() => navigate(`/teams/${id}/bulk-assessment`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
+                  >
+                    <ClipboardCheck size={14} /> Assess Full Team
+                  </button>
+                )}
+                {canManageTeam && (
+                  <button
+                    onClick={() => navigate(`/teams/${id}/edit`)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
+                  >
+                    <Edit size={14} /> Edit
+                  </button>
+                )}
+                {canManageTeam && (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
+                  >
+                    <Trash2 size={14} /> Delete
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -358,11 +371,11 @@ export function TeamDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 lg:p-6">
         {/* Left: Roster */}
         <div className="lg:col-span-3 space-y-4">
-          {isCoach && <TeamInviteSection teamId={teamId} teamName={team.name} />}
+          {isCoach && canManagePlayers && <TeamInviteSection teamId={teamId} teamName={team.name} />}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900 dark:text-white">Roster</h3>
-              {isCoach && (
+              {isCoach && canManagePlayers && (
                 <button
                   onClick={() => navigate('/players/new')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
@@ -436,6 +449,7 @@ export function TeamDetailPage() {
 
         {/* Right: Analytics */}
         <div className="lg:col-span-2 space-y-4">
+          {isCoach && <CoachingStaffSection teamId={teamId} />}
           {/* Team radar */}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <h3 className="font-bold text-gray-900 dark:text-white mb-1">Team Skill Profile</h3>

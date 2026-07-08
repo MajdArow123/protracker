@@ -109,6 +109,64 @@ public class AccessControlService : IAccessControlService
         return await _context.ParentLinks.Where(l => l.ParentUserId == userId).Select(l => l.PlayerId).ToListAsync();
     }
 
+    public async Task<(CoachPermissions Permissions, bool IsHeadCoach)> GetTeamPermissionsAsync(ClaimsPrincipal user, int teamId)
+    {
+        if (user.IsInRole("Admin"))
+            return (CoachPermissions.All(), false);
+
+        var userId = RequireUserId(user);
+        var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId)
+            ?? throw new NotFoundApiException($"Team {teamId} was not found.");
+
+        if (team.CoachId == userId)
+            return (CoachPermissions.All(), true);
+
+        var role = await _context.TeamCoachRoles.FirstOrDefaultAsync(r => r.TeamId == teamId && r.UserId == userId);
+        if (role != null)
+            return (CoachPermissions.FromJson(role.PermissionsJson), false);
+
+        throw new ForbiddenApiException("You are not a coach on this team.");
+    }
+
+    public async Task EnsureTeamPermissionAsync(ClaimsPrincipal user, int teamId, Func<CoachPermissions, bool> selector, string message)
+    {
+        var (perms, isHead) = await GetTeamPermissionsAsync(user, teamId);
+        if (isHead || user.IsInRole("Admin")) return;
+        if (!selector(perms))
+            throw new ForbiddenApiException(message);
+    }
+
+    public async Task EnsurePlayerPermissionAsync(ClaimsPrincipal user, int playerId, Func<CoachPermissions, bool> selector, string message)
+    {
+        await EnsureCanAccessPlayerAsync(user, playerId);
+
+        // Only assistant coaches are further gated. Admins pass; athletes/solo athletes own their
+        // player; head coaches have all permissions.
+        if (user.IsInRole("Admin") || !user.IsInRole("Coach"))
+            return;
+
+        var player = await _context.Players.FirstAsync(p => p.Id == playerId);
+        if (player.TeamId == null)
+            return; // Coaches never reach team-less players, but be safe.
+
+        await EnsureTeamPermissionAsync(user, player.TeamId.Value, selector, message);
+    }
+
+    public async Task<bool> CanViewPrivateNotesAsync(ClaimsPrincipal user, int playerId)
+    {
+        if (user.IsInRole("Admin"))
+            return true;
+        if (!user.IsInRole("Coach"))
+            return false;
+
+        var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == playerId);
+        if (player?.TeamId == null)
+            return false;
+
+        var (perms, isHead) = await GetTeamPermissionsAsync(user, player.TeamId.Value);
+        return isHead || perms.CanViewPrivateNotes;
+    }
+
     public async Task<List<int>> GetAccessibleTeamIdsAsync(ClaimsPrincipal user)
     {
         if (user.IsInRole("Admin"))

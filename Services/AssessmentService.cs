@@ -161,7 +161,8 @@ public class AssessmentService : IAssessmentService
 
     public async Task<PlayerAssessmentDto> CreateAssessmentAsync(ClaimsPrincipal user, CreatePlayerAssessmentDto dto)
     {
-        await _access.EnsureCanAccessPlayerAsync(user, dto.PlayerId);
+        await _access.EnsurePlayerPermissionAsync(user, dto.PlayerId, p => p.CanAssessPlayers,
+            "You don't have permission to assess players on this team.");
 
         // Solo athletes may omit the period (0): their "Personal Training" period is
         // created on first use and reused after that.

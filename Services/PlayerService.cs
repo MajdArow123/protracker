@@ -73,6 +73,8 @@ public class PlayerService : IPlayerService
     public async Task<PlayerProfileDto> CreateAsync(ClaimsPrincipal user, PlayerCreateDto dto)
     {
         await _access.EnsureCanAccessTeamAsync(user, dto.TeamId);
+        await _access.EnsureTeamPermissionAsync(user, dto.TeamId, p => p.CanManagePlayers,
+            "You don't have permission to manage players on this team.");
         await _billing.EnsureCanAddPlayerAsync(user);
 
         var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == dto.TeamId)
@@ -112,7 +114,8 @@ public class PlayerService : IPlayerService
 
     public async Task<PlayerProfileDto> UpdateAsync(ClaimsPrincipal user, int id, PlayerUpdateDto dto)
     {
-        await _access.EnsureCanAccessPlayerAsync(user, id);
+        await _access.EnsurePlayerPermissionAsync(user, id, p => p.CanManagePlayers,
+            "You don't have permission to manage players on this team.");
 
         var player = await _context.Players.Include(p => p.Team).Include(p => p.Position)
             .FirstOrDefaultAsync(p => p.Id == id)
@@ -144,7 +147,8 @@ public class PlayerService : IPlayerService
 
     public async Task DeleteAsync(ClaimsPrincipal user, int id)
     {
-        await _access.EnsureCanAccessPlayerAsync(user, id);
+        await _access.EnsurePlayerPermissionAsync(user, id, p => p.CanManagePlayers,
+            "You don't have permission to manage players on this team.");
 
         var player = await _context.Players.FirstOrDefaultAsync(p => p.Id == id)
             ?? throw new NotFoundApiException($"Player {id} was not found.");

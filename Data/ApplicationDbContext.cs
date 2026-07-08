@@ -72,6 +72,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Player> Players => Set<Player>();
     public DbSet<SoloProfile> SoloProfiles => Set<SoloProfile>();
     public DbSet<CoachTeamScope> CoachTeamScopes => Set<CoachTeamScope>();
+    public DbSet<TeamCoachRole> TeamCoachRoles => Set<TeamCoachRole>();
+    public DbSet<AssistantCoachInvite> AssistantCoachInvites => Set<AssistantCoachInvite>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
@@ -174,6 +176,29 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<CoachTeamScope>()
             .HasIndex(c => new { c.CoachId, c.TeamId })
             .IsUnique();
+
+        // --- Coaching staff (assistant coaches / analysts) ---
+        builder.Entity<TeamCoachRole>()
+            .HasOne(r => r.Team)
+            .WithMany()
+            .HasForeignKey(r => r.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<TeamCoachRole>()
+            .HasIndex(r => new { r.TeamId, r.UserId })
+            .IsUnique();
+        builder.Entity<TeamCoachRole>()
+            .HasIndex(r => r.UserId);
+
+        builder.Entity<AssistantCoachInvite>()
+            .HasOne(i => i.Team)
+            .WithMany()
+            .HasForeignKey(i => i.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<AssistantCoachInvite>()
+            .HasIndex(i => i.Token)
+            .IsUnique();
+        builder.Entity<AssistantCoachInvite>()
+            .HasIndex(i => i.TeamId);
 
         // --- Assessments ---
         builder.Entity<AssessmentPeriod>()

@@ -217,6 +217,50 @@ export interface AppliedTemplate {
   scores: AssessmentTemplateScore[];
 }
 
+export type CoachRoleType = 'HeadCoach' | 'AssistantCoach' | 'Analyst';
+
+export interface CoachPermissions {
+  canAssessPlayers: boolean;
+  canAssignTasks: boolean;
+  canViewPrivateNotes: boolean;
+  canManagePlayers: boolean;
+  canManageTeam: boolean;
+}
+
+export interface TeamCoach {
+  id?: number | null; // TeamCoachRole id (null for the head coach)
+  userId: string;
+  name: string;
+  email?: string | null;
+  profilePictureUrl?: string | null;
+  role: CoachRoleType;
+  isHeadCoach: boolean;
+  isYou: boolean;
+  permissions: CoachPermissions;
+  acceptedAt?: string | null;
+}
+
+export interface InviteCoachInput {
+  email: string;
+  role: CoachRoleType;
+  permissions: CoachPermissions;
+}
+
+export interface InviteCoachResult {
+  email: string;
+  inviteUrl: string;
+}
+
+export interface ValidateCoachInvite {
+  valid: boolean;
+  teamName?: string | null;
+  sportName?: string | null;
+  inviterName?: string | null;
+  email?: string | null;
+  role: CoachRoleType;
+  emailHasAccount: boolean;
+}
+
 export interface PlayerAssessment {
   id: number;
   playerId: number;

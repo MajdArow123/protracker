@@ -15,6 +15,7 @@ export const LoginPage = named(() => import('../pages/auth/LoginPage'), 'LoginPa
 export const ForgotPasswordPage = named(() => import('../pages/auth/ForgotPasswordPage'), 'ForgotPasswordPage');
 export const RegisterPage = named(() => import('../pages/auth/RegisterPage'), 'RegisterPage');
 export const JoinTeamPage = named(() => import('../pages/auth/JoinTeamPage'), 'JoinTeamPage');
+export const CoachInviteAcceptPage = named(() => import('../pages/teams/CoachInviteAcceptPage'), 'CoachInviteAcceptPage');
 export const SoloRegisterPage = named(() => import('../pages/auth/SoloRegisterPage'), 'SoloRegisterPage');
 export const ResetPasswordPage = named(() => import('../pages/auth/ResetPasswordPage'), 'ResetPasswordPage');
 export const NotFoundPage = named(() => import('../pages/NotFoundPage'), 'NotFoundPage');

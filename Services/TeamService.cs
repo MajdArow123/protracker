@@ -108,6 +108,8 @@ public class TeamService : ITeamService
     public async Task<TeamDto> UpdateAsync(ClaimsPrincipal user, int id, TeamUpdateDto dto)
     {
         await _access.EnsureCanAccessTeamAsync(user, id);
+        await _access.EnsureTeamPermissionAsync(user, id, p => p.CanManageTeam,
+            "You don't have permission to edit this team.");
 
         var team = await _context.Teams.Include(t => t.Sport).FirstOrDefaultAsync(t => t.Id == id)
             ?? throw new NotFoundApiException($"Team {id} was not found.");
@@ -123,6 +125,8 @@ public class TeamService : ITeamService
     public async Task DeleteAsync(ClaimsPrincipal user, int id)
     {
         await _access.EnsureCanAccessTeamAsync(user, id);
+        await _access.EnsureTeamPermissionAsync(user, id, p => p.CanManageTeam,
+            "You don't have permission to delete this team.");
 
         var team = await _context.Teams.Include(t => t.Players).FirstOrDefaultAsync(t => t.Id == id)
             ?? throw new NotFoundApiException($"Team {id} was not found.");

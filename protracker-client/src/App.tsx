@@ -17,7 +17,7 @@ import { ScrollToTop } from './components/layout/ScrollToTop';
 import { RouteProgressBar } from './components/ui/RouteProgressBar';
 import {
   LandingPage, LoginPage, ForgotPasswordPage, ResetPasswordPage, NotFoundPage,
-  RegisterPage, JoinTeamPage, SoloRegisterPage, SoloDashboardPage,
+  RegisterPage, JoinTeamPage, CoachInviteAcceptPage, SoloRegisterPage, SoloDashboardPage,
   SoloAssessmentPage, SoloNutritionPage, SoloTrainingPage, SoloMatchesPage,
   SoloRecoveryPage, SoloTasksPage,
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
@@ -61,6 +61,7 @@ function AppRoutes() {
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/solo" element={<SoloRegisterPage />} />
       <Route path="/join/:code" element={<JoinTeamPage />} />
+      <Route path="/coach-invite/:token" element={<CoachInviteAcceptPage />} />
       {/* Public shareable athlete profile — no auth required. */}
       <Route path="/player/:slug" element={<PublicProfilePage />} />
       <Route path="/" element={<RootRedirect />} />

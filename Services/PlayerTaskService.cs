@@ -97,7 +97,8 @@ public class PlayerTaskService : IPlayerTaskService
     public async Task<PlayerTaskDto> CreateAsync(ClaimsPrincipal user, CreatePlayerTaskDto dto)
     {
         // Coaches may only assign to players on a team they scope.
-        await _access.EnsureCanAccessPlayerAsync(user, dto.PlayerId);
+        await _access.EnsurePlayerPermissionAsync(user, dto.PlayerId, p => p.CanAssignTasks,
+            "You don't have permission to assign tasks on this team.");
         var userId = _access.RequireUserId(user);
 
         var task = new PlayerTask

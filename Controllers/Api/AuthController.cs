@@ -9,10 +9,24 @@ namespace ProTracker.Controllers.Api;
 public class AuthController : ApiControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ITeamCoachService _teamCoachService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, ITeamCoachService teamCoachService)
     {
         _authService = authService;
+        _teamCoachService = teamCoachService;
+    }
+
+    // Accept an assistant-coach / analyst invite. Creates or links the account and behaves
+    // like a login (writes auth cookies). Public — the emailed token proves email ownership.
+    [HttpPost("~/api/assistant-invites/accept")]
+    [AllowAnonymous]
+    [Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("join-validate")]
+    public async Task<ActionResult> AcceptCoachInvite(AcceptCoachInviteDto dto)
+    {
+        var result = await _teamCoachService.AcceptInviteAsync(dto);
+        WriteAuthCookies(result.AccessToken, result.RefreshToken);
+        return Success(result);
     }
 
     [HttpPost("register")]

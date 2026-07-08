@@ -26,4 +26,21 @@ public interface IAccessControlService
 
     // The player record linked to this user's account (athlete or solo athlete).
     Task<Player> RequireOwnPlayerAsync(ClaimsPrincipal user);
+
+    // A coach's effective permissions on a team (head coach / admin = all; assistant = their
+    // stored permissions). Throws Forbidden if the caller is not a coach on the team.
+    Task<(CoachPermissions Permissions, bool IsHeadCoach)> GetTeamPermissionsAsync(ClaimsPrincipal user, int teamId);
+
+    // Throws Forbidden if the caller (when an assistant coach) lacks the selected permission on
+    // the team. Head coaches and admins always pass.
+    Task EnsureTeamPermissionAsync(ClaimsPrincipal user, int teamId, Func<CoachPermissions, bool> selector, string message);
+
+    // Access check for a player PLUS an assistant-coach permission gate. Athletes/solo athletes
+    // (own player) and head coaches/admins pass once access is confirmed; only assistant coaches
+    // are additionally gated by the selected permission on the player's team.
+    Task EnsurePlayerPermissionAsync(ClaimsPrincipal user, int playerId, Func<CoachPermissions, bool> selector, string message);
+
+    // Whether the caller may view coach-private notes on a player (head coach/admin/assistant
+    // with the permission = true; assistant without it = false). Assumes access already checked.
+    Task<bool> CanViewPrivateNotesAsync(ClaimsPrincipal user, int playerId);
 }

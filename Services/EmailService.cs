@@ -9,6 +9,7 @@ public interface IEmailService
     Task SendPasswordResetAsync(string toEmail, string resetUrl);
     Task SendParentInviteAsync(string toEmail, string inviteUrl, string playerName, string coachName);
     Task SendAthleteInviteAsync(string toEmail, string joinUrl, string teamName, string coachName);
+    Task SendCoachInviteAsync(string toEmail, string inviteUrl, string teamName, string inviterName, string roleLabel);
 }
 
 // Sends transactional email over SMTP (MailKit). If no SMTP config is present — or if
@@ -144,6 +145,67 @@ public class EmailService : IEmailService
             _logger.LogError(ex, "[AthleteInvite] Failed to send email to {Email}. Join link: {Url}", toEmail, joinUrl);
         }
     }
+
+    public async Task SendCoachInviteAsync(string toEmail, string inviteUrl, string teamName, string inviterName, string roleLabel)
+    {
+        var host = _config["SMTP_HOST"];
+        var from = _config["EMAIL_FROM"] ?? "noreply@protracker.app";
+
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            _logger.LogInformation("[CoachInvite] No SMTP configured. Invite link for {Email}: {Url}", toEmail, inviteUrl);
+            return;
+        }
+
+        try
+        {
+            var message = new MimeMessage();
+            message.From.Add(MailboxAddress.Parse(from));
+            message.To.Add(MailboxAddress.Parse(toEmail));
+            message.Subject = $"You've been invited to coach {teamName} on ProTracker";
+            message.Body = new BodyBuilder { HtmlBody = BuildCoachInviteHtml(inviteUrl, teamName, inviterName, roleLabel) }.ToMessageBody();
+
+            var port = int.TryParse(_config["SMTP_PORT"], out var p) ? p : 587;
+            var user = _config["SMTP_USER"];
+            var pass = _config["SMTP_PASS"];
+
+            using var client = new SmtpClient();
+            var socketOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
+            await client.ConnectAsync(host, port, socketOption);
+            if (!string.IsNullOrWhiteSpace(user))
+                await client.AuthenticateAsync(user, pass);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+
+            _logger.LogInformation("[CoachInvite] Sent coach invite email to {Email}", toEmail);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[CoachInvite] Failed to send email to {Email}. Invite link: {Url}", toEmail, inviteUrl);
+        }
+    }
+
+    private static string BuildCoachInviteHtml(string inviteUrl, string teamName, string inviterName, string roleLabel) => $$"""
+<!doctype html>
+<html>
+<body style="font-family: -apple-system, Segoe UI, Roboto, sans-serif; background:#0f172a; padding:32px;">
+  <div style="max-width:480px; margin:0 auto; background:#ffffff; border-radius:16px; overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#6366f1,#8b5cf6); padding:24px 28px;">
+      <h1 style="color:#fff; margin:0; font-size:20px;">ProTracker</h1>
+    </div>
+    <div style="padding:28px;">
+      <h2 style="margin:0 0 12px; font-size:18px; color:#0f172a;">Join {{teamName}}'s coaching staff</h2>
+      <p style="color:#475569; font-size:14px; line-height:1.6;">
+        {{inviterName}} has invited you to join <strong>{{teamName}}</strong> on ProTracker as
+        <strong>{{roleLabel}}</strong>. Accept to help manage the team's assessments, tasks and training.
+      </p>
+      <a href="{{inviteUrl}}" style="display:inline-block; margin-top:16px; background:#6366f1; color:#fff; text-decoration:none; padding:12px 24px; border-radius:10px; font-weight:600; font-size:14px;">Accept invite</a>
+      <p style="color:#94a3b8; font-size:12px; margin-top:20px;">This link expires in 7 days. If you weren't expecting this, you can ignore it.</p>
+    </div>
+  </div>
+</body>
+</html>
+""";
 
     private static string BuildAthleteInviteHtml(string joinUrl, string teamName, string coachName) => $$"""
 <!doctype html>
