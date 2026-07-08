@@ -183,6 +183,7 @@ builder.Services.AddScoped<IWellbeingService, WellbeingService>();
 builder.Services.AddScoped<IPersonalGoalService, PersonalGoalService>();
 builder.Services.AddScoped<IJournalService, JournalService>();
 builder.Services.AddScoped<IPublicProfileService, PublicProfileService>();
+builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
@@ -223,6 +224,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     await ProTracker.Data.RecoveryTemplateSeeder.SeedAsync(db);
+    await ProTracker.Data.DrillSeeder.SeedAsync(db);
     await ProTracker.Data.FoodItemSeeder.SeedAsync(db);
     await ProTracker.Data.DemoDataSeeder.SeedAsync(scope.ServiceProvider);
 }

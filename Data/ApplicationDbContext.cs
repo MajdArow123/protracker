@@ -57,6 +57,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<GoalProgress> GoalProgress => Set<GoalProgress>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<PublicProfile> PublicProfiles => Set<PublicProfile>();
+    public DbSet<Drill> Drills => Set<Drill>();
+    public DbSet<DrillFavorite> DrillFavorites => Set<DrillFavorite>();
     public DbSet<RecoveryTemplate> RecoveryTemplates => Set<RecoveryTemplate>();
     public DbSet<RecoveryTemplateExercise> RecoveryTemplateExercises => Set<RecoveryTemplateExercise>();
     public DbSet<RecoveryTemplateMilestone> RecoveryTemplateMilestones => Set<RecoveryTemplateMilestone>();
@@ -471,6 +473,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .IsUnique();
         builder.Entity<PublicProfile>()
             .HasIndex(p => p.Slug)
+            .IsUnique();
+
+        builder.Entity<Drill>()
+            .HasIndex(d => d.CoachId);
+        builder.Entity<DrillFavorite>()
+            .HasOne(f => f.Drill)
+            .WithMany()
+            .HasForeignKey(f => f.DrillId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // One favorite per user per drill.
+        builder.Entity<DrillFavorite>()
+            .HasIndex(f => new { f.DrillId, f.UserId })
             .IsUnique();
 
         builder.Entity<RefreshToken>()
