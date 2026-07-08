@@ -37,6 +37,9 @@ public interface IDrillService
     Task<List<string>> GetWeakCategoryNamesAsync(int playerId, int count);
     // Full DrillDtos for a set of ids (visible to the caller), preserving the given order.
     Task<List<DrillDto>> GetManyAsync(ClaimsPrincipal user, IEnumerable<int> ids);
+
+    Task<DrillUsageDto> GetStatsAsync(ClaimsPrincipal user, int id);
+    Task<DrillAnalyticsDto> GetAnalyticsAsync(ClaimsPrincipal user);
 }
 
 public class DrillService : IDrillService
@@ -110,7 +113,107 @@ public class DrillService : IDrillService
         var drill = await VisibleDrills(userId).FirstOrDefaultAsync(d => d.Id == id)
             ?? throw new NotFoundApiException($"Drill {id} was not found.");
         var favIds = await FavoriteIdsAsync(userId);
-        return ToDto(drill, userId, favIds, await SportNamesAsync());
+        var dto = ToDto(drill, userId, favIds, await SportNamesAsync());
+        dto.Usage = await ComputeUsageAsync(user, userId, id);
+        return dto;
+    }
+
+    public async Task<DrillUsageDto> GetStatsAsync(ClaimsPrincipal user, int id)
+    {
+        var userId = _access.RequireUserId(user);
+        var exists = await VisibleDrills(userId).AnyAsync(d => d.Id == id);
+        if (!exists) throw new NotFoundApiException($"Drill {id} was not found.");
+        return await ComputeUsageAsync(user, userId, id);
+    }
+
+    // Usage of a drill scoped to the caller (coach: tasks they created; solo: their own tasks).
+    private async Task<DrillUsageDto> ComputeUsageAsync(ClaimsPrincipal user, string userId, int drillId)
+    {
+        var tasks = await ScopedDrillTasks(user, userId).Where(t => t.DrillId == drillId).ToListAsync();
+        var assigned = tasks.Count;
+        var completed = tasks.Count(t => t.IsCompleted);
+        return new DrillUsageDto
+        {
+            TimesAssigned = assigned,
+            TimesCompleted = completed,
+            CompletionRate = assigned > 0 ? Math.Round(completed * 100.0 / assigned, 0) : 0,
+            PlayerCount = tasks.Select(t => t.PlayerId).Distinct().Count(),
+        };
+    }
+
+    // Drill-based tasks the caller owns (coach = created by them, admin = all).
+    private IQueryable<PlayerTask> ScopedDrillTasks(ClaimsPrincipal user, string userId)
+    {
+        var q = _context.PlayerTasks.Where(t => t.DrillId != null);
+        return user.IsInRole("Admin") ? q : q.Where(t => t.CoachId == userId);
+    }
+
+    public async Task<DrillAnalyticsDto> GetAnalyticsAsync(ClaimsPrincipal user)
+    {
+        var userId = _access.RequireUserId(user);
+        // All of the caller's tasks (drill + manual) for the drill-vs-manual split.
+        var allTasks = await (user.IsInRole("Admin")
+            ? _context.PlayerTasks
+            : _context.PlayerTasks.Where(t => t.CoachId == userId))
+            .Include(t => t.Player)
+            .ToListAsync();
+
+        var drillTasks = allTasks.Where(t => t.DrillId != null).ToList();
+        var manualCount = allTasks.Count - drillTasks.Count;
+
+        var drillIds = drillTasks.Select(t => t.DrillId!.Value).Distinct().ToList();
+        var drills = await _context.Drills.Where(d => drillIds.Contains(d.Id))
+            .ToDictionaryAsync(d => d.Id, d => d);
+
+        DrillRankDto Rank(IGrouping<int, PlayerTask> g)
+        {
+            var a = g.Count();
+            var c = g.Count(t => t.IsCompleted);
+            return new DrillRankDto
+            {
+                DrillId = g.Key,
+                Name = drills.TryGetValue(g.Key, out var d) ? d.Name : $"Drill {g.Key}",
+                Assigned = a, Completed = c,
+                CompletionRate = a > 0 ? Math.Round(c * 100.0 / a, 0) : 0,
+            };
+        }
+
+        var byDrill = drillTasks.GroupBy(t => t.DrillId!.Value).Select(Rank).ToList();
+
+        var byCategory = drillTasks
+            .Where(t => drills.ContainsKey(t.DrillId!.Value))
+            .GroupBy(t => drills[t.DrillId!.Value].Category)
+            .Select(g =>
+            {
+                var total = g.Count();
+                var completed = g.Count(t => t.IsCompleted);
+                return new DrillCategoryStatDto
+                {
+                    Category = g.Key, Total = total, Completed = completed,
+                    CompletionRate = total > 0 ? Math.Round(completed * 100.0 / total, 0) : 0,
+                };
+            })
+            .OrderByDescending(c => c.Total)
+            .ToList();
+
+        var byPlayer = drillTasks
+            .GroupBy(t => new { t.PlayerId, Name = t.Player?.FullName ?? "" })
+            .Select(g => new DrillPlayerStatDto { PlayerId = g.Key.PlayerId, PlayerName = g.Key.Name, DrillCount = g.Count() })
+            .OrderByDescending(p => p.DrillCount)
+            .ToList();
+
+        return new DrillAnalyticsDto
+        {
+            DrillBasedTasks = drillTasks.Count,
+            ManualTasks = manualCount,
+            TotalDrillsAssigned = drillIds.Count,
+            OverallCompletionRate = drillTasks.Count > 0
+                ? Math.Round(drillTasks.Count(t => t.IsCompleted) * 100.0 / drillTasks.Count, 0) : 0,
+            MostAssigned = byDrill.OrderByDescending(d => d.Assigned).ThenBy(d => d.Name).Take(5).ToList(),
+            MostCompleted = byDrill.OrderByDescending(d => d.Completed).ThenBy(d => d.Name).Take(5).ToList(),
+            ByCategory = byCategory,
+            ByPlayer = byPlayer,
+        };
     }
 
     public async Task<DrillDto> CreateAsync(ClaimsPrincipal user, CreateDrillDto dto)
@@ -210,6 +313,7 @@ public class DrillService : IDrillService
         return await _tasks.CreateAsync(user, new CreatePlayerTaskDto
         {
             PlayerId = dto.PlayerId,
+            DrillId = drill.Id,
             Title = drill.Name,
             Description = description,
             DueDate = dto.DueDate,

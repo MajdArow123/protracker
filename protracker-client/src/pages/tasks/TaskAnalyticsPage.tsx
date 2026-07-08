@@ -5,10 +5,11 @@ import {
 } from 'recharts';
 import {
   ArrowLeft, ClipboardList, CheckCircle2, AlertTriangle, Clock,
-  Trophy, TrendingDown, BarChart3,
+  Trophy, TrendingDown, BarChart3, Dumbbell,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { PageWrapper } from '../../components/layout/PageWrapper';
+import { DrillUsageSection } from '../../components/drills/DrillUsageSection';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useTaskAnalytics } from '../../hooks/useTasks';
@@ -175,6 +176,14 @@ export function TaskAnalyticsPage() {
             </LineChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      {/* Drill Usage (Phase C) */}
+      <div className="mt-6">
+        <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white mb-4">
+          <Dumbbell size={18} className="text-indigo-500" /> Drill Usage
+        </h2>
+        <DrillUsageSection />
       </div>
     </PageWrapper>
   );

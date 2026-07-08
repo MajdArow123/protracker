@@ -440,6 +440,8 @@ export interface PlayerTask {
   coachId: string;
   playerId: number;
   playerName: string;
+  drillId?: number | null;
+  drillDifficulty?: DrillDifficulty | null;
   title: string;
   description?: string | null;
   dueDate?: string | null;
@@ -507,6 +509,38 @@ export interface DrillRecommendations {
   playerName: string;
   weakAreas: string[];
   recommendations: DrillRecommendationItem[];
+}
+
+export interface DrillRank {
+  drillId: number;
+  name: string;
+  assigned: number;
+  completed: number;
+  completionRate: number;
+}
+
+export interface DrillCategoryStat {
+  category: DrillCategory;
+  total: number;
+  completed: number;
+  completionRate: number;
+}
+
+export interface DrillPlayerStat {
+  playerId: number;
+  playerName: string;
+  drillCount: number;
+}
+
+export interface DrillAnalytics {
+  drillBasedTasks: number;
+  manualTasks: number;
+  totalDrillsAssigned: number;
+  overallCompletionRate: number;
+  mostAssigned: DrillRank[];
+  mostCompleted: DrillRank[];
+  byCategory: DrillCategoryStat[];
+  byPlayer: DrillPlayerStat[];
 }
 
 // ─── Personal goals (Phase B) ─────────────────────────────────────────────────

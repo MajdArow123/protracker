@@ -42,6 +42,15 @@ public class DrillsController : ApiControllerBase
     [HttpGet("favorites")]
     public async Task<ActionResult> Favorites() => Success(await _service.GetFavoritesAsync(User));
 
+    // Coach: usage analytics across all their drill-based tasks.
+    [HttpGet("analytics")]
+    [Authorize(Roles = "Coach,Admin,SoloAthlete")]
+    public async Task<ActionResult> Analytics() => Success(await _service.GetAnalyticsAsync(User));
+
+    // Usage stats for a single drill (scoped to the caller's assignments).
+    [HttpGet("{id}/stats")]
+    public async Task<ActionResult> Stats(int id) => Success(await _service.GetStatsAsync(User, id));
+
     [HttpGet("{id}")]
     public async Task<ActionResult> Get(int id) => Success(await _service.GetByIdAsync(User, id));
 

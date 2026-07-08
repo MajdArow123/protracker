@@ -147,6 +147,7 @@ export function PlayerDetailPage() {
   const deletePlayer = useDeletePlayer();
 
   const [tab, setTab] = useState<Tab>('overview');
+  const [taskFilter, setTaskFilter] = useState<'all' | 'drill' | 'manual'>('all');
   const [recoveryInjuryId, setRecoveryInjuryId] = useState<number | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [editTask, setEditTask] = useState<PlayerTask | null>(null);
@@ -814,8 +815,20 @@ export function PlayerDetailPage() {
           {/* Tasks tab */}
           {tab === 'tasks' && (
             <motion.div key="tasks" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold text-gray-900 dark:text-white">Assigned Tasks</h3>
+              <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <h3 className="font-bold text-gray-900 dark:text-white">Assigned Tasks</h3>
+                  {/* Filter: All / Drill-based / Manual */}
+                  <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                    {(['all', 'drill', 'manual'] as const).map(f => (
+                      <button key={f} onClick={() => setTaskFilter(f)}
+                        className={clsx('px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer',
+                          taskFilter === f ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}>
+                        {f === 'all' ? 'All' : f === 'drill' ? 'Drill-based' : 'Manual'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <button
                   onClick={() => { setEditTask(null); setTaskModalOpen(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
@@ -823,25 +836,29 @@ export function PlayerDetailPage() {
                   <Plus size={13} /> Assign Task
                 </button>
               </div>
-              {playerTasks.length === 0 ? (
-                <EmptyState
-                  icon={<CheckSquare size={32} />}
-                  title="No tasks assigned"
-                  description="Assign a drill or task to this player."
-                  size="sm"
-                />
-              ) : (
-                <div className="space-y-3">
-                  {playerTasks.map(t => (
-                    <TaskCard
-                      key={t.id}
-                      task={t}
-                      onEdit={() => { setEditTask(t); setTaskModalOpen(true); }}
-                      onDelete={() => setDeleteTaskTarget(t)}
-                    />
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const filtered = playerTasks.filter(t =>
+                  taskFilter === 'all' ? true : taskFilter === 'drill' ? !!t.drillId : !t.drillId);
+                return filtered.length === 0 ? (
+                  <EmptyState
+                    icon={<CheckSquare size={32} />}
+                    title={playerTasks.length === 0 ? 'No tasks assigned' : `No ${taskFilter === 'drill' ? 'drill-based' : 'manual'} tasks`}
+                    description="Assign a drill or task to this player."
+                    size="sm"
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {filtered.map(t => (
+                      <TaskCard
+                        key={t.id}
+                        task={t}
+                        onEdit={() => { setEditTask(t); setTaskModalOpen(true); }}
+                        onDelete={() => setDeleteTaskTarget(t)}
+                      />
+                    ))}
+                  </div>
+                );
+              })()}
             </motion.div>
           )}
 

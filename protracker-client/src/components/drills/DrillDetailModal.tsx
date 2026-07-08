@@ -2,7 +2,7 @@ import { Heart, Clock, Dumbbell, Play, Plus, Pencil, Trash2 } from 'lucide-react
 import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { useToggleDrillFavorite, useDeleteDrill } from '../../hooks/useDrills';
+import { useToggleDrillFavorite, useDeleteDrill, useDrill } from '../../hooks/useDrills';
 import { useToast } from '../../context/ToastContext';
 import {
   CATEGORY_BADGE, CATEGORY_LABEL, DIFFICULTY_BADGE, sportBadge, SPORT_SHORT, instructionSteps,
@@ -22,9 +22,12 @@ export function DrillDetailModal({ isOpen, onClose, drill, canAssign, onAssign, 
   const { addToast } = useToast();
   const toggleFav = useToggleDrillFavorite();
   const del = useDeleteDrill();
+  // Fetch fresh detail for usage stats (the list payload doesn't include them).
+  const { data: detail } = useDrill(isOpen ? drill?.id : undefined);
 
   if (!drill) return null;
   const steps = instructionSteps(drill.instructions);
+  const usage = detail?.usage;
 
   async function handleDelete() {
     if (!drill || !confirm(`Delete drill "${drill.name}"?`)) return;
@@ -54,12 +57,12 @@ export function DrillDetailModal({ isOpen, onClose, drill, canAssign, onAssign, 
 
         {drill.description && <p className="text-sm text-gray-600 dark:text-gray-300">{drill.description}</p>}
 
-        {/* Stats row (usage populated in Section 4) */}
-        {drill.usage && (
+        {/* Usage stats */}
+        {usage && usage.timesAssigned > 0 && (
           <div className="flex flex-wrap gap-4 text-xs text-gray-500 dark:text-gray-400 border-y border-gray-100 dark:border-gray-700/60 py-2">
-            <span>Assigned <span className="font-semibold text-gray-700 dark:text-gray-200">{drill.usage.timesAssigned}</span> times</span>
-            <span>Completion rate <span className="font-semibold text-gray-700 dark:text-gray-200">{drill.usage.completionRate}%</span></span>
-            {drill.usage.playerCount > 0 && <span>Used by <span className="font-semibold text-gray-700 dark:text-gray-200">{drill.usage.playerCount}</span> players</span>}
+            <span>Assigned <span className="font-semibold text-gray-700 dark:text-gray-200">{usage.timesAssigned}</span> times</span>
+            <span>Completion rate <span className="font-semibold text-gray-700 dark:text-gray-200">{usage.completionRate}%</span></span>
+            {usage.playerCount > 0 && <span>Used by <span className="font-semibold text-gray-700 dark:text-gray-200">{usage.playerCount}</span> {usage.playerCount === 1 ? 'player' : 'players'}</span>}
           </div>
         )}
 

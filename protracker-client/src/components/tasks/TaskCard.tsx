@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { CheckCircle2, Circle, Clock, Pencil, Trash2, Undo2 } from 'lucide-react';
+import { CheckCircle2, Circle, Clock, Pencil, Trash2, Undo2, Dumbbell } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PlayerTask } from '../../types';
 import { PRIORITY_BADGE, CATEGORY_BADGE, PRIORITY_BORDER, isOverdue, formatDate, getInitials } from './taskUtils';
@@ -75,6 +75,11 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                 <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', PRIORITY_BADGE[task.priority])}>
                   {task.priority}
                 </span>
+                {task.drillId && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
+                    <Dumbbell size={9} /> Drill{task.drillDifficulty ? ` · ${task.drillDifficulty}` : ''}
+                  </span>
+                )}
               </div>
 
               {task.dueDate && (

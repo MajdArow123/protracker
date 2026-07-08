@@ -1,5 +1,5 @@
 import api from './axiosInstance';
-import type { Drill, PagedResult, DrillCategory, DrillDifficulty, TaskPriority, PlayerTask } from '../types';
+import type { Drill, PagedResult, DrillCategory, DrillDifficulty, TaskPriority, PlayerTask, DrillUsage, DrillAnalytics } from '../types';
 
 export interface DrillFilters {
   sport?: number | null;
@@ -52,6 +52,8 @@ export const drillsApi = {
   recommended: (playerId: number) =>
     api.get<PagedResult<Drill>>(`/api/drills?recommended=true&playerId=${playerId}&pageSize=6`).then(r => r.data),
   get: (id: number) => api.get<Drill>(`/api/drills/${id}`).then(r => r.data),
+  stats: (id: number) => api.get<DrillUsage>(`/api/drills/${id}/stats`).then(r => r.data),
+  analytics: () => api.get<DrillAnalytics>('/api/drills/analytics').then(r => r.data),
   favorites: () => api.get<Drill[]>('/api/drills/favorites').then(r => r.data),
   create: (data: CreateDrillInput) => api.post<Drill>('/api/drills', data).then(r => r.data),
   update: (id: number, data: CreateDrillInput) => api.put<Drill>(`/api/drills/${id}`, data).then(r => r.data),

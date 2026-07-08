@@ -56,7 +56,7 @@ public class PlayerTaskService : IPlayerTaskService
             .ThenByDescending(t => t.CreatedAt)
             .ToListAsync();
 
-        return tasks.Select(ToDto).ToList();
+        return await ToDtosWithDrillsAsync(tasks);
     }
 
     public async Task<List<PlayerTaskDto>> GetMineAsync(ClaimsPrincipal user)
@@ -73,7 +73,25 @@ public class PlayerTaskService : IPlayerTaskService
             .ThenByDescending(t => t.CreatedAt)
             .ToListAsync();
 
-        return tasks.Select(ToDto).ToList();
+        return await ToDtosWithDrillsAsync(tasks);
+    }
+
+    // Maps tasks to DTOs and resolves the source drill's difficulty for drill-based tasks.
+    private async Task<List<PlayerTaskDto>> ToDtosWithDrillsAsync(List<PlayerTask> tasks)
+    {
+        var drillIds = tasks.Where(t => t.DrillId != null).Select(t => t.DrillId!.Value).Distinct().ToList();
+        var difficulties = drillIds.Count == 0
+            ? new Dictionary<int, DrillDifficulty>()
+            : await _context.Drills.Where(d => drillIds.Contains(d.Id))
+                .ToDictionaryAsync(d => d.Id, d => d.Difficulty);
+
+        return tasks.Select(t =>
+        {
+            var dto = ToDto(t);
+            if (t.DrillId != null && difficulties.TryGetValue(t.DrillId.Value, out var diff))
+                dto.DrillDifficulty = diff;
+            return dto;
+        }).ToList();
     }
 
     public async Task<PlayerTaskDto> CreateAsync(ClaimsPrincipal user, CreatePlayerTaskDto dto)
@@ -86,6 +104,7 @@ public class PlayerTaskService : IPlayerTaskService
         {
             CoachId = userId,
             PlayerId = dto.PlayerId,
+            DrillId = dto.DrillId,
             Title = dto.Title.Trim(),
             Description = dto.Description,
             DueDate = dto.DueDate,
@@ -307,6 +326,7 @@ public class PlayerTaskService : IPlayerTaskService
         CoachId = t.CoachId,
         PlayerId = t.PlayerId,
         PlayerName = t.Player?.FullName ?? "",
+        DrillId = t.DrillId,
         Title = t.Title,
         Description = t.Description,
         DueDate = t.DueDate,

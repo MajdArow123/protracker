@@ -27,6 +27,14 @@ export function useDrill(id: number | undefined) {
   });
 }
 
+export function useDrillAnalytics(enabled = true) {
+  return useQuery({
+    queryKey: ['drills', 'analytics'],
+    queryFn: drillsApi.analytics,
+    enabled,
+  });
+}
+
 export function useCreateDrill() {
   const qc = useQueryClient();
   return useMutation({

@@ -31,6 +31,9 @@ public class PlayerTask
     public int PlayerId { get; set; }
     public Player Player { get; set; } = null!;
 
+    // Set when the task was created from a drill in the library (Phase C). Null for manual tasks.
+    public int? DrillId { get; set; }
+
     [Required]
     public string Title { get; set; } = "";
 

@@ -8,6 +8,9 @@ public class PlayerTaskDto
     public string CoachId { get; set; } = "";
     public int PlayerId { get; set; }
     public string PlayerName { get; set; } = "";
+    // Set when the task came from a drill; DrillDifficulty is resolved for display.
+    public int? DrillId { get; set; }
+    public DrillDifficulty? DrillDifficulty { get; set; }
     public string Title { get; set; } = "";
     public string? Description { get; set; }
     public DateTime? DueDate { get; set; }
@@ -27,6 +30,8 @@ public class CreatePlayerTaskDto
     public DateTime? DueDate { get; set; }
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
     public TaskCategory Category { get; set; } = TaskCategory.Training;
+    // Set by the drill-assign flow to link the task back to its source drill.
+    public int? DrillId { get; set; }
 }
 
 public class CompleteTaskDto

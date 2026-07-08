@@ -86,3 +86,41 @@ public class DrillRecommendationsDto
     public List<string> WeakAreas { get; set; } = new();
     public List<DrillRecommendationItemDto> Recommendations { get; set; } = new();
 }
+
+// ─── Drill tracking & analytics (Section 4) ───────────────────────────────────
+
+public class DrillRankDto
+{
+    public int DrillId { get; set; }
+    public string Name { get; set; } = "";
+    public int Assigned { get; set; }
+    public int Completed { get; set; }
+    public double CompletionRate { get; set; }
+}
+
+public class DrillCategoryStatDto
+{
+    public DrillCategory Category { get; set; }
+    public int Total { get; set; }
+    public int Completed { get; set; }
+    public double CompletionRate { get; set; }
+}
+
+public class DrillPlayerStatDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public int DrillCount { get; set; }
+}
+
+public class DrillAnalyticsDto
+{
+    public int DrillBasedTasks { get; set; }
+    public int ManualTasks { get; set; }
+    public int TotalDrillsAssigned { get; set; }   // distinct drills used
+    public double OverallCompletionRate { get; set; }
+    public List<DrillRankDto> MostAssigned { get; set; } = new();
+    public List<DrillRankDto> MostCompleted { get; set; } = new();
+    public List<DrillCategoryStatDto> ByCategory { get; set; } = new();
+    public List<DrillPlayerStatDto> ByPlayer { get; set; } = new();
+}
