@@ -184,6 +184,7 @@ builder.Services.AddScoped<IPersonalGoalService, PersonalGoalService>();
 builder.Services.AddScoped<IJournalService, JournalService>();
 builder.Services.AddScoped<IPublicProfileService, PublicProfileService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
+builder.Services.AddScoped<IAssessmentTemplateService, AssessmentTemplateService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();

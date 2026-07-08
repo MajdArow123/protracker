@@ -18,7 +18,8 @@ import { assessmentsApi } from '../../api/assessmentsApi';
 import { useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { ScoreSlider, OverallScoreRing, scoreColor } from '../../components/assessments/ScoreWidgets';
-import type { PlayerAssessment } from '../../types';
+import { AssessmentTemplateBar } from '../../components/assessments/AssessmentTemplateBar';
+import type { PlayerAssessment, AppliedTemplate } from '../../types';
 
 type Tab = 'new' | 'history';
 
@@ -50,6 +51,7 @@ export function AssessmentPage() {
   const [dateRecorded, setDateRecorded] = useState(new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState('');
   const [scores, setScores] = useState<Record<number, number | null>>({});
+  const [requiredCats, setRequiredCats] = useState<Set<number>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<PlayerAssessment | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -68,6 +70,18 @@ export function AssessmentPage() {
       });
     }
   }, [statCategories]);
+
+  // Apply an assessment template: pre-fill slider defaults, mark required categories, and
+  // pre-fill notes if the coach hasn't typed any.
+  function applyTemplate(applied: AppliedTemplate) {
+    setScores(prev => {
+      const next = { ...prev };
+      for (const s of applied.scores) if (s.defaultScore != null) next[s.sportStatCategoryId] = s.defaultScore;
+      return next;
+    });
+    setRequiredCats(new Set(applied.scores.filter(s => s.isRequired).map(s => s.sportStatCategoryId)));
+    if (applied.defaultNotes && !notes.trim()) setNotes(applied.defaultNotes);
+  }
 
   const teamPeriods = assessmentPeriods.filter(p => !player?.teamId || p.teamId === player.teamId);
   const allScored = statCategories.length > 0 && statCategories.every(c => scores[c.id] !== null && scores[c.id] !== undefined);
@@ -193,14 +207,25 @@ export function AssessmentPage() {
             {t === 'new' ? 'New Assessment' : `History (${existingAssessments.length})`}
           </button>
         ))}
-        {player?.teamId && (
-          <button
-            onClick={() => navigate(`/teams/${player.teamId}/bulk-assessment`)}
-            className="ml-auto flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-          >
-            <Users size={15} /> Assess Full Team
-          </button>
-        )}
+        <div className="ml-auto flex items-center gap-2">
+          {tab === 'new' && player?.sportId && statCategories.length > 0 && (
+            <AssessmentTemplateBar
+              sportId={player.sportId}
+              playerId={playerId}
+              statCategories={statCategories}
+              currentScores={scores}
+              onApply={applyTemplate}
+            />
+          )}
+          {player?.teamId && (
+            <button
+              onClick={() => navigate(`/teams/${player.teamId}/bulk-assessment`)}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+            >
+              <Users size={15} /> Assess Full Team
+            </button>
+          )}
+        </div>
       </div>
 
       {tab === 'new' && (
@@ -278,6 +303,7 @@ export function AssessmentPage() {
                     name={cat.name}
                     description={cat.description}
                     value={scores[cat.id] ?? null}
+                    required={requiredCats.has(cat.id)}
                     onChange={v => setScores(prev => ({ ...prev, [cat.id]: v }))}
                   />
                 ))}

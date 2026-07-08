@@ -59,6 +59,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PublicProfile> PublicProfiles => Set<PublicProfile>();
     public DbSet<Drill> Drills => Set<Drill>();
     public DbSet<DrillFavorite> DrillFavorites => Set<DrillFavorite>();
+    public DbSet<AssessmentTemplate> AssessmentTemplates => Set<AssessmentTemplate>();
+    public DbSet<AssessmentTemplateScore> AssessmentTemplateScores => Set<AssessmentTemplateScore>();
     public DbSet<RecoveryTemplate> RecoveryTemplates => Set<RecoveryTemplate>();
     public DbSet<RecoveryTemplateExercise> RecoveryTemplateExercises => Set<RecoveryTemplateExercise>();
     public DbSet<RecoveryTemplateMilestone> RecoveryTemplateMilestones => Set<RecoveryTemplateMilestone>();
@@ -477,6 +479,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Drill>()
             .HasIndex(d => d.CoachId);
+        builder.Entity<AssessmentTemplate>()
+            .HasIndex(t => t.CoachId);
+        builder.Entity<AssessmentTemplateScore>()
+            .HasOne(s => s.AssessmentTemplate)
+            .WithMany(t => t.Scores)
+            .HasForeignKey(s => s.AssessmentTemplateId)
+            .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<DrillFavorite>()
             .HasOne(f => f.Drill)
             .WithMany()

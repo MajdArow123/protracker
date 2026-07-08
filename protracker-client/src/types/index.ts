@@ -188,6 +188,35 @@ export interface PlayerStatScore {
   score: number;
 }
 
+// ─── Assessment templates (Phase D) ──────────────────────────────────────────
+export interface AssessmentTemplateScore {
+  sportStatCategoryId: number;
+  categoryName: string;
+  defaultScore?: number | null;
+  weight?: number | null;
+  isRequired: boolean;
+}
+
+export interface AssessmentTemplate {
+  id: number;
+  coachId: string;
+  name: string;
+  description?: string | null;
+  sportId: number;
+  sportName: string;
+  defaultNotes?: string | null;
+  createdAt: string;
+  scores: AssessmentTemplateScore[];
+}
+
+export interface AppliedTemplate {
+  templateId: number;
+  templateName: string;
+  playerId: number;
+  defaultNotes?: string | null;
+  scores: AssessmentTemplateScore[];
+}
+
 export interface PlayerAssessment {
   id: number;
   playerId: number;

@@ -20,19 +20,24 @@ interface ScoreSliderProps {
   description?: string;
   value: number | null;
   onChange: (v: number) => void;
+  required?: boolean;
 }
 
-export function ScoreSlider({ name, description, value, onChange }: ScoreSliderProps) {
+export function ScoreSlider({ name, description, value, onChange, required }: ScoreSliderProps) {
   const isSet = value !== null;
   const display = value ?? 5.5;
   const color = isSet ? scoreColor(display) : '#9ca3af';
   const label = isSet ? scoreLabel(display) : null;
 
   return (
-    <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div className={clsx('rounded-2xl border bg-white dark:bg-gray-900 p-4',
+      required && !isSet ? 'border-indigo-300 dark:border-indigo-700 ring-1 ring-indigo-200 dark:ring-indigo-800' : 'border-gray-200 dark:border-gray-800')}>
       <div className="flex items-start justify-between mb-3 gap-2">
         <div>
-          <p className="text-sm font-bold text-gray-900 dark:text-white">{name}</p>
+          <p className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+            {name}
+            {required && <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">Required</span>}
+          </p>
           {description && <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{description}</p>}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
