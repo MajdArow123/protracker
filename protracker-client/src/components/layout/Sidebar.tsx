@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
-  ClipboardList, Dumbbell, Trophy, Target,
+  ClipboardList, Dumbbell, Trophy, Target, BookOpen,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -35,6 +35,7 @@ const athleteNav: NavItem[] = [
   { to: '/player-dashboard', label: 'My Dashboard', icon: LayoutDashboard, end: true },
   { to: '/player-dashboard/stats', label: 'My Stats', icon: Activity },
   { to: '/player-dashboard/goals', label: 'My Goals', icon: Target },
+  { to: '/player-dashboard/journal', label: 'Journal', icon: BookOpen },
   { to: '/player-dashboard/tasks', label: 'My Tasks', icon: CheckSquare },
   { to: '/messages', label: 'Messages', icon: MessageSquare },
   { to: '/player-dashboard/nutrition', label: 'My Nutrition', icon: Salad },
@@ -46,6 +47,7 @@ const soloNav: NavItem[] = [
   { to: '/solo-dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/solo/performance', label: 'My Performance', icon: TrendingUp },
   { to: '/solo/goals', label: 'Goals', icon: Target },
+  { to: '/solo/journal', label: 'Journal', icon: BookOpen },
   { to: '/solo/assessment', label: 'Assessments', icon: ClipboardList },
   { to: '/solo/nutrition', label: 'Nutrition', icon: Salad },
   { to: '/solo/training', label: 'Training', icon: Dumbbell },

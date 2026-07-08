@@ -55,6 +55,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<PersonalGoal> PersonalGoals => Set<PersonalGoal>();
     public DbSet<GoalMilestone> GoalMilestones => Set<GoalMilestone>();
     public DbSet<GoalProgress> GoalProgress => Set<GoalProgress>();
+    public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<RecoveryTemplate> RecoveryTemplates => Set<RecoveryTemplate>();
     public DbSet<RecoveryTemplateExercise> RecoveryTemplateExercises => Set<RecoveryTemplateExercise>();
     public DbSet<RecoveryTemplateMilestone> RecoveryTemplateMilestones => Set<RecoveryTemplateMilestone>();
@@ -448,6 +449,16 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .WithMany(g => g.ProgressEntries)
             .HasForeignKey(p => p.PersonalGoalId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<JournalEntry>()
+            .HasOne(e => e.Player)
+            .WithMany()
+            .HasForeignKey(e => e.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // One journal entry per player per calendar day.
+        builder.Entity<JournalEntry>()
+            .HasIndex(e => new { e.PlayerId, e.EntryDate })
+            .IsUnique();
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);
