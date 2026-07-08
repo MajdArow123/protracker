@@ -15,7 +15,8 @@ import { ExportMenu, type ExportOption } from '../../components/ui/ExportMenu';
 import { exportCsv, todayStamp, csvDate, type CsvRow } from '../../utils/csv';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Plus, ChevronDown, X, Sparkles, BarChart3 } from 'lucide-react';
+import { ClipboardList, Plus, ChevronDown, X, Sparkles, BarChart3, Library } from 'lucide-react';
+import { DrillLibraryModal } from '../../components/drills/DrillLibraryModal';
 import type { PlayerTask, TaskPriority, TaskCategory } from '../../types';
 import { clsx } from 'clsx';
 
@@ -51,6 +52,7 @@ export function TasksPage({ self = false }: { self?: boolean }) {
   const deleteTask = useDeleteTask();
   const [assignOpen, setAssignOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [editTask, setEditTask] = useState<PlayerTask | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<PlayerTask | null>(null);
 
@@ -112,6 +114,12 @@ export function TasksPage({ self = false }: { self?: boolean }) {
             <BarChart3 size={16} /> Analytics
           </button>
           )}
+          <button
+            onClick={() => setLibraryOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-all cursor-pointer"
+          >
+            <Library size={16} /> Browse Library
+          </button>
           <button
             onClick={() => setAiOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
@@ -232,6 +240,13 @@ export function TasksPage({ self = false }: { self?: boolean }) {
       <AITaskSuggestionsModal
         isOpen={aiOpen}
         onClose={() => setAiOpen(false)}
+        players={players.map(p => ({ id: p.id, name: p.fullName }))}
+        lockedPlayerId={self ? myPlayerId : undefined}
+      />
+
+      <DrillLibraryModal
+        isOpen={libraryOpen}
+        onClose={() => setLibraryOpen(false)}
         players={players.map(p => ({ id: p.id, name: p.fullName }))}
         lockedPlayerId={self ? myPlayerId : undefined}
       />

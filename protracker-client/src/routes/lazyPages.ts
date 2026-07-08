@@ -70,6 +70,8 @@ export const GoalsPage = named(() => import('../pages/goals/GoalsPage'), 'GoalsP
 export const JournalPage = named(() => import('../pages/journal/JournalPage'), 'JournalPage');
 // Public shareable athlete profile (no auth).
 export const PublicProfilePage = named(() => import('../pages/public/PublicProfilePage'), 'PublicProfilePage');
+// Drill & exercise library (coach / solo / team-athlete browse).
+export const DrillLibraryPage = named(() => import('../pages/drills/DrillLibraryPage'), 'DrillLibraryPage');
 
 // Warm the dashboard chunk the instant login succeeds, before the redirect fires.
 export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAthlete') {

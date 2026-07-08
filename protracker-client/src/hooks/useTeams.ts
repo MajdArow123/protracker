@@ -2,11 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { teamsApi } from '../api/teamsApi';
 import type { Team } from '../types';
 
-export function useTeams() {
+export function useTeams(enabled = true) {
   return useQuery({
     queryKey: ['teams'],
     queryFn: teamsApi.getTeams,
     staleTime: 60_000,
+    enabled,
   });
 }
 

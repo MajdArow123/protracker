@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, type Variants } from 'framer-motion';
 import {
   Users, Shield, ClipboardList, TrendingUp, ArrowRight,
-  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X, CalendarRange, Star,
+  Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X, CalendarRange, Star, Library,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
 import { useActiveSeasons } from '../../hooks/useSeasons';
@@ -365,6 +365,7 @@ export function CoachDashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: 'View Players', icon: Users, path: '/players', color: 'text-blue-500' },
+            { label: 'Drill Library', icon: Library, path: '/drills', color: 'text-teal-500' },
             { label: 'Reports', icon: TrendingUp, path: '/reports', color: 'text-purple-500' },
             { label: 'Food Alternatives', icon: ClipboardList, path: '/nutrition/food-alternatives', color: 'text-green-500' },
             { label: 'My Profile', icon: Shield, path: '/profile', color: 'text-indigo-500' },

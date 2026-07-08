@@ -451,6 +451,50 @@ export interface PlayerTask {
   createdAt: string;
 }
 
+// ─── Drill library (Phase C) ──────────────────────────────────────────────────
+export type DrillCategory =
+  | 'WarmUp' | 'Technical' | 'Tactical' | 'Fitness' | 'Strength'
+  | 'Speed' | 'Agility' | 'Recovery' | 'Mental' | 'Cooldown';
+export type DrillDifficulty = 'Beginner' | 'Intermediate' | 'Advanced' | 'Elite';
+
+export interface DrillUsage {
+  timesAssigned: number;
+  timesCompleted: number;
+  completionRate: number;
+  playerCount: number;
+}
+
+export interface Drill {
+  id: number;
+  name: string;
+  description?: string | null;
+  sportIds: number[];
+  sportNames: string[];
+  category: DrillCategory;
+  difficulty: DrillDifficulty;
+  durationMinutes?: number | null;
+  equipment?: string | null;
+  instructions?: string | null;
+  videoUrl?: string | null;
+  targetStatCategories: string[];
+  isBuiltIn: boolean;
+  isCustom: boolean;
+  isFavorited: boolean;
+  createdAt: string;
+  usage?: DrillUsage | null;
+  // Populated only by recommendation responses (Section 3).
+  recommendReason?: string | null;
+  recommendTarget?: string | null;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
 // ─── Personal goals (Phase B) ─────────────────────────────────────────────────
 export type GoalCategory = 'Performance' | 'Fitness' | 'Nutrition' | 'Mental' | 'Technical' | 'Tactical' | 'Other';
 export type GoalStatus = 'Active' | 'Achieved' | 'Paused' | 'Abandoned';

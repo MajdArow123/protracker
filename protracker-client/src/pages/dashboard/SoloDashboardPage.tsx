@@ -3,7 +3,7 @@ import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   Activity, CalendarDays, CheckSquare, ChevronRight, ClipboardList, Clock, Dumbbell,
-  Flame, MapPin, Pencil, Salad, Sparkles, Target, TrendingUp, Trophy, Users, X,
+  Flame, MapPin, Pencil, Salad, Sparkles, Target, TrendingUp, Trophy, Users, X, Library,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
@@ -156,6 +156,7 @@ export function SoloDashboardPage() {
     { label: 'Generate Nutrition Plan', desc: 'Get an AI meal plan for this week', icon: Salad, path: '/solo/nutrition', color: 'text-green-500 bg-green-500/10' },
     { label: 'Log Training Session', desc: "Record today's training", icon: Dumbbell, path: '/solo/training', color: 'text-purple-500 bg-purple-500/10' },
     { label: 'Log Match', desc: 'Record a match result', icon: Trophy, path: '/solo/matches', color: 'text-amber-500 bg-amber-500/10' },
+    { label: 'Browse Drills', desc: 'Find drills to work on', icon: Library, path: '/solo/drills', color: 'text-teal-500 bg-teal-500/10' },
   ];
 
   const startEditGoals = () => {
