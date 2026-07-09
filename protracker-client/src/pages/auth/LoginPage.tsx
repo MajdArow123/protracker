@@ -8,6 +8,7 @@ import {
   User, ArrowRight, CheckCircle, Trophy, Dumbbell,
   Zap, BarChart2,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { preloadDashboard } from '../../routes/lazyPages';
 
@@ -48,6 +49,7 @@ function PasswordStrength({ password }: { password: string }) {
 
 export function LoginPage() {
   const { login, register } = useAuth();
+  const { t: tr } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   // Landing-page role cards deep-link straight into the sign-up tab.
@@ -222,10 +224,10 @@ export function LoginPage() {
           <div className="backdrop-blur-xl bg-white/[0.04] border border-white/10 rounded-3xl shadow-2xl shadow-black/50 p-7">
             <div className="mb-6">
               <h3 className="text-lg font-black text-white">
-                {tab === 'signin' ? 'Welcome back' : 'Create your account'}
+                {tab === 'signin' ? tr('auth.welcomeBack', 'Welcome back') : 'Create your account'}
               </h3>
               <p className="text-sm text-gray-500 mt-0.5">
-                {tab === 'signin' ? 'Sign in to your ProTracker account' : 'Start your performance journey'}
+                {tab === 'signin' ? tr('auth.welcomeBackSubtitle', 'Sign in to your ProTracker account') : 'Start your performance journey'}
               </p>
             </div>
 
@@ -241,7 +243,7 @@ export function LoginPage() {
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  {t === 'signin' ? 'Sign In' : 'Register'}
+                  {t === 'signin' ? tr('auth.signIn', 'Sign In') : tr('auth.register', 'Register')}
                 </button>
               ))}
             </div>
@@ -259,12 +261,12 @@ export function LoginPage() {
                 >
                   <div className="relative">
                     <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email address" autoComplete="email" required className={inputCls} />
+                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={tr('auth.emailAddress', 'Email address')} autoComplete="email" required className={inputCls} />
                   </div>
 
                   <div className="relative">
                     <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" autoComplete="current-password" required className={clsx(inputCls, 'pr-10')} />
+                    <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder={tr('auth.password', 'Password')} autoComplete="current-password" required className={clsx(inputCls, 'pr-10')} />
                     <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
                       {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                     </button>
@@ -272,7 +274,7 @@ export function LoginPage() {
 
                   <div className="flex justify-end -mt-1">
                     <button type="button" onClick={() => navigate('/forgot-password')} className="text-sm text-gray-400 hover:text-indigo-400 hover:underline transition-colors cursor-pointer">
-                      Forgot your password?
+                      {tr('auth.forgotPassword', 'Forgot your password?')}
                     </button>
                   </div>
 
@@ -283,11 +285,11 @@ export function LoginPage() {
                   )}
 
                   <button type="submit" disabled={isLoading} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/30 cursor-pointer mt-2">
-                    {isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>Sign In <ArrowRight size={15} /></>}
+                    {isLoading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <>{tr('auth.signIn', 'Sign In')} <ArrowRight size={15} /></>}
                   </button>
 
                   <button type="button" onClick={() => setTab('register')} className="w-full text-center text-xs text-gray-500 hover:text-gray-300 transition-colors cursor-pointer mt-1">
-                    No account? <span className="text-indigo-400 font-semibold">Sign up free</span>
+                    {tr('auth.noAccount', "No account?")} <span className="text-indigo-400 font-semibold">{tr('auth.signInFree', 'Sign up free')}</span>
                   </button>
                 </motion.form>
               ) : (

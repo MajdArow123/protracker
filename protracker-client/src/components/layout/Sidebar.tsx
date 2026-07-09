@@ -5,6 +5,7 @@ import {
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
   ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake, Medal,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useTeams } from '../../hooks/useTeams';
@@ -16,57 +17,58 @@ import { clsx } from 'clsx';
 interface NavItem {
   to: string;
   label: string;
+  labelKey: string; // i18n key; falls back to `label` if missing
   icon: typeof LayoutDashboard;
   end?: boolean;
 }
 
 const coachNav: NavItem[] = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/teams', label: 'Teams', icon: Shield },
-  { to: '/players', label: 'Players', icon: Users },
-  { to: '/goals', label: 'Player Goals', icon: Target },
-  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { to: '/drills', label: 'Drill Library', icon: Library },
-  { to: '/messages', label: 'Messages', icon: MessageSquare },
-  { to: '/leagues', label: 'Leagues', icon: Trophy },
-  { to: '/coach/connection-requests', label: 'Requests', icon: Handshake },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/settings/billing', label: 'Billing', icon: CreditCard },
+  { to: '/dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  { to: '/teams', label: 'Teams', labelKey: 'nav.teams', icon: Shield },
+  { to: '/players', label: 'Players', labelKey: 'nav.players', icon: Users },
+  { to: '/goals', label: 'Player Goals', labelKey: 'nav.playerGoals', icon: Target },
+  { to: '/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+  { to: '/drills', label: 'Drill Library', labelKey: 'nav.drillLibrary', icon: Library },
+  { to: '/messages', label: 'Messages', labelKey: 'nav.messages', icon: MessageSquare },
+  { to: '/leagues', label: 'Leagues', labelKey: 'nav.leagues', icon: Trophy },
+  { to: '/coach/connection-requests', label: 'Requests', labelKey: 'nav.requests', icon: Handshake },
+  { to: '/reports', label: 'Reports', labelKey: 'nav.reports', icon: BarChart3 },
+  { to: '/settings/billing', label: 'Billing', labelKey: 'nav.billing', icon: CreditCard },
 ];
 
 const athleteNav: NavItem[] = [
-  { to: '/player-dashboard', label: 'My Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/player-dashboard/stats', label: 'My Stats', icon: Activity },
-  { to: '/player-dashboard/goals', label: 'My Goals', icon: Target },
-  { to: '/player-dashboard/journal', label: 'Journal', icon: BookOpen },
-  { to: '/player-dashboard/notes', label: 'My Notes', icon: NotebookPen },
-  { to: '/player-dashboard/drills', label: 'Drill Library', icon: Library },
-  { to: '/player-dashboard/tasks', label: 'My Tasks', icon: CheckSquare },
-  { to: '/messages', label: 'Messages', icon: MessageSquare },
-  { to: '/leagues', label: 'Leagues', icon: Trophy },
-  { to: '/player-dashboard/nutrition', label: 'My Nutrition', icon: Salad },
-  { to: '/player-dashboard/improvement', label: 'My Plan', icon: TrendingUp },
+  { to: '/player-dashboard', label: 'My Dashboard', labelKey: 'nav.myDashboard', icon: LayoutDashboard, end: true },
+  { to: '/player-dashboard/stats', label: 'My Stats', labelKey: 'nav.myStats', icon: Activity },
+  { to: '/player-dashboard/goals', label: 'My Goals', labelKey: 'goals.title', icon: Target },
+  { to: '/player-dashboard/journal', label: 'Journal', labelKey: 'nav.journal', icon: BookOpen },
+  { to: '/player-dashboard/notes', label: 'My Notes', labelKey: 'nav.notes', icon: NotebookPen },
+  { to: '/player-dashboard/drills', label: 'Drill Library', labelKey: 'nav.drillLibrary', icon: Library },
+  { to: '/player-dashboard/tasks', label: 'My Tasks', labelKey: 'nav.myTasks', icon: CheckSquare },
+  { to: '/messages', label: 'Messages', labelKey: 'nav.messages', icon: MessageSquare },
+  { to: '/leagues', label: 'Leagues', labelKey: 'nav.leagues', icon: Trophy },
+  { to: '/player-dashboard/nutrition', label: 'My Nutrition', labelKey: 'nav.myNutrition', icon: Salad },
+  { to: '/player-dashboard/improvement', label: 'My Plan', labelKey: 'nav.myPlan', icon: TrendingUp },
 ];
 
 // Self-improvement wording, not team management — the solo athlete runs their own show.
 const soloNav: NavItem[] = [
-  { to: '/solo-dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
-  { to: '/solo/performance', label: 'My Performance', icon: TrendingUp },
-  { to: '/solo/goals', label: 'Goals', icon: Target },
-  { to: '/solo/journal', label: 'Journal', icon: BookOpen },
-  { to: '/solo/notes', label: 'My Notes', icon: NotebookPen },
-  { to: '/solo/drills', label: 'Drill Library', icon: Library },
-  { to: '/solo/assessment', label: 'Assessments', icon: ClipboardList },
-  { to: '/solo/nutrition', label: 'Nutrition', icon: Salad },
-  { to: '/solo/training', label: 'Training', icon: Dumbbell },
-  { to: '/solo/matches', label: 'Matches', icon: Trophy },
-  { to: '/solo/recovery', label: 'Recovery', icon: Heart },
-  { to: '/solo/tasks', label: 'Tasks', icon: CheckSquare },
-  { to: '/leagues', label: 'Leagues', icon: Medal },
+  { to: '/solo-dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
+  { to: '/solo/performance', label: 'My Performance', labelKey: 'nav.myPerformance', icon: TrendingUp },
+  { to: '/solo/goals', label: 'Goals', labelKey: 'nav.goals', icon: Target },
+  { to: '/solo/journal', label: 'Journal', labelKey: 'nav.journal', icon: BookOpen },
+  { to: '/solo/notes', label: 'My Notes', labelKey: 'nav.notes', icon: NotebookPen },
+  { to: '/solo/drills', label: 'Drill Library', labelKey: 'nav.drillLibrary', icon: Library },
+  { to: '/solo/assessment', label: 'Assessments', labelKey: 'nav.assessments', icon: ClipboardList },
+  { to: '/solo/nutrition', label: 'Nutrition', labelKey: 'nav.nutrition', icon: Salad },
+  { to: '/solo/training', label: 'Training', labelKey: 'nav.training', icon: Dumbbell },
+  { to: '/solo/matches', label: 'Matches', labelKey: 'nav.matches', icon: Trophy },
+  { to: '/solo/recovery', label: 'Recovery', labelKey: 'nav.recovery', icon: Heart },
+  { to: '/solo/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+  { to: '/leagues', label: 'Leagues', labelKey: 'nav.leagues', icon: Medal },
 ];
 
 const parentNav: NavItem[] = [
-  { to: '/parent-dashboard', label: 'My Children', icon: Heart, end: true },
+  { to: '/parent-dashboard', label: 'My Children', labelKey: 'nav.myChildren', icon: Heart, end: true },
 ];
 
 const SPORT_COLORS: Record<string, string> = {
@@ -102,6 +104,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const { user, logout } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const nav = user?.role === 'Coach' ? coachNav : user?.role === 'Parent' ? parentNav : user?.role === 'SoloAthlete' ? soloNav : athleteNav;
   const profilePath = user?.role === 'Coach' ? '/profile' : user?.role === 'Parent' ? '/parent-dashboard' : user?.role === 'SoloAthlete' ? '/solo/profile' : '/player-dashboard/profile';
   const { badges } = useNotifications();
@@ -170,7 +173,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                 )}
                 <div className="relative z-10 flex items-center gap-3">
                   <item.icon size={17} />
-                  {item.label}
+                  {t(item.labelKey, item.label)}
                 </div>
                 <div className="relative z-10 flex items-center gap-1.5">
                   {navBadge(item.to) > 0 && (
@@ -204,7 +207,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
           }
         >
           <User size={17} />
-          Profile & Settings
+          {t('nav.profile', 'Profile & Settings')}
         </NavLink>
 
         <button
@@ -212,7 +215,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-gray-400 hover:bg-red-900/30 hover:text-red-400 transition-all cursor-pointer"
         >
           <LogOut size={17} />
-          Sign Out
+          {t('nav.signOut', 'Sign Out')}
         </button>
 
         {/* User card */}
