@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { CalendarDays, Dumbbell, History } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
+import { SessionsToRateCard } from '../../components/sessions/SessionsToRateCard';
 import { useSoloSessions } from '../../hooks/useSolo';
 
 // Personal training planner for solo athletes: the same Monday-based week calendar
@@ -57,6 +58,8 @@ export function SoloTrainingPage() {
       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
         <TeamScheduleSection solo isCoach={false} />
       </div>
+
+      <SessionsToRateCard />
     </PageWrapper>
   );
 }

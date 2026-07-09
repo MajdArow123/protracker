@@ -7,6 +7,7 @@ import { Input } from '../ui/Input';
 import { useToast } from '../../context/ToastContext';
 import { useTeamSessions, useCreateSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
 import { useSoloSessions, useCreateSoloSession } from '../../hooks/useSolo';
+import { CoachSessionFeedbackPanel } from './CoachSessionFeedbackPanel';
 import type { ScheduledSession, SessionType } from '../../types';
 
 const SESSION_TYPES: { value: SessionType; label: string }[] = [
@@ -268,6 +269,9 @@ export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?
           })}
         </div>
       )}
+
+      {/* Coach: athlete session feedback + analytics */}
+      {!solo && isCoach && teamId != null && <CoachSessionFeedbackPanel teamId={teamId} />}
 
       {canManage && (
         <>

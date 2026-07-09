@@ -4,6 +4,7 @@ import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerMatchRatings } from '../../hooks/useMatches';
 import { statFieldsForFormat, parseStatJson } from '../../utils/matchSport';
 import { useMySessions } from '../../hooks/useSessions';
+import { SessionsToRateCard } from '../../components/sessions/SessionsToRateCard';
 import { useMyAnnouncements } from '../../hooks/useAnnouncements';
 import { useCoachNotes } from '../../hooks/useCoachNotes';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
@@ -346,6 +347,11 @@ export function PlayerDashboardPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Rate past sessions */}
+      <motion.div custom={7} initial="hidden" animate="show" variants={fadeUp}>
+        <SessionsToRateCard />
+      </motion.div>
 
       {/* Upcoming Sessions */}
       {upcomingSessions && upcomingSessions.length > 0 && (

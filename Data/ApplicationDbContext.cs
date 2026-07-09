@@ -74,6 +74,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CoachTeamScope> CoachTeamScopes => Set<CoachTeamScope>();
     public DbSet<TeamCoachRole> TeamCoachRoles => Set<TeamCoachRole>();
     public DbSet<AssistantCoachInvite> AssistantCoachInvites => Set<AssistantCoachInvite>();
+    public DbSet<SessionFeedback> SessionFeedbacks => Set<SessionFeedback>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
@@ -199,6 +200,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .IsUnique();
         builder.Entity<AssistantCoachInvite>()
             .HasIndex(i => i.TeamId);
+
+        // --- Session feedback (one per player per session) ---
+        builder.Entity<SessionFeedback>()
+            .HasOne(f => f.ScheduledSession)
+            .WithMany()
+            .HasForeignKey(f => f.ScheduledSessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SessionFeedback>()
+            .HasOne(f => f.Player)
+            .WithMany()
+            .HasForeignKey(f => f.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SessionFeedback>()
+            .HasIndex(f => new { f.ScheduledSessionId, f.PlayerId })
+            .IsUnique();
 
         // --- Assessments ---
         builder.Entity<AssessmentPeriod>()

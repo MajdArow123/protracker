@@ -186,6 +186,7 @@ builder.Services.AddScoped<IPublicProfileService, PublicProfileService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IAssessmentTemplateService, AssessmentTemplateService>();
 builder.Services.AddScoped<ITeamCoachService, TeamCoachService>();
+builder.Services.AddScoped<ISessionFeedbackService, SessionFeedbackService>();
 builder.Services.AddScoped<ISeasonService, SeasonService>();
 builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
