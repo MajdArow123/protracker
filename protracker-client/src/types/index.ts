@@ -811,6 +811,34 @@ export interface SubmitCoachReviewInput {
   sport?: number | null;
 }
 
+export interface ViewPoint {
+  date: string;
+  count: number;
+}
+
+export interface CompletenessItem {
+  label: string;
+  weight: number;
+  done: boolean;
+}
+
+export interface CoachAnalytics {
+  isPublic: boolean;
+  totalViews: number;
+  viewsThisWeek: number;
+  viewsThisMonth: number;
+  totalRequests: number;
+  pendingRequests: number;
+  acceptedRequests: number;
+  acceptanceRate: number;
+  totalReviews: number;
+  averageRating?: number | null;
+  profileCompleteness: number;
+  viewsBySource: Record<string, number>;
+  viewsTrend: ViewPoint[];
+  completenessItems: CompletenessItem[];
+}
+
 export interface CoachPublicProfileView {
   slug: string;
   displayName: string;

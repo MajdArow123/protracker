@@ -41,12 +41,21 @@ export function useCoachMarketplaceInfinite(filters: Omit<CoachMarketplaceQuery,
   });
 }
 
-// Anonymous public coach profile for a slug.
-export function useCoachPublicView(slug: string | undefined) {
+// Anonymous public coach profile for a slug (source attributes the view for analytics).
+export function useCoachPublicView(slug: string | undefined, source?: string) {
   return useQuery({
     queryKey: ['coachPublicProfile', 'view', slug],
-    queryFn: () => coachesApi.getPublic(slug!),
+    queryFn: () => coachesApi.getPublic(slug!, source),
     enabled: !!slug,
     retry: false,
+  });
+}
+
+// The coach's own marketplace analytics.
+export function useCoachAnalytics(enabled = true) {
+  return useQuery({
+    queryKey: ['coachAnalytics'],
+    queryFn: () => coachesApi.analytics(),
+    enabled,
   });
 }

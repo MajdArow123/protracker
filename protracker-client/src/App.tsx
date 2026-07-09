@@ -30,7 +30,7 @@ import {
   MessagesPage,
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
   GoalsPage, JournalPage, AthleteNotesPage, PublicProfilePage, CoachPublicProfilePage,
-  CoachMarketplacePage, ConnectionRequestsPage, DrillLibraryPage,
+  CoachMarketplacePage, ConnectionRequestsPage, ProfileAnalyticsPage, DrillLibraryPage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -85,6 +85,7 @@ function AppRoutes() {
             <Route path="/tasks" element={<TasksPage />} />
             <Route path="/tasks/analytics" element={<TaskAnalyticsPage />} />
             <Route path="/coach/connection-requests" element={<ConnectionRequestsPage />} />
+            <Route path="/coach/profile-analytics" element={<ProfileAnalyticsPage />} />
             <Route path="/players/new" element={<PlayerFormPage />} />
             <Route path="/players/:id" element={<PlayerDetailPage />} />
             <Route path="/players/:id/edit" element={<PlayerFormPage />} />

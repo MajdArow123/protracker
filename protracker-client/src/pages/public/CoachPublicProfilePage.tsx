@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { clsx } from 'clsx';
 import {
   Activity, Share2, Check, MapPin, Award, Users, Shield, Star, Mail, ArrowRight,
@@ -18,7 +18,8 @@ function initials(name: string) {
 
 export function CoachPublicProfilePage() {
   const { slug } = useParams<{ slug: string }>();
-  const { data, isLoading, isError } = useCoachPublicView(slug);
+  const [params] = useSearchParams();
+  const { data, isLoading, isError } = useCoachPublicView(slug, params.get('source') ?? undefined);
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
   const [requestOpen, setRequestOpen] = useState(false);

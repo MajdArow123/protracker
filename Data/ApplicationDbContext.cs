@@ -60,6 +60,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CoachPublicProfile> CoachPublicProfiles => Set<CoachPublicProfile>();
     public DbSet<CoachConnectionRequest> CoachConnectionRequests => Set<CoachConnectionRequest>();
     public DbSet<CoachReview> CoachReviews => Set<CoachReview>();
+    public DbSet<CoachProfileView> CoachProfileViews => Set<CoachProfileView>();
     public DbSet<Drill> Drills => Set<Drill>();
     public DbSet<DrillFavorite> DrillFavorites => Set<DrillFavorite>();
     public DbSet<AssessmentTemplate> AssessmentTemplates => Set<AssessmentTemplate>();
@@ -558,6 +559,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<CoachReview>()
             .HasIndex(r => new { r.CoachUserId, r.ReviewerUserId })
             .IsUnique();
+
+        // --- Coach profile views (analytics) ---
+        builder.Entity<CoachProfileView>()
+            .HasIndex(v => new { v.CoachUserId, v.ViewedAt });
 
         builder.Entity<Drill>()
             .HasIndex(d => d.CoachId);

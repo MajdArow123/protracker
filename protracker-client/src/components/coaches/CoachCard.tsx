@@ -13,7 +13,7 @@ export function CoachCard({ coach }: { coach: CoachMarketplaceItem }) {
 
   return (
     <Link
-      to={`/coaches/${coach.slug}`}
+      to={`/coaches/${coach.slug}?source=marketplace`}
       className="group flex flex-col rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 transition-all hover:-translate-y-1 hover:shadow-lg hover:border-indigo-300 dark:hover:border-indigo-700"
     >
       <div className="flex items-start gap-3">
