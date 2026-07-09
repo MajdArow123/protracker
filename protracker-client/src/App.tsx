@@ -31,6 +31,7 @@ import {
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
   GoalsPage, JournalPage, AthleteNotesPage, PublicProfilePage, CoachPublicProfilePage,
   CoachMarketplacePage, ConnectionRequestsPage, ProfileAnalyticsPage, DrillLibraryPage,
+  LeaguesPage, LeagueDetailPage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -72,6 +73,9 @@ function AppRoutes() {
         <Route element={<AppLayout />}>
           {/* Messaging is available to both roles */}
           <Route path="/messages" element={<MessagesPage />} />
+          {/* Leagues are viewable by all roles (coach manages, athlete read-only) */}
+          <Route path="/leagues" element={<LeaguesPage />} />
+          <Route path="/leagues/:id" element={<LeagueDetailPage />} />
           <Route element={<ProtectedRoute roles={['Coach']} />}>
             <Route path="/dashboard" element={<CoachDashboardPage />} />
             <Route path="/teams" element={<TeamsPage />} />

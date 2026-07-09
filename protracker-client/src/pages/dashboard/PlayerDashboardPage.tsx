@@ -6,6 +6,7 @@ import { statFieldsForFormat, parseStatJson } from '../../utils/matchSport';
 import { useMySessions } from '../../hooks/useSessions';
 import { SessionsToRateCard } from '../../components/sessions/SessionsToRateCard';
 import { MyNotesCard } from '../../components/athleteNotes/MyNotesCard';
+import { MyLeaguesCard } from '../../components/leagues/MyLeaguesCard';
 import { useMyAnnouncements } from '../../hooks/useAnnouncements';
 import { useCoachNotes } from '../../hooks/useCoachNotes';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
@@ -184,6 +185,11 @@ export function PlayerDashboardPage() {
       <motion.div custom={1.5} initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <GoalsMiniCard goalsPath="/player-dashboard/goals" />
         <JournalPromptCard journalPath="/player-dashboard/journal" />
+      </motion.div>
+
+      {/* My leagues */}
+      <motion.div custom={1.55} initial="hidden" animate="show" variants={fadeUp}>
+        <MyLeaguesCard />
       </motion.div>
 
       {/* Private notes */}

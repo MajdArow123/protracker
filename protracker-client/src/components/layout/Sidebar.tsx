@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
-  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake,
+  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake, Medal,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -28,6 +28,7 @@ const coachNav: NavItem[] = [
   { to: '/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/drills', label: 'Drill Library', icon: Library },
   { to: '/messages', label: 'Messages', icon: MessageSquare },
+  { to: '/leagues', label: 'Leagues', icon: Trophy },
   { to: '/coach/connection-requests', label: 'Requests', icon: Handshake },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/settings/billing', label: 'Billing', icon: CreditCard },
@@ -42,6 +43,7 @@ const athleteNav: NavItem[] = [
   { to: '/player-dashboard/drills', label: 'Drill Library', icon: Library },
   { to: '/player-dashboard/tasks', label: 'My Tasks', icon: CheckSquare },
   { to: '/messages', label: 'Messages', icon: MessageSquare },
+  { to: '/leagues', label: 'Leagues', icon: Trophy },
   { to: '/player-dashboard/nutrition', label: 'My Nutrition', icon: Salad },
   { to: '/player-dashboard/improvement', label: 'My Plan', icon: TrendingUp },
 ];
@@ -60,6 +62,7 @@ const soloNav: NavItem[] = [
   { to: '/solo/matches', label: 'Matches', icon: Trophy },
   { to: '/solo/recovery', label: 'Recovery', icon: Heart },
   { to: '/solo/tasks', label: 'Tasks', icon: CheckSquare },
+  { to: '/leagues', label: 'Leagues', icon: Medal },
 ];
 
 const parentNav: NavItem[] = [

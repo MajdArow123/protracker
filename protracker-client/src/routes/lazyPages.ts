@@ -77,6 +77,9 @@ export const CoachPublicProfilePage = named(() => import('../pages/public/CoachP
 export const CoachMarketplacePage = named(() => import('../pages/public/CoachMarketplacePage'), 'CoachMarketplacePage');
 export const ConnectionRequestsPage = named(() => import('../pages/coaches/ConnectionRequestsPage'), 'ConnectionRequestsPage');
 export const ProfileAnalyticsPage = named(() => import('../pages/coaches/ProfileAnalyticsPage'), 'ProfileAnalyticsPage');
+// Leagues & tournaments (Phase F).
+export const LeaguesPage = named(() => import('../pages/leagues/LeaguesPage'), 'LeaguesPage');
+export const LeagueDetailPage = named(() => import('../pages/leagues/LeagueDetailPage'), 'LeagueDetailPage');
 // Drill & exercise library (coach / solo / team-athlete browse).
 export const DrillLibraryPage = named(() => import('../pages/drills/DrillLibraryPage'), 'DrillLibraryPage');
 
