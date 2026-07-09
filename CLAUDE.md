@@ -650,6 +650,62 @@ Cross-cutting: the public coach GETs (`/api/coaches`, `/api/coaches/{slug}` + re
 is present (via the cookie) to personalise isMine/isOwner/self-view. Coach public data lives on
 `CoachPublicProfile`, keyed by `CoachUserId` (the ApplicationUser id), not a new profile row.
 
+## Phase F — League/Tournament Mode + Multi-language (COMPLETE, deployed) — 4 sections
+
+Final phase: a league/tournament system (all 5 sports) and full i18n (English, Arabic,
+Hebrew, French, Spanish with RTL). 4 commits, each curl-/browser-verified.
+
+- **Section 1 — League data model** (commit `bb2736e`, migration `AddLeagueTournament`).
+  `League` (Type League/Tournament/Cup, Format RoundRobin/Knockout/GroupStageKnockout/Swiss,
+  Status Draft/Registration/Active/Completed/Cancelled, configurable points 3/1/0, IsPublic,
+  location/rules/prize, OrganizerId) + `LeagueTeam` (Pending/Approved/Rejected registration) +
+  `LeagueMatch` (**FKs to LeagueTeam not Team**, sport-aware SetScores, Round/Group) +
+  `LeagueStanding` (P/W/D/L, GF/GA, Points, Form, Position). `LeagueService`: organizer-only
+  CRUD; team registration (**organizer auto-approved, others Pending; sport-match + capacity
+  guards**); approve/reject; match CRUD + score update; **standings recalculation after every
+  score change** (Points → goal-difference → goals-for; last-5 Form "WWDLL"; positions);
+  **round-robin generation via the circle method** (each team plays every other once,
+  home/away alternated by round), knockout first-round pairing. Score format from the sport
+  (`MatchResult.FormatForSport`: Goals/Points/Sets/GamesAndSets), exposed on the detail DTO.
+  `LeaguesController` (`[Route("api")]`, Coach/Admin mutations, any role browses/views): GET
+  `/api/leagues`(+filters)/`mine`/`{id}`, POST/PUT/DELETE, team register + `{id}/teams/{ltId}/
+  approve|reject`, `{id}/matches` list/create, `PUT /api/league-matches/{id}/score`, DELETE,
+  `POST /api/leagues/{id}/generate-schedule`, `GET /api/leagues/{id}/standings`. **Two FKs to
+  LeagueTeam use `DeleteBehavior.Restrict`** (avoid multiple cascade paths; League cascade
+  wipes matches/standings directly).
+- **Section 2 — League UI** (commit `5b0dfcd`). `leaguesApi` + `useLeagues` hooks; shared
+  `utils/leagueMeta`. `LeaguesPage` (`/leagues`, My/Browse tabs + sport/search filters + Create
+  button). `CreateLeagueModal` (**doubles as edit** via optional `editLeague`; type/format
+  cards, sport defaults to coach's). `LeagueDetailPage` (`/leagues/:id`): sport-gradient hero +
+  Register-My-Team + Edit/Delete (organizer), **4 tabs** — Standings (classic table with
+  sport-aware column labels, colored W/D/L form pills, top-3 medal rows, own-team highlight),
+  Fixtures (grouped by round, score/"vs", organizer Add-Match/Update-Score/delete), Teams
+  (Approve/Reject), Rules — + a Generate-Schedule banner. `RegisterTeamModal` (sport-filtered),
+  `AddMatchModal`, `UpdateScoreModal` (sport-aware set-scores). **Leagues sidebar item for
+  coach/athlete/solo; routes at AppLayout level (all roles — athlete/solo read-only)**;
+  `MyLeaguesCard` on athlete + solo dashboards.
+- **Section 3 — i18n infrastructure** (commit `dd14afc`). i18next + react-i18next +
+  browser-languagedetector + **resources-to-backend for lazy-loaded locale chunks** (dynamic
+  `import()`; only the active language is fetched — 5 separate ~5KB chunks). `src/i18n/index.ts`
+  (localStorage detection/persistence key `protracker_lang`, English fallback, navigator
+  auto-detect), `src/i18n/languages.ts` (registry + `isRtl` + `applyLanguageToDocument` sets
+  `<html>` dir/lang, toggles `.rtl` class, swaps Noto Sans Arabic/Hebrew font — wired to
+  i18next's `languageChanged`). 5 locale files (en/ar/he/fr/es) by feature; **"ProTracker"
+  stays English in every locale**. Noto Sans Arabic/Hebrew Google Fonts in `index.html`. `t()`
+  applied to the Sidebar (all nav) + Login page.
+- **Section 4 — Language switcher + RTL** (commit `ce31ed3`). `LanguageSwitcher` (Globe +
+  flag, dropdown of all 5; persists + applies immediately, **no reload**) in the app navbar +
+  landing nav (`variant="dark"`), so all 5 are selectable **before login**. RTL CSS in
+  `index.css`: **mirror directional lucide icons** (chevron/arrow/corner-down-right/move) when
+  `.rtl` is set; keep Recharts LTR internally. **Landing page fully translated** (nav, buttons,
+  hero badge/title/description, 3 role cards + CTAs).
+
+Cross-cutting i18n gotchas: use `t()` from `useTranslation()`; in files that already use `t`
+as a local variable (e.g. LoginPage's tab map), **alias to `tr`** to avoid shadowing. `dir="rtl"`
+on `<html>` handles flex/grid/text mirroring automatically; only directional icons + a few
+absolute left/right positions need manual attention. New pages should wrap text in `t('key',
+'English fallback')` so untranslated keys still render English.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -755,7 +811,23 @@ is present (via the cookie) to personalise isMine/isOwner/self-view. Coach publi
 
 ## Current status
 
-**Phase E — Coach Discovery Marketplace complete (latest).** All 5 sections above
+**Phase F — League/Tournament Mode + Multi-language complete (latest).** All 4 sections
+above (league data model, league UI, i18n infrastructure, language switcher + RTL) are
+implemented, pushed to `main` as 4 commits (migration `AddLeagueTournament` auto-applied
+on Railway), 34/34 backend tests passing, `npm run build` + `oxlint` clean. Verified
+locally via curl: 4-team round-robin → 6 correct matchups, standings math exact (City FC
+3W GD+5 9pts WWW, Points→GD→GF tiebreak, accurate Form), knockout 2 teams → 1 match,
+sport-awareness (soccer=Goals, volleyball=Sets), cross-sport registration 400, pending→
+approve flow, non-organizer 403. Browser-verified: league detail 4 tabs (standings with
+form pills + medal rows, fixtures by round, teams approved, rules), leagues listing with
+organizer crown; i18n — sidebar/login/landing translated, language switcher (5 languages)
+in navbar + landing, switching to Hebrew/Arabic flips the whole app to RTL instantly
+(sidebar on the right, mirrored back-arrows, RTL fonts) with no reload, English restores
+LTR cleanly, ProTracker stays English. **Production verification run after deploy (see
+below).** All local test data cleaned up. **This is the final phase — the app is
+feature-complete.**
+
+**Phase E — Coach Discovery Marketplace complete.** All 5 sections above
 (coach public profile, marketplace page, connection requests, reviews & ratings,
 marketplace analytics) are implemented, pushed to `main` as 5 commits (migrations
 `AddCoachPublicProfile`, `AddCoachConnections`, `AddCoachReviews`, `AddCoachProfileViews`
