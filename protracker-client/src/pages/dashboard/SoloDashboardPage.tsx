@@ -22,6 +22,7 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { ShareProgressButton } from '../../components/profile/ShareProgressButton';
 import { GoalsMiniCard } from '../../components/goals/GoalsMiniCard';
 import { JournalPromptCard } from '../../components/journal/JournalPromptCard';
+import { MyNotesCard } from '../../components/athleteNotes/MyNotesCard';
 import { ProgressThisMonthCard } from '../../components/journal/ProgressThisMonthCard';
 
 const fadeUp: Variants = {
@@ -305,6 +306,11 @@ export function SoloDashboardPage() {
       <motion.div custom={5.6} initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <GoalsMiniCard goalsPath="/solo/goals" />
         <JournalPromptCard journalPath="/solo/journal" />
+      </motion.div>
+
+      {/* Private notes */}
+      <motion.div custom={5.7} initial="hidden" animate="show" variants={fadeUp}>
+        <MyNotesCard notesPath="/solo/notes" />
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

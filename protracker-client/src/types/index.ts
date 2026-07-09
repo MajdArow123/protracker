@@ -1003,6 +1003,23 @@ export interface CoachNote {
 
 export type SessionType = 'Training' | 'MatchPrep' | 'Recovery' | 'Strength' | 'Tactical' | 'Other';
 
+export type AthleteNoteCategory = 'Training' | 'Nutrition' | 'Mental' | 'Personal' | 'Goal' | 'Other';
+
+export interface AthleteNote {
+  id: number;
+  title?: string | null;
+  content: string;
+  category: AthleteNoteCategory;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertAthleteNoteInput {
+  title?: string | null;
+  content: string;
+  category: AthleteNoteCategory;
+}
+
 export interface SessionFeedback {
   id: number;
   scheduledSessionId: number;

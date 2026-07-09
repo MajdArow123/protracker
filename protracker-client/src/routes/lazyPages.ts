@@ -70,6 +70,7 @@ export const MessagesPage = named(() => import('../pages/messages/MessagesPage')
 export const GoalsPage = named(() => import('../pages/goals/GoalsPage'), 'GoalsPage');
 // Progress journal (athlete / solo).
 export const JournalPage = named(() => import('../pages/journal/JournalPage'), 'JournalPage');
+export const AthleteNotesPage = named(() => import('../pages/notes/AthleteNotesPage'), 'AthleteNotesPage');
 // Public shareable athlete profile (no auth).
 export const PublicProfilePage = named(() => import('../pages/public/PublicProfilePage'), 'PublicProfilePage');
 // Drill & exercise library (coach / solo / team-athlete browse).

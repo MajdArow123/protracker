@@ -75,6 +75,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TeamCoachRole> TeamCoachRoles => Set<TeamCoachRole>();
     public DbSet<AssistantCoachInvite> AssistantCoachInvites => Set<AssistantCoachInvite>();
     public DbSet<SessionFeedback> SessionFeedbacks => Set<SessionFeedback>();
+    public DbSet<AthleteNote> AthleteNotes => Set<AthleteNote>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
@@ -215,6 +216,15 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<SessionFeedback>()
             .HasIndex(f => new { f.ScheduledSessionId, f.PlayerId })
             .IsUnique();
+
+        // --- Athlete private notes ---
+        builder.Entity<AthleteNote>()
+            .HasOne(n => n.Player)
+            .WithMany()
+            .HasForeignKey(n => n.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<AthleteNote>()
+            .HasIndex(n => n.PlayerId);
 
         // --- Assessments ---
         builder.Entity<AssessmentPeriod>()

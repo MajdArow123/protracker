@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
-  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library,
+  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -37,6 +37,7 @@ const athleteNav: NavItem[] = [
   { to: '/player-dashboard/stats', label: 'My Stats', icon: Activity },
   { to: '/player-dashboard/goals', label: 'My Goals', icon: Target },
   { to: '/player-dashboard/journal', label: 'Journal', icon: BookOpen },
+  { to: '/player-dashboard/notes', label: 'My Notes', icon: NotebookPen },
   { to: '/player-dashboard/drills', label: 'Drill Library', icon: Library },
   { to: '/player-dashboard/tasks', label: 'My Tasks', icon: CheckSquare },
   { to: '/messages', label: 'Messages', icon: MessageSquare },
@@ -50,6 +51,7 @@ const soloNav: NavItem[] = [
   { to: '/solo/performance', label: 'My Performance', icon: TrendingUp },
   { to: '/solo/goals', label: 'Goals', icon: Target },
   { to: '/solo/journal', label: 'Journal', icon: BookOpen },
+  { to: '/solo/notes', label: 'My Notes', icon: NotebookPen },
   { to: '/solo/drills', label: 'Drill Library', icon: Library },
   { to: '/solo/assessment', label: 'Assessments', icon: ClipboardList },
   { to: '/solo/nutrition', label: 'Nutrition', icon: Salad },

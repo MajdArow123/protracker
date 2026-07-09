@@ -29,7 +29,7 @@ import {
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
-  GoalsPage, JournalPage, PublicProfilePage, DrillLibraryPage,
+  GoalsPage, JournalPage, AthleteNotesPage, PublicProfilePage, DrillLibraryPage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -124,6 +124,7 @@ function AppRoutes() {
             <Route path="/player-dashboard/tasks" element={<MyTasksPage />} />
             <Route path="/player-dashboard/goals" element={<GoalsPage />} />
             <Route path="/player-dashboard/journal" element={<JournalPage />} />
+            <Route path="/player-dashboard/notes" element={<AthleteNotesPage />} />
             <Route path="/player-dashboard/drills" element={<DrillLibraryPage />} />
             <Route path="/player-dashboard/profile" element={<AthleteProfilePage />} />
             {/* Athlete can view their team in read-only mode */}
@@ -133,6 +134,7 @@ function AppRoutes() {
             <Route path="/solo-dashboard" element={<SoloDashboardPage />} />
             <Route path="/solo/goals" element={<GoalsPage />} />
             <Route path="/solo/journal" element={<JournalPage />} />
+            <Route path="/solo/notes" element={<AthleteNotesPage />} />
             <Route path="/solo/drills" element={<DrillLibraryPage />} />
             <Route path="/solo/tasks" element={<SoloTasksPage />} />
             <Route path="/solo/profile" element={<AthleteProfilePage />} />
