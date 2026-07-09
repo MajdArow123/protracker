@@ -203,6 +203,7 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanService>();
+builder.Services.AddScoped<ILeagueService, LeagueService>();
 
 // AI service — reads API key from env var first, then appsettings
 var anthropicKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")

@@ -104,6 +104,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<DailyMealPlan> DailyMealPlans => Set<DailyMealPlan>();
     public DbSet<PlannedMeal> PlannedMeals => Set<PlannedMeal>();
     public DbSet<PlannedMealItem> PlannedMealItems => Set<PlannedMealItem>();
+    public DbSet<League> Leagues => Set<League>();
+    public DbSet<LeagueTeam> LeagueTeams => Set<LeagueTeam>();
+    public DbSet<LeagueMatch> LeagueMatches => Set<LeagueMatch>();
+    public DbSet<LeagueStanding> LeagueStandings => Set<LeagueStanding>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -563,6 +567,42 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         // --- Coach profile views (analytics) ---
         builder.Entity<CoachProfileView>()
             .HasIndex(v => new { v.CoachUserId, v.ViewedAt });
+
+        // --- League / tournament ---
+        builder.Entity<League>()
+            .HasOne(l => l.Sport).WithMany().HasForeignKey(l => l.SportId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<League>().HasIndex(l => new { l.IsPublic, l.SportId });
+        builder.Entity<League>().HasIndex(l => l.OrganizerId);
+
+        builder.Entity<LeagueTeam>()
+            .HasOne(t => t.League).WithMany(l => l.Teams).HasForeignKey(t => t.LeagueId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<LeagueTeam>()
+            .HasOne(t => t.Team).WithMany().HasForeignKey(t => t.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<LeagueTeam>().HasIndex(t => new { t.LeagueId, t.TeamId });
+
+        // Two FKs to LeagueTeam — Restrict to avoid multiple cascade paths; League cascade
+        // deletes the matches directly.
+        builder.Entity<LeagueMatch>()
+            .HasOne(m => m.League).WithMany(l => l.Matches).HasForeignKey(m => m.LeagueId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<LeagueMatch>()
+            .HasOne(m => m.HomeTeam).WithMany().HasForeignKey(m => m.HomeTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<LeagueMatch>()
+            .HasOne(m => m.AwayTeam).WithMany().HasForeignKey(m => m.AwayTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<LeagueMatch>().HasIndex(m => m.LeagueId);
+
+        builder.Entity<LeagueStanding>()
+            .HasOne(s => s.League).WithMany(l => l.Standings).HasForeignKey(s => s.LeagueId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<LeagueStanding>()
+            .HasOne(s => s.LeagueTeam).WithMany().HasForeignKey(s => s.LeagueTeamId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<LeagueStanding>().HasIndex(s => new { s.LeagueId, s.LeagueTeamId }).IsUnique();
 
         builder.Entity<Drill>()
             .HasIndex(d => d.CoachId);
