@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, AlertTriangle, CheckSquare, CalendarDays, Check, MessageSquare, UserPlus } from 'lucide-react';
+import { Bell, AlertTriangle, CheckSquare, CalendarDays, Check, MessageSquare, UserPlus, Handshake } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useNotifications, type NotificationKind } from '../../hooks/useNotifications';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
@@ -10,6 +10,7 @@ const KIND_ICON: Record<NotificationKind, typeof Bell> = {
   injury: AlertTriangle,
   session: CalendarDays,
   join: UserPlus,
+  connection: Handshake,
 };
 
 const SEV_STYLES = {

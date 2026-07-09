@@ -75,6 +75,7 @@ export const AthleteNotesPage = named(() => import('../pages/notes/AthleteNotesP
 export const PublicProfilePage = named(() => import('../pages/public/PublicProfilePage'), 'PublicProfilePage');
 export const CoachPublicProfilePage = named(() => import('../pages/public/CoachPublicProfilePage'), 'CoachPublicProfilePage');
 export const CoachMarketplacePage = named(() => import('../pages/public/CoachMarketplacePage'), 'CoachMarketplacePage');
+export const ConnectionRequestsPage = named(() => import('../pages/coaches/ConnectionRequestsPage'), 'ConnectionRequestsPage');
 // Drill & exercise library (coach / solo / team-athlete browse).
 export const DrillLibraryPage = named(() => import('../pages/drills/DrillLibraryPage'), 'DrillLibraryPage');
 

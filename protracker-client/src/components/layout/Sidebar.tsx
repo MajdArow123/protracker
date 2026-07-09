@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
-  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen,
+  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -28,6 +28,7 @@ const coachNav: NavItem[] = [
   { to: '/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/drills', label: 'Drill Library', icon: Library },
   { to: '/messages', label: 'Messages', icon: MessageSquare },
+  { to: '/coach/connection-requests', label: 'Requests', icon: Handshake },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/settings/billing', label: 'Billing', icon: CreditCard },
 ];

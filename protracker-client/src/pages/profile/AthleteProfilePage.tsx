@@ -16,6 +16,7 @@ import { EditableAvatar } from '../../components/profile/ProfileAvatar';
 import { ProfileCompletionCard } from '../../components/profile/ProfileCompletionCard';
 import { AccountSettingsSection } from '../../components/profile/AccountSettingsSection';
 import { PublicProfileSettingsSection } from '../../components/profile/PublicProfileSettingsSection';
+import { MyConnectionRequestsSection } from '../../components/coaches/MyConnectionRequestsSection';
 import { computeProfileCompletion } from '../../utils/profileCompletion';
 import { ConnectCoachModal } from '../../components/solo/ConnectCoachModal';
 import {
@@ -513,6 +514,11 @@ export function AthleteProfilePage() {
             </div>
           </motion.div>
         )}
+
+        {/* ── My coach connection requests ── */}
+        <motion.div custom={5.5} initial="hidden" animate="show" variants={fadeUp}>
+          <MyConnectionRequestsSection />
+        </motion.div>
 
         {/* ── Public profile / sharing ── */}
         <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>

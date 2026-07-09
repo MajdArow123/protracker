@@ -798,6 +798,44 @@ export interface CoachPublicProfileView {
   averageTeamScore?: number | null;
 }
 
+export type ConnectionRequestStatus = 'Pending' | 'Accepted' | 'Declined' | 'Withdrawn';
+
+// Coach's view of an incoming request.
+export interface ConnectionRequest {
+  id: number;
+  coachUserId: string;
+  coachName: string;
+  athleteUserId: string;
+  athleteName: string;
+  athletePlayerId?: number | null;
+  message?: string | null;
+  sportId?: number | null;
+  sportName?: string | null;
+  status: ConnectionRequestStatus;
+  coachNote?: string | null;
+  resultJoinCode?: string | null;
+  requestedAt: string;
+  respondedAt?: string | null;
+}
+
+// Athlete's view of a request they sent.
+export interface MyConnectionRequest {
+  id: number;
+  coachName: string;
+  coachSlug?: string | null;
+  message?: string | null;
+  sportName?: string | null;
+  status: ConnectionRequestStatus;
+  resultJoinCode?: string | null;
+  requestedAt: string;
+  respondedAt?: string | null;
+}
+
+export interface SendConnectionRequestInput {
+  message?: string | null;
+  sport?: number | null;
+}
+
 export interface CoachMarketplaceQuery {
   sport?: number | null;
   city?: string;

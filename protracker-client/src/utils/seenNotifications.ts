@@ -70,3 +70,7 @@ export const injuryKey = (id: number, severity: string) => `injury_${id}_${sever
 export const sessionKey = (id: number) => `session_${id}_${todayStr()}`;
 // A new athlete joining via code is announced once → stable per player.
 export const joinedKey = (playerId: number) => `joined_${playerId}`;
+// Coach: a pending connection request is announced once per request → stable per id.
+export const connReqKey = (id: number) => `connreq_${id}`;
+// Athlete: a request's resolution (accepted/declined) is announced once per outcome.
+export const connRespKey = (id: number, status: string) => `connresp_${id}_${status}`;

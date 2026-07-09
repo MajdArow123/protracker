@@ -4,9 +4,10 @@ import { useCoachTasks, useMyTasks } from './useTasks';
 import { useActiveInjuries } from './useInjuries';
 import { useMySessions } from './useSessions';
 import { usePlayers } from './usePlayers';
-import { isSeen, markSeen, useSeenVersion, overdueTaskKey, myTaskKey, injuryKey, sessionKey, joinedKey } from '../utils/seenNotifications';
+import { useIncomingRequests, useMyRequests } from './useConnections';
+import { isSeen, markSeen, useSeenVersion, overdueTaskKey, myTaskKey, injuryKey, sessionKey, joinedKey, connReqKey, connRespKey } from '../utils/seenNotifications';
 
-export type NotificationKind = 'task' | 'injury' | 'session' | 'join';
+export type NotificationKind = 'task' | 'injury' | 'session' | 'join' | 'connection';
 export type NotificationSeverity = 'high' | 'medium' | 'low';
 
 export interface NotificationItem {
@@ -49,6 +50,8 @@ export function useNotifications(): NotificationSummary {
   const { data: players = [] } = usePlayers(isCoach);
   const { data: myTasks = [] } = useMyTasks(isAthlete || isSolo);
   const { data: mySessions = [] } = useMySessions(isAthlete || isSolo);
+  const { data: incomingRequests = [] } = useIncomingRequests('Pending', isCoach);
+  const { data: myRequests = [] } = useMyRequests(isAthlete || isSolo);
 
   return useMemo<NotificationSummary>(() => {
     const raw: NotificationItem[] = [];
@@ -87,6 +90,18 @@ export function useNotifications(): NotificationSummary {
         to: '/players',
         timestamp: new Date(inj.injuryDate).getTime(),
       }));
+
+      // Pending marketplace connection requests.
+      incomingRequests.forEach(r => raw.push({
+        id: `connreq-${r.id}`,
+        seenKey: connReqKey(r.id),
+        kind: 'connection',
+        title: 'New connection request',
+        detail: `${r.athleteName} wants to connect${r.sportName ? ` · ${r.sportName}` : ''}`,
+        severity: 'medium',
+        to: '/coach/connection-requests',
+        timestamp: new Date(r.requestedAt).getTime(),
+      }));
     }
 
     if (isAthlete || isSolo) {
@@ -117,6 +132,20 @@ export function useNotifications(): NotificationSummary {
         to: isSolo ? '/solo-dashboard' : '/player-dashboard',
         timestamp: new Date(s.startTime).getTime(),
       }));
+
+      // Coach responses to my connection requests (accepted / declined).
+      myRequests.filter(r => r.status === 'Accepted' || r.status === 'Declined').forEach(r => raw.push({
+        id: `connresp-${r.id}`,
+        seenKey: connRespKey(r.id, r.status),
+        kind: 'connection',
+        title: r.status === 'Accepted' ? 'Connection accepted' : 'Connection update',
+        detail: r.status === 'Accepted'
+          ? `${r.coachName} accepted your request${r.resultJoinCode ? ` · code ${r.resultJoinCode}` : ''}`
+          : `${r.coachName} responded to your request`,
+        severity: r.status === 'Accepted' ? 'medium' : 'low',
+        to: isSolo ? '/solo/profile' : '/player-dashboard/profile',
+        timestamp: r.respondedAt ? new Date(r.respondedAt).getTime() : new Date(r.requestedAt).getTime(),
+      }));
     }
 
     // Hide anything already seen/dismissed.
@@ -128,12 +157,12 @@ export function useNotifications(): NotificationSummary {
     // Badges count only unseen items, keyed by nav path.
     const badges: Record<string, number> = {};
     for (const i of items) {
-      if (i.kind === 'task') badges[i.to] = (badges[i.to] ?? 0) + 1;
+      if (i.kind === 'task' || i.kind === 'connection') badges[i.to] = (badges[i.to] ?? 0) + 1;
     }
 
     const markAllSeen = () => markSeen(items.map(i => i.seenKey));
 
     return { items, count: items.length, badges, markAllSeen };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isCoach, isAthlete, isSolo, coachTasks, activeInjuries, players, myTasks, mySessions, seenVersion]);
+  }, [isCoach, isAthlete, isSolo, coachTasks, activeInjuries, players, myTasks, mySessions, incomingRequests, myRequests, seenVersion]);
 }

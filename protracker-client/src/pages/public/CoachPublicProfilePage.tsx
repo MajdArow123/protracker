@@ -6,6 +6,8 @@ import {
   CheckCircle2, ArrowLeft, GraduationCap,
 } from 'lucide-react';
 import { useCoachPublicView } from '../../hooks/useCoachMarketplace';
+import { useAuth } from '../../context/AuthContext';
+import { RequestConnectionModal } from '../../components/coaches/RequestConnectionModal';
 import { Spinner } from '../../components/ui/Spinner';
 import { sportGradient } from '../../utils/sportColors';
 
@@ -16,7 +18,11 @@ function initials(name: string) {
 export function CoachPublicProfilePage() {
   const { slug } = useParams<{ slug: string }>();
   const { data, isLoading, isError } = useCoachPublicView(slug);
+  const { user } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [requestOpen, setRequestOpen] = useState(false);
+
+  const canRequest = user?.role === 'Athlete' || user?.role === 'SoloAthlete';
 
   async function share() {
     const url = window.location.href;
@@ -147,13 +153,23 @@ export function CoachPublicProfilePage() {
         {/* Contact / connect */}
         <div className="rounded-2xl bg-white/[0.04] border border-white/10 p-5 sm:p-6 mb-6">
           <h2 className="text-sm font-bold text-white uppercase tracking-wide mb-3">Connect with {data.displayName.split(' ')[0]}</h2>
-          {/* Section 3 wires this to the real connection-request flow. */}
-          <Link
-            to={`/login?redirect=/coaches/${data.slug}`}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold"
-          >
-            Send connection request <ArrowRight size={15} />
-          </Link>
+          {canRequest ? (
+            <button
+              onClick={() => setRequestOpen(true)}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold cursor-pointer"
+            >
+              Send connection request <ArrowRight size={15} />
+            </button>
+          ) : user ? (
+            <p className="text-sm text-gray-400">Sign in as an athlete to send a connection request.</p>
+          ) : (
+            <Link
+              to={`/login?redirect=/coaches/${data.slug}`}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold"
+            >
+              Sign in to connect <ArrowRight size={15} />
+            </Link>
+          )}
           {data.contactEmail && (
             <a href={`mailto:${data.contactEmail}`} className="flex items-center gap-2 mt-4 text-sm text-indigo-300 hover:text-indigo-200">
               <Mail size={15} /> {data.contactEmail}
@@ -170,6 +186,14 @@ export function CoachPublicProfilePage() {
           </Link>
         </div>
       </div>
+
+      <RequestConnectionModal
+        slug={data.slug}
+        coachName={data.displayName}
+        sportName={data.sportName}
+        isOpen={requestOpen}
+        onClose={() => setRequestOpen(false)}
+      />
     </div>
   );
 }

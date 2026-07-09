@@ -58,6 +58,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<PublicProfile> PublicProfiles => Set<PublicProfile>();
     public DbSet<CoachPublicProfile> CoachPublicProfiles => Set<CoachPublicProfile>();
+    public DbSet<CoachConnectionRequest> CoachConnectionRequests => Set<CoachConnectionRequest>();
     public DbSet<Drill> Drills => Set<Drill>();
     public DbSet<DrillFavorite> DrillFavorites => Set<DrillFavorite>();
     public DbSet<AssessmentTemplate> AssessmentTemplates => Set<AssessmentTemplate>();
@@ -543,6 +544,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .IsUnique();
         builder.Entity<CoachPublicProfile>()
             .HasIndex(p => p.SportId);
+
+        // --- Coach connection requests ---
+        builder.Entity<CoachConnectionRequest>()
+            .HasIndex(r => new { r.CoachUserId, r.Status });
+        builder.Entity<CoachConnectionRequest>()
+            .HasIndex(r => new { r.AthleteUserId, r.RequestedAt });
 
         builder.Entity<Drill>()
             .HasIndex(d => d.CoachId);
