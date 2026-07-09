@@ -54,6 +54,8 @@ public class CoachMarketplaceItemDto
     public bool IsAcceptingAthletes { get; set; }
     public int TeamCount { get; set; }
     public int PlayerCount { get; set; }
+    public double? AverageRating { get; set; }
+    public int ReviewCount { get; set; }
 }
 
 // The full public coach profile at /api/coaches/{slug}.
@@ -77,4 +79,6 @@ public class CoachPublicProfileDto
     public int TeamCount { get; set; }
     public int PlayerCount { get; set; }
     public double? AverageTeamScore { get; set; }
+    public double? AverageRating { get; set; }
+    public int ReviewCount { get; set; }
 }

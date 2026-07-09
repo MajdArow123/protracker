@@ -8,6 +8,7 @@ import {
 import { useCoachPublicView } from '../../hooks/useCoachMarketplace';
 import { useAuth } from '../../context/AuthContext';
 import { RequestConnectionModal } from '../../components/coaches/RequestConnectionModal';
+import { CoachReviewsSection } from '../../components/coaches/CoachReviewsSection';
 import { Spinner } from '../../components/ui/Spinner';
 import { sportGradient } from '../../utils/sportColors';
 
@@ -101,6 +102,11 @@ export function CoachPublicProfilePage() {
                 {data.yearsCoaching != null && (
                   <span className="px-2.5 py-1 rounded-full bg-white/15 text-white text-xs font-semibold">{data.yearsCoaching} yrs coaching</span>
                 )}
+                {data.reviewCount > 0 && data.averageRating != null && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 text-white text-xs font-bold">
+                    <Star size={12} className="fill-amber-300 text-amber-300" /> {data.averageRating.toFixed(1)} ({data.reviewCount})
+                  </span>
+                )}
               </div>
               <div className="mt-3">
                 {data.isAcceptingAthletes ? (
@@ -176,6 +182,9 @@ export function CoachPublicProfilePage() {
             </a>
           )}
         </div>
+
+        {/* Reviews */}
+        <CoachReviewsSection slug={data.slug} coachName={data.displayName} sportId={data.sportId} />
 
         {/* Join CTA */}
         <div className="rounded-2xl bg-gradient-to-r from-indigo-600/20 to-violet-600/20 border border-indigo-500/20 p-6 text-center">

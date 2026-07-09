@@ -28,6 +28,7 @@ export function CoachMarketplacePage() {
   const [country, setCountry] = useState('');
   const [accepting, setAccepting] = useState(false);
   const [yearIdx, setYearIdx] = useState(0);
+  const [sort, setSort] = useState<'default' | 'rated'>('default');
   const [mobileFilters, setMobileFilters] = useState(false);
 
   const bucket = YEAR_BUCKETS[yearIdx];
@@ -35,7 +36,8 @@ export function CoachMarketplacePage() {
     sport, search: search.trim() || undefined, city: city.trim() || undefined,
     country: country.trim() || undefined, accepting: accepting || undefined,
     minYears: bucket.min ?? null, maxYears: bucket.max ?? null,
-  }), [sport, search, city, country, accepting, bucket]);
+    sort: sort === 'rated' ? 'rated' : undefined,
+  }), [sort, sport, search, city, country, accepting, bucket]);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useCoachMarketplaceInfinite(filters);
 
@@ -165,9 +167,19 @@ export function CoachMarketplacePage() {
 
           {/* Results */}
           <div className="flex-1 min-w-0">
-            <p className="hidden lg:block text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {isLoading ? 'Loading…' : `Showing ${items.length} of ${total} coach${total === 1 ? '' : 'es'}`}
-            </p>
+            <div className="hidden lg:flex items-center justify-between mb-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {isLoading ? 'Loading…' : `Showing ${items.length} of ${total} coach${total === 1 ? '' : 'es'}`}
+              </p>
+              <select
+                value={sort}
+                onChange={e => setSort(e.target.value as 'default' | 'rated')}
+                className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="default">Recommended</option>
+                <option value="rated">Highest rated</option>
+              </select>
+            </div>
 
             {isLoading ? (
               <div className="py-20 flex justify-center"><Spinner /></div>

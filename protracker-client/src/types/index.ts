@@ -777,6 +777,38 @@ export interface CoachMarketplaceItem {
   isAcceptingAthletes: boolean;
   teamCount: number;
   playerCount: number;
+  averageRating?: number | null;
+  reviewCount: number;
+}
+
+export interface CoachReview {
+  id: number;
+  reviewerName: string;
+  rating: number;
+  title?: string | null;
+  content?: string | null;
+  sportId?: number | null;
+  sportName?: string | null;
+  isVerified: boolean;
+  coachResponse?: string | null;
+  createdAt: string;
+  isMine: boolean;
+}
+
+export interface CoachReviewsResponse {
+  averageRating?: number | null;
+  reviewCount: number;
+  distribution: Record<string, number>;
+  reviews: CoachReview[];
+  hasReviewed: boolean;
+  isOwner: boolean;
+}
+
+export interface SubmitCoachReviewInput {
+  rating: number;
+  title?: string | null;
+  content?: string | null;
+  sport?: number | null;
 }
 
 export interface CoachPublicProfileView {
@@ -796,6 +828,8 @@ export interface CoachPublicProfileView {
   teamCount: number;
   playerCount: number;
   averageTeamScore?: number | null;
+  averageRating?: number | null;
+  reviewCount: number;
 }
 
 export type ConnectionRequestStatus = 'Pending' | 'Accepted' | 'Declined' | 'Withdrawn';

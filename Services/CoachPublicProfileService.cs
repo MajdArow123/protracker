@@ -37,11 +37,13 @@ public class CoachPublicProfileService : ICoachPublicProfileService
 
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ICoachReviewService _reviews;
 
-    public CoachPublicProfileService(ApplicationDbContext context, IAccessControlService access)
+    public CoachPublicProfileService(ApplicationDbContext context, IAccessControlService access, ICoachReviewService reviews)
     {
         _context = context;
         _access = access;
+        _reviews = reviews;
     }
 
     public async Task<CoachPublicProfileSettingsDto> GetSettingsAsync(ClaimsPrincipal user)
@@ -109,6 +111,7 @@ public class CoachPublicProfileService : ICoachPublicProfileService
             .ToDictionaryAsync(u => u.Id, u => u);
 
         var search = query.Search?.Trim().ToLowerInvariant();
+        var ratings = await _reviews.GetRatingsAsync(profiles.Select(p => p.CoachUserId));
         var items = new List<CoachMarketplaceItemDto>();
         foreach (var p in profiles)
         {
@@ -120,6 +123,7 @@ public class CoachPublicProfileService : ICoachPublicProfileService
                 continue;
 
             var stats = await ComputeStatsAsync(p.CoachUserId);
+            var rating = ratings.TryGetValue(p.CoachUserId, out var rc) ? rc : (Avg: (double?)null, Count: 0);
             items.Add(new CoachMarketplaceItemDto
             {
                 Slug = p.Slug,
@@ -134,15 +138,20 @@ public class CoachPublicProfileService : ICoachPublicProfileService
                 IsAcceptingAthletes = p.IsAcceptingAthletes,
                 TeamCount = stats.TeamCount,
                 PlayerCount = stats.PlayerCount,
+                AverageRating = rating.Avg,
+                ReviewCount = rating.Count,
             });
         }
 
-        // Accepting-athletes first, then most experienced, then name.
-        var ordered = items
-            .OrderByDescending(i => i.IsAcceptingAthletes)
-            .ThenByDescending(i => i.YearsCoaching ?? 0)
-            .ThenBy(i => i.DisplayName)
-            .ToList();
+        // "rated" = highest average rating first; default = accepting-athletes first, then
+        // most experienced, then name.
+        var ordered = query.Sort == "rated"
+            ? items.OrderByDescending(i => i.AverageRating ?? -1).ThenByDescending(i => i.ReviewCount).ThenBy(i => i.DisplayName).ToList()
+            : items
+                .OrderByDescending(i => i.IsAcceptingAthletes)
+                .ThenByDescending(i => i.YearsCoaching ?? 0)
+                .ThenBy(i => i.DisplayName)
+                .ToList();
 
         var page = Math.Max(1, query.Page);
         var total = ordered.Count;
@@ -171,6 +180,8 @@ public class CoachPublicProfileService : ICoachPublicProfileService
             ?? throw new NotFoundApiException("This coach profile is not available.");
 
         var stats = await ComputeStatsAsync(profile.CoachUserId);
+        var ratings = await _reviews.GetRatingsAsync(new[] { profile.CoachUserId });
+        var rating = ratings.TryGetValue(profile.CoachUserId, out var rc) ? rc : (Avg: (double?)null, Count: 0);
 
         return new CoachPublicProfileDto
         {
@@ -190,6 +201,8 @@ public class CoachPublicProfileService : ICoachPublicProfileService
             TeamCount = stats.TeamCount,
             PlayerCount = stats.PlayerCount,
             AverageTeamScore = stats.AverageTeamScore,
+            AverageRating = rating.Avg,
+            ReviewCount = rating.Count,
         };
     }
 

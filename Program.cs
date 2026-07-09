@@ -185,6 +185,7 @@ builder.Services.AddScoped<IJournalService, JournalService>();
 builder.Services.AddScoped<IPublicProfileService, PublicProfileService>();
 builder.Services.AddScoped<ICoachPublicProfileService, CoachPublicProfileService>();
 builder.Services.AddScoped<ICoachConnectionService, CoachConnectionService>();
+builder.Services.AddScoped<ICoachReviewService, CoachReviewService>();
 builder.Services.AddScoped<IDrillService, DrillService>();
 builder.Services.AddScoped<IAssessmentTemplateService, AssessmentTemplateService>();
 builder.Services.AddScoped<ITeamCoachService, TeamCoachService>();

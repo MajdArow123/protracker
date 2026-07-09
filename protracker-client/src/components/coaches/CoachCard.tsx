@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { clsx } from 'clsx';
-import { MapPin, Users, Shield, ArrowRight } from 'lucide-react';
+import { MapPin, Users, Shield, ArrowRight, Star } from 'lucide-react';
 import { sportBadge } from '../../utils/sportColors';
 import type { CoachMarketplaceItem } from '../../types';
 
@@ -56,6 +56,11 @@ export function CoachCard({ coach }: { coach: CoachMarketplaceItem }) {
       <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
         <span className="flex items-center gap-1"><Shield size={12} /> {coach.teamCount} teams</span>
         <span className="flex items-center gap-1"><Users size={12} /> {coach.playerCount} athletes</span>
+        {coach.reviewCount > 0 && coach.averageRating != null && (
+          <span className="flex items-center gap-1 ml-auto text-amber-500 font-semibold">
+            <Star size={12} className="fill-amber-400 text-amber-400" /> {coach.averageRating.toFixed(1)} ({coach.reviewCount})
+          </span>
+        )}
       </div>
 
       <div className="mt-4 flex items-center justify-end">
