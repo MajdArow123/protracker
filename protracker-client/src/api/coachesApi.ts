@@ -11,6 +11,9 @@ function buildQuery(q: CoachMarketplaceQuery): string {
   if (q.country) p.set('country', q.country);
   if (q.accepting) p.set('accepting', 'true');
   if (q.search) p.set('search', q.search);
+  if (q.minYears != null) p.set('minYears', String(q.minYears));
+  if (q.maxYears != null) p.set('maxYears', String(q.maxYears));
+  if (q.sort) p.set('sort', q.sort);
   if (q.page && q.page > 1) p.set('page', String(q.page));
   const s = p.toString();
   return s ? `?${s}` : '';

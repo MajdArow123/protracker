@@ -6,9 +6,11 @@ import {
   Activity, BarChart3, Brain, Salad, ShieldAlert,
   Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
   Target, Heart, CheckCircle, Circle, CheckSquare, MessageSquare,
-  CalendarDays, HeartPulse, Code2, Globe, Shield, User, UsersRound,
+  CalendarDays, HeartPulse, Code2, Globe, Shield, User, UsersRound, Search,
 } from 'lucide-react';
 import { CountUp } from '../components/ui/CountUp';
+import { useSports } from '../hooks/useSports';
+import { sportBadge } from '../utils/sportColors';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -140,6 +142,7 @@ const TESTIMONIALS = [
 export function LandingPage() {
   const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
+  const { data: sports = [] } = useSports();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -175,6 +178,12 @@ export function LandingPage() {
               {l.label}
             </button>
           ))}
+          <button
+            onClick={() => navigate('/coaches')}
+            className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
+          >
+            Find a Coach
+          </button>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -577,6 +586,39 @@ export function LandingPage() {
           <p className="text-center text-sm text-gray-500 mt-10">
             Built by <a href="https://github.com/MajdArow123" target="_blank" rel="noopener noreferrer" className="text-gray-300 font-semibold hover:text-indigo-400 transition-colors">Majd Arow</a>
           </p>
+        </div>
+      </section>
+
+      {/* Find a Coach */}
+      <section className="py-24 bg-gray-900/30">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-4">
+              <Search size={13} /> Coach Marketplace
+            </div>
+            <h2 className="text-4xl font-black tracking-tight mb-4">Find your perfect coach</h2>
+            <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto">
+              Browse verified coaches across 5 sports and connect with someone who matches your goals.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2.5 mb-8">
+              {sports.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => navigate(`/coaches?sport=${s.id}`)}
+                  className={clsx('px-4 py-2 rounded-full text-sm font-semibold transition-transform hover:scale-105 cursor-pointer', sportBadge(s.name))}
+                >
+                  {s.name}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => navigate('/coaches')}
+              className="group inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all hover:shadow-2xl hover:shadow-indigo-500/30 cursor-pointer"
+            >
+              Browse All Coaches
+              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </motion.div>
         </div>
       </section>
 

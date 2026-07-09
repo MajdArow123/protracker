@@ -1,4 +1,6 @@
-import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
+import {
+  useQuery, useMutation, useQueryClient, keepPreviousData, useInfiniteQuery,
+} from '@tanstack/react-query';
 import { coachesApi } from '../api/coachesApi';
 import type { CoachMarketplaceQuery, UpdateCoachPublicProfileInput } from '../types';
 
@@ -19,12 +21,23 @@ export function useUpdateCoachPublicProfile() {
   });
 }
 
-// Public marketplace listing (paginated, filter-aware).
+// Public marketplace listing (single page, filter-aware).
 export function useCoachMarketplace(query: CoachMarketplaceQuery) {
   return useQuery({
     queryKey: ['coachMarketplace', query],
     queryFn: () => coachesApi.list(query),
     placeholderData: keepPreviousData,
+  });
+}
+
+// Infinite ("Load more") marketplace listing. The page param lives outside the key so
+// changing any filter starts a fresh accumulation.
+export function useCoachMarketplaceInfinite(filters: Omit<CoachMarketplaceQuery, 'page'>) {
+  return useInfiniteQuery({
+    queryKey: ['coachMarketplace', 'infinite', filters],
+    queryFn: ({ pageParam }) => coachesApi.list({ ...filters, page: pageParam }),
+    initialPageParam: 1,
+    getNextPageParam: (last) => (last.page < last.totalPages ? last.page + 1 : undefined),
   });
 }
 

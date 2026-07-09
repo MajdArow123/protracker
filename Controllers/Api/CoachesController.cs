@@ -24,10 +24,13 @@ public class CoachesController : ApiControllerBase
     [EnableRateLimiting("join-validate")]
     public async Task<ActionResult> List(
         [FromQuery] int? sport, [FromQuery] string? city, [FromQuery] string? country,
-        [FromQuery] bool? accepting, [FromQuery] string? search, [FromQuery] int page = 1)
+        [FromQuery] bool? accepting, [FromQuery] string? search,
+        [FromQuery] int? minYears, [FromQuery] int? maxYears, [FromQuery] string? sort,
+        [FromQuery] int page = 1)
         => Success(await _service.ListAsync(new CoachMarketplaceQuery
         {
-            Sport = sport, City = city, Country = country, Accepting = accepting, Search = search, Page = page,
+            Sport = sport, City = city, Country = country, Accepting = accepting, Search = search,
+            MinYears = minYears, MaxYears = maxYears, Sort = sort, Page = page,
         }));
 
     // Public coach profile by slug. No auth. 404 for missing OR non-public slugs.

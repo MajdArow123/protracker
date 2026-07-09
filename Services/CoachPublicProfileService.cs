@@ -24,6 +24,10 @@ public class CoachMarketplaceQuery
     public string? Country { get; set; }
     public bool? Accepting { get; set; }
     public string? Search { get; set; }
+    // Inclusive years-of-experience band (either bound optional).
+    public int? MinYears { get; set; }
+    public int? MaxYears { get; set; }
+    public string? Sort { get; set; } // "experience" (default) | "rated" (Section 4)
     public int Page { get; set; } = 1;
 }
 
@@ -93,6 +97,8 @@ public class CoachPublicProfileService : ICoachPublicProfileService
             q = q.Where(p => p.Country != null && p.Country.ToLower().Contains(country));
         }
         if (query.Accepting == true) q = q.Where(p => p.IsAcceptingAthletes);
+        if (query.MinYears is int min) q = q.Where(p => p.YearsCoaching != null && p.YearsCoaching >= min);
+        if (query.MaxYears is int max) q = q.Where(p => p.YearsCoaching != null && p.YearsCoaching <= max);
 
         var profiles = await q.ToListAsync();
 

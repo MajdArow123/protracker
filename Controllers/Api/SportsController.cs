@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProTracker.Services;
 
 namespace ProTracker.Controllers.Api;
 
-// Reference data — any authenticated user (coach or athlete) can read it.
+// Reference data. The sport list is public (the coach marketplace + landing page need it
+// without a login); the rest requires auth via the base controller's [Authorize].
 public class SportsController : ApiControllerBase
 {
     private readonly ISportService _sportService;
@@ -14,6 +16,7 @@ public class SportsController : ApiControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult> GetAll() => Success(await _sportService.GetAllAsync());
 
     [HttpGet("{id}")]

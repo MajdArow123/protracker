@@ -804,6 +804,9 @@ export interface CoachMarketplaceQuery {
   country?: string;
   accepting?: boolean;
   search?: string;
+  minYears?: number | null;
+  maxYears?: number | null;
+  sort?: string;
   page?: number;
 }
 
