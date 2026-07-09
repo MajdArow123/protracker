@@ -29,7 +29,7 @@ import {
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
-  GoalsPage, JournalPage, AthleteNotesPage, PublicProfilePage, DrillLibraryPage,
+  GoalsPage, JournalPage, AthleteNotesPage, PublicProfilePage, CoachPublicProfilePage, DrillLibraryPage,
 } from './routes/lazyPages';
 
 const queryClient = new QueryClient({
@@ -64,6 +64,7 @@ function AppRoutes() {
       <Route path="/coach-invite/:token" element={<CoachInviteAcceptPage />} />
       {/* Public shareable athlete profile — no auth required. */}
       <Route path="/player/:slug" element={<PublicProfilePage />} />
+      <Route path="/coaches/:slug" element={<CoachPublicProfilePage />} />
       <Route path="/" element={<RootRedirect />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>

@@ -73,6 +73,7 @@ export const JournalPage = named(() => import('../pages/journal/JournalPage'), '
 export const AthleteNotesPage = named(() => import('../pages/notes/AthleteNotesPage'), 'AthleteNotesPage');
 // Public shareable athlete profile (no auth).
 export const PublicProfilePage = named(() => import('../pages/public/PublicProfilePage'), 'PublicProfilePage');
+export const CoachPublicProfilePage = named(() => import('../pages/public/CoachPublicProfilePage'), 'CoachPublicProfilePage');
 // Drill & exercise library (coach / solo / team-athlete browse).
 export const DrillLibraryPage = named(() => import('../pages/drills/DrillLibraryPage'), 'DrillLibraryPage');
 

@@ -730,6 +730,83 @@ export interface PublicProfileSettings {
   showMatchHistory: boolean;
 }
 
+// ── Coach marketplace (Phase E) ──────────────────────────────────────────────
+export interface CoachPublicProfileSettings {
+  slug: string;
+  displayName: string;
+  profilePictureUrl?: string | null;
+  bio?: string | null;
+  sportId?: number | null;
+  sportName?: string | null;
+  city?: string | null;
+  country?: string | null;
+  yearsCoaching?: number | null;
+  certifications?: string | null;
+  specialization?: string | null;
+  isAcceptingAthletes: boolean;
+  contactEmail?: string | null;
+  isPublic: boolean;
+  teamCount: number;
+  playerCount: number;
+  averageTeamScore?: number | null;
+}
+
+export interface UpdateCoachPublicProfileInput {
+  bio?: string | null;
+  sportId?: number | null;
+  city?: string | null;
+  country?: string | null;
+  yearsCoaching?: number | null;
+  certifications?: string | null;
+  specialization?: string | null;
+  isAcceptingAthletes: boolean;
+  contactEmail?: string | null;
+  isPublic: boolean;
+}
+
+export interface CoachMarketplaceItem {
+  slug: string;
+  displayName: string;
+  profilePictureUrl?: string | null;
+  sportId?: number | null;
+  sportName?: string | null;
+  city?: string | null;
+  country?: string | null;
+  yearsCoaching?: number | null;
+  specialization?: string | null;
+  isAcceptingAthletes: boolean;
+  teamCount: number;
+  playerCount: number;
+}
+
+export interface CoachPublicProfileView {
+  slug: string;
+  displayName: string;
+  profilePictureUrl?: string | null;
+  sportId?: number | null;
+  sportName?: string | null;
+  bio?: string | null;
+  city?: string | null;
+  country?: string | null;
+  yearsCoaching?: number | null;
+  certifications?: string | null;
+  specialization?: string | null;
+  isAcceptingAthletes: boolean;
+  contactEmail?: string | null;
+  teamCount: number;
+  playerCount: number;
+  averageTeamScore?: number | null;
+}
+
+export interface CoachMarketplaceQuery {
+  sport?: number | null;
+  city?: string;
+  country?: string;
+  accepting?: boolean;
+  search?: string;
+  page?: number;
+}
+
 export interface PublicRadarPoint {
   category: string;
   value: number;

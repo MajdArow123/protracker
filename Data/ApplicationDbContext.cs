@@ -57,6 +57,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<GoalProgress> GoalProgress => Set<GoalProgress>();
     public DbSet<JournalEntry> JournalEntries => Set<JournalEntry>();
     public DbSet<PublicProfile> PublicProfiles => Set<PublicProfile>();
+    public DbSet<CoachPublicProfile> CoachPublicProfiles => Set<CoachPublicProfile>();
     public DbSet<Drill> Drills => Set<Drill>();
     public DbSet<DrillFavorite> DrillFavorites => Set<DrillFavorite>();
     public DbSet<AssessmentTemplate> AssessmentTemplates => Set<AssessmentTemplate>();
@@ -527,6 +528,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<PublicProfile>()
             .HasIndex(p => p.Slug)
             .IsUnique();
+
+        // --- Coach public marketplace profile ---
+        builder.Entity<CoachPublicProfile>()
+            .HasOne(p => p.Sport)
+            .WithMany()
+            .HasForeignKey(p => p.SportId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<CoachPublicProfile>()
+            .HasIndex(p => p.CoachUserId)
+            .IsUnique();
+        builder.Entity<CoachPublicProfile>()
+            .HasIndex(p => p.Slug)
+            .IsUnique();
+        builder.Entity<CoachPublicProfile>()
+            .HasIndex(p => p.SportId);
 
         builder.Entity<Drill>()
             .HasIndex(d => d.CoachId);

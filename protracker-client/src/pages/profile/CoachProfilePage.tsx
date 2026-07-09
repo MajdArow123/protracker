@@ -12,6 +12,7 @@ import { DetailSkeleton } from '../../components/ui/Skeleton';
 import { EditableAvatar } from '../../components/profile/ProfileAvatar';
 import { ProfileCompletionCard } from '../../components/profile/ProfileCompletionCard';
 import { AccountSettingsSection } from '../../components/profile/AccountSettingsSection';
+import { CoachPublicProfileSection } from '../../components/profile/CoachPublicProfileSection';
 import { computeProfileCompletion } from '../../utils/profileCompletion';
 
 const fadeUp: Variants = {
@@ -312,6 +313,11 @@ export function CoachProfilePage() {
             </div>
           </motion.div>
         ) : null}
+
+        {/* ── Public coaching profile (marketplace) ── */}
+        <motion.div custom={5.5} initial="hidden" animate="show" variants={fadeUp}>
+          <CoachPublicProfileSection />
+        </motion.div>
 
         {/* ── Account settings ── */}
         <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>
