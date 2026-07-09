@@ -193,12 +193,12 @@
   },
   "landing": {
     "hero": {
-      "title": "Train Smarter.",
-      "subtitle": "Perform Better.",
-      "description": "The professional platform for coaches and athletes",
+      "badge": "Professional Sports Performance Platform",
+      "titleLine1": "Track. Analyze.",
+      "titleLine2": "Dominate.",
+      "description": "The professional sports analytics platform for coaches, team athletes, and solo athletes. AI-powered insights, real-time tracking, and data-driven performance management.",
       "getStarted": "Get Started Free",
       "findCoach": "Find a Coach",
-      "watchDemo": "Watch Demo",
       "signIn": "Sign In"
     },
     "features": {
@@ -207,14 +207,23 @@
     },
     "roles": {
       "coach": "I'm a Coach",
+      "coachCta": "Get Started as Coach",
       "teamAthlete": "I'm on a Team",
-      "soloAthlete": "I Train Solo"
+      "teamCta": "Join My Team",
+      "soloAthlete": "I Train Solo",
+      "soloCta": "Start Solo Training"
+    },
+    "findCoach": {
+      "title": "Find your perfect coach",
+      "subtitle": "Browse verified coaches across 5 sports and connect with someone who matches your goals.",
+      "browseAll": "Browse All Coaches"
     },
     "nav": {
       "features": "Features",
       "about": "About",
       "contact": "Contact",
-      "findACoach": "Find a Coach"
+      "findACoach": "Find a Coach",
+      "getStarted": "Get Started"
     }
   }
 }

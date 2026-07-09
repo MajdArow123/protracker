@@ -8,9 +8,11 @@ import {
   Target, Heart, CheckCircle, Circle, CheckSquare, MessageSquare,
   CalendarDays, HeartPulse, Code2, Globe, Shield, User, UsersRound, Search,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { CountUp } from '../components/ui/CountUp';
 import { useSports } from '../hooks/useSports';
 import { sportBadge } from '../utils/sportColors';
+import { LanguageSwitcher } from '../components/layout/LanguageSwitcher';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -40,6 +42,8 @@ const ROLE_PATHS = [
   {
     icon: Shield,
     title: "I'm a Coach",
+    titleKey: 'landing.roles.coach',
+    ctaKey: 'landing.roles.coachCta',
     desc: 'Manage your team, track athlete performance, generate AI nutrition and recovery plans.',
     cta: 'Get Started as Coach',
     to: '/login?tab=register',
@@ -50,6 +54,8 @@ const ROLE_PATHS = [
   {
     icon: UsersRound,
     title: "I'm on a Team",
+    titleKey: 'landing.roles.teamAthlete',
+    ctaKey: 'landing.roles.teamCta',
     desc: 'Join your team with a code from your coach, view your progress, complete tasks and goals.',
     cta: 'Join My Team',
     to: '/register',
@@ -60,6 +66,8 @@ const ROLE_PATHS = [
   {
     icon: User,
     title: 'I Train Solo',
+    titleKey: 'landing.roles.soloAthlete',
+    ctaKey: 'landing.roles.soloCta',
     desc: 'No coach? No problem. Track your own performance, generate AI meal plans, and improve at your own pace.',
     cta: 'Start Solo Training',
     to: '/register/solo',
@@ -84,9 +92,9 @@ const TECH_STACK = [
 ];
 
 const NAV_LINKS = [
-  { id: 'features', label: 'Features' },
-  { id: 'about', label: 'About' },
-  { id: 'contact', label: 'Contact' },
+  { id: 'features', label: 'Features', labelKey: 'landing.nav.features' },
+  { id: 'about', label: 'About', labelKey: 'landing.nav.about' },
+  { id: 'contact', label: 'Contact', labelKey: 'landing.nav.contact' },
 ];
 
 const SPORTS = [
@@ -141,6 +149,7 @@ const TESTIMONIALS = [
 
 export function LandingPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [scrolled, setScrolled] = useState(false);
   const { data: sports = [] } = useSports();
 
@@ -175,28 +184,29 @@ export function LandingPage() {
               onClick={() => scrollToSection(l.id)}
               className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
-              {l.label}
+              {t(l.labelKey, l.label)}
             </button>
           ))}
           <button
             onClick={() => navigate('/coaches')}
             className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
           >
-            Find a Coach
+            {t('landing.nav.findACoach', 'Find a Coach')}
           </button>
         </div>
         <div className="flex items-center gap-3">
+          <LanguageSwitcher variant="dark" />
           <button
             onClick={() => navigate('/login')}
             className="text-sm font-medium text-gray-400 hover:text-white transition-colors cursor-pointer"
           >
-            Sign In
+            {t('landing.hero.signIn', 'Sign In')}
           </button>
           <button
             onClick={() => navigate('/login')}
             className="text-sm font-medium px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all hover:shadow-lg hover:shadow-indigo-500/25 cursor-pointer"
           >
-            Get Started
+            {t('landing.nav.getStarted', 'Get Started')}
           </button>
         </div>
       </nav>
@@ -230,7 +240,7 @@ export function LandingPage() {
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 text-sm font-medium mb-6"
           >
             <Zap size={14} />
-            Professional Sports Performance Platform
+            {t('landing.hero.badge', 'Professional Sports Performance Platform')}
           </motion.div>
 
           <motion.h1
@@ -240,9 +250,9 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter leading-none mb-6"
           >
-            Track. Analyze.
+            {t('landing.hero.titleLine1', 'Track. Analyze.')}
             <br />
-            <span className="gradient-text">Dominate.</span>
+            <span className="gradient-text">{t('landing.hero.titleLine2', 'Dominate.')}</span>
           </motion.h1>
 
           <motion.p
@@ -252,8 +262,7 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-xl text-gray-400 leading-relaxed max-w-2xl mx-auto mb-10"
           >
-            The professional sports analytics platform for coaches, team athletes, and solo athletes.
-            AI-powered insights, real-time tracking, and data-driven performance management.
+            {t('landing.hero.description', 'The professional sports analytics platform for coaches, team athletes, and solo athletes. AI-powered insights, real-time tracking, and data-driven performance management.')}
           </motion.p>
 
           {/* Three ways in: coach, team athlete, solo athlete */}
@@ -272,13 +281,13 @@ export function LandingPage() {
                 <div className={`inline-flex items-center justify-center w-10 h-10 rounded-xl border ${r.iconBg} mb-3`}>
                   <r.icon size={19} />
                 </div>
-                <h3 className="text-base font-bold text-white mb-1.5">{r.title}</h3>
+                <h3 className="text-base font-bold text-white mb-1.5">{t(r.titleKey, r.title)}</h3>
                 <p className="text-gray-400 text-sm leading-relaxed flex-1">{r.desc}</p>
                 <button
                   onClick={() => navigate(r.to)}
                   className={`mt-4 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl ${r.button} text-white font-semibold text-sm transition-all cursor-pointer group-hover:shadow-lg`}
                 >
-                  {r.cta}
+                  {t(r.ctaKey, r.cta)}
                   <ChevronRight size={15} />
                 </button>
               </div>

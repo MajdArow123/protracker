@@ -193,12 +193,12 @@
   },
   "landing": {
     "hero": {
-      "title": "Entraînez-vous mieux.",
-      "subtitle": "Performez plus.",
-      "description": "La plateforme professionnelle pour entraîneurs et athlètes",
+      "badge": "Plateforme professionnelle de performance sportive",
+      "titleLine1": "Suivez. Analysez.",
+      "titleLine2": "Dominez.",
+      "description": "La plateforme professionnelle d'analyse sportive pour les entraîneurs, les athlètes d'équipe et les athlètes solo. Analyses basées sur l'IA, suivi en temps réel et gestion de la performance axée sur les données.",
       "getStarted": "Commencer gratuitement",
       "findCoach": "Trouver un entraîneur",
-      "watchDemo": "Voir la démo",
       "signIn": "Se connecter"
     },
     "features": {
@@ -207,14 +207,23 @@
     },
     "roles": {
       "coach": "Je suis entraîneur",
+      "coachCta": "Commencer en tant qu'entraîneur",
       "teamAthlete": "Je suis dans une équipe",
-      "soloAthlete": "Je m'entraîne seul"
+      "teamCta": "Rejoindre mon équipe",
+      "soloAthlete": "Je m'entraîne seul",
+      "soloCta": "Commencer l'entraînement solo"
+    },
+    "findCoach": {
+      "title": "Trouvez l'entraîneur idéal",
+      "subtitle": "Parcourez des entraîneurs vérifiés dans 5 sports et connectez-vous avec celui qui correspond à vos objectifs.",
+      "browseAll": "Parcourir tous les entraîneurs"
     },
     "nav": {
       "features": "Fonctionnalités",
       "about": "À propos",
       "contact": "Contact",
-      "findACoach": "Trouver un entraîneur"
+      "findACoach": "Trouver un entraîneur",
+      "getStarted": "Commencer"
     }
   }
 }

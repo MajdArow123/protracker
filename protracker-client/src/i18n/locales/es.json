@@ -193,12 +193,12 @@
   },
   "landing": {
     "hero": {
-      "title": "Entrena mejor.",
-      "subtitle": "Rinde más.",
-      "description": "La plataforma profesional para entrenadores y atletas",
+      "badge": "Plataforma profesional de rendimiento deportivo",
+      "titleLine1": "Registra. Analiza.",
+      "titleLine2": "Domina.",
+      "description": "La plataforma profesional de análisis deportivo para entrenadores, atletas de equipo y atletas individuales. Información con IA, seguimiento en tiempo real y gestión del rendimiento basada en datos.",
       "getStarted": "Empieza gratis",
       "findCoach": "Buscar un entrenador",
-      "watchDemo": "Ver demo",
       "signIn": "Iniciar sesión"
     },
     "features": {
@@ -207,14 +207,23 @@
     },
     "roles": {
       "coach": "Soy entrenador",
+      "coachCta": "Empezar como entrenador",
       "teamAthlete": "Estoy en un equipo",
-      "soloAthlete": "Entreno solo"
+      "teamCta": "Unirme a mi equipo",
+      "soloAthlete": "Entreno solo",
+      "soloCta": "Empezar entrenamiento individual"
+    },
+    "findCoach": {
+      "title": "Encuentra tu entrenador ideal",
+      "subtitle": "Explora entrenadores verificados de 5 deportes y conecta con quien se ajuste a tus objetivos.",
+      "browseAll": "Explorar todos los entrenadores"
     },
     "nav": {
       "features": "Funciones",
       "about": "Acerca de",
       "contact": "Contacto",
-      "findACoach": "Buscar un entrenador"
+      "findACoach": "Buscar un entrenador",
+      "getStarted": "Empezar"
     }
   }
 }

@@ -164,3 +164,22 @@ html.dark .skeleton {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   cursor: pointer;
 }
+
+/* ── RTL support (Arabic / Hebrew) ────────────────────────────────────────────
+   The dir="rtl" attribute on <html> handles flex/text/grid mirroring. Directional
+   icons (chevrons + arrows) must be mirrored explicitly so "next/back/forward" point
+   the correct way. lucide-react adds a per-icon class we can target. */
+:root.rtl .lucide-chevron-right,
+:root.rtl .lucide-chevron-left,
+:root.rtl .lucide-arrow-right,
+:root.rtl .lucide-arrow-left,
+:root.rtl .lucide-corner-down-right,
+:root.rtl .lucide-move-right,
+:root.rtl .lucide-move-left {
+  transform: scaleX(-1);
+}
+
+/* Recharts renders LTR internally; keep its numeric axes/tooltips readable in RTL. */
+:root.rtl .recharts-wrapper {
+  direction: ltr;
+}

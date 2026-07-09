@@ -4,6 +4,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useLocation, Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
 import { NotificationBell } from './NotificationBell';
+import { LanguageSwitcher } from './LanguageSwitcher';
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -59,6 +60,7 @@ export function Navbar({ onMenuClick }: Props) {
       </h1>
 
       <div className="flex items-center gap-2">
+        <LanguageSwitcher />
         <button
           onClick={toggle}
           className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors cursor-pointer"
