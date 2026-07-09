@@ -585,6 +585,71 @@ Five features, each its own commit, curl- + browser-verified. Multi-sport throug
   `MyNotesCard` dashboard widget (quick-jot + last 3 + view-all) on both dashboards, "My Notes"
   sidebar item for both roles.
 
+## Phase E — Coach Discovery Marketplace (COMPLETE, deployed) — 5 sections
+
+A public marketplace where coaches create opt-in profiles and athletes (solo or team-seeking)
+find, connect with, and review coaches by sport/location. 5 commits, each curl- + browser-
+verified. Multi-sport (coaches filterable by sport).
+
+- **Section 1 — Coach public profile** (commit `c66800f`, migration `AddCoachPublicProfile`).
+  `CoachPublicProfile` (one per coach, unique slug + unique CoachUserId; Bio ≤1000, primary
+  SportId, City/Country, YearsCoaching, Certifications, Specialization, IsAcceptingAthletes,
+  ContactEmail, IsPublic). DisplayName/photo read from ApplicationUser; stats (TeamCount/
+  PlayerCount/AverageTeamScore) derived at query. `CoachPublicProfileService`: lazy get-or-create
+  (defaults primary sport to the coach's most common team sport), validated update, public
+  paginated listing (20/page; filters sport/city/country/accepting/search), public by-slug (404
+  for missing OR non-public). `CoachesController`: public rate-limited GET `/api/coaches` +
+  `/api/coaches/{slug}`, coach GET/PUT `/api/profile/coach-public`. Frontend: `CoachPublicProfile
+  Section` on the coach profile (public toggle, URL+copy+preview, all fields), dark-themed public
+  `/coaches/:slug` page (sport-gradient hero, stats, about, connect, Join CTA). Shared
+  `utils/sportColors` (gradient/dot/badge — extracted from the duplicated maps).
+- **Section 2 — Coach marketplace page** (commit `67075de`). Added `MinYears`/`MaxYears`/`Sort` to
+  the listing query. **`GET /api/sports` is now `[AllowAnonymous]`** so the public marketplace +
+  landing get sport pills without a login (rest of SportsController stays authed). Frontend:
+  `CoachCard`, `CoachMarketplacePage` at public `/coaches` (hero + URL-synced sport pills, desktop
+  filter sidebar / mobile sheet: search/city/country/experience-buckets/accepting, responsive
+  3/2/1 grid, Load-more via `useInfiniteQuery`, empty state). Landing page gained a "Find a Coach"
+  navbar link + section (sport pills → `/coaches?sport=X`).
+- **Section 3 — Connection requests** (commit `0398b1b`, migration `AddCoachConnections`).
+  `CoachConnectionRequest` (Pending/Accepted/Declined/Withdrawn; denormalized names+sport;
+  CoachNote decline reason; ResultJoinCode). `CoachConnectionService`: send (one pending per
+  athlete per coach, **5/day per-athlete rate limit**, pushes coach); coach list/accept/decline;
+  athlete list/withdraw. **Accept generates/reuses a join code for a sport-matched coach team only
+  when the athlete is teamless**, pushes athlete. `ConnectionRequestsController`: POST
+  `/api/coaches/{slug}/request`, coach GET/PATCH `/api/coach/connection-requests[/{id}/accept|
+  decline]`, athlete GET/DELETE `/api/athlete/connection-requests[/{id}]`. **Decline reason stored
+  as a coach note, never exposed in the athlete DTO.** Frontend: `RequestConnectionModal` (role-
+  aware) on the public profile, coach `ConnectionRequestsPage` (`/coach/connection-requests`, tabs
+  + accept/decline + join-code display) with a "Requests" sidebar item + pending badge, athlete
+  `MyConnectionRequestsSection` on the profile (status badges, withdraw, accepted → join code +
+  "Use code" → `/join/{code}`). `useNotifications` integrates connection requests (coach pending;
+  athlete accepted/declined); `NotificationBell` gained a connection icon.
+- **Section 4 — Coach reviews & ratings** (commit `e76d9ee`, migration `AddCoachReviews`).
+  `CoachReview` (Rating 1-5, Title/Content, Sport, IsVerified, IsPublic, CoachResponse; one per
+  reviewer per coach). `CoachReviewService`: public GET (avg + count + 1-5 distribution; reads the
+  caller if a token is present to flag isMine/hasReviewed/isOwner); submit (**IsVerified when the
+  reviewer has a player on one of the coach's teams**); coach respond (own only); reviewer delete
+  (own only). `GetRatingsAsync` enriches marketplace cards + profile with AverageRating/ReviewCount;
+  `sort=rated` supported. `CoachReviewsController`: public GET `/api/coaches/{slug}/reviews`,
+  athlete POST, coach PUT `/api/coach-reviews/{id}/response`, reviewer DELETE. Frontend:
+  `CoachReviewsSection` (summary + distribution bars, review cards with Verified badge + indented
+  coach response, Write-a-Review for logged-in athletes, inline coach Respond for the owner),
+  `WriteReviewModal`; coach cards + hero show `★ X.X (n)`; marketplace gains a Highest-rated sort.
+- **Section 5 — Marketplace analytics** (commit `70ccc26`, migration `AddCoachProfileViews`).
+  `CoachProfileView` (**SHA-256-hashed IP**, ViewerUserId, Source). Every public profile GET records
+  a view via `CoachAnalyticsService.RecordViewAsync` — **deduped per hashed IP per day, self-views
+  excluded, never throws**; source from a `?source=` param (marketplace cards link with
+  `?source=marketplace`). `GET /api/coach/profile-analytics`: totalViews/week/month, request funnel
+  (+ acceptanceRate), review count/avg, **weighted profileCompleteness + per-item checklist**,
+  viewsBySource, 30-day daily trend. Frontend: `ProfileAnalyticsPage` (`/coach/profile-analytics` —
+  stat cards, Recharts-direct 30-day area chart, source chips, funnel bars, completeness checklist)
+  + `ProfileAnalyticsCard` on the coach dashboard (only when the profile is public).
+
+Cross-cutting: the public coach GETs (`/api/coaches`, `/api/coaches/{slug}` + reviews) are
+`[AllowAnonymous]` + `[EnableRateLimiting("join-validate")]`; they still read `User` when a token
+is present (via the cookie) to personalise isMine/isOwner/self-view. Coach public data lives on
+`CoachPublicProfile`, keyed by `CoachUserId` (the ApplicationUser id), not a new profile row.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -690,7 +755,27 @@ Five features, each its own commit, curl- + browser-verified. Multi-sport throug
 
 ## Current status
 
-**Phase D — Team Management Improvements complete (latest).** All 5 sections above
+**Phase E — Coach Discovery Marketplace complete (latest).** All 5 sections above
+(coach public profile, marketplace page, connection requests, reviews & ratings,
+marketplace analytics) are implemented, pushed to `main` as 5 commits (migrations
+`AddCoachPublicProfile`, `AddCoachConnections`, `AddCoachReviews`, `AddCoachProfileViews`
+auto-applied on Railway), 34/34 backend tests passing, `npm run build` + `oxlint` clean.
+Verified locally section by section via curl: profile lazy-create/go-public/listing+
+filters/public-404; marketplace years+accepting+sport filters; connection send/duplicate-
+guard/accept(team=no code, solo=valid join code)/decline(reason hidden)/withdraw/cross-
+coach-404; reviews verified-vs-unverified/duplicate/distribution/coach-respond(other coach
+403)/reviewer-delete(non-owner 403)/sort=rated; analytics view-dedup/source-breakdown/self-
+view-excluded(cookie path)/completeness/30-day-trend. Browser-verified: dark public profile
+page + reviews (5.0 summary, verified badge, coach response), coach settings section,
+marketplace (hero pills, cards with ★ rating, sport/basketball filter, sort dropdown),
+landing Find-a-Coach section, coach requests page (accepted → join code) + athlete My
+Requests, and the analytics page (30-day chart, funnel, 85% completeness checklist) +
+dashboard Marketplace Profile card. **Production verification run after deploy (see below).**
+All local test data cleaned up (connection requests, reviews, profile views, solo test
+account); the two seed coaches (soccer/basketball) were left with public marketplace
+profiles as demo data.
+
+**Phase D — Team Management Improvements complete.** All 5 sections above
 (bulk assessment, assessment templates, assistant coach role, athlete session feedback,
 athlete personal notes) are implemented, pushed to `main` as 5 commits (migrations
 `AddAssessmentTemplates`, `AddAssistantCoaches`, `AddSessionFeedback`, `AddAthleteNotes`
