@@ -521,6 +521,70 @@ the player's sport. 4 commits, each curl- + browser-verified.
   category bar — Recharts direct); `TaskCard` shows a teal "Drill · {difficulty}" badge; the
   player-detail Tasks tab gains an All / Drill-based / Manual filter.
 
+## Phase D — Team Management Improvements (COMPLETE, deployed) — 5 sections
+
+Five features, each its own commit, curl- + browser-verified. Multi-sport throughout.
+
+- **Section 1 — Bulk Assessment Mode** (commit `cf9f380`). `POST /api/player-assessments/
+  bulk` (`[Authorize(Roles="Coach,Admin")]`) → `AssessmentService.BulkCreateAssessmentsAsync`
+  wraps a `BeginTransactionAsync`, reuses `CreateAssessmentAsync` per player, rolls back on any
+  failure. 3-step `BulkAssessmentPage` wizard at `/teams/:id/bulk-assessment` (pick players →
+  score each with the shared `ScoreSlider`/`OverallScoreRing` → review) with localStorage
+  auto-save (key `pd_bulk_${teamId}`). "Assess Full Team" button on the team hero.
+- **Section 2 — Assessment Templates** (commit `8f4ef13`). `AssessmentTemplate` +
+  `AssessmentTemplateScore` (migration `AddAssessmentTemplates`; `DefaultScore` decimal(3,1),
+  `Weight` decimal(5,2), `IsRequired`). `AssessmentTemplatesController`
+  (`[Route("api/assessment-templates")]`, Coach/Admin): CRUD + `POST {id}/apply/{playerId}`
+  (validates `template.SportId==player.SportId`). Coach-owned (`LoadOwnedAsync` checks CoachId).
+  Frontend: `AssessmentTemplateBar` dropdown (save current form as template / load one),
+  `CreateTemplateModal`, required-category highlight (indigo "Required" pill + ring via a
+  `required` prop on `ScoreWidgets`), wired into `AssessmentPage`.
+- **Section 3 — Assistant Coach Role** (commit `41b78d1`, migration `AddAssistantCoaches`).
+  Assistants reuse the **`Coach` ASP.NET role + a `CoachTeamScope`** (so all existing team
+  scoping works) **plus a `TeamCoachRole`** storing per-team permissions (`CoachPermissions`
+  JSON: CanAssessPlayers/CanAssignTasks/CanViewPrivateNotes/CanManagePlayers/CanManageTeam).
+  Head coach = `Team.CoachId` (implicitly all perms). `AssistantCoachInvite` (emailed URL-safe
+  token, 7-day expiry). `TeamCoachService`: list/invite/update-permissions/remove (head-coach-
+  only) + public validate/accept (accept **creates or links** the account — **existing accounts
+  must verify their password** so a leaked invite token can't grant a login — returns login
+  tokens). Enforcement is centralized in `AccessControlService` (`GetTeamPermissionsAsync`,
+  `EnsureTeamPermissionAsync`, `EnsurePlayerPermissionAsync`, `CanViewPrivateNotesAsync`) and
+  wired into assessments (CanAssessPlayers), tasks (CanAssignTasks), player create/update/delete
+  (CanManagePlayers), team edit/delete (CanManageTeam), and coach-note filtering
+  (CanViewPrivateNotes hides private notes from assistants without it). Endpoints: `GET
+  /api/teams/{id}/coaches`, `GET /api/teams/{id}/my-coach-permissions`, `POST /api/teams/{id}/
+  invite-coach`, `PUT /api/team-coaches/{id}/permissions`, `DELETE /api/team-coaches/{id}`,
+  public `GET /api/assistant-invites/validate/{token}` + `POST /api/assistant-invites/accept`
+  (the accept lives on `AuthController` to reuse `WriteAuthCookies`; both public endpoints are
+  `[EnableRateLimiting("join-validate")]`). `SendCoachInviteAsync` email w/ SMTP-log fallback.
+  Frontend: `CoachingStaffSection` on the team-detail overview (head-coach card + assistant
+  cards with permission chips + invite modal with role presets Assistant/Analyst + permission
+  checkboxes + edit/remove), public `/coach-invite/:token` accept page, and team-detail actions
+  (Edit/Delete team, Assess Full Team, Add Player, athlete-invite) gated by `useMyCoachPermissions`.
+- **Section 4 — Athlete Session Feedback** (commit `88ee3c1`, migration `AddSessionFeedback`).
+  `SessionFeedback` (Rating/EnergyBefore/EnergyAfter/Difficulty 1-5 + WhatWentWell/WhatWasHard/
+  InjuryNote; **one row per player per session** via unique index, upserted). `SessionFeedback
+  Service` + controller: `POST /api/sessions/{id}/feedback` (Athlete/SoloAthlete; validates 1-5
+  ranges, that the athlete is a player on the session's team or owns the solo session, and that
+  the session has started), `GET /api/sessions/{id}/feedback` (coach team-access / solo own-
+  session → responses + summary), `GET /api/players/{id}/session-feedback` (coach history), `GET
+  /api/sessions/feedback/mine` (athlete's past sessions + own feedback), `GET /api/teams/{id}/
+  session-feedback-analytics` (rating trend, by-type ratings, per-session injury flags). Frontend:
+  `SessionFeedbackModal` (star rating + energy-before/after + difficulty dot scales + injury
+  field), `SessionsToRateCard` on the athlete dashboard + solo training page, `CoachSession
+  FeedbackPanel` on the team-detail Schedule tab (analytics strip + rating-by-type bars +
+  per-session rows: avg stars, count rated, injury badge, expand → individual responses).
+- **Section 5 — Athlete Personal Notes** (commit `771dc76`, migration `AddAthleteNotes`).
+  `AthleteNote` (Title nullable, Content, Category Training/Nutrition/Mental/Personal/Goal/Other).
+  **The entire `AthleteNotesController` is `[Authorize(Roles="Athlete,SoloAthlete")]` so a coach
+  gets 403 on every verb — coaches can NEVER read athlete notes** (verified). `AthleteNoteService`
+  scopes to the caller's own player+userId; `LoadOwnAsync` 404s (no leak) for another athlete's
+  note. `GET/POST/PUT/DELETE /api/athlete-notes`. Frontend: `AthleteNoteModal` (optional title,
+  category pills, large textarea, **auto-save every 30s**), shared `AthleteNotesPage` at
+  `/player-dashboard/notes` + `/solo/notes` (category filter pills, expandable cards, edit/delete),
+  `MyNotesCard` dashboard widget (quick-jot + last 3 + view-all) on both dashboards, "My Notes"
+  sidebar item for both roles.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -626,7 +690,22 @@ the player's sport. 4 commits, each curl- + browser-verified.
 
 ## Current status
 
-**Phase C — Drill & Exercise Library complete (latest).** All 4 sections above are
+**Phase D — Team Management Improvements complete (latest).** All 5 sections above
+(bulk assessment, assessment templates, assistant coach role, athlete session feedback,
+athlete personal notes) are implemented, pushed to `main` as 5 commits (migrations
+`AddAssessmentTemplates`, `AddAssistantCoaches`, `AddSessionFeedback`, `AddAthleteNotes`
+auto-applied on Railway), 34/34 backend tests passing, `npm run build` + `oxlint` clean.
+Verified locally section by section via curl: bulk-assessment transaction rollback;
+template CRUD + sport-scoped apply; assistant-coach invite→accept (new user + existing-
+user password check) with permission enforcement (analyst assess ✅ 201, tasks/player-
+mgmt/team-edit 403, private notes hidden, non-head can't manage staff, permission update
+unlocks live, removal revokes access); session feedback submit+upsert (no dupes), injury
+flag propagation, coach summary/analytics/player-history, authz (future 400, non-team 403,
+cross-team coach 403, out-of-range 400); athlete notes create/update/delete + **coach 403
+on all four verbs** + cross-athlete 404 (no leak). All test data cleaned up. **Production
+verification of all 5 sections run after deploy — see below.**
+
+**Phase C — Drill & Exercise Library complete.** All 4 sections above are
 implemented, pushed to `main` as 4 commits (migrations `AddDrillLibrary`, `AddDrillIdToTasks`
 auto-applied on Railway; `DrillSeeder` seeds 60 built-in drills on boot), 34/34 backend tests
 passing, `npm run build` + `oxlint` clean. Verified locally section by section: 60 drills
