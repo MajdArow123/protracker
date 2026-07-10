@@ -9,7 +9,7 @@ import type { LeagueSummary, LeagueType } from '../../types';
 
 const TYPE_ICONS: Record<LeagueType, typeof Trophy> = { League: Trophy, Tournament: Swords, Cup: Medal };
 
-export function LeagueCard({ league }: { league: LeagueSummary }) {
+export function LeagueCard({ league, hideSport }: { league: LeagueSummary; hideSport?: boolean }) {
   const { t } = useTranslation();
   const L = useDynamicLabels();
   const Icon = TYPE_ICONS[league.type];
@@ -24,7 +24,7 @@ export function LeagueCard({ league }: { league: LeagueSummary }) {
           <div className="min-w-0">
             <h3 className="font-bold text-gray-900 dark:text-white truncate">{league.name}</h3>
             <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-              {league.sportName && <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-semibold', sportBadge(league.sportName))}>{L.sport(league.sportName)}</span>}
+              {!hideSport && league.sportName && <span className={clsx('px-1.5 py-0.5 rounded-full text-[10px] font-semibold', sportBadge(league.sportName))}>{L.sport(league.sportName)}</span>}
               <span className="text-[10px] text-gray-400">{L.generic('leagueFormat', formatLabel(league.format))}</span>
             </div>
           </div>

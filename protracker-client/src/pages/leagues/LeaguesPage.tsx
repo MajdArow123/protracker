@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
@@ -8,6 +8,8 @@ import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
 import { useSports } from '../../hooks/useSports';
+import { useTeams } from '../../hooks/useTeams';
+import { useMyPlayer } from '../../hooks/usePlayers';
 import { useLeagues, useMyLeagues } from '../../hooks/useLeagues';
 import { LeagueCard } from '../../components/leagues/LeagueCard';
 import { CreateLeagueModal } from '../../components/leagues/CreateLeagueModal';
@@ -21,18 +23,40 @@ export function LeaguesPage() {
   const L = useDynamicLabels();
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
+  const isAdmin = user?.role === 'Admin';
   const { data: sports = [] } = useSports();
+
+  // Sport scoping (mirrors DrillLibraryPage): a coach browses only their team sport,
+  // solo / team athletes only their own sport. Free choice with pills is reserved for
+  // admins and the edge-case coach whose teams span multiple sports.
+  const { data: coachTeams = [] } = useTeams(isCoach);
+  const { data: myPlayer } = useMyPlayer(!isCoach && !isAdmin);
+  const coachSports = useMemo(() => [...new Set(coachTeams.map(t => t.sportId))], [coachTeams]);
+  const showSportPills = isAdmin || (isCoach && coachSports.length !== 1);
+  const lockedSportId = showSportPills ? null : (isCoach ? coachSports[0] ?? null : myPlayer?.sportId ?? null);
+  const defaultSportId = isCoach ? (coachSports[0] ?? null) : (myPlayer?.sportId ?? null);
 
   const [tab, setTab] = useState<Tab>('mine');
   const [sport, setSport] = useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
 
+  // Pill users (admin / multi-sport coach): default the selection to their own sport once known.
+  useEffect(() => {
+    if (showSportPills && defaultSportId) setSport(defaultSportId);
+  }, [showSportPills, defaultSportId]);
+
+  // The sport actually applied to the browse query — locked users can never leave theirs.
+  const effectiveSportId = showSportPills ? sport : lockedSportId;
+  // Wait until a locked sport is known before querying so no other-sport leagues flash in.
+  const browseReady = tab === 'browse' && (showSportPills || lockedSportId != null);
+  const lockedSportName = lockedSportId != null ? sports.find(s => s.id === lockedSportId)?.name : undefined;
+
   const { data: mine = [], isLoading: loadingMine } = useMyLeagues(tab === 'mine');
   const { data: browse = [], isLoading: loadingBrowse } = useLeagues(
-    { sport, search: search.trim() || undefined }, tab === 'browse');
+    { sport: effectiveSportId, search: search.trim() || undefined }, browseReady);
 
-  const isLoading = tab === 'mine' ? loadingMine : loadingBrowse;
+  const isLoading = tab === 'mine' ? loadingMine : (loadingBrowse || !browseReady);
   const leagues = tab === 'mine' ? mine : browse;
 
   const actions = isCoach ? (
@@ -63,16 +87,23 @@ export function LeaguesPage() {
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tr('leagues.searchLeagues', 'Search leagues')}
               className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <button onClick={() => setSport(null)}
-              className={clsx('px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer',
-                sport == null ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300')}>{tr('common.all', 'All')}</button>
-            {sports.map(s => (
-              <button key={s.id} onClick={() => setSport(s.id)}
+          {showSportPills ? (
+            <div className="flex flex-wrap gap-1.5">
+              <button onClick={() => setSport(null)}
                 className={clsx('px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer',
-                  sport === s.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300')}>{L.sport(s.name)}</button>
-            ))}
-          </div>
+                  sport == null ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300')}>{tr('common.all', 'All')}</button>
+              {sports.map(s => (
+                <button key={s.id} onClick={() => setSport(s.id)}
+                  className={clsx('px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer',
+                    sport === s.id ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300')}>{L.sport(s.name)}</button>
+              ))}
+            </div>
+          ) : lockedSportName ? (
+            // Locked to the user's own sport — no pills, just a note.
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 text-indigo-700 dark:text-indigo-300 text-xs font-semibold self-start sm:self-auto">
+              <Trophy size={13} /> {tr('leagues.showingSport', 'Showing {{sport}} leagues', { sport: L.sport(lockedSportName) })}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -89,11 +120,13 @@ export function LeaguesPage() {
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {leagues.map(l => <LeagueCard key={l.id} league={l} />)}
+          {/* Hide the redundant sport badge in Browse once results are scoped to a single sport. */}
+          {leagues.map(l => <LeagueCard key={l.id} league={l} hideSport={tab === 'browse' && effectiveSportId != null} />)}
         </div>
       )}
 
-      <CreateLeagueModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onCreated={id => navigate(`/leagues/${id}`)} />
+      <CreateLeagueModal isOpen={createOpen} onClose={() => setCreateOpen(false)} onCreated={id => navigate(`/leagues/${id}`)}
+        lockedSportId={showSportPills ? null : lockedSportId} defaultSportId={defaultSportId} />
     </PageWrapper>
   );
 }

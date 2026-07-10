@@ -1270,7 +1270,8 @@
     "venue": "المكان (اختياري)",
     "vs": "ضد",
     "you": "(أنت)",
-    "yours": "(فريقك)"
+    "yours": "(فريقك)",
+    "showingSport": "عرض دوريات {{sport}}"
   },
   "notifications": {
     "title": "الإشعارات",

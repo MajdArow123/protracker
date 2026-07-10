@@ -1270,7 +1270,8 @@
     "venue": "מגרש (אופציונלי)",
     "vs": "נגד",
     "you": "(אתה)",
-    "yours": "(שלך)"
+    "yours": "(שלך)",
+    "showingSport": "מציג ליגות {{sport}}"
   },
   "notifications": {
     "title": "התראות",

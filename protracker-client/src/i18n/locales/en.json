@@ -1270,7 +1270,8 @@
     "venue": "Venue (optional)",
     "vs": "vs",
     "you": "(you)",
-    "yours": "(yours)"
+    "yours": "(yours)",
+    "showingSport": "Showing {{sport}} leagues"
   },
   "notifications": {
     "title": "Notifications",

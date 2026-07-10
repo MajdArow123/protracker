@@ -20,8 +20,11 @@ function toDateInput(s?: string | null) {
 }
 
 // Doubles as create (no `editLeague`) and edit (with `editLeague`).
-export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
+// lockedSportId: when set (single-sport coach), the sport is fixed and the selector hidden.
+// defaultSportId: preselects the sport but leaves the selector visible (admin / multi-sport).
+export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague, lockedSportId, defaultSportId }: {
   isOpen: boolean; onClose: () => void; onCreated?: (id: number) => void; editLeague?: LeagueDetail;
+  lockedSportId?: number | null; defaultSportId?: number | null;
 }) {
   const { t: tr } = useTranslation();
   const L = useDynamicLabels();
@@ -46,8 +49,11 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
   const [prize, setPrize] = useState('');
   const [error, setError] = useState('');
 
-  // Lock sport to the coach's own sport when we can infer it.
+  // Lock sport to the coach's own sport when we can infer it (from props, else the user's
+  // denormalized sportName, else the first sport).
   const coachSportName = (user as { sportName?: string } | null)?.sportName;
+  // Selector is hidden only when creating with a single locked sport.
+  const sportLocked = !editLeague && lockedSportId != null;
   useEffect(() => {
     if (!isOpen) return;
     setError('');
@@ -64,8 +70,8 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
     setStartDate(''); setEndDate(''); setMaxTeams(''); setLocation(''); setIsPublic(true);
     setRules(''); setPrize(''); setError('');
     const own = sports.find(s => s.name === coachSportName);
-    setSportId(own?.id ?? sports[0]?.id ?? null);
-  }, [isOpen, sports, coachSportName, editLeague]);
+    setSportId(lockedSportId ?? defaultSportId ?? own?.id ?? sports[0]?.id ?? null);
+  }, [isOpen, sports, coachSportName, editLeague, lockedSportId, defaultSportId]);
 
   const submit = async () => {
     if (!name.trim()) { setError(tr('leagues.errNameRequired', 'League name is required.')); return; }
@@ -151,10 +157,17 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.sportLabel', 'Sport')}</label>
-            <select value={sportId ?? ''} onChange={e => setSportId(e.target.value ? Number(e.target.value) : null)}
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              {sports.map(s => <option key={s.id} value={s.id}>{L.sport(s.name)}</option>)}
-            </select>
+            {sportLocked ? (
+              // Coach's sport is fixed (like team creation) — shown read-only, not selectable.
+              <div className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-700 dark:text-gray-300">
+                {L.sport(sports.find(s => s.id === sportId)?.name ?? '')}
+              </div>
+            ) : (
+              <select value={sportId ?? ''} onChange={e => setSportId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                {sports.map(s => <option key={s.id} value={s.id}>{L.sport(s.name)}</option>)}
+              </select>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.maxTeams', 'Max teams (optional)')}</label>
