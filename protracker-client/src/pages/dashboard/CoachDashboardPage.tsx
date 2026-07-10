@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, type Variants } from 'framer-motion';
 import {
   Users, Shield, ClipboardList, TrendingUp, ArrowRight,
@@ -18,6 +19,8 @@ import { ErrorState } from '../../components/ui/ErrorState';
 import { CountUp } from '../../components/ui/CountUp';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { useAuth } from '../../context/AuthContext';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { clsx } from 'clsx';
 
 const SPORT_GRADIENTS: Record<string, { bg: string; border: string; badge: string; dot: string }> = {
@@ -75,6 +78,9 @@ const fadeUp: Variants = {
 
 export function CoachDashboardPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
+  const L = useDynamicLabels();
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useCoachDashboard();
   const { data: activeSeasons = [] } = useActiveSeasons();
@@ -92,12 +98,12 @@ export function CoachDashboardPage() {
       </PageWrapper>
     );
 
-  const firstName = user?.fullName?.split(' ')[0] ?? 'Coach';
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const firstName = user?.fullName?.split(' ')[0] ?? t('dashboard.coach', 'Coach');
+  const today = fmt.formatDate(new Date(), { weekday: 'long', month: 'long', day: 'numeric' });
 
   const statCards = [
     {
-      title: 'Total Players',
+      title: t('dashboard.totalPlayers', 'Total Players'),
       value: data?.totalPlayers ?? 0,
       icon: Users,
       gradient: 'from-blue-500 to-indigo-600',
@@ -105,7 +111,7 @@ export function CoachDashboardPage() {
       text: 'text-blue-600 dark:text-blue-400',
     },
     {
-      title: 'Teams Managed',
+      title: t('dashboard.teamsManaged', 'Teams Managed'),
       value: data?.totalTeams ?? 0,
       icon: Shield,
       gradient: 'from-purple-500 to-violet-600',
@@ -113,7 +119,7 @@ export function CoachDashboardPage() {
       text: 'text-purple-600 dark:text-purple-400',
     },
     {
-      title: 'Overdue Tasks',
+      title: t('dashboard.overdueTasks', 'Overdue Tasks'),
       value: overdueTasks.length,
       icon: ClipboardList,
       gradient: 'from-amber-500 to-orange-600',
@@ -121,7 +127,7 @@ export function CoachDashboardPage() {
       text: 'text-amber-600 dark:text-amber-400',
     },
     {
-      title: 'Active Injuries',
+      title: t('dashboard.activeInjuries', 'Active Injuries'),
       value: activeInjuries.length,
       icon: ShieldAlert,
       gradient: 'from-red-500 to-rose-600',
@@ -142,7 +148,7 @@ export function CoachDashboardPage() {
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
-              Welcome back, {firstName}
+              {t('dashboard.welcome', 'Welcome back')}, {firstName}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5 flex items-center gap-1.5">
               <Activity size={13} />
@@ -155,14 +161,14 @@ export function CoachDashboardPage() {
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer"
             >
               <Plus size={15} />
-              New Team
+              {t('dashboard.newTeam', 'New Team')}
             </button>
             <button
               onClick={() => navigate('/players/new')}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 transition-all cursor-pointer"
             >
               <Plus size={15} />
-              New Player
+              {t('dashboard.newPlayer', 'New Player')}
             </button>
           </div>
         </div>
@@ -193,7 +199,7 @@ export function CoachDashboardPage() {
         <motion.div custom={4.5} initial="hidden" animate="show" variants={fadeUp}>
           <div className="flex items-center gap-2 mb-3">
             <CalendarRange size={18} className="text-indigo-500" />
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Current Season</h3>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{t('dashboard.currentSeason', 'Current Season')}</h3>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeSeasons.map(s => (
@@ -205,13 +211,13 @@ export function CoachDashboardPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">{s.teamName}</span>
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white flex-shrink-0">
-                    <Star size={9} className="fill-current" /> CURRENT
+                    <Star size={9} className="fill-current" /> {t('dashboard.current', 'CURRENT')}
                   </span>
                 </div>
                 <p className="font-bold text-gray-900 dark:text-white mt-1">{s.name}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {new Date(s.startDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })} – {new Date(s.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                  {' · '}{s.linkedPeriodCount} period{s.linkedPeriodCount === 1 ? '' : 's'}
+                  {fmt.formatDate(s.startDate, { month: 'short', year: 'numeric' })} – {fmt.formatDate(s.endDate, { month: 'short', year: 'numeric' })}
+                  {' · '}{s.linkedPeriodCount} {s.linkedPeriodCount === 1 ? t('dashboard.period', 'period') : t('dashboard.periods', 'periods')}
                 </p>
               </button>
             ))}
@@ -222,12 +228,12 @@ export function CoachDashboardPage() {
       {/* Teams */}
       <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">My Teams</h2>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('dashboard.myTeams', 'My Teams')}</h2>
           <button
             onClick={() => navigate('/teams')}
             className="flex items-center gap-1 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors cursor-pointer"
           >
-            View all <ChevronRight size={15} />
+            {t('common.viewAll', 'View all')} <ChevronRight size={15} />
           </button>
         </div>
 
@@ -235,23 +241,23 @@ export function CoachDashboardPage() {
           <div className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 p-8">
             <EmptyState
               icon={<Shield size={36} />}
-              title="No teams yet"
-              description="Create your first team to start managing players"
-              action={{ label: 'Create Team', onClick: () => navigate('/teams/new') }}
+              title={t('dashboard.noTeamsYet', 'No teams yet')}
+              description={t('dashboard.noTeamsDesc', 'Create your first team to start managing players')}
+              action={{ label: t('dashboard.createTeam', 'Create Team'), onClick: () => navigate('/teams/new') }}
             />
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.teams.map((t, i) => {
-              const g = getSportGradient(t.sportName);
+            {data.teams.map((team, i) => {
+              const g = getSportGradient(team.sportName);
               return (
                 <motion.div
-                  key={t.id}
+                  key={team.id}
                   custom={i + 6}
                   initial="hidden"
                   animate="show"
                   variants={fadeUp}
-                  onClick={() => navigate(`/teams/${t.id}`)}
+                  onClick={() => navigate(`/teams/${team.id}`)}
                   className={clsx(
                     'group relative overflow-hidden rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]',
                     `bg-gradient-to-br ${g.bg} ${g.border}`
@@ -260,19 +266,19 @@ export function CoachDashboardPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className={clsx('w-2 h-2 rounded-full mt-1.5', g.dot)} />
                     <span className={clsx('text-xs font-semibold px-2.5 py-1 rounded-full', g.badge)}>
-                      {t.sportName}
+                      {L.sport(team.sportName)}
                     </span>
                   </div>
-                  <h3 className="font-bold text-gray-900 dark:text-white text-base mb-1">{t.name}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-base mb-1">{team.name}</h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    {t.playerCount ?? 0} {(t.playerCount ?? 0) === 1 ? 'player' : 'players'}
+                    {team.playerCount ?? 0} {(team.playerCount ?? 0) === 1 ? t('dashboard.player', 'player') : t('dashboard.players', 'players')}
                   </p>
                   <div className="flex gap-2">
                     <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/teams/${t.id}`); }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/teams/${team.id}`); }}
                       className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-white/60 dark:bg-white/5 hover:bg-white/80 dark:hover:bg-white/10 text-gray-700 dark:text-gray-300 border border-white/40 dark:border-white/10 transition-all cursor-pointer"
                     >
-                      View Team <ArrowRight size={12} />
+                      {t('dashboard.viewTeam', 'View Team')} <ArrowRight size={12} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate('/players/new'); }}
@@ -297,7 +303,7 @@ export function CoachDashboardPage() {
               <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 flex items-center justify-center transition-colors">
                 <Plus size={18} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />
               </div>
-              <p className="text-sm font-medium text-gray-400 group-hover:text-indigo-500 transition-colors">Create new team</p>
+              <p className="text-sm font-medium text-gray-400 group-hover:text-indigo-500 transition-colors">{t('dashboard.createNewTeam', 'Create new team')}</p>
             </motion.div>
           </div>
         )}
@@ -308,7 +314,7 @@ export function CoachDashboardPage() {
         <motion.div custom={9} initial="hidden" animate="show" variants={fadeUp}>
           <div className="flex items-center gap-2 mb-4">
             <ShieldAlert size={17} className="text-red-500" />
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Active Injuries</h2>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('dashboard.activeInjuries', 'Active Injuries')}</h2>
             <span className="text-xs font-semibold text-red-600 bg-red-100 dark:bg-red-900/30 rounded-full px-2 py-0.5">{visibleInjuries.length}</span>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">
@@ -333,13 +339,13 @@ export function CoachDashboardPage() {
                       : inj.severity === 'Moderate' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
                       : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
                   )}>
-                    {inj.severity}
+                    {L.generic('severity', inj.severity)}
                   </span>
                   <ChevronRight size={14} className="text-gray-400 flex-shrink-0" />
                 </button>
                 <button
                   onClick={() => markSeen([injuryKey(inj.id, inj.severity)])}
-                  title="Dismiss"
+                  title={t('dashboard.dismiss', 'Dismiss')}
                   className="p-1 rounded-lg text-gray-300 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer flex-shrink-0"
                 >
                   <X size={14} />
@@ -367,14 +373,14 @@ export function CoachDashboardPage() {
 
       {/* Quick Actions */}
       <motion.div custom={11} initial="hidden" animate="show" variants={fadeUp}>
-        <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
+        <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('dashboard.quickActions', 'Quick Actions')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: 'View Players', icon: Users, path: '/players', color: 'text-blue-500' },
-            { label: 'Drill Library', icon: Library, path: '/drills', color: 'text-teal-500' },
-            { label: 'Reports', icon: TrendingUp, path: '/reports', color: 'text-purple-500' },
-            { label: 'Food Alternatives', icon: ClipboardList, path: '/nutrition/food-alternatives', color: 'text-green-500' },
-            { label: 'My Profile', icon: Shield, path: '/profile', color: 'text-indigo-500' },
+            { label: t('dashboard.viewPlayers', 'View Players'), icon: Users, path: '/players', color: 'text-blue-500' },
+            { label: t('nav.drillLibrary', 'Drill Library'), icon: Library, path: '/drills', color: 'text-teal-500' },
+            { label: t('nav.reports', 'Reports'), icon: TrendingUp, path: '/reports', color: 'text-purple-500' },
+            { label: t('dashboard.foodAlternatives', 'Food Alternatives'), icon: ClipboardList, path: '/nutrition/food-alternatives', color: 'text-green-500' },
+            { label: t('dashboard.myProfile', 'My Profile'), icon: Shield, path: '/profile', color: 'text-indigo-500' },
           ].map((action) => (
             <button
               key={action.label}

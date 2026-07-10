@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { ArrowRight, Camera, ChevronDown, Loader2, PartyPopper, Ruler, Salad, ShieldAlert, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -25,6 +26,7 @@ const SEVERITY_STYLES: Record<string, string> = {
 // Finishing OR skipping marks onboarding complete so it never nags again;
 // the dashboard completion-reminder card takes over from there.
 export function OnboardingModal({ profile }: { profile: Profile }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const updateProfile = useUpdateProfile();
   const completeOnboarding = useCompleteOnboarding();
@@ -71,16 +73,16 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
         height: Math.round(effHeight * 10) / 10,
         weight: Math.round(effWeight * 10) / 10,
       });
-      addToast('Physical stats saved', 'success');
+      addToast(t('profile.onboarding.physicalsSaved', 'Physical stats saved'), 'success');
       setStep(3);
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not save', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.onboarding.saveFailed', 'Could not save'), 'error');
     }
   };
 
   const addRestriction = async () => {
     if (!playerId) return;
-    if (rCategory === 'Custom' && !rItem.trim()) { addToast('Describe the custom restriction', 'error'); return; }
+    if (rCategory === 'Custom' && !rItem.trim()) { addToast(t('profile.dietary.describeCustom', 'Describe the custom restriction'), 'error'); return; }
     try {
       await createRestriction.mutateAsync({
         preferenceType: rSeverity === 'Hard' ? 'Allergy' : rSeverity === 'Lifestyle' ? 'Lifestyle' : 'SoftPreference',
@@ -90,7 +92,7 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
       });
       setRItem('');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not add restriction', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.dietary.addFailed', 'Could not add restriction'), 'error');
     }
   };
 
@@ -110,19 +112,19 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center mb-3">
             <PartyPopper size={22} className="text-indigo-500" />
           </div>
-          <h2 className="text-lg font-black text-gray-900 dark:text-white">Welcome to ProTracker, {firstName}!</h2>
+          <h2 className="text-lg font-black text-gray-900 dark:text-white">{t('profile.onboarding.welcome', 'Welcome to ProTracker, {{name}}!', { name: firstName })}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 mb-5 max-w-sm">
-            Let's set up your profile in three quick steps. First — add a photo so your coach and teammates recognize you.
+            {t('profile.onboarding.welcomeSubtitle', "Let's set up your profile in three quick steps. First — add a photo so your coach and teammates recognize you.")}
           </p>
           <EditableAvatar name={profile.displayName} src={profile.profilePictureUrl} />
           <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-3">
-            <Camera size={11} /> Click or drop an image — or skip for now
+            <Camera size={11} /> {t('profile.onboarding.photoHint', 'Click or drop an image — or skip for now')}
           </div>
           <button
             onClick={() => setStep(2)}
             className="w-full mt-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
-            {profile.profilePictureUrl ? 'Next' : 'Skip photo for now'} <ArrowRight size={15} />
+            {profile.profilePictureUrl ? t('common.next', 'Next') : t('profile.onboarding.skipPhoto', 'Skip photo for now')} <ArrowRight size={15} />
           </button>
         </div>
       )}
@@ -134,14 +136,14 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
               <Ruler size={18} className="text-blue-500" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white">Your physical stats</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Used for assessments and AI nutrition planning.</p>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">{t('profile.onboarding.physicalsTitle', 'Your physical stats')}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('profile.onboarding.physicalsSubtitle', 'Used for assessments and AI nutrition planning.')}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 mb-5">
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Height</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('profile.height', 'Height')}</label>
                 <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
                   {(['cm', 'ftin'] as const).map(u => (
                     <button key={u} type="button"
@@ -162,14 +164,14 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
                 <input type="number" inputMode="decimal" value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} autoFocus />
               ) : (
                 <div className="flex gap-2">
-                  <input type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" className={inputCls} aria-label="feet" />
-                  <input type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="9" className={inputCls} aria-label="inches" />
+                  <input type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" className={inputCls} aria-label={t('profile.feet', 'feet')} />
+                  <input type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="9" className={inputCls} aria-label={t('profile.inches', 'inches')} />
                 </div>
               )}
             </div>
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Weight</label>
+                <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('profile.weight', 'Weight')}</label>
                 <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
                   {(['kg', 'lb'] as const).map(u => (
                     <button key={u} type="button"
@@ -194,7 +196,7 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             {updateProfile.isPending ? <Loader2 size={15} className="animate-spin" /> : null}
-            {heightCm || heightFt || weightVal ? 'Save & continue' : 'Skip for now'} <ArrowRight size={15} />
+            {heightCm || heightFt || weightVal ? t('profile.onboarding.saveContinue', 'Save & continue') : t('profile.onboarding.skipForNow', 'Skip for now')} <ArrowRight size={15} />
           </button>
         </div>
       )}
@@ -206,8 +208,8 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
               <Salad size={18} className="text-emerald-500" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-gray-900 dark:text-white">Any dietary restrictions?</h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Shared with your coach and used for AI nutrition planning. Optional.</p>
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">{t('profile.onboarding.dietaryTitle', 'Any dietary restrictions?')}</h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('profile.onboarding.dietarySubtitle', 'Shared with your coach and used for AI nutrition planning. Optional.')}</p>
             </div>
           </div>
 
@@ -216,8 +218,8 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
               {dietaryItems.map(item => (
                 <span key={item.id} className={clsx('flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold', SEVERITY_STYLES[item.severity] ?? 'bg-gray-500/20 text-gray-400')}>
                   {item.severity === 'Hard' && <ShieldAlert size={10} />}
-                  {CATEGORY_LABELS[item.category] ?? item.category}{item.specificItem ? ` (${item.specificItem})` : ''}
-                  <button onClick={() => deleteRestriction.mutateAsync(item.id).catch(() => {})} aria-label="Remove" className="opacity-60 hover:opacity-100 cursor-pointer">
+                  {t(`profile.dietary.category.${item.category}`, CATEGORY_LABELS[item.category] ?? item.category)}{item.specificItem ? ` (${item.specificItem})` : ''}
+                  <button onClick={() => deleteRestriction.mutateAsync(item.id).catch(() => {})} aria-label={t('common.remove', 'Remove')} className="opacity-60 hover:opacity-100 cursor-pointer">
                     <Trash2 size={10} />
                   </button>
                 </span>
@@ -227,30 +229,30 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
 
           <div className="grid grid-cols-2 gap-2 mb-2">
             <div className="relative">
-              <label className={labelCls}>Category</label>
+              <label className={labelCls}>{t('profile.dietary.category.label', 'Category')}</label>
               <select value={rCategory} onChange={e => setRCategory(e.target.value)} className={clsx(inputCls, 'appearance-none cursor-pointer')}>
-                {RESTRICTION_CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>)}
+                {RESTRICTION_CATEGORIES.map(c => <option key={c} value={c}>{t(`profile.dietary.category.${c}`, CATEGORY_LABELS[c] ?? c)}</option>)}
               </select>
               <ChevronDown size={14} className="absolute right-3 bottom-3 text-gray-400 pointer-events-none" />
             </div>
             <div className="relative">
-              <label className={labelCls}>Severity</label>
+              <label className={labelCls}>{t('profile.dietary.severity', 'Severity')}</label>
               <select value={rSeverity} onChange={e => setRSeverity(e.target.value)} className={clsx(inputCls, 'appearance-none cursor-pointer')}>
-                <option value="Hard">Hard (allergy)</option>
-                <option value="Lifestyle">Moderate (lifestyle)</option>
-                <option value="Soft">Soft (preference)</option>
+                <option value="Hard">{t('profile.dietary.severityHard', 'Hard (allergy)')}</option>
+                <option value="Lifestyle">{t('profile.dietary.severityModerate', 'Moderate (lifestyle)')}</option>
+                <option value="Soft">{t('profile.dietary.severitySoft', 'Soft (preference)')}</option>
               </select>
               <ChevronDown size={14} className="absolute right-3 bottom-3 text-gray-400 pointer-events-none" />
             </div>
           </div>
           <div className="flex gap-2 mb-5">
-            <input value={rItem} onChange={e => setRItem(e.target.value)} placeholder={rCategory === 'Custom' ? 'e.g. shellfish (required)' : 'Specific item (optional)'} className={inputCls} />
+            <input value={rItem} onChange={e => setRItem(e.target.value)} placeholder={rCategory === 'Custom' ? t('profile.dietary.customPlaceholder', 'e.g. shellfish (required)') : t('profile.dietary.itemPlaceholder', 'Specific item (optional)')} className={inputCls} />
             <button
               onClick={addRestriction}
               disabled={createRestriction.isPending}
               className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer flex-shrink-0"
             >
-              Add
+              {t('common.add', 'Add')}
             </button>
           </div>
 
@@ -260,14 +262,14 @@ export function OnboardingModal({ profile }: { profile: Profile }) {
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             {completeOnboarding.isPending ? <Loader2 size={15} className="animate-spin" /> : null}
-            {dietaryItems.length > 0 ? 'Complete Setup' : 'Skip & Complete Setup'}
+            {dietaryItems.length > 0 ? t('profile.onboarding.completeSetup', 'Complete Setup') : t('profile.onboarding.skipComplete', 'Skip & Complete Setup')}
           </button>
         </div>
       )}
 
       {/* Global skip — always available */}
       <button onClick={finish} className="w-full text-center text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mt-3 cursor-pointer">
-        Skip for now — I'll do this later
+        {t('profile.onboarding.skipLater', "Skip for now — I'll do this later")}
       </button>
     </Modal>
   );

@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { clsx } from 'clsx';
 import { MOOD_CONFIG, dateKey } from './journalUtils';
 import type { JournalEntry } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
 interface Props {
   entries: JournalEntry[];
@@ -17,6 +20,9 @@ interface Cell {
 
 // GitHub-style contribution grid: columns are weeks (Sun→Sat), the last column is this week.
 export function JournalHeatMap({ entries, weeks = 13, onSelectDate }: Props) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
+  const { formatDate } = useLocaleFormat();
   const byDate = useMemo(() => {
     const map = new Map<string, JournalEntry>();
     for (const e of entries) map.set(dateKey(new Date(e.entryDate)), e);
@@ -53,14 +59,14 @@ export function JournalHeatMap({ entries, weeks = 13, onSelectDate }: Props) {
           <div key={ci} className="flex flex-col gap-[3px]">
             {col.map((cell) => {
               const entry = byDate.get(cell.key);
-              const label = new Date(cell.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+              const label = formatDate(cell.date, { month: 'short', day: 'numeric' });
               return (
                 <button
                   key={cell.key}
                   type="button"
                   disabled={!entry}
                   onClick={() => entry && onSelectDate?.(cell.key)}
-                  title={entry ? `${label} · ${entry.mood}` : label}
+                  title={entry ? `${label} · ${L.mood(entry.mood)}` : label}
                   className={clsx(
                     'w-3.5 h-3.5 rounded-[3px] transition-transform',
                     !cell.inRange && 'opacity-0',
@@ -76,11 +82,11 @@ export function JournalHeatMap({ entries, weeks = 13, onSelectDate }: Props) {
       <div className="flex items-center gap-3 mt-2 flex-wrap">
         {(['Great', 'Good', 'Okay', 'Tough', 'Rough'] as const).map((m) => (
           <span key={m} className="inline-flex items-center gap-1 text-[11px] text-gray-500 dark:text-gray-400">
-            <span className={clsx('w-2.5 h-2.5 rounded-[2px]', MOOD_CONFIG[m].solid)} /> {m}
+            <span className={clsx('w-2.5 h-2.5 rounded-[2px]', MOOD_CONFIG[m].solid)} /> {L.mood(m)}
           </span>
         ))}
         <span className="inline-flex items-center gap-1 text-[11px] text-gray-400">
-          <span className="w-2.5 h-2.5 rounded-[2px] bg-gray-200 dark:bg-gray-700/60" /> No entry
+          <span className="w-2.5 h-2.5 rounded-[2px] bg-gray-200 dark:bg-gray-700/60" /> {t('journal.noEntry', 'No entry')}
         </span>
       </div>
     </div>

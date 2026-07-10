@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   HeartPulse, ChevronLeft, ChevronRight, Check, Zap, Moon, Smile,
@@ -45,6 +46,7 @@ function ScaleStep({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
@@ -66,7 +68,7 @@ function ScaleStep({
             )}
           >
             <span className="text-2xl leading-none">{s.emoji}</span>
-            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">{s.label}</span>
+            <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400">{t(`wellbeing.scale${s.value}`, s.label)}</span>
           </button>
         ))}
       </div>
@@ -75,10 +77,11 @@ function ScaleStep({
 }
 
 function CheckedInSummary({ checkin, onEdit }: { checkin: WellbeingCheckin; onEdit: () => void }) {
+  const { t } = useTranslation();
   const rows = [
-    { icon: <Smile size={15} />, label: 'Feeling', value: checkin.feeling },
-    { icon: <Zap size={15} />, label: 'Energy', value: checkin.energy },
-    { icon: <Moon size={15} />, label: 'Sleep', value: checkin.sleep },
+    { icon: <Smile size={15} />, label: t('wellbeing.feeling', 'Feeling'), value: checkin.feeling },
+    { icon: <Zap size={15} />, label: t('wellbeing.energy', 'Energy'), value: checkin.energy },
+    { icon: <Moon size={15} />, label: t('wellbeing.sleep', 'Sleep'), value: checkin.sleep },
   ];
   return (
     <div>
@@ -88,13 +91,13 @@ function CheckedInSummary({ checkin, onEdit }: { checkin: WellbeingCheckin; onEd
             <PartyPopper size={18} className="text-green-500" />
           </div>
           <div>
-            <p className="text-sm font-bold text-gray-900 dark:text-white">You're checked in for today</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Great habit — see you tomorrow!</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{t('wellbeing.checkedInToday', "You're checked in for today")}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('wellbeing.checkedInSub', 'Great habit — see you tomorrow!')}</p>
           </div>
         </div>
         <div className="text-right">
           <p className={clsx('text-2xl font-black', scoreColor(checkin.score))}>{checkin.score.toFixed(1)}</p>
-          <p className="text-[10px] text-gray-500 uppercase tracking-wide">Wellbeing</p>
+          <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('wellbeing.wellbeing', 'Wellbeing')}</p>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2">
@@ -102,7 +105,7 @@ function CheckedInSummary({ checkin, onEdit }: { checkin: WellbeingCheckin; onEd
           <div key={r.label} className="rounded-xl border border-gray-100 dark:border-gray-800 p-3 text-center">
             <div className="flex items-center justify-center gap-1 text-gray-400 mb-1">{r.icon}</div>
             <p className="text-lg font-black text-gray-900 dark:text-white">{r.value}<span className="text-xs text-gray-400">/5</span></p>
-            <p className="text-[10px] text-gray-500 dark:text-gray-400">{r.label} · {scaleLabel(r.value)}</p>
+            <p className="text-[10px] text-gray-500 dark:text-gray-400">{r.label} · {t(`wellbeing.scale${r.value}`, scaleLabel(r.value))}</p>
           </div>
         ))}
       </div>
@@ -110,7 +113,7 @@ function CheckedInSummary({ checkin, onEdit }: { checkin: WellbeingCheckin; onEd
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400">
           <ShieldAlert size={16} className="flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold">Pain reported{checkin.painArea ? `: ${checkin.painArea}` : ''}</p>
+            <p className="font-semibold">{checkin.painArea ? t('wellbeing.painReportedArea', 'Pain reported: {{area}}', { area: checkin.painArea }) : t('wellbeing.painReportedNoArea', 'Pain reported')}</p>
             {checkin.painNote && <p className="text-xs opacity-90 mt-0.5">{checkin.painNote}</p>}
           </div>
         </div>
@@ -119,13 +122,14 @@ function CheckedInSummary({ checkin, onEdit }: { checkin: WellbeingCheckin; onEd
         onClick={onEdit}
         className="mt-4 flex items-center gap-1.5 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors cursor-pointer"
       >
-        <Pencil size={14} /> Update today's check-in
+        <Pencil size={14} /> {t('wellbeing.updateCheckin', "Update today's check-in")}
       </button>
     </div>
   );
 }
 
 export function WellbeingCheckinWidget() {
+  const { t } = useTranslation();
   const { data: today, isLoading } = useTodayCheckin();
   const submit = useSubmitCheckin();
   const [editing, setEditing] = useState(false);
@@ -183,9 +187,9 @@ export function WellbeingCheckinWidget() {
           <div className="inline-flex p-2 rounded-xl bg-indigo-500/10">
             <HeartPulse size={16} className="text-indigo-500" />
           </div>
-          <h2 className="font-bold text-gray-900 dark:text-white">Daily Check-in</h2>
+          <h2 className="font-bold text-gray-900 dark:text-white">{t('wellbeing.dailyCheckin', 'Daily Check-in')}</h2>
         </div>
-        <span className="text-xs font-semibold text-gray-400">Step {step + 1} of {TOTAL}</span>
+        <span className="text-xs font-semibold text-gray-400">{t('wellbeing.stepOf', 'Step {{current}} of {{total}}', { current: step + 1, total: TOTAL })}</span>
       </div>
       <div className="h-1.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-full overflow-hidden mb-5">
         <motion.div
@@ -206,39 +210,39 @@ export function WellbeingCheckinWidget() {
             transition={{ duration: 0.22 }}
           >
             {step === 0 && (
-              <ScaleStep icon={<Smile size={16} />} title="How are you feeling?"
-                subtitle="Your overall mood and readiness today."
+              <ScaleStep icon={<Smile size={16} />} title={t('wellbeing.feelingQ', 'How are you feeling?')}
+                subtitle={t('wellbeing.feelingSub', 'Your overall mood and readiness today.')}
                 value={values.feeling} onChange={v => set({ feeling: v })} />
             )}
             {step === 1 && (
-              <ScaleStep icon={<Zap size={16} />} title="Energy level"
-                subtitle="How much gas do you have in the tank?"
+              <ScaleStep icon={<Zap size={16} />} title={t('wellbeing.energyQ', 'Energy level')}
+                subtitle={t('wellbeing.energySub', 'How much gas do you have in the tank?')}
                 value={values.energy} onChange={v => set({ energy: v })} />
             )}
             {step === 2 && (
-              <ScaleStep icon={<Moon size={16} />} title="Sleep quality"
-                subtitle="How well did you sleep last night?"
+              <ScaleStep icon={<Moon size={16} />} title={t('wellbeing.sleepQ', 'Sleep quality')}
+                subtitle={t('wellbeing.sleepSub', 'How well did you sleep last night?')}
                 value={values.sleep} onChange={v => set({ sleep: v })} />
             )}
             {step === 3 && (
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <ShieldAlert size={16} className="text-indigo-500" />
-                  <h3 className="font-bold text-gray-900 dark:text-white">Any pain or soreness?</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{t('wellbeing.painQ', 'Any pain or soreness?')}</h3>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Let your coach know if something hurts.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t('wellbeing.painSub', 'Let your coach know if something hurts.')}</p>
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   <button type="button" onClick={() => set({ hasPain: false, painArea: '', painNote: '' })}
                     className={clsx('py-3 rounded-2xl border-2 font-semibold text-sm transition-all cursor-pointer',
                       !values.hasPain ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ring-green-400 border-green-400 bg-green-500/10 text-green-600 dark:text-green-400'
                         : 'border-gray-100 dark:border-gray-800 text-gray-500')}>
-                    😌 No pain
+                    😌 {t('wellbeing.noPain', 'No pain')}
                   </button>
                   <button type="button" onClick={() => set({ hasPain: true })}
                     className={clsx('py-3 rounded-2xl border-2 font-semibold text-sm transition-all cursor-pointer',
                       values.hasPain ? 'ring-2 ring-offset-2 ring-offset-white dark:ring-offset-gray-900 ring-red-400 border-red-400 bg-red-500/10 text-red-600 dark:text-red-400'
                         : 'border-gray-100 dark:border-gray-800 text-gray-500')}>
-                    🤕 Yes, I have pain
+                    🤕 {t('wellbeing.hasPain', 'Yes, I have pain')}
                   </button>
                 </div>
                 {values.hasPain && (
@@ -246,13 +250,13 @@ export function WellbeingCheckinWidget() {
                     <input
                       value={values.painArea}
                       onChange={e => set({ painArea: e.target.value })}
-                      placeholder="Where? (e.g. left hamstring, right knee)"
+                      placeholder={t('wellbeing.painAreaPlaceholder', 'Where? (e.g. left hamstring, right knee)')}
                       className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400"
                     />
                     <textarea
                       value={values.painNote}
                       onChange={e => set({ painNote: e.target.value })}
-                      placeholder="Describe it (optional)"
+                      placeholder={t('wellbeing.painNotePlaceholder', 'Describe it (optional)')}
                       rows={2}
                       className="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
                     />
@@ -264,14 +268,14 @@ export function WellbeingCheckinWidget() {
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <Check size={16} className="text-indigo-500" />
-                  <h3 className="font-bold text-gray-900 dark:text-white">Review & submit</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{t('wellbeing.reviewSubmit', 'Review & submit')}</h3>
                 </div>
                 <div className="flex items-center justify-between rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 p-4 mb-3">
                   <div className="grid grid-cols-3 gap-4 flex-1">
                     {[
-                      { label: 'Feeling', v: values.feeling },
-                      { label: 'Energy', v: values.energy },
-                      { label: 'Sleep', v: values.sleep },
+                      { label: t('wellbeing.feeling', 'Feeling'), v: values.feeling },
+                      { label: t('wellbeing.energy', 'Energy'), v: values.energy },
+                      { label: t('wellbeing.sleep', 'Sleep'), v: values.sleep },
                     ].map(r => (
                       <div key={r.label} className="text-center">
                         <p className="text-lg font-black text-gray-900 dark:text-white">{r.v}<span className="text-xs text-gray-400">/5</span></p>
@@ -281,17 +285,17 @@ export function WellbeingCheckinWidget() {
                   </div>
                   <div className="pl-4 ml-4 border-l border-gray-100 dark:border-gray-700 text-center">
                     <p className={clsx('text-2xl font-black', scoreColor(previewScore))}>{previewScore.toFixed(1)}</p>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">Score</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wide">{t('wellbeing.score', 'Score')}</p>
                   </div>
                 </div>
                 {values.hasPain ? (
                   <div className="flex items-start gap-2 rounded-xl bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-600 dark:text-red-400">
                     <ShieldAlert size={16} className="flex-shrink-0 mt-0.5" />
-                    <span>Pain reported{values.painArea ? `: ${values.painArea}` : ''}. Your coach will see this.</span>
+                    <span>{values.painArea ? t('wellbeing.painReviewArea', 'Pain reported: {{area}}. Your coach will see this.', { area: values.painArea }) : t('wellbeing.painReviewNoArea', 'Pain reported. Your coach will see this.')}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 rounded-xl bg-green-500/10 border border-green-500/20 p-3 text-sm text-green-600 dark:text-green-400">
-                    <Check size={16} /> <span>No pain reported — nice.</span>
+                    <Check size={16} /> <span>{t('wellbeing.noPainReview', 'No pain reported — nice.')}</span>
                   </div>
                 )}
               </div>
@@ -309,7 +313,7 @@ export function WellbeingCheckinWidget() {
           className={clsx('flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium transition-all',
             step === 0 && !today ? 'opacity-0 pointer-events-none' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer')}
         >
-          <ChevronLeft size={16} /> {step === 0 ? 'Cancel' : 'Back'}
+          <ChevronLeft size={16} /> {step === 0 ? t('common.cancel', 'Cancel') : t('common.back', 'Back')}
         </button>
         {step < TOTAL - 1 ? (
           <button
@@ -319,7 +323,7 @@ export function WellbeingCheckinWidget() {
             className={clsx('flex items-center gap-1 px-5 py-2 rounded-xl text-sm font-semibold transition-all',
               canAdvance ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-lg shadow-indigo-500/20 cursor-pointer' : 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed')}
           >
-            Next <ChevronRight size={16} />
+            {t('common.next', 'Next')} <ChevronRight size={16} />
           </button>
         ) : (
           <button
@@ -328,7 +332,7 @@ export function WellbeingCheckinWidget() {
             disabled={submit.isPending}
             className="flex items-center gap-1.5 px-5 py-2 rounded-xl text-sm font-semibold bg-green-600 text-white hover:bg-green-500 shadow-lg shadow-green-500/20 transition-all cursor-pointer disabled:opacity-60"
           >
-            <Check size={16} /> {submit.isPending ? 'Saving…' : 'Submit check-in'}
+            <Check size={16} /> {submit.isPending ? t('common.saving', 'Saving…') : t('wellbeing.submitCheckin', 'Submit check-in')}
           </button>
         )}
       </div>

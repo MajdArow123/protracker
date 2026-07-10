@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -36,6 +38,8 @@ export function AssessmentPage() {
   const { id } = useParams<{ id: string }>();
   const playerId = Number(id);
   const navigate = useNavigate();
+  const { t: tr } = useTranslation();
+  const { formatDate } = useLocaleFormat();
   const { addToast: showToast } = useToast();
   const qc = useQueryClient();
 
@@ -88,9 +92,9 @@ export function AssessmentPage() {
 
   async function submitAssessment(e: React.FormEvent) {
     e.preventDefault();
-    if (!periodId) { showToast('Select an assessment period', 'error'); return; }
-    if (!dateRecorded) { showToast('Select a date', 'error'); return; }
-    if (!allScored) { showToast('Score every category before submitting', 'error'); return; }
+    if (!periodId) { showToast(tr('assessment.selectPeriodError', 'Select an assessment period'), 'error'); return; }
+    if (!dateRecorded) { showToast(tr('assessment.selectDateError', 'Select a date'), 'error'); return; }
+    if (!allScored) { showToast(tr('assessment.scoreAllSubmitError', 'Score every category before submitting'), 'error'); return; }
 
     try {
       await createAssessment.mutateAsync({
@@ -104,7 +108,7 @@ export function AssessmentPage() {
           score: scores[c.id] as number,
         })),
       } as Parameters<typeof createAssessment.mutateAsync>[0]);
-      showToast('Assessment saved', 'success');
+      showToast(tr('assessment.saved', 'Assessment saved'), 'success');
       setTab('history');
       setPeriodId('');
       setNotes('');
@@ -114,17 +118,17 @@ export function AssessmentPage() {
         return next;
       });
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to save', 'error');
+      showToast(err instanceof Error ? err.message : tr('assessment.saveFailed', 'Failed to save'), 'error');
     }
   }
 
   async function createNewPeriod() {
     if (!periodName.trim() || !periodStart || !periodEnd) {
-      showToast('All period fields required', 'error');
+      showToast(tr('assessment.allPeriodFieldsRequired', 'All period fields required'), 'error');
       return;
     }
     if (!player?.teamId) {
-      showToast('Player must be on a team to create assessment periods', 'error');
+      showToast(tr('assessment.playerMustBeOnTeam', 'Player must be on a team to create assessment periods'), 'error');
       return;
     }
     try {
@@ -134,12 +138,12 @@ export function AssessmentPage() {
         endDate: periodEnd,
         teamId: player.teamId,
       });
-      showToast('Assessment period created', 'success');
+      showToast(tr('assessment.periodCreated', 'Assessment period created'), 'success');
       setPeriodId(String(created.id));
       setShowPeriodModal(false);
       setPeriodName('');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed', 'error');
+      showToast(err instanceof Error ? err.message : tr('common.error', 'Failed'), 'error');
     }
   }
 
@@ -149,9 +153,9 @@ export function AssessmentPage() {
     try {
       await assessmentsApi.deleteAssessment(deleteTarget.id);
       qc.invalidateQueries({ queryKey: ['assessments', playerId] });
-      showToast('Assessment deleted', 'success');
+      showToast(tr('assessment.deleted', 'Assessment deleted'), 'success');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to delete', 'error');
+      showToast(err instanceof Error ? err.message : tr('assessment.deleteFailed', 'Failed to delete'), 'error');
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
@@ -186,10 +190,10 @@ export function AssessmentPage() {
 
   return (
     <PageWrapper
-      title={`Assessments — ${player?.fullName ?? ''}`}
+      title={tr('assessment.assessmentsFor', 'Assessments — {{name}}', { name: player?.fullName ?? '' })}
       actions={
         <Button variant="ghost" size="sm" onClick={() => navigate(`/players/${id}`)}>
-          <ArrowLeft size={16} /> Back
+          <ArrowLeft size={16} /> {tr('common.back', 'Back')}
         </Button>
       }
     >
@@ -204,7 +208,7 @@ export function AssessmentPage() {
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
-            {t === 'new' ? 'New Assessment' : `History (${existingAssessments.length})`}
+            {t === 'new' ? tr('assessment.newAssessment', 'New Assessment') : tr('assessment.historyCount', 'History ({{count}})', { count: existingAssessments.length })}
           </button>
         ))}
         <div className="ml-auto flex items-center gap-2">
@@ -222,7 +226,7 @@ export function AssessmentPage() {
               onClick={() => navigate(`/teams/${player.teamId}/bulk-assessment`)}
               className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
             >
-              <Users size={15} /> Assess Full Team
+              <Users size={15} /> {tr('assessment.assessFullTeam', 'Assess Full Team')}
             </button>
           )}
         </div>
@@ -230,17 +234,17 @@ export function AssessmentPage() {
 
       {tab === 'new' && (
         <form onSubmit={submitAssessment} className="max-w-3xl space-y-4">
-          <Card header="Assessment Period">
+          <Card header={tr('assessment.period', 'Assessment Period')}>
             {loadingPeriods ? (
               <Spinner />
             ) : (
               <div className="space-y-3">
                 <Select
-                  label="Period"
+                  label={tr('assessment.periodLabel', 'Period')}
                   value={periodId}
                   onChange={e => setPeriodId(e.target.value)}
                   options={[
-                    { value: '', label: 'Select period…' },
+                    { value: '', label: tr('assessment.selectPeriod', 'Select period…') },
                     ...teamPeriods.map(p => ({
                       value: String(p.id),
                       label: `${p.name} (${p.startDate} → ${p.endDate})`,
@@ -252,27 +256,27 @@ export function AssessmentPage() {
                   onClick={() => setShowPeriodModal(true)}
                   className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <Plus size={14} /> Create new period
+                  <Plus size={14} /> {tr('assessment.createNewPeriod', 'Create new period')}
                 </button>
               </div>
             )}
           </Card>
 
-          <Card header="Date & Notes">
+          <Card header={tr('assessment.dateAndNotes', 'Date & Notes')}>
             <div className="space-y-4">
               <Input
-                label="Date"
+                label={tr('assessment.date', 'Date')}
                 type="date"
                 value={dateRecorded}
                 onChange={e => setDateRecorded(e.target.value)}
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('assessment.notes', 'Notes')}</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   rows={2}
-                  placeholder="Observations…"
+                  placeholder={tr('assessment.observations', 'Observations…')}
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
@@ -289,12 +293,12 @@ export function AssessmentPage() {
           {/* Stat score cards */}
           <div>
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-              Stat Scores
+              {tr('assessment.statScores', 'Stat Scores')}
             </h3>
             {loadingStats ? (
               <Spinner />
             ) : statCategories.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No stat categories for this sport.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('assessment.noStatCategories', 'No stat categories for this sport.')}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {statCategories.map(cat => (
@@ -317,7 +321,7 @@ export function AssessmentPage() {
             disabled={!allScored}
             className="w-full justify-center"
           >
-            Submit Assessment
+            {tr('assessment.submitAssessment', 'Submit Assessment')}
           </Button>
         </form>
       )}
@@ -329,14 +333,14 @@ export function AssessmentPage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar size={13} className="text-indigo-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.count', 'Assessments')}</p>
                 </div>
                 <p className="text-xl font-black text-gray-900 dark:text-white">{summary.total}</p>
               </div>
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <BarChart3 size={13} className="text-indigo-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Improvement</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.improvement', 'Improvement')}</p>
                 </div>
                 {summary.improvement !== null ? (
                   <p className={clsx('text-xl font-black', summary.improvement >= 0 ? 'text-green-500' : 'text-red-500')}>
@@ -347,7 +351,7 @@ export function AssessmentPage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Trophy size={13} className="text-green-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.best', 'Best')}</p>
                 </div>
                 {summary.best ? (
                   <>
@@ -359,7 +363,7 @@ export function AssessmentPage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle size={13} className="text-amber-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Weakest</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.weakest', 'Weakest')}</p>
                 </div>
                 {summary.worst ? (
                   <>
@@ -374,8 +378,8 @@ export function AssessmentPage() {
           {existingAssessments.length === 0 ? (
             <div className="text-gray-500 dark:text-gray-400 py-12 text-center">
               <Calendar size={32} className="mx-auto mb-3 text-gray-400" />
-              <p className="font-medium">No assessments yet</p>
-              <p className="text-sm mt-1">Switch to "New Assessment" to record the first one.</p>
+              <p className="font-medium">{tr('assessment.noAssessments', 'No assessments yet')}</p>
+              <p className="text-sm mt-1">{tr('assessment.noAssessmentsCoachDesc', 'Switch to "New Assessment" to record the first one.')}</p>
             </div>
           ) : (
             [...existingAssessments]
@@ -401,7 +405,7 @@ export function AssessmentPage() {
                       <div>
                         <p className="font-bold text-gray-900 dark:text-white text-sm">{a.assessmentPeriodName}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          {new Date(a.dateRecorded).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          {formatDate(a.dateRecorded, { year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                         {a.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{a.notes}</p>}
                       </div>
@@ -425,7 +429,7 @@ export function AssessmentPage() {
                           onClick={() => setExpandedId(isExpanded ? null : a.id)}
                           className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                         >
-                          {isExpanded ? 'Collapse' : 'Expand'}
+                          {isExpanded ? tr('common.collapse', 'Collapse') : tr('common.expand', 'Expand')}
                         </button>
                         <button
                           onClick={() => setDeleteTarget(a)}
@@ -496,15 +500,15 @@ export function AssessmentPage() {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-sm w-full p-6"
             onClick={e => e.stopPropagation()}
           >
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">New Assessment Period</h2>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">{tr('assessment.newPeriodTitle', 'New Assessment Period')}</h2>
             <div className="space-y-3">
-              <Input label="Period Name" value={periodName} onChange={e => setPeriodName(e.target.value)} placeholder="Spring 2026" />
-              <Input label="Start Date" type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} />
-              <Input label="End Date" type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} />
+              <Input label={tr('assessment.periodName', 'Period Name')} value={periodName} onChange={e => setPeriodName(e.target.value)} placeholder={tr('assessment.periodNamePlaceholder', 'Spring 2026')} />
+              <Input label={tr('assessment.startDate', 'Start Date')} type="date" value={periodStart} onChange={e => setPeriodStart(e.target.value)} />
+              <Input label={tr('assessment.endDate', 'End Date')} type="date" value={periodEnd} onChange={e => setPeriodEnd(e.target.value)} />
             </div>
             <div className="flex justify-end gap-3 mt-5">
-              <Button variant="secondary" onClick={() => setShowPeriodModal(false)}>Cancel</Button>
-              <Button onClick={createNewPeriod} isLoading={createPeriod.isPending}>Create</Button>
+              <Button variant="secondary" onClick={() => setShowPeriodModal(false)}>{tr('common.cancel', 'Cancel')}</Button>
+              <Button onClick={createNewPeriod} isLoading={createPeriod.isPending}>{tr('common.create', 'Create')}</Button>
             </div>
           </div>
         </div>
@@ -514,9 +518,9 @@ export function AssessmentPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-        title="Delete Assessment"
-        message={`Delete assessment from "${deleteTarget?.assessmentPeriodName}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={tr('assessment.deleteTitle', 'Delete Assessment')}
+        message={tr('assessment.deleteMessage', 'Delete assessment from "{{name}}"? This cannot be undone.', { name: deleteTarget?.assessmentPeriodName })}
+        confirmLabel={tr('common.delete', 'Delete')}
         isLoading={deleting}
       />
     </PageWrapper>

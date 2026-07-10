@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CalendarDays, Dumbbell, History } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
@@ -8,6 +9,7 @@ import { useSoloSessions } from '../../hooks/useSolo';
 // Personal training planner for solo athletes: the same Monday-based week calendar
 // the team Schedule tab uses, but every session belongs to (and is managed by) you.
 export function SoloTrainingPage() {
+  const { t } = useTranslation();
   const { data: sessions = [] } = useSoloSessions();
 
   const stats = useMemo(() => {
@@ -30,26 +32,26 @@ export function SoloTrainingPage() {
   }, [sessions]);
 
   return (
-    <PageWrapper title="My Training">
+    <PageWrapper title={t('sessions.myTraining', 'My Training')}>
       <div className="grid grid-cols-3 gap-4 max-w-xl">
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <div className="flex items-center gap-2 mb-1">
             <CalendarDays size={13} className="text-indigo-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">This Week</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('sessions.thisWeek', 'This Week')}</p>
           </div>
           <p className="text-xl font-black text-gray-900 dark:text-white">{stats.thisWeek}</p>
         </div>
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <div className="flex items-center gap-2 mb-1">
             <Dumbbell size={13} className="text-purple-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Upcoming</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('sessions.upcoming', 'Upcoming')}</p>
           </div>
           <p className="text-xl font-black text-gray-900 dark:text-white">{stats.upcoming}</p>
         </div>
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <div className="flex items-center gap-2 mb-1">
             <History size={13} className="text-emerald-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Completed</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('sessions.completed', 'Completed')}</p>
           </div>
           <p className="text-xl font-black text-gray-900 dark:text-white">{stats.past}</p>
         </div>

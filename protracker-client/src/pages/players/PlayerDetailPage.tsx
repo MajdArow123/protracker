@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePlayer, useDeletePlayer } from '../../hooks/usePlayers';
 import { useInjuries, useCreateInjury, useUpdateInjury, useDeleteInjury, useRecoverInjury } from '../../hooks/useInjuries';
@@ -35,6 +36,8 @@ import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingTrendCard } from '../../components/wellbeing/WellbeingTrendCard';
 import { CoachJournalTab } from '../../components/journal/CoachJournalTab';
 import { PlayerGoalsTab } from '../../components/goals/PlayerGoalsTab';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
 type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'goals' | 'wellbeing' | 'journal' | 'notes' | 'parents';
 
@@ -74,11 +77,13 @@ function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 }
 
-function getFitnessLabel(level: number) {
-  if (level <= 3) return 'Beginner';
-  if (level <= 6) return 'Intermediate';
-  if (level <= 8) return 'Advanced';
-  return 'Elite';
+type TFunc = (key: string, fallback: string, opts?: Record<string, unknown>) => string;
+
+function getFitnessLabel(level: number, t: TFunc) {
+  if (level <= 3) return t('players.fitBeginner', 'Beginner');
+  if (level <= 6) return t('players.fitIntermediate', 'Intermediate');
+  if (level <= 8) return t('players.fitAdvanced', 'Advanced');
+  return t('players.fitElite', 'Elite');
 }
 
 interface InjuryFormState {
@@ -118,6 +123,9 @@ function RatingStars({ rating }: { rating: number }) {
 }
 
 export function PlayerDetailPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
+  const { formatDate } = useLocaleFormat();
   const { id } = useParams<{ id: string }>();
   const playerId = Number(id);
   const navigate = useNavigate();
@@ -184,11 +192,11 @@ export function PlayerDetailPage() {
   const { status: injurySaveStatus, flush: flushInjury } = useAutoSave(!!editingInjury, injuryForm, autoSaveInjury);
 
   async function saveInjury() {
-    if (!injuryForm.injuryType.trim()) { showToast('Injury type required', 'error'); return; }
+    if (!injuryForm.injuryType.trim()) { showToast(t('players.injuryTypeRequired', 'Injury type required'), 'error'); return; }
     try {
       if (editingInjury) { await flushInjury(); setEditingInjury(null); }
-      else { await createInjury.mutateAsync(buildInjuryPayload() as Parameters<typeof createInjury.mutateAsync>[0]); showToast('Injury recorded', 'success'); setShowNewInjury(false); }
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
+      else { await createInjury.mutateAsync(buildInjuryPayload() as Parameters<typeof createInjury.mutateAsync>[0]); showToast(t('players.injuryRecorded', 'Injury recorded'), 'success'); setShowNewInjury(false); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t('players.saveFailed', 'Save failed'), 'error'); }
   }
 
   function openNewMatch() { setEditingMatch(null); setMatchForm(EMPTY_MATCH); setShowNewMatch(true); }
@@ -212,13 +220,13 @@ export function PlayerDetailPage() {
   const { status: matchSaveStatus, flush: flushMatch } = useAutoSave(!!editingMatch, matchForm, autoSaveMatch);
 
   async function saveMatch() {
-    if (!matchForm.opponent.trim()) { showToast('Opponent required', 'error'); return; }
+    if (!matchForm.opponent.trim()) { showToast(t('players.opponentRequired', 'Opponent required'), 'error'); return; }
     const rating = Number(matchForm.performanceRating);
-    if (isNaN(rating) || rating < 1 || rating > 10) { showToast('Rating must be 1–10', 'error'); return; }
+    if (isNaN(rating) || rating < 1 || rating > 10) { showToast(t('players.ratingRange', 'Rating must be 1–10'), 'error'); return; }
     try {
       if (editingMatch) { await flushMatch(); setEditingMatch(null); }
-      else { await createMatch.mutateAsync(buildMatchPayload() as Parameters<typeof createMatch.mutateAsync>[0]); showToast('Match recorded', 'success'); setShowNewMatch(false); }
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
+      else { await createMatch.mutateAsync(buildMatchPayload() as Parameters<typeof createMatch.mutateAsync>[0]); showToast(t('players.matchRecorded', 'Match recorded'), 'success'); setShowNewMatch(false); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t('players.saveFailed', 'Save failed'), 'error'); }
   }
 
   function openNewSession() { setEditingSession(null); setTrainingForm({ ...EMPTY_TRAINING, teamId: player?.teamId?.toString() ?? '' }); setShowNewSession(true); }
@@ -243,36 +251,36 @@ export function PlayerDetailPage() {
 
   async function saveSession() {
     const duration = Number(trainingForm.durationMinutes);
-    if (isNaN(duration) || duration < 1 || duration > 300) { showToast('Duration must be 1–300 min', 'error'); return; }
-    if (!trainingForm.teamId) { showToast('Select a team', 'error'); return; }
+    if (isNaN(duration) || duration < 1 || duration > 300) { showToast(t('players.durationRange', 'Duration must be 1–300 min'), 'error'); return; }
+    if (!trainingForm.teamId) { showToast(t('players.selectTeam', 'Select a team'), 'error'); return; }
     try {
       if (editingSession) { await flushSession(); setEditingSession(null); }
-      else { await createSession.mutateAsync(buildSessionPayload() as Parameters<typeof createSession.mutateAsync>[0]); showToast('Session recorded', 'success'); setShowNewSession(false); }
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
+      else { await createSession.mutateAsync(buildSessionPayload() as Parameters<typeof createSession.mutateAsync>[0]); showToast(t('players.sessionRecorded', 'Session recorded'), 'success'); setShowNewSession(false); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t('players.saveFailed', 'Save failed'), 'error'); }
   }
 
   if (isLoading) return <DetailSkeleton />;
   if (!player) return (
     <div className="flex-1 p-6">
-      <EmptyState icon={<Users size={40} />} title="Player not found" description="This player may have been removed." />
+      <EmptyState icon={<Users size={40} />} title={t('players.playerNotFound', 'Player not found')} description={t('players.playerNotFoundDesc', 'This player may have been removed.')} />
     </div>
   );
 
   const sportName = player.teamName ? '' : '';
   const headerGrad = SPORT_HEADER_COLORS[sportName] ?? 'from-indigo-600 to-violet-700';
-  const fitnessLabel = player.fitnessLevel ? getFitnessLabel(player.fitnessLevel) : null;
+  const fitnessLabel = player.fitnessLevel ? getFitnessLabel(player.fitnessLevel, t) : null;
 
   const TABS: { id: Tab; label: string; icon: typeof Activity; count?: number }[] = [
-    { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'injuries', label: 'Injuries', icon: ShieldAlert, count: injuries.length },
-    { id: 'matches', label: 'Matches', icon: Star, count: matches.length },
-    { id: 'training', label: 'Training', icon: Dumbbell, count: sessions.length },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare, count: playerTasks.length },
-    { id: 'goals', label: 'Goals', icon: Target },
-    { id: 'wellbeing', label: 'Wellbeing', icon: HeartPulse },
-    { id: 'journal', label: 'Journal', icon: BookOpen },
-    { id: 'notes', label: 'Notes', icon: StickyNote },
-    { id: 'parents', label: 'Parents', icon: UserPlus },
+    { id: 'overview', label: t('players.tabOverview', 'Overview'), icon: Activity },
+    { id: 'injuries', label: t('players.tabInjuries', 'Injuries'), icon: ShieldAlert, count: injuries.length },
+    { id: 'matches', label: t('players.tabMatches', 'Matches'), icon: Star, count: matches.length },
+    { id: 'training', label: t('players.tabTraining', 'Training'), icon: Dumbbell, count: sessions.length },
+    { id: 'tasks', label: t('players.tabTasks', 'Tasks'), icon: CheckSquare, count: playerTasks.length },
+    { id: 'goals', label: t('players.tabGoals', 'Goals'), icon: Target },
+    { id: 'wellbeing', label: t('players.tabWellbeing', 'Wellbeing'), icon: HeartPulse },
+    { id: 'journal', label: t('players.tabJournal', 'Journal'), icon: BookOpen },
+    { id: 'notes', label: t('players.tabNotes', 'Notes'), icon: StickyNote },
+    { id: 'parents', label: t('players.tabParents', 'Parents'), icon: UserPlus },
   ];
 
   return (
@@ -287,26 +295,26 @@ export function PlayerDetailPage() {
               onClick={() => navigate('/players')}
               className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer"
             >
-              <ArrowLeft size={16} /> Players
+              <ArrowLeft size={16} /> {t('players.title', 'Players')}
             </button>
             <div className="flex gap-2">
               <button
                 onClick={() => navigate(`/reports/compare?players=${id}`)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
               >
-                <GitCompare size={14} /> Compare
+                <GitCompare size={14} /> {t('players.compare', 'Compare')}
               </button>
               <button
                 onClick={() => navigate(`/players/${id}/edit`)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
               >
-                <Edit size={14} /> Edit
+                <Edit size={14} /> {t('common.edit', 'Edit')}
               </button>
               <button
                 onClick={() => setConfirmDeletePlayer(true)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
               >
-                <Trash2 size={14} /> Delete
+                <Trash2 size={14} /> {t('common.delete', 'Delete')}
               </button>
             </div>
           </div>
@@ -340,10 +348,10 @@ export function PlayerDetailPage() {
               </div>
               {/* Quick stats */}
               <div className="flex flex-wrap items-center gap-4 mt-3 text-sm text-white/70">
-                {player.age && <span>{player.age} yrs</span>}
+                {player.age && <span>{t('players.yrs', '{{count}} yrs', { count: player.age })}</span>}
                 {player.height != null && <span>{formatHeight(player.height, heightUnit)}</span>}
                 {player.weight != null && <span>{formatWeight(player.weight, weightUnit)}</span>}
-                {player.fitnessLevel && <span>Fitness {player.fitnessLevel}/10</span>}
+                {player.fitnessLevel && <span>{t('players.fitness', 'Fitness')} {player.fitnessLevel}/10</span>}
               </div>
             </div>
           </div>
@@ -351,9 +359,9 @@ export function PlayerDetailPage() {
           {/* Quick action buttons */}
           <div className="flex gap-2 mt-5 flex-wrap">
             {[
-              { label: 'Assessment', icon: ClipboardList, path: `/players/${id}/assessment` },
-              { label: 'Improvement Plan', icon: TrendingUp, path: `/players/${id}/improvement-plan` },
-              { label: 'Nutrition', icon: Salad, path: `/players/${id}/nutrition` },
+              { label: t('players.assessment', 'Assessment'), icon: ClipboardList, path: `/players/${id}/assessment` },
+              { label: t('players.improvementPlan', 'Improvement Plan'), icon: TrendingUp, path: `/players/${id}/improvement-plan` },
+              { label: t('players.nutrition', 'Nutrition'), icon: Salad, path: `/players/${id}/nutrition` },
             ].map(item => (
               <button
                 key={item.label}
@@ -378,10 +386,10 @@ export function PlayerDetailPage() {
             <ShieldAlert size={16} className="text-red-500 flex-shrink-0" />
             <p className="text-sm font-medium text-red-700 dark:text-red-400">
               {active.length === 1
-                ? `Active injury: ${active[0].injuryType}${active[0].bodyPart ? ` (${active[0].bodyPart})` : ''}`
-                : `${active.length} active injuries`}
+                ? t('players.activeInjuryOne', 'Active injury: {{type}}{{part}}', { type: active[0].injuryType, part: active[0].bodyPart ? ` (${active[0].bodyPart})` : '' })
+                : t('players.activeInjuriesCount', '{{count}} active injuries', { count: active.length })}
             </p>
-            <button onClick={() => setTab('injuries')} className="ml-auto text-xs font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer">View</button>
+            <button onClick={() => setTab('injuries')} className="ml-auto text-xs font-semibold text-red-600 dark:text-red-400 hover:underline cursor-pointer">{t('common.view', 'View')}</button>
           </div>
         );
       })()}
@@ -441,13 +449,13 @@ export function PlayerDetailPage() {
                 <div className="lg:col-span-3 space-y-4">
                   {(player.age || player.height || player.weight || player.fitnessLevel) && (
                     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">Physical Profile</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('players.physicalProfile', 'Physical Profile')}</h3>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {[
-                          { label: 'Age', value: player.age, unit: 'yrs' },
-                          { label: 'Height', value: player.height, display: formatHeight(player.height, heightUnit) },
-                          { label: 'Weight', value: player.weight, display: formatWeight(player.weight, weightUnit) },
-                          { label: 'Fitness', value: player.fitnessLevel, unit: '/10' },
+                          { label: t('players.age', 'Age'), value: player.age, unit: t('players.yrsUnit', 'yrs') },
+                          { label: t('players.height', 'Height'), value: player.height, display: formatHeight(player.height, heightUnit) },
+                          { label: t('players.weight', 'Weight'), value: player.weight, display: formatWeight(player.weight, weightUnit) },
+                          { label: t('players.fitness', 'Fitness'), value: player.fitnessLevel, unit: '/10' },
                         ].filter(s => s.value).map(s => (
                           <div key={s.label} className="text-center p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
                             <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{s.label}</p>
@@ -462,21 +470,21 @@ export function PlayerDetailPage() {
 
                   {player.goals && (
                     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-2">Goals</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('players.goals', 'Goals')}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-wrap">{player.goals}</p>
                     </div>
                   )}
 
                   {player.coachNotes && (
                     <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-5">
-                      <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2">Coach Notes</h3>
+                      <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-2">{t('players.coachNotes', 'Coach Notes')}</h3>
                       <p className="text-sm text-amber-600 dark:text-amber-300 leading-relaxed whitespace-pre-wrap">{player.coachNotes}</p>
                     </div>
                   )}
 
                   {player.injuryNotes && (
                     <div className="rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 p-5">
-                      <h3 className="font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2"><ShieldAlert size={15} /> Injury Notes</h3>
+                      <h3 className="font-bold text-red-700 dark:text-red-400 mb-2 flex items-center gap-2"><ShieldAlert size={15} /> {t('players.injuryNotes', 'Injury Notes')}</h3>
                       <p className="text-sm text-red-600 dark:text-red-300 leading-relaxed whitespace-pre-wrap">{player.injuryNotes}</p>
                     </div>
                   )}
@@ -484,9 +492,9 @@ export function PlayerDetailPage() {
                   {assessments.length > 0 && (
                     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-bold text-gray-900 dark:text-white">Recent Assessments</h3>
+                        <h3 className="font-bold text-gray-900 dark:text-white">{t('players.recentAssessments', 'Recent Assessments')}</h3>
                         <button onClick={() => navigate(`/players/${id}/assessment`)} className="text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors cursor-pointer">
-                          View all
+                          {t('common.viewAll', 'View All')}
                         </button>
                       </div>
                       <div className="space-y-2">
@@ -496,7 +504,7 @@ export function PlayerDetailPage() {
                             <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
                               <div>
                                 <p className="text-sm font-medium text-gray-900 dark:text-white">{a.assessmentPeriodName}</p>
-                                <p className="text-xs text-gray-500">{new Date(a.dateRecorded).toLocaleDateString()}</p>
+                                <p className="text-xs text-gray-500">{formatDate(a.dateRecorded)}</p>
                               </div>
                               {avg !== null && (
                                 <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', avg > 7 ? 'bg-green-500/20 text-green-400' : avg >= 5 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400')}>
@@ -513,9 +521,9 @@ export function PlayerDetailPage() {
                   {!player.goals && !player.coachNotes && !player.injuryNotes && assessments.length === 0 && (
                     <EmptyState
                       icon={<Activity size={36} />}
-                      title="No profile data yet"
-                      description="Add goals, notes, and assessments to build this player's profile"
-                      action={{ label: 'Edit Player', onClick: () => navigate(`/players/${id}/edit`) }}
+                      title={t('players.noProfileData', 'No profile data yet')}
+                      description={t('players.noProfileDataDesc', "Add goals, notes, and assessments to build this player's profile")}
+                      action={{ label: t('players.editPlayer', 'Edit Player'), onClick: () => navigate(`/players/${id}/edit`) }}
                     />
                   )}
                 </div>
@@ -524,19 +532,19 @@ export function PlayerDetailPage() {
                 <div className="lg:col-span-2 space-y-4">
                   {/* Skill radar */}
                   <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                    <h3 className="font-bold text-gray-900 dark:text-white mb-1">Skill Profile</h3>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Latest assessment</p>
+                    <h3 className="font-bold text-gray-900 dark:text-white mb-1">{t('players.skillProfile', 'Skill Profile')}</h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{t('players.latestAssessment', 'Latest assessment')}</p>
                     {radarData.length > 0 ? (
                       <RadarChartWrapper data={radarData} height={240} />
                     ) : (
                       <div className="flex flex-col items-center justify-center h-40 text-center">
                         <Activity size={28} className="text-gray-400 mb-2" />
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">No assessment data yet</p>
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('players.noAssessmentData', 'No assessment data yet')}</p>
                         <button
                           onClick={() => navigate(`/players/${id}/assessment`)}
                           className="mt-3 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
                         >
-                          Add Assessment
+                          {t('players.addAssessment', 'Add Assessment')}
                         </button>
                       </div>
                     )}
@@ -545,7 +553,7 @@ export function PlayerDetailPage() {
                   {/* Performance trend */}
                   {progressPct !== null && (
                     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">Overall Progress</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('players.overallProgress', 'Overall Progress')}</h3>
                       <div className={clsx('flex items-center gap-3 p-3 rounded-xl', progressPct >= 0 ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20')}>
                         {progressPct >= 0
                           ? <TrendingUp size={22} className="text-green-400 flex-shrink-0" />
@@ -554,7 +562,7 @@ export function PlayerDetailPage() {
                           <p className={clsx('text-lg font-black', progressPct >= 0 ? 'text-green-400' : 'text-red-400')}>
                             {progressPct >= 0 ? '+' : ''}{progressPct}%
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">since first assessment</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t('players.sinceFirstAssessment', 'since first assessment')}</p>
                         </div>
                       </div>
                     </div>
@@ -563,27 +571,27 @@ export function PlayerDetailPage() {
                   {/* Quick stats */}
                   {latestAssessment && (
                     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">Quick Stats</h3>
+                      <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('players.quickStats', 'Quick Stats')}</h3>
                       <div className="space-y-2.5">
                         {bestStat && (
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">Best Stat</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{t('players.bestStat', 'Best Stat')}</span>
                             <span className="text-xs font-semibold text-green-400">{bestStat.statCategoryName} — {bestStat.score}/10</span>
                           </div>
                         )}
                         {worstStat && (
                           <div className="flex items-center justify-between">
-                            <span className="text-xs text-gray-500 dark:text-gray-400">Weakest Stat</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{t('players.weakestStat', 'Weakest Stat')}</span>
                             <span className="text-xs font-semibold text-red-400">{worstStat.statCategoryName} — {worstStat.score}/10</span>
                           </div>
                         )}
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Assessments</span>
-                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{assessments.length} recorded</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{t('players.assessmentsLabel', 'Assessments')}</span>
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{t('players.recordedCount', '{{count}} recorded', { count: assessments.length })}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">Last Assessment</span>
-                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{new Date(latestAssessment.dateRecorded).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">{t('players.lastAssessment', 'Last Assessment')}</span>
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{formatDate(latestAssessment.dateRecorded, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                       </div>
                     </div>
@@ -599,42 +607,42 @@ export function PlayerDetailPage() {
               {!(showNewInjury || editingInjury) && (
                 <div className="flex justify-end">
                   <button onClick={openNewInjury} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                    <Plus size={15} /> Record Injury
+                    <Plus size={15} /> {t('players.recordInjury', 'Record Injury')}
                   </button>
                 </div>
               )}
 
               {(showNewInjury || editingInjury) && (
                 <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingInjury ? 'Edit Injury' : 'Record Injury'}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingInjury ? t('players.editInjury', 'Edit Injury') : t('players.recordInjury', 'Record Injury')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Injury Date" type="date" value={injuryForm.injuryDate} onChange={e => setInjuryForm(v => ({ ...v, injuryDate: e.target.value }))} />
-                    <Input label="Injury Type *" value={injuryForm.injuryType} onChange={e => setInjuryForm(v => ({ ...v, injuryType: e.target.value }))} placeholder="e.g. Hamstring strain" />
-                    <Select label="Body Part" value={injuryForm.bodyPart} onChange={e => setInjuryForm(v => ({ ...v, bodyPart: e.target.value }))} options={BODY_PARTS.map(s => ({ value: s, label: s }))} />
-                    <Select label="Severity" value={injuryForm.severity} onChange={e => setInjuryForm(v => ({ ...v, severity: e.target.value }))} options={INJURY_SEVERITIES.map(s => ({ value: s, label: s }))} />
-                    <Select label="Recovery Status" value={injuryForm.recoveryStatus} onChange={e => setInjuryForm(v => ({ ...v, recoveryStatus: e.target.value }))} options={RECOVERY_STATUSES.map(s => ({ value: s, label: s }))} />
-                    <Input label="Expected Return Date" type="date" value={injuryForm.expectedReturnDate} onChange={e => setInjuryForm(v => ({ ...v, expectedReturnDate: e.target.value }))} />
+                    <Input label={t('players.injuryDate', 'Injury Date')} type="date" value={injuryForm.injuryDate} onChange={e => setInjuryForm(v => ({ ...v, injuryDate: e.target.value }))} />
+                    <Input label={t('players.injuryTypeLabel', 'Injury Type *')} value={injuryForm.injuryType} onChange={e => setInjuryForm(v => ({ ...v, injuryType: e.target.value }))} placeholder={t('players.injuryTypePlaceholder', 'e.g. Hamstring strain')} />
+                    <Select label={t('players.bodyPart', 'Body Part')} value={injuryForm.bodyPart} onChange={e => setInjuryForm(v => ({ ...v, bodyPart: e.target.value }))} options={BODY_PARTS.map(s => ({ value: s, label: L.generic('bodyPart', s) }))} />
+                    <Select label={t('players.severity', 'Severity')} value={injuryForm.severity} onChange={e => setInjuryForm(v => ({ ...v, severity: e.target.value }))} options={INJURY_SEVERITIES.map(s => ({ value: s, label: L.generic('severity', s) }))} />
+                    <Select label={t('players.recoveryStatus', 'Recovery Status')} value={injuryForm.recoveryStatus} onChange={e => setInjuryForm(v => ({ ...v, recoveryStatus: e.target.value }))} options={RECOVERY_STATUSES.map(s => ({ value: s, label: L.generic('recoveryStatus', s) }))} />
+                    <Input label={t('players.expectedReturnDate', 'Expected Return Date')} type="date" value={injuryForm.expectedReturnDate} onChange={e => setInjuryForm(v => ({ ...v, expectedReturnDate: e.target.value }))} />
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Treatment Plan</label>
-                      <textarea value={injuryForm.treatmentPlan} onChange={e => setInjuryForm(v => ({ ...v, treatmentPlan: e.target.value }))} rows={2} placeholder="Rehab protocol, physio schedule…" className={TEXTAREA_CLS} />
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('players.treatmentPlan', 'Treatment Plan')}</label>
+                      <textarea value={injuryForm.treatmentPlan} onChange={e => setInjuryForm(v => ({ ...v, treatmentPlan: e.target.value }))} rows={2} placeholder={t('players.treatmentPlanPlaceholder', 'Rehab protocol, physio schedule…')} className={TEXTAREA_CLS} />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                      <textarea value={injuryForm.notes} onChange={e => setInjuryForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Details…" className={TEXTAREA_CLS} />
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.notes', 'Notes')}</label>
+                      <textarea value={injuryForm.notes} onChange={e => setInjuryForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder={t('players.detailsPlaceholder', 'Details…')} className={TEXTAREA_CLS} />
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-3 mt-4">
                     {editingInjury && <AutoSaveStatus status={injurySaveStatus} />}
-                    <button onClick={() => { setEditingInjury(null); setShowNewInjury(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
+                    <button onClick={() => { setEditingInjury(null); setShowNewInjury(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">{t('common.cancel', 'Cancel')}</button>
                     <button onClick={saveInjury} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                      {editingInjury ? 'Done' : 'Record Injury'}
+                      {editingInjury ? t('common.done', 'Done') : t('players.recordInjury', 'Record Injury')}
                     </button>
                   </div>
                 </div>
               )}
 
               {injuries.length === 0 && !(showNewInjury || editingInjury) ? (
-                <EmptyState icon={<ShieldAlert size={36} />} title="No injury records" description="Record injuries to track player health and recovery" action={{ label: 'Record Injury', onClick: openNewInjury }} />
+                <EmptyState icon={<ShieldAlert size={36} />} title={t('players.noInjuryRecords', 'No injury records')} description={t('players.noInjuryRecordsDesc', 'Record injuries to track player health and recovery')} action={{ label: t('players.recordInjury', 'Record Injury'), onClick: openNewInjury }} />
               ) : (
                 injuries.map(r => (
                   <div key={r.id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
@@ -642,15 +650,15 @@ export function PlayerDetailPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-semibold text-gray-900 dark:text-white">{r.injuryType}</span>
-                          {r.bodyPart && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{r.bodyPart}</span>}
-                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', SEVERITY_STYLES[r.severity])}>{r.severity}</span>
-                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', RECOVERY_STYLES[r.recoveryStatus])}>{r.recoveryStatus === 'FullyRecovered' ? 'Recovered' : r.recoveryStatus}</span>
+                          {r.bodyPart && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{L.generic('bodyPart', r.bodyPart)}</span>}
+                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', SEVERITY_STYLES[r.severity])}>{L.generic('severity', r.severity)}</span>
+                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', RECOVERY_STYLES[r.recoveryStatus])}>{r.recoveryStatus === 'FullyRecovered' ? t('players.recovered', 'Recovered') : L.generic('recoveryStatus', r.recoveryStatus)}</span>
                         </div>
                         <p className="text-xs text-gray-500 flex items-center gap-1.5">
                           <Calendar size={11} /> {r.injuryDate.split('T')[0]}{r.expectedReturnDate ? ` → ${r.expectedReturnDate.split('T')[0]}` : ''}
-                          {r.recoveredDate && <span className="text-green-500 ml-1">· recovered {r.recoveredDate.split('T')[0]}</span>}
+                          {r.recoveredDate && <span className="text-green-500 ml-1">· {t('players.recoveredOn', 'recovered {{date}}', { date: r.recoveredDate.split('T')[0] })}</span>}
                         </p>
-                        {r.treatmentPlan && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5"><span className="font-semibold text-gray-500 dark:text-gray-400">Treatment:</span> {r.treatmentPlan}</p>}
+                        {r.treatmentPlan && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5"><span className="font-semibold text-gray-500 dark:text-gray-400">{t('players.treatment', 'Treatment:')}</span> {r.treatmentPlan}</p>}
                         {r.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{r.notes}</p>}
                       </div>
                       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -660,17 +668,17 @@ export function PlayerDetailPage() {
                         </div>
                         {r.recoveryStatus !== 'FullyRecovered' && (
                           <button
-                            onClick={async () => { try { await recoverInjury.mutateAsync(r.id); showToast('Marked recovered', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Failed', 'error'); } }}
+                            onClick={async () => { try { await recoverInjury.mutateAsync(r.id); showToast(t('players.markedRecovered', 'Marked recovered'), 'success'); } catch (err) { showToast(err instanceof Error ? err.message : t('players.failed', 'Failed'), 'error'); } }}
                             className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[11px] font-semibold hover:bg-green-200 dark:hover:bg-green-900/50 transition-all cursor-pointer whitespace-nowrap"
                           >
-                            <ShieldAlert size={11} /> Mark Recovered
+                            <ShieldAlert size={11} /> {t('players.markRecovered', 'Mark Recovered')}
                           </button>
                         )}
                         <button
                           onClick={() => setRecoveryInjuryId(r.id)}
                           className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[11px] font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-all cursor-pointer whitespace-nowrap"
                         >
-                          <Activity size={11} /> Recovery Program
+                          <Activity size={11} /> {t('players.recoveryProgram', 'Recovery Program')}
                         </button>
                       </div>
                     </div>
@@ -686,20 +694,20 @@ export function PlayerDetailPage() {
               {!(showNewMatch || editingMatch) && (
                 <div className="flex justify-end">
                   <button onClick={openNewMatch} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                    <Plus size={15} /> Record Match
+                    <Plus size={15} /> {t('players.recordMatch', 'Record Match')}
                   </button>
                 </div>
               )}
 
               {(showNewMatch || editingMatch) && (
                 <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingMatch ? 'Edit Match' : 'Record Match'}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingMatch ? t('players.editMatch', 'Edit Match') : t('players.recordMatch', 'Record Match')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Match Date" type="date" value={matchForm.matchDate} onChange={e => setMatchForm(v => ({ ...v, matchDate: e.target.value }))} />
-                    <Input label="Opponent *" value={matchForm.opponent} onChange={e => setMatchForm(v => ({ ...v, opponent: e.target.value }))} placeholder="Opponent team name" />
+                    <Input label={t('players.matchDate', 'Match Date')} type="date" value={matchForm.matchDate} onChange={e => setMatchForm(v => ({ ...v, matchDate: e.target.value }))} />
+                    <Input label={t('players.opponentLabel', 'Opponent *')} value={matchForm.opponent} onChange={e => setMatchForm(v => ({ ...v, opponent: e.target.value }))} placeholder={t('players.opponentPlaceholder', 'Opponent team name')} />
                     <div className="sm:col-span-2">
                       <div className="flex justify-between text-sm mb-2">
-                        <span className="font-medium text-gray-700 dark:text-gray-300">Performance Rating</span>
+                        <span className="font-medium text-gray-700 dark:text-gray-300">{t('players.performanceRating', 'Performance Rating')}</span>
                         <span className="text-indigo-600 dark:text-indigo-400 font-bold">{matchForm.performanceRating}/10</span>
                       </div>
                       <input type="range" min={1} max={10} step={1} value={matchForm.performanceRating}
@@ -707,33 +715,33 @@ export function PlayerDetailPage() {
                         className="w-full accent-indigo-600 h-2" />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Sport-Specific Stats</label>
-                      <textarea value={matchForm.sportSpecificStats} onChange={e => setMatchForm(v => ({ ...v, sportSpecificStats: e.target.value }))} rows={2} placeholder="Goals, assists, tackles…" className={TEXTAREA_CLS} />
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('players.sportSpecificStats', 'Sport-Specific Stats')}</label>
+                      <textarea value={matchForm.sportSpecificStats} onChange={e => setMatchForm(v => ({ ...v, sportSpecificStats: e.target.value }))} rows={2} placeholder={t('players.sportStatsPlaceholder', 'Goals, assists, tackles…')} className={TEXTAREA_CLS} />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                      <textarea value={matchForm.notes} onChange={e => setMatchForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Match observations…" className={TEXTAREA_CLS} />
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.notes', 'Notes')}</label>
+                      <textarea value={matchForm.notes} onChange={e => setMatchForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder={t('players.matchObservationsPlaceholder', 'Match observations…')} className={TEXTAREA_CLS} />
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-3 mt-4">
                     {editingMatch && <AutoSaveStatus status={matchSaveStatus} />}
-                    <button onClick={() => { setEditingMatch(null); setShowNewMatch(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
+                    <button onClick={() => { setEditingMatch(null); setShowNewMatch(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">{t('common.cancel', 'Cancel')}</button>
                     <button onClick={saveMatch} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                      {editingMatch ? 'Done' : 'Record Match'}
+                      {editingMatch ? t('common.done', 'Done') : t('players.recordMatch', 'Record Match')}
                     </button>
                   </div>
                 </div>
               )}
 
               {matches.length === 0 && !(showNewMatch || editingMatch) ? (
-                <EmptyState icon={<Star size={36} />} title="No match records" description="Record match performances to track progress over time" action={{ label: 'Record Match', onClick: openNewMatch }} />
+                <EmptyState icon={<Star size={36} />} title={t('players.noMatchRecords', 'No match records')} description={t('players.noMatchRecordsDesc', 'Record match performances to track progress over time')} action={{ label: t('players.recordMatch', 'Record Match'), onClick: openNewMatch }} />
               ) : (
                 matches.map(m => (
                   <div key={m.id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
-                          <span className="font-semibold text-gray-900 dark:text-white">vs {m.opponent}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white">{t('players.vs', 'vs')} {m.opponent}</span>
                         </div>
                         <RatingStars rating={m.performanceRating} />
                         <p className="text-xs text-gray-500 flex items-center gap-1.5 mt-1">
@@ -759,44 +767,44 @@ export function PlayerDetailPage() {
               {!(showNewSession || editingSession) && (
                 <div className="flex justify-end">
                   <button onClick={openNewSession} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                    <Plus size={15} /> Log Session
+                    <Plus size={15} /> {t('players.logSession', 'Log Session')}
                   </button>
                 </div>
               )}
 
               {(showNewSession || editingSession) && (
                 <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingSession ? 'Edit Session' : 'Log Training Session'}</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingSession ? t('players.editSession', 'Edit Session') : t('players.logTrainingSession', 'Log Training Session')}</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Input label="Date" type="date" value={trainingForm.date} onChange={e => setTrainingForm(v => ({ ...v, date: e.target.value }))} />
-                    <Input label="Duration (min)" type="number" value={trainingForm.durationMinutes} onChange={e => setTrainingForm(v => ({ ...v, durationMinutes: e.target.value }))} min={1} max={300} />
-                    <Select label="Team *" value={trainingForm.teamId} onChange={e => setTrainingForm(v => ({ ...v, teamId: e.target.value }))} options={[{ value: '', label: 'Select team…' }, ...teams.map(t => ({ value: String(t.id), label: t.name }))]} />
-                    <Select label="Attendance" value={trainingForm.attendanceStatus} onChange={e => setTrainingForm(v => ({ ...v, attendanceStatus: e.target.value }))} options={ATTENDANCE_STATUSES.map(s => ({ value: s, label: s }))} />
+                    <Input label={t('common.date', 'Date')} type="date" value={trainingForm.date} onChange={e => setTrainingForm(v => ({ ...v, date: e.target.value }))} />
+                    <Input label={t('players.durationMin', 'Duration (min)')} type="number" value={trainingForm.durationMinutes} onChange={e => setTrainingForm(v => ({ ...v, durationMinutes: e.target.value }))} min={1} max={300} />
+                    <Select label={t('players.teamLabel', 'Team *')} value={trainingForm.teamId} onChange={e => setTrainingForm(v => ({ ...v, teamId: e.target.value }))} options={[{ value: '', label: t('players.selectTeamOption', 'Select team…') }, ...teams.map(tm => ({ value: String(tm.id), label: tm.name }))]} />
+                    <Select label={t('players.attendance', 'Attendance')} value={trainingForm.attendanceStatus} onChange={e => setTrainingForm(v => ({ ...v, attendanceStatus: e.target.value }))} options={ATTENDANCE_STATUSES.map(s => ({ value: s, label: L.generic('attendance', s) }))} />
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                      <textarea value={trainingForm.notes} onChange={e => setTrainingForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Session notes…" className={TEXTAREA_CLS} />
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.notes', 'Notes')}</label>
+                      <textarea value={trainingForm.notes} onChange={e => setTrainingForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder={t('players.sessionNotesPlaceholder', 'Session notes…')} className={TEXTAREA_CLS} />
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-3 mt-4">
                     {editingSession && <AutoSaveStatus status={sessionSaveStatus} />}
-                    <button onClick={() => { setEditingSession(null); setShowNewSession(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
+                    <button onClick={() => { setEditingSession(null); setShowNewSession(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">{t('common.cancel', 'Cancel')}</button>
                     <button onClick={saveSession} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                      {editingSession ? 'Done' : 'Log Session'}
+                      {editingSession ? t('common.done', 'Done') : t('players.logSession', 'Log Session')}
                     </button>
                   </div>
                 </div>
               )}
 
               {sessions.length === 0 && !(showNewSession || editingSession) ? (
-                <EmptyState icon={<Dumbbell size={36} />} title="No training sessions logged" description="Log training sessions to track attendance and progress" action={{ label: 'Log Session', onClick: openNewSession }} />
+                <EmptyState icon={<Dumbbell size={36} />} title={t('players.noSessionsLogged', 'No training sessions logged')} description={t('players.noSessionsLoggedDesc', 'Log training sessions to track attendance and progress')} action={{ label: t('players.logSession', 'Log Session'), onClick: openNewSession }} />
               ) : (
                 sessions.map(s => (
                   <div key={s.id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5"><Clock size={14} /> {s.durationMinutes} min</span>
-                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', ATTENDANCE_STYLES[s.attendanceStatus])}>{s.attendanceStatus}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white flex items-center gap-1.5"><Clock size={14} /> {t('players.minCount', '{{count}} min', { count: s.durationMinutes })}</span>
+                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', ATTENDANCE_STYLES[s.attendanceStatus])}>{L.generic('attendance', s.attendanceStatus)}</span>
                         </div>
                         <p className="text-xs text-gray-500 flex items-center gap-1.5"><Calendar size={11} /> {s.date}</p>
                         {s.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{s.notes}</p>}
@@ -817,14 +825,14 @@ export function PlayerDetailPage() {
             <motion.div key="tasks" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
               <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
                 <div className="flex items-center gap-3">
-                  <h3 className="font-bold text-gray-900 dark:text-white">Assigned Tasks</h3>
+                  <h3 className="font-bold text-gray-900 dark:text-white">{t('players.assignedTasks', 'Assigned Tasks')}</h3>
                   {/* Filter: All / Drill-based / Manual */}
                   <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                     {(['all', 'drill', 'manual'] as const).map(f => (
                       <button key={f} onClick={() => setTaskFilter(f)}
                         className={clsx('px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer',
                           taskFilter === f ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}>
-                        {f === 'all' ? 'All' : f === 'drill' ? 'Drill-based' : 'Manual'}
+                        {f === 'all' ? t('common.all', 'All') : f === 'drill' ? t('players.drillBased', 'Drill-based') : t('players.manual', 'Manual')}
                       </button>
                     ))}
                   </div>
@@ -833,7 +841,7 @@ export function PlayerDetailPage() {
                   onClick={() => { setEditTask(null); setTaskModalOpen(true); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
                 >
-                  <Plus size={13} /> Assign Task
+                  <Plus size={13} /> {t('players.assignTask', 'Assign Task')}
                 </button>
               </div>
               {(() => {
@@ -842,8 +850,8 @@ export function PlayerDetailPage() {
                 return filtered.length === 0 ? (
                   <EmptyState
                     icon={<CheckSquare size={32} />}
-                    title={playerTasks.length === 0 ? 'No tasks assigned' : `No ${taskFilter === 'drill' ? 'drill-based' : 'manual'} tasks`}
-                    description="Assign a drill or task to this player."
+                    title={playerTasks.length === 0 ? t('players.noTasksAssigned', 'No tasks assigned') : taskFilter === 'drill' ? t('players.noDrillTasks', 'No drill-based tasks') : t('players.noManualTasks', 'No manual tasks')}
+                    description={t('players.assignDrillOrTask', 'Assign a drill or task to this player.')}
                     size="sm"
                   />
                 ) : (
@@ -913,20 +921,20 @@ export function PlayerDetailPage() {
 
       {/* Confirm modals */}
       <ConfirmModal isOpen={!!deleteTaskTarget} onClose={() => setDeleteTaskTarget(null)}
-        onConfirm={async () => { if (!deleteTaskTarget) return; try { await deleteTask.mutateAsync(deleteTaskTarget.id); showToast('Task deleted', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteTaskTarget(null); } }}
-        title="Delete Task" message={`Delete "${deleteTaskTarget?.title}"?`} confirmLabel="Delete" isLoading={deleteTask.isPending} />
+        onConfirm={async () => { if (!deleteTaskTarget) return; try { await deleteTask.mutateAsync(deleteTaskTarget.id); showToast(t('players.taskDeleted', 'Task deleted'), 'success'); } catch (err) { showToast(err instanceof Error ? err.message : t('players.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteTaskTarget(null); } }}
+        title={t('players.deleteTask', 'Delete Task')} message={t('players.deleteTaskMsg', 'Delete "{{title}}"?', { title: deleteTaskTarget?.title })} confirmLabel={t('common.delete', 'Delete')} isLoading={deleteTask.isPending} />
       <ConfirmModal isOpen={!!deleteInjuryTarget} onClose={() => setDeleteInjuryTarget(null)}
-        onConfirm={async () => { if (!deleteInjuryTarget) return; try { await deleteInjury.mutateAsync(deleteInjuryTarget.id); showToast('Injury deleted', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteInjuryTarget(null); } }}
-        title="Delete Injury Record" message={`Delete "${deleteInjuryTarget?.injuryType}" record?`} confirmLabel="Delete" isLoading={deleteInjury.isPending} />
+        onConfirm={async () => { if (!deleteInjuryTarget) return; try { await deleteInjury.mutateAsync(deleteInjuryTarget.id); showToast(t('players.injuryDeleted', 'Injury deleted'), 'success'); } catch (err) { showToast(err instanceof Error ? err.message : t('players.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteInjuryTarget(null); } }}
+        title={t('players.deleteInjuryRecord', 'Delete Injury Record')} message={t('players.deleteInjuryMsg', 'Delete "{{type}}" record?', { type: deleteInjuryTarget?.injuryType })} confirmLabel={t('common.delete', 'Delete')} isLoading={deleteInjury.isPending} />
       <ConfirmModal isOpen={!!deleteMatchTarget} onClose={() => setDeleteMatchTarget(null)}
-        onConfirm={async () => { if (!deleteMatchTarget) return; try { await deleteMatch.mutateAsync(deleteMatchTarget.id); showToast('Match deleted', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteMatchTarget(null); } }}
-        title="Delete Match Record" message={`Delete match vs "${deleteMatchTarget?.opponent}"?`} confirmLabel="Delete" isLoading={deleteMatch.isPending} />
+        onConfirm={async () => { if (!deleteMatchTarget) return; try { await deleteMatch.mutateAsync(deleteMatchTarget.id); showToast(t('players.matchDeleted', 'Match deleted'), 'success'); } catch (err) { showToast(err instanceof Error ? err.message : t('players.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteMatchTarget(null); } }}
+        title={t('players.deleteMatchRecord', 'Delete Match Record')} message={t('players.deleteMatchMsg', 'Delete match vs "{{opponent}}"?', { opponent: deleteMatchTarget?.opponent })} confirmLabel={t('common.delete', 'Delete')} isLoading={deleteMatch.isPending} />
       <ConfirmModal isOpen={!!deleteSessionTarget} onClose={() => setDeleteSessionTarget(null)}
-        onConfirm={async () => { if (!deleteSessionTarget) return; try { await deleteSession.mutateAsync(deleteSessionTarget.id); showToast('Session deleted', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteSessionTarget(null); } }}
-        title="Delete Training Session" message="Delete this training session?" confirmLabel="Delete" isLoading={deleteSession.isPending} />
+        onConfirm={async () => { if (!deleteSessionTarget) return; try { await deleteSession.mutateAsync(deleteSessionTarget.id); showToast(t('players.sessionDeleted', 'Session deleted'), 'success'); } catch (err) { showToast(err instanceof Error ? err.message : t('players.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteSessionTarget(null); } }}
+        title={t('players.deleteTrainingSession', 'Delete Training Session')} message={t('players.deleteSessionMsg', 'Delete this training session?')} confirmLabel={t('common.delete', 'Delete')} isLoading={deleteSession.isPending} />
       <ConfirmModal isOpen={confirmDeletePlayer} onClose={() => setConfirmDeletePlayer(false)}
-        onConfirm={async () => { try { await deletePlayer.mutateAsync(playerId); showToast('Player deleted', 'success'); navigate('/players'); } catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setConfirmDeletePlayer(false); } }}
-        title="Delete Player" message={`Permanently delete ${player.fullName}? This cannot be undone.`} confirmLabel="Delete" isLoading={deletePlayer.isPending} />
+        onConfirm={async () => { try { await deletePlayer.mutateAsync(playerId); showToast(t('players.playerDeleted', 'Player deleted'), 'success'); navigate('/players'); } catch (err) { showToast(err instanceof Error ? err.message : t('players.deleteFailed', 'Delete failed'), 'error'); } finally { setConfirmDeletePlayer(false); } }}
+        title={t('players.deletePlayer', 'Delete Player')} message={t('players.deletePlayerMsg', 'Permanently delete {{name}}? This cannot be undone.', { name: player.fullName })} confirmLabel={t('common.delete', 'Delete')} isLoading={deletePlayer.isPending} />
     </motion.div>
   );
 }

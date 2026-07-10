@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { GitCompare, X, Search, Trophy, Plus } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
@@ -45,6 +46,7 @@ function RadarTooltip({ active, payload, label }: { active?: boolean; payload?: 
 }
 
 export function ComparePlayersPage() {
+  const { t } = useTranslation();
   const { data: players, isLoading } = usePlayers();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
@@ -83,7 +85,7 @@ export function ComparePlayersPage() {
   const nameFor = (pid: number) => {
     const base = loadedReports.find(r => r.player.id === pid)?.player.fullName
       ?? players?.find(p => p.id === pid)?.fullName
-      ?? `Player ${pid}`;
+      ?? t('reports.playerName', 'Player {{id}}', { id: pid });
     const jersey = players?.find(p => p.id === pid)?.jerseyNumber;
     return jersey != null ? `#${jersey} ${base}` : base;
   };
@@ -137,9 +139,9 @@ export function ComparePlayersPage() {
   const canPickMore = selectedIds.length < MAX_PLAYERS;
 
   return (
-    <PageWrapper title="Compare Players">
+    <PageWrapper title={t('reports.comparePlayers', 'Compare Players')}>
       {/* Player picker */}
-      <Card header={`Select Players (${selectedIds.length}/${MAX_PLAYERS})`}>
+      <Card header={t('reports.selectPlayersCount', 'Select Players ({{count}}/{{max}})', { count: selectedIds.length, max: MAX_PLAYERS })}>
         {/* Selected chips */}
         {selectedIds.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">
@@ -153,7 +155,7 @@ export function ComparePlayersPage() {
                 <button
                   onClick={() => toggle(pid)}
                   className="p-0.5 rounded-full hover:bg-black/20 transition-colors cursor-pointer"
-                  aria-label={`Remove ${nameFor(pid)}`}
+                  aria-label={t('reports.removePlayer', 'Remove {{name}}', { name: nameFor(pid) })}
                 >
                   <X size={13} />
                 </button>
@@ -169,7 +171,7 @@ export function ComparePlayersPage() {
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder={canPickMore ? 'Search players to add…' : 'Maximum of 4 players selected'}
+            placeholder={canPickMore ? t('reports.searchPlayersAdd', 'Search players to add…') : t('reports.maxPlayersSelected', 'Maximum of 4 players selected')}
             disabled={!canPickMore}
             className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 disabled:opacity-50"
           />
@@ -177,7 +179,7 @@ export function ComparePlayersPage() {
         {canPickMore && (
           <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
             {availablePlayers.length === 0 ? (
-              <p className="text-sm text-gray-400 py-2">No players found</p>
+              <p className="text-sm text-gray-400 py-2">{t('reports.noPlayersFound', 'No players found')}</p>
             ) : (
               availablePlayers.map(p => (
                 <button
@@ -199,13 +201,13 @@ export function ComparePlayersPage() {
       {selectedIds.length < 2 ? (
         <EmptyState
           icon={<GitCompare size={40} />}
-          title="Select at least two players"
-          description="Pick 2 to 4 players above to overlay their skill profiles and see who's best at what."
+          title={t('reports.selectTwoPlayers', 'Select at least two players')}
+          description={t('reports.selectTwoPlayersDesc', "Pick 2 to 4 players above to overlay their skill profiles and see who's best at what.")}
         />
       ) : loadingReports ? (
         <PageSpinner />
       ) : allCategories.length === 0 ? (
-        <EmptyState title="No assessment data" description="None of the selected players have been assessed yet." />
+        <EmptyState title={t('reports.noAssessmentData', 'No assessment data')} description={t('reports.noneAssessed', 'None of the selected players have been assessed yet.')} />
       ) : (
         <>
           {/* Overall average summary */}
@@ -220,13 +222,13 @@ export function ComparePlayersPage() {
                 <p className="text-2xl font-black mt-1" style={{ color: colorFor(pid) }}>
                   {overallAvg(loadedReports.find(r => r.player.id === pid)).toFixed(1)}
                 </p>
-                <p className="text-[11px] text-gray-400 uppercase tracking-wide">Overall Avg</p>
+                <p className="text-[11px] text-gray-400 uppercase tracking-wide">{t('reports.overallAvg', 'Overall Avg')}</p>
               </div>
             ))}
           </div>
 
           {/* Radar overlay */}
-          <Card header="Skill Radar Overlay">
+          <Card header={t('reports.skillRadarOverlay', 'Skill Radar Overlay')}>
             <ResponsiveContainer width="100%" height={420}>
               <RadarChart data={radarData} margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
                 <PolarGrid stroke="#1f2937" strokeDasharray="3 3" />
@@ -252,12 +254,12 @@ export function ComparePlayersPage() {
           </Card>
 
           {/* Grouped bar chart */}
-          <Card header="Category Breakdown">
+          <Card header={t('reports.categoryBreakdown', 'Category Breakdown')}>
             <BarChartWrapper data={barData} series={barSeries} height={340} />
           </Card>
 
           {/* Best At badges */}
-          <Card header="Best At">
+          <Card header={t('reports.bestAt', 'Best At')}>
             <div className="flex flex-wrap gap-2">
               {bestByCategory.map(({ cat, bestPid, bestScore }) => (
                 <span
@@ -275,12 +277,12 @@ export function ComparePlayersPage() {
           </Card>
 
           {/* Comparison table */}
-          <Card header="Score Comparison">
+          <Card header={t('reports.scoreComparison', 'Score Comparison')}>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400">
-                    <th className="pb-2 pr-4 text-left font-medium">Category</th>
+                    <th className="pb-2 pr-4 text-left font-medium">{t('common.category', 'Category')}</th>
                     {selectedIds.map(pid => (
                       <th key={pid} className="pb-2 px-3 text-center font-medium">
                         <span className="inline-flex items-center gap-1.5">
@@ -318,7 +320,7 @@ export function ComparePlayersPage() {
                   })}
                   {/* Overall average row */}
                   <tr className="border-t-2 border-gray-200 dark:border-gray-700 font-bold">
-                    <td className="py-2.5 pr-4 text-gray-900 dark:text-white">Overall Avg</td>
+                    <td className="py-2.5 pr-4 text-gray-900 dark:text-white">{t('reports.overallAvg', 'Overall Avg')}</td>
                     {selectedIds.map(pid => (
                       <td key={pid} className="py-2.5 px-3 text-center" style={{ color: colorFor(pid) }}>
                         {overallAvg(loadedReports.find(r => r.player.id === pid)).toFixed(1)}

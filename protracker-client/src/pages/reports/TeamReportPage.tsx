@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   ArrowLeft, Trophy, Zap, Sparkles, Lightbulb,
   Users, ShieldAlert, BarChart3, Download,
@@ -38,6 +41,9 @@ const SPORT_HEADER_COLORS: Record<string, string> = {
 export function TeamReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { formatDate } = useLocaleFormat();
+  const labels = useDynamicLabels();
   const { data: billing } = useBilling();
   const { addToast } = useToast();
   const teamId = id ? parseInt(id) : undefined;
@@ -48,13 +54,13 @@ export function TeamReportPage() {
   const generateInsights = useGenerateTeamInsights();
 
   if (isLoading) return <ReportSkeleton />;
-  if (isError) return <PageWrapper><ErrorState thing="the report" onRetry={() => refetch()} /></PageWrapper>;
+  if (isError) return <PageWrapper><ErrorState thing={t('reports.theReport', 'the report')} onRetry={() => refetch()} /></PageWrapper>;
   if (!report) return (
     <PageWrapper>
       <EmptyState
-        title="Report not found"
-        description="Could not load team report"
-        action={{ label: 'Back', onClick: () => navigate('/reports') }}
+        title={t('reports.reportNotFound', 'Report not found')}
+        description={t('reports.couldNotLoadTeam', 'Could not load team report')}
+        action={{ label: t('common.back', 'Back'), onClick: () => navigate('/reports') }}
       />
     </PageWrapper>
   );
@@ -68,13 +74,13 @@ export function TeamReportPage() {
       const result = await generateInsights.mutateAsync(teamId);
       setAiInsights(result.insights);
     } catch {
-      setAiError('AI analysis failed. Please try again.');
+      setAiError(t('reports.aiFailed', 'AI analysis failed. Please try again.'));
     }
   }
 
   async function handleExportPdf() {
     if (billing && !billing.limits.pdf) {
-      addToast('PDF export is available on the Pro plan.', 'info');
+      addToast(t('reports.pdfProOnly', 'PDF export is available on the Pro plan.'), 'info');
       navigate('/settings/billing');
       return;
     }
@@ -132,24 +138,24 @@ export function TeamReportPage() {
               onClick={() => navigate('/reports')}
               className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer"
             >
-              <ArrowLeft size={16} /> Reports
+              <ArrowLeft size={16} /> {t('reports.title', 'Reports')}
             </button>
             <button
               onClick={handleExportPdf}
               disabled={exporting}
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-semibold transition-all cursor-pointer border border-white/20 disabled:opacity-60"
             >
-              <Download size={15} /> {exporting ? 'Generating PDF…' : 'Export PDF'}
+              <Download size={15} /> {exporting ? t('reports.generatingPdf', 'Generating PDF…') : t('reports.exportPdf', 'Export PDF')}
             </button>
           </div>
 
           <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2">
-            <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{team.sportName}</span>
-            <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{playerCount} players</span>
+            <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{labels.sport(team.sportName)}</span>
+            <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{t('reports.playersCount', '{{count}} players', { count: playerCount })}</span>
             {activeInjuryCount > 0 && (
               <span className="px-2.5 py-1 rounded-full bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1">
-                <ShieldAlert size={11} /> {activeInjuryCount} injured
+                <ShieldAlert size={11} /> {t('reports.injuredCount', '{{count}} injured', { count: activeInjuryCount })}
               </span>
             )}
           </div>
@@ -162,14 +168,14 @@ export function TeamReportPage() {
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Users size={14} className="text-indigo-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Players</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.players', 'Players')}</p>
             </div>
             <p className="text-2xl font-black text-gray-900 dark:text-white">{playerCount}</p>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
               <BarChart3 size={14} className="text-emerald-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current Avg Score</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.currentAvgScore', 'Current Avg Score')}</p>
             </div>
             {teamAvg !== null ? (
               <p className="text-2xl font-black" style={{
@@ -180,14 +186,14 @@ export function TeamReportPage() {
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Zap size={14} className="text-violet-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessed</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.assessed', 'Assessed')}</p>
             </div>
             <p className="text-2xl font-black text-gray-900 dark:text-white">{assessed}/{playerCount}</p>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4">
             <div className="flex items-center gap-2 mb-2">
               <Trophy size={14} className="text-amber-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best Category</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.bestCategory', 'Best Category')}</p>
             </div>
             {bestCategory ? (
               <>
@@ -201,41 +207,41 @@ export function TeamReportPage() {
         {/* Team performance bar chart */}
         <Card header={
           <div>
-            <p className="font-semibold text-gray-800 dark:text-gray-100">Player Performance Comparison</p>
+            <p className="font-semibold text-gray-800 dark:text-gray-100">{t('reports.playerPerfComparison', 'Player Performance Comparison')}</p>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal">
-              Average assessment score per player (0–10 scale) · sorted highest to lowest
-              {teamAvg !== null && <> · <span className="text-indigo-500 dark:text-indigo-400">Team avg: {teamAvg}</span></>}
+              {t('reports.playerPerfComparisonSub', 'Average assessment score per player (0–10 scale) · sorted highest to lowest')}
+              {teamAvg !== null && <> · <span className="text-indigo-500 dark:text-indigo-400">{t('reports.teamAvg', 'Team avg: {{value}}', { value: teamAvg })}</span></>}
             </p>
           </div>
         }>
           {barData.length === 0 || barData.every(d => d.score === 0) ? (
-            <EmptyState title="No assessment data" description="Players have not been assessed yet" />
+            <EmptyState title={t('reports.noAssessmentData', 'No assessment data')} description={t('reports.playersNotAssessed', 'Players have not been assessed yet')} />
           ) : (
             <BarChartWrapper
               data={barData}
-              series={[{ key: 'score', name: 'Avg Score', color: '#6366f1' }]}
+              series={[{ key: 'score', name: t('reports.avgScore', 'Avg Score'), color: '#6366f1' }]}
               height={280}
-              yAxisLabel="Score / 10"
+              yAxisLabel={t('reports.scoreOutOf10', 'Score / 10')}
               showValueLabels
-              referenceLine={teamAvg !== null ? { value: teamAvg, label: `Avg ${teamAvg}` } : undefined}
+              referenceLine={teamAvg !== null ? { value: teamAvg, label: t('reports.avgRef', 'Avg {{value}}', { value: teamAvg }) } : undefined}
             />
           )}
         </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Team radar */}
-          <Card header="Team Strengths & Weaknesses">
+          <Card header={t('reports.teamStrengthsWeaknesses', 'Team Strengths & Weaknesses')}>
             {radarData.length === 0 ? (
-              <EmptyState title="No data" description="No assessment data for this team" />
+              <EmptyState title={t('reports.noData', 'No data')} description={t('reports.noAssessmentDataTeam', 'No assessment data for this team')} />
             ) : (
               <RadarChartWrapper data={radarData} height={380} />
             )}
           </Card>
 
           {/* Top performers */}
-          <Card header="Top Performers">
+          <Card header={t('reports.topPerformers', 'Top Performers')}>
             {top3.length === 0 ? (
-              <EmptyState title="No data" description="No player assessments yet" />
+              <EmptyState title={t('reports.noData', 'No data')} description={t('reports.noPlayerAssessments', 'No player assessments yet')} />
             ) : (
               <div className="space-y-3">
                 {top3.map((p, i) => (
@@ -266,7 +272,7 @@ export function TeamReportPage() {
 
         {/* Players needing attention */}
         {needsAttention.length > 0 && (
-          <Card header="Players Needing Attention">
+          <Card header={t('reports.playersNeedingAttention', 'Players Needing Attention')}>
             <div className="space-y-2">
               {needsAttention.map(p => (
                 <div key={p.playerId} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
@@ -281,7 +287,7 @@ export function TeamReportPage() {
                       ? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
                       : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                   }`}>
-                    {p.averageScore === 0 ? 'Not assessed' : `${p.averageScore.toFixed(1)}/10`}
+                    {p.averageScore === 0 ? t('reports.notAssessed', 'Not assessed') : `${p.averageScore.toFixed(1)}/10`}
                   </span>
                 </div>
               ))}
@@ -290,7 +296,7 @@ export function TeamReportPage() {
         )}
 
         {/* Assessment coverage */}
-        <Card header="Assessment Coverage">
+        <Card header={t('reports.assessmentCoverage', 'Assessment Coverage')}>
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -300,7 +306,7 @@ export function TeamReportPage() {
                 />
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                {assessed} of {playerCount} players assessed
+                {t('reports.assessedOfPlayers', '{{assessed}} of {{total}} players assessed', { assessed, total: playerCount })}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -312,7 +318,7 @@ export function TeamReportPage() {
           </div>
           {playerAverageScores.filter(p => p.averageScore === 0).length > 0 && (
             <div className="mt-3 text-sm text-gray-500 dark:text-gray-400">
-              Not yet assessed:{' '}
+              {t('reports.notYetAssessed', 'Not yet assessed:')}{' '}
               {playerAverageScores.filter(p => p.averageScore === 0).map(p => p.playerName).join(', ')}
             </div>
           )}
@@ -323,7 +329,7 @@ export function TeamReportPage() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <span className="flex items-center gap-2">
               <Sparkles size={15} className="text-violet-500" />
-              AI Team Analysis
+              {t('reports.aiTeamAnalysis', 'AI Team Analysis')}
             </span>
             <button
               onClick={handleGenerateInsights}
@@ -331,19 +337,19 @@ export function TeamReportPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
               <Sparkles size={12} />
-              {aiInsights ? 'Regenerate' : 'Generate Team Insights'}
+              {aiInsights ? t('common.regenerate', 'Regenerate') : t('reports.generateTeamInsights', 'Generate Team Insights')}
             </button>
           </div>
         }>
           {isGenerating && (
             <AILoadingPanel
               compact
-              primaryText="Analyzing team performance..."
+              primaryText={t('reports.aiAnalyzingTeam', 'Analyzing team performance...')}
               messages={[
-                'Reviewing player assessments...',
-                'Identifying team patterns...',
-                'Generating strategic insights...',
-                'Finalizing analysis...',
+                t('reports.aiMsgReviewPlayers', 'Reviewing player assessments...'),
+                t('reports.aiMsgTeamPatterns', 'Identifying team patterns...'),
+                t('reports.aiMsgStrategic', 'Generating strategic insights...'),
+                t('reports.aiMsgFinalizing', 'Finalizing analysis...'),
               ]}
               estimatedSeconds={10}
             />
@@ -351,12 +357,12 @@ export function TeamReportPage() {
           {aiError && (
             <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
               {aiError}
-              <button onClick={handleGenerateInsights} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+              <button onClick={handleGenerateInsights} className="ml-auto text-xs font-semibold underline cursor-pointer">{t('common.retry', 'Retry')}</button>
             </div>
           )}
           {!aiInsights && !isGenerating && !aiError && (
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-              Click "Generate Team Insights" to get strategic analysis from Claude.
+              {t('reports.aiTeamHint', 'Click "Generate Team Insights" to get strategic analysis from Claude.')}
             </p>
           )}
           {aiInsights && !isGenerating && (
@@ -379,18 +385,18 @@ export function TeamReportPage() {
 
         {/* Active injuries */}
         {activeInjuries.length > 0 && (
-          <Card header="Active Injuries">
+          <Card header={t('reports.activeInjuries', 'Active Injuries')}>
             <div className="space-y-3">
               {activeInjuries.map(inj => (
                 <div key={inj.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700/50 last:border-0">
                   <div>
                     <p className="font-medium text-gray-800 dark:text-gray-200 text-sm">{inj.injuryType}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {playerMap[inj.playerId] ?? `Player #${inj.playerId}`} · {new Date(inj.injuryDate).toLocaleDateString()}
+                      {playerMap[inj.playerId] ?? t('reports.playerNum', 'Player #{{id}}', { id: inj.playerId })} · {formatDate(inj.injuryDate)}
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEVERITY_COLORS[inj.severity] ?? ''}`}>
-                    {inj.severity}
+                    {labels.generic('severity', inj.severity)}
                   </span>
                 </div>
               ))}

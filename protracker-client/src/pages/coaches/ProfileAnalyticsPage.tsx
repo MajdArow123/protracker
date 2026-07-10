@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -14,19 +15,20 @@ function fmtDay(d: string) {
 }
 
 export function ProfileAnalyticsPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useCoachAnalytics();
 
   if (isLoading) return <DetailSkeleton />;
-  if (!data) return <PageWrapper title="Profile Analytics"><EmptyState icon={<Store size={30} />} title="No analytics yet" description="Enable your public profile to start collecting insights." /></PageWrapper>;
+  if (!data) return <PageWrapper title={t('coaches.profileAnalyticsTitle', 'Profile Analytics')}><EmptyState icon={<Store size={30} />} title={t('coaches.noAnalyticsYet', 'No analytics yet')} description={t('coaches.noAnalyticsDesc', 'Enable your public profile to start collecting insights.')} /></PageWrapper>;
 
   if (!data.isPublic) {
     return (
-      <PageWrapper title="Profile Analytics">
+      <PageWrapper title={t('coaches.profileAnalyticsTitle', 'Profile Analytics')}>
         <EmptyState
           icon={<Store size={30} />}
-          title="Your public profile is off"
-          description="Turn on your public coaching profile to appear in the marketplace and collect views, requests and reviews."
-          action={{ label: 'Go to profile settings', onClick: () => { window.location.href = '/profile'; } }}
+          title={t('coaches.publicProfileOff', 'Your public profile is off')}
+          description={t('coaches.publicProfileOffDesc', 'Turn on your public coaching profile to appear in the marketplace and collect views, requests and reviews.')}
+          action={{ label: t('coaches.goToProfileSettings', 'Go to profile settings'), onClick: () => { window.location.href = '/profile'; } }}
         />
       </PageWrapper>
     );
@@ -34,29 +36,29 @@ export function ProfileAnalyticsPage() {
 
   const trend = data.viewsTrend.map(v => ({ ...v, label: fmtDay(v.date) }));
   const funnel = [
-    { label: 'Profile views', value: data.totalViews, color: 'bg-indigo-500' },
-    { label: 'Requests', value: data.totalRequests, color: 'bg-violet-500' },
-    { label: 'Accepted', value: data.acceptedRequests, color: 'bg-green-500' },
+    { label: t('coaches.profileViews', 'Profile views'), value: data.totalViews, color: 'bg-indigo-500' },
+    { label: t('coaches.requests', 'Requests'), value: data.totalRequests, color: 'bg-violet-500' },
+    { label: t('coaches.accepted', 'Accepted'), value: data.acceptedRequests, color: 'bg-green-500' },
   ];
   const funnelMax = Math.max(...funnel.map(f => f.value), 1);
 
   return (
-    <PageWrapper title="Profile Analytics">
+    <PageWrapper title={t('coaches.profileAnalyticsTitle', 'Profile Analytics')}>
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <Stat icon={<Eye size={16} className="text-indigo-500" />} label="Views this week" value={data.viewsThisWeek} sub={`${data.totalViews} all time`} />
-        <Stat icon={<UserPlus size={16} className="text-violet-500" />} label="Pending requests" value={data.pendingRequests} sub={`${data.totalRequests} total`} />
-        <Stat icon={<Star size={16} className="text-amber-500" />} label="Average rating" value={data.averageRating != null ? data.averageRating.toFixed(1) : '—'} sub={`${data.totalReviews} review${data.totalReviews === 1 ? '' : 's'}`} />
-        <Stat icon={<TrendingUp size={16} className="text-green-500" />} label="Acceptance rate" value={`${data.acceptanceRate}%`} sub={`${data.acceptedRequests} accepted`} />
+        <Stat icon={<Eye size={16} className="text-indigo-500" />} label={t('coaches.viewsThisWeek', 'Views this week')} value={data.viewsThisWeek} sub={t('coaches.allTime', '{{count}} all time', { count: data.totalViews })} />
+        <Stat icon={<UserPlus size={16} className="text-violet-500" />} label={t('coaches.pendingRequests', 'Pending requests')} value={data.pendingRequests} sub={t('coaches.totalCount', '{{count}} total', { count: data.totalRequests })} />
+        <Stat icon={<Star size={16} className="text-amber-500" />} label={t('coaches.averageRating', 'Average rating')} value={data.averageRating != null ? data.averageRating.toFixed(1) : '—'} sub={`${data.totalReviews} ${data.totalReviews === 1 ? t('coaches.review', 'review') : t('coaches.reviews', 'reviews')}`} />
+        <Stat icon={<TrendingUp size={16} className="text-green-500" />} label={t('coaches.acceptanceRate', 'Acceptance rate')} value={`${data.acceptanceRate}%`} sub={t('coaches.acceptedCount', '{{count}} accepted', { count: data.acceptedRequests })} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Views chart */}
         <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-1">Profile views</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">Last 30 days</p>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-1">{t('coaches.profileViews', 'Profile views')}</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">{t('coaches.last30Days', 'Last 30 days')}</p>
           {data.totalViews === 0 ? (
-            <div className="h-64 flex items-center justify-center text-sm text-gray-400">No views yet — share your profile link to get started.</div>
+            <div className="h-64 flex items-center justify-center text-sm text-gray-400">{t('coaches.noViewsYet', 'No views yet — share your profile link to get started.')}</div>
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={trend} margin={{ top: 8, right: 12, left: -18, bottom: 4 }}>
@@ -70,7 +72,7 @@ export function ProfileAnalyticsPage() {
                 <XAxis dataKey="label" tick={{ fontSize: 11 }} interval={4} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
                 <Tooltip contentStyle={{ background: '#0f172a', border: 'none', borderRadius: 12, color: '#fff', fontSize: 12 }} />
-                <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fill="url(#viewsFill)" name="Views" />
+                <Area type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2} fill="url(#viewsFill)" name={t('coaches.viewsSeries', 'Views')} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -90,7 +92,7 @@ export function ProfileAnalyticsPage() {
         {/* Funnel + completeness */}
         <div className="space-y-6">
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-4">Request funnel</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('coaches.requestFunnel', 'Request funnel')}</h3>
             <div className="space-y-3">
               {funnel.map(f => (
                 <div key={f.label}>
@@ -108,7 +110,7 @@ export function ProfileAnalyticsPage() {
 
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-900 dark:text-white">Profile completeness</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">{t('coaches.profileCompleteness', 'Profile completeness')}</h3>
               <span className={clsx('text-sm font-bold', data.profileCompleteness >= 80 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400')}>{data.profileCompleteness}%</span>
             </div>
             <div className="h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden mb-4">
@@ -127,7 +129,7 @@ export function ProfileAnalyticsPage() {
             </ul>
             {data.profileCompleteness < 100 && (
               <Link to="/profile" className="inline-flex items-center gap-1 mt-4 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                Complete your profile <ArrowRight size={13} />
+                {t('coaches.completeYourProfile', 'Complete your profile')} <ArrowRight size={13} />
               </Link>
             )}
           </div>

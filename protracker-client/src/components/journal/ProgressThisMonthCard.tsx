@@ -3,6 +3,7 @@ import { Flame, Trophy } from 'lucide-react';
 import { useMyJournal } from '../../hooks/useJournal';
 import { useMyGoals } from '../../hooks/useGoals';
 import { dateKey } from './journalUtils';
+import { useTranslation } from 'react-i18next';
 
 // Consecutive days ending today (or yesterday) that have a journal entry.
 function journalStreak(dates: Set<string>): number {
@@ -18,6 +19,7 @@ function journalStreak(dates: Set<string>): number {
 }
 
 export function ProgressThisMonthCard() {
+  const { t } = useTranslation();
   const { data: entries = [] } = useMyJournal(90);
   const { data: goals = [] } = useMyGoals();
 
@@ -37,7 +39,7 @@ export function ProgressThisMonthCard() {
 
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4">Progress this month</h2>
+      <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-4">{t('journal.progressThisMonth', 'Progress this month')}</h2>
       <div className="grid grid-cols-2 gap-4">
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-orange-500/10 flex items-center justify-center flex-shrink-0">
@@ -45,7 +47,7 @@ export function ProgressThisMonthCard() {
           </div>
           <div>
             <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{streak}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Journal streak</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('journal.journalStreak', 'Journal streak')}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -54,7 +56,7 @@ export function ProgressThisMonthCard() {
           </div>
           <div>
             <p className="text-2xl font-black text-gray-900 dark:text-white leading-none">{achievedThisMonth}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Goals achieved</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{t('journal.goalsAchieved', 'Goals achieved')}</p>
           </div>
         </div>
       </div>

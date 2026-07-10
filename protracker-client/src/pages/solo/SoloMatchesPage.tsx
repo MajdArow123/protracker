@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Trophy, ChevronDown, ChevronUp, Star } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Modal, ConfirmModal } from '../../components/ui/Modal';
@@ -12,6 +13,8 @@ import { useMyPlayerId } from '../../hooks/useDashboard';
 import { useSoloProfile, useSoloMatches, useCreateSoloMatch } from '../../hooks/useSolo';
 import { useUpdateMatch, useDeleteMatch, useSaveMatchRatings } from '../../hooks/useMatches';
 import { scoreLabelsForSport, setDetailConfig, scoreUnit } from '../../utils/matchSport';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import type { MatchResult, MatchOutcome } from '../../types';
 
 const RESULT_STYLES: Record<MatchOutcome, { badge: string; score: string }> = {
@@ -19,10 +22,6 @@ const RESULT_STYLES: Record<MatchOutcome, { badge: string; score: string }> = {
   Draw: { badge: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', score: 'text-gray-400' },
   Loss: { badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', score: 'text-red-500' },
 };
-
-function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 function myRating(m: MatchResult): number | null {
   return m.ratings.length > 0 ? m.ratings[0].rating : null;
@@ -36,6 +35,7 @@ function ratingColor(r: number) {
 function LogSoloMatchModal({ sportName, playerId, match, isOpen, onClose }: {
   sportName?: string; playerId: number; match: MatchResult | null; isOpen: boolean; onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const createMatch = useCreateSoloMatch();
   const updateMatch = useUpdateMatch();
@@ -75,8 +75,8 @@ function LogSoloMatchModal({ sportName, playerId, match, isOpen, onClose }: {
   }, [isOpen, match]);
 
   async function handleSubmit() {
-    if (!opponentName.trim()) { setError('Opponent is required'); return; }
-    if (!matchDate) { setError('Match date is required'); return; }
+    if (!opponentName.trim()) { setError(t('matches.errOpponentRequired', 'Opponent is required')); return; }
+    if (!matchDate) { setError(t('matches.errDateRequired', 'Match date is required')); return; }
     const our = Number(ourScore) || 0;
     const opp = Number(oppScore) || 0;
     const payload = {
@@ -94,33 +94,33 @@ function LogSoloMatchModal({ sportName, playerId, match, isOpen, onClose }: {
         await updateMatch.mutateAsync({ id: match.id, data: payload });
         // The "how did I play?" rating rides on the athlete's own PlayerMatchRating.
         await saveRatings.mutateAsync({ id: match.id, ratings: [{ playerId, rating }] });
-        addToast('Match updated', 'success');
+        addToast(t('matches.matchUpdated', 'Match updated'), 'success');
       } else {
         await createMatch.mutateAsync({ ...payload, personalRating: rating });
-        addToast('Match logged — nice one!', 'success');
+        addToast(t('matches.matchLoggedSolo', 'Match logged — nice one!'), 'success');
       }
       onClose();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Save failed', 'error');
+      addToast(err instanceof Error ? err.message : t('matches.saveFailed', 'Save failed'), 'error');
     }
   }
 
   const saving = createMatch.isPending || updateMatch.isPending || saveRatings.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Match' : 'Log Match'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? t('matches.editMatch', 'Edit Match') : t('matches.logMatch', 'Log Match')}>
       <div className="space-y-4">
-        <Input label="Who did you play against?" value={opponentName} onChange={e => setOpponent(e.target.value)} placeholder="e.g. Riverside pickup squad" />
+        <Input label={t('matches.whoPlayed', 'Who did you play against?')} value={opponentName} onChange={e => setOpponent(e.target.value)} placeholder={t('matches.opponentSoloPlaceholder', 'e.g. Riverside pickup squad')} />
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Date" type="date" value={matchDate} onChange={e => setMatchDate(e.target.value)} />
+          <Input label={t('common.date', 'Date')} type="date" value={matchDate} onChange={e => setMatchDate(e.target.value)} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Home / Away</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('matches.homeAway', 'Home / Away')}</label>
             <div className="flex gap-2">
               {([['Home', true], ['Away', false]] as [string, boolean][]).map(([label, val]) => (
                 <button key={label} type="button" onClick={() => setIsHome(val)}
                   className={clsx('flex-1 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer',
                     isHome === val ? 'bg-indigo-600 text-white border-transparent' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400')}>
-                  {label}
+                  {label === 'Home' ? t('matches.home', 'Home') : t('matches.away', 'Away')}
                 </button>
               ))}
             </div>
@@ -133,30 +133,30 @@ function LogSoloMatchModal({ sportName, playerId, match, isOpen, onClose }: {
         {setCfg.enabled && (
           <Input label={setCfg.label} value={setScores} onChange={e => setSetScores(e.target.value)} placeholder={setCfg.placeholder} />
         )}
-        <Input label="Competition (optional)" value={competition} onChange={e => setCompetition(e.target.value)} placeholder="League / Pickup / Tournament" />
+        <Input label={t('matches.competitionOptional', 'Competition (optional)')} value={competition} onChange={e => setCompetition(e.target.value)} placeholder={t('matches.competitionSoloPlaceholder', 'League / Pickup / Tournament')} />
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">How did you play?</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('matches.howPlayed', 'How did you play?')}</label>
             <span className={clsx('text-sm font-black px-2 py-0.5 rounded-lg', ratingColor(rating))}>{rating.toFixed(1)}</span>
           </div>
           <input type="range" min={1} max={10} step={0.5} value={rating}
             onChange={e => setRating(Number(e.target.value))} className="w-full accent-indigo-600" />
           <div className="flex justify-between text-[10px] text-gray-400 mt-1">
-            <span>1 — Rough day</span>
-            <span>10 — Best game ever</span>
+            <span>{t('matches.ratingLow', '1 — Rough day')}</span>
+            <span>{t('matches.ratingHigh', '10 — Best game ever')}</span>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="What went well, what to work on…"
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.notes', 'Notes')}</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={t('matches.notesSoloPlaceholder', 'What went well, what to work on…')}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? 'Save Changes' : 'Log Match'}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? t('matches.saveChanges', 'Save Changes') : t('matches.logMatch', 'Log Match')}</Button>
         </div>
       </div>
     </Modal>
@@ -165,6 +165,10 @@ function LogSoloMatchModal({ sportName, playerId, match, isOpen, onClose }: {
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 export function SoloMatchesPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
+  const { formatDate } = useLocaleFormat();
+  const fmtDate = (s: string) => formatDate(s, { month: 'short', day: 'numeric', year: 'numeric' });
   const { data: playerId } = useMyPlayerId();
   const { data: soloProfile } = useSoloProfile();
   const { data: matches = [], isLoading } = useSoloMatches();
@@ -187,18 +191,18 @@ export function SoloMatchesPage() {
 
   return (
     <PageWrapper
-      title="My Matches"
+      title={t('matches.myMatches', 'My Matches')}
       actions={
         <button onClick={() => { setEditMatch(null); setLogOpen(true); }}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-          <Plus size={15} /> Log Match
+          <Plus size={15} /> {t('matches.logMatch', 'Log Match')}
         </button>
       }
     >
       {matches.length > 0 && (
         <div className="grid grid-cols-3 gap-4 max-w-xl">
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Record</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{t('matches.record', 'Record')}</p>
             <p className="text-xl font-black">
               <span className="text-green-500">{stats.wins}W</span>
               <span className="text-gray-400"> – {stats.draws}D – </span>
@@ -206,13 +210,13 @@ export function SoloMatchesPage() {
             </p>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Matches</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">{t('matches.matchesLabel', 'Matches')}</p>
             <p className="text-xl font-black text-gray-900 dark:text-white">{matches.length}</p>
           </div>
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
             <div className="flex items-center gap-1.5 mb-1">
               <Star size={12} className="text-amber-400" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Avg Rating</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('matches.avgRating', 'Avg Rating')}</p>
             </div>
             <p className="text-xl font-black text-gray-900 dark:text-white">{stats.avgRating != null ? stats.avgRating.toFixed(1) : '—'}</p>
           </div>
@@ -222,9 +226,9 @@ export function SoloMatchesPage() {
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : matches.length === 0 ? (
-        <EmptyState icon={<Trophy size={40} />} title="No matches logged yet"
-          description="Record your first match result — score, opponent, and how you rated your own game."
-          action={{ label: 'Log First Match', onClick: () => { setEditMatch(null); setLogOpen(true); } }} />
+        <EmptyState icon={<Trophy size={40} />} title={t('matches.noMatchesSolo', 'No matches logged yet')}
+          description={t('matches.noMatchesSoloDesc', 'Record your first match result — score, opponent, and how you rated your own game.')}
+          action={{ label: t('matches.logFirstMatch', 'Log First Match'), onClick: () => { setEditMatch(null); setLogOpen(true); } }} />
       ) : (
         <div className="space-y-3">
           {matches.map(m => {
@@ -238,11 +242,11 @@ export function SoloMatchesPage() {
                 <div className="flex items-center gap-4 p-4">
                   <div className="text-center flex-shrink-0 w-20">
                     <p className={clsx('text-2xl font-black tabular-nums', rs.score)}>{m.ourScore} - {m.opponentScore}</p>
-                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', rs.badge)}>{m.result}{unit ? ` · ${unit}` : ''}</span>
+                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', rs.badge)}>{L.status(m.result)}{unit ? ` · ${unit}` : ''}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                      {m.isHome ? 'vs' : '@'} {m.opponentName}
+                      {m.isHome ? t('matches.vs', 'vs') : t('matches.at', '@')} {m.opponentName}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500">{fmtDate(m.matchDate)}</span>
@@ -253,7 +257,7 @@ export function SoloMatchesPage() {
                   {rating != null && (
                     <div className={clsx('flex flex-col items-center justify-center w-12 h-12 rounded-xl font-black flex-shrink-0', ratingColor(rating))}>
                       <span className="text-base leading-none">{rating.toFixed(1)}</span>
-                      <span className="text-[8px] font-semibold uppercase mt-0.5 opacity-70">me</span>
+                      <span className="text-[8px] font-semibold uppercase mt-0.5 opacity-70">{t('matches.me', 'me')}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-1 flex-shrink-0">
@@ -270,7 +274,7 @@ export function SoloMatchesPage() {
                 {isOpen && (
                   <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3 space-y-1.5">
                     {m.setScores && (
-                      <p className="text-xs text-gray-500 dark:text-gray-400"><span className="font-semibold">Set scores:</span> {m.setScores}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400"><span className="font-semibold">{t('matches.setScoresLabel', 'Set scores:')}</span> {m.setScores}</p>
                     )}
                     {m.notes && (
                       <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{m.notes}</p>
@@ -290,11 +294,11 @@ export function SoloMatchesPage() {
       <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
           if (!deleteTarget) return;
-          try { await deleteMatch.mutateAsync(deleteTarget.id); addToast('Match deleted', 'success'); }
-          catch (err) { addToast(err instanceof Error ? err.message : 'Delete failed', 'error'); }
+          try { await deleteMatch.mutateAsync(deleteTarget.id); addToast(t('matches.matchDeleted', 'Match deleted'), 'success'); }
+          catch (err) { addToast(err instanceof Error ? err.message : t('matches.deleteFailed', 'Delete failed'), 'error'); }
           finally { setDeleteTarget(null); }
         }}
-        title="Delete Match" message={`Delete the match vs ${deleteTarget?.opponentName}?`} confirmLabel="Delete" isLoading={deleteMatch.isPending} />
+        title={t('matches.deleteMatchTitle', 'Delete Match')} message={t('matches.deleteMatchMsg', 'Delete the match vs {{opponent}}?', { opponent: deleteTarget?.opponentName })} confirmLabel={t('common.delete', 'Delete')} isLoading={deleteMatch.isPending} />
     </PageWrapper>
   );
 }

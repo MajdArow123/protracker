@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Trophy, Swords, Medal, Globe, Lock } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -9,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSports } from '../../hooks/useSports';
 import { useCreateLeague, useUpdateLeague } from '../../hooks/useLeagues';
 import { LEAGUE_TYPES, LEAGUE_FORMATS } from '../../utils/leagueMeta';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import type { LeagueType, LeagueFormat, LeagueDetail } from '../../types';
 
 const TYPE_ICONS: Record<LeagueType, typeof Trophy> = { League: Trophy, Tournament: Swords, Cup: Medal };
@@ -21,6 +23,8 @@ function toDateInput(s?: string | null) {
 export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
   isOpen: boolean; onClose: () => void; onCreated?: (id: number) => void; editLeague?: LeagueDetail;
 }) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const { user } = useAuth();
   const { data: sports = [] } = useSports();
@@ -64,8 +68,8 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
   }, [isOpen, sports, coachSportName, editLeague]);
 
   const submit = async () => {
-    if (!name.trim()) { setError('League name is required.'); return; }
-    if (!sportId) { setError('Please select a sport.'); return; }
+    if (!name.trim()) { setError(tr('leagues.errNameRequired', 'League name is required.')); return; }
+    if (!sportId) { setError(tr('leagues.errSportRequired', 'Please select a sport.')); return; }
     setError('');
     const payload = {
       name: name.trim(),
@@ -84,35 +88,35 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
     try {
       if (editLeague) {
         await update.mutateAsync({ ...payload, status: editLeague.status });
-        addToast('League updated', 'success');
+        addToast(tr('leagues.leagueUpdated', 'League updated'), 'success');
       } else {
         const league = await create.mutateAsync(payload);
-        addToast('League created', 'success');
+        addToast(tr('leagues.leagueCreated', 'League created'), 'success');
         onCreated?.(league.id);
       }
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to save league.');
+      setError(e instanceof Error ? e.message : tr('leagues.errSaveFailed', 'Failed to save league.'));
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit league' : 'Create a league'} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? tr('leagues.editLeague', 'Edit league') : tr('leagues.createLeagueTitle', 'Create a league')} size="lg">
       <div className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Name</label>
-          <Input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. City Summer League" autoFocus />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('common.name', 'Name')}</label>
+          <Input value={name} onChange={e => setName(e.target.value)} placeholder={tr('leagues.namePlaceholder', 'e.g. City Summer League')} autoFocus />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
-          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder="Optional"
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('common.description', 'Description')}</label>
+          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} placeholder={tr('common.optional', 'Optional')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
 
         {/* Type cards */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('common.type', 'Type')}</label>
           <div className="grid grid-cols-3 gap-2">
             {LEAGUE_TYPES.map(t => {
               const Icon = TYPE_ICONS[t.value];
@@ -121,8 +125,8 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
                   className={clsx('p-3 rounded-xl border text-left transition-all cursor-pointer',
                     type === t.value ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500' : 'border-gray-200 dark:border-gray-800 hover:border-gray-300')}>
                   <Icon size={18} className={clsx('mb-1', type === t.value ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400')} />
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white">{t.label}</div>
-                  <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{t.desc}</div>
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">{L.generic('leagueType', t.label)}</div>
+                  <div className="text-[11px] text-gray-500 leading-tight mt-0.5">{tr(`leagues.typeDesc.${t.value}`, t.desc)}</div>
                 </button>
               );
             })}
@@ -131,14 +135,14 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
 
         {/* Format */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Format</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{tr('leagues.format', 'Format')}</label>
           <div className="grid grid-cols-2 gap-2">
             {LEAGUE_FORMATS.map(f => (
               <button key={f.value} type="button" onClick={() => setFormat(f.value)}
                 className={clsx('p-2.5 rounded-xl border text-left transition-all cursor-pointer',
                   format === f.value ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-1 ring-indigo-500' : 'border-gray-200 dark:border-gray-800 hover:border-gray-300')}>
-                <div className="text-sm font-semibold text-gray-900 dark:text-white">{f.label}</div>
-                <div className="text-[11px] text-gray-500 leading-tight">{f.desc}</div>
+                <div className="text-sm font-semibold text-gray-900 dark:text-white">{L.generic('leagueFormat', f.label)}</div>
+                <div className="text-[11px] text-gray-500 leading-tight">{tr(`leagues.formatDesc.${f.value}`, f.desc)}</div>
               </button>
             ))}
           </div>
@@ -146,48 +150,48 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Sport</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.sportLabel', 'Sport')}</label>
             <select value={sportId ?? ''} onChange={e => setSportId(e.target.value ? Number(e.target.value) : null)}
               className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              {sports.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              {sports.map(s => <option key={s.id} value={s.id}>{L.sport(s.name)}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Max teams (optional)</label>
-            <Input type="number" min={2} value={maxTeams} onChange={e => setMaxTeams(e.target.value)} placeholder="e.g. 8" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.maxTeams', 'Max teams (optional)')}</label>
+            <Input type="number" min={2} value={maxTeams} onChange={e => setMaxTeams(e.target.value)} placeholder={tr('leagues.maxTeamsPlaceholder', 'e.g. 8')} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Start date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.startDate', 'Start date')}</label>
             <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">End date</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.endDate', 'End date')}</label>
             <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Location</label>
-          <Input value={location} onChange={e => setLocation(e.target.value)} placeholder="Optional" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.location', 'Location')}</label>
+          <Input value={location} onChange={e => setLocation(e.target.value)} placeholder={tr('common.optional', 'Optional')} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Rules</label>
-          <textarea value={rules} onChange={e => setRules(e.target.value)} rows={2} placeholder="Optional"
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.rules', 'Rules')}</label>
+          <textarea value={rules} onChange={e => setRules(e.target.value)} rows={2} placeholder={tr('common.optional', 'Optional')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Prize (optional)</label>
-          <Input value={prize} onChange={e => setPrize(e.target.value)} placeholder="e.g. Trophy + medals" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('leagues.prize', 'Prize (optional)')}</label>
+          <Input value={prize} onChange={e => setPrize(e.target.value)} placeholder={tr('leagues.prizePlaceholder', 'e.g. Trophy + medals')} />
         </div>
 
         <button type="button" onClick={() => setIsPublic(v => !v)}
           className="flex items-center gap-3 w-full p-3 rounded-xl border border-gray-200 dark:border-gray-800 cursor-pointer text-left">
           {isPublic ? <Globe size={18} className="text-indigo-500" /> : <Lock size={18} className="text-gray-400" />}
           <div className="flex-1">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">{isPublic ? 'Public league' : 'Private league'}</div>
-            <div className="text-xs text-gray-500">{isPublic ? 'Visible in Browse Leagues; any coach can register.' : 'Only visible to you and registered teams.'}</div>
+            <div className="text-sm font-medium text-gray-900 dark:text-white">{isPublic ? tr('leagues.publicLeague', 'Public league') : tr('leagues.privateLeague', 'Private league')}</div>
+            <div className="text-xs text-gray-500">{isPublic ? tr('leagues.publicLeagueDesc', 'Visible in Browse Leagues; any coach can register.') : tr('leagues.privateLeagueDesc', 'Only visible to you and registered teams.')}</div>
           </div>
           <div className={clsx('relative w-11 h-6 rounded-full transition-colors flex-shrink-0', isPublic ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-gray-600')}>
             <span className={clsx('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', isPublic && 'translate-x-5')} />
@@ -197,8 +201,8 @@ export function CreateLeagueModal({ isOpen, onClose, onCreated, editLeague }: {
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} isLoading={create.isPending || update.isPending}>{isEdit ? 'Save Changes' : 'Create League'}</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
+          <Button onClick={submit} isLoading={create.isPending || update.isPending}>{isEdit ? tr('leagues.saveChanges', 'Save Changes') : tr('leagues.createLeague', 'Create League')}</Button>
         </div>
       </div>
     </Modal>

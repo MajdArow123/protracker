@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, ArrowLeftRight, Search, Check, AlertTriangle, XCircle, Loader2, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
@@ -10,19 +11,22 @@ import { useToast } from '../../context/ToastContext';
 type MatchQuality = 'good' | 'similar' | 'different';
 
 // Backend already computes matchQuality against the portion-scaled macros; this maps it to UI.
-const MATCH_UI: Record<MatchQuality, { label: string; badge: string; icon: typeof Check }> = {
+const MATCH_UI: Record<MatchQuality, { label: string; labelKey: string; badge: string; icon: typeof Check }> = {
   good: {
     label: 'Good match',
+    labelKey: 'nutrition.matchGood',
     badge: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300',
     icon: Check,
   },
   similar: {
     label: 'Similar macros',
+    labelKey: 'nutrition.matchSimilar',
     badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300',
     icon: AlertTriangle,
   },
   different: {
     label: 'Different macros',
+    labelKey: 'nutrition.matchDifferent',
     badge: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300',
     icon: XCircle,
   },
@@ -52,6 +56,7 @@ interface Props {
 }
 
 export function SwapModal({ item, playerId, onClose }: Props) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const swap = useSwapMealItem(playerId);
   const { data: foods = [], isLoading } = useEquivalentFoods(item);
@@ -82,10 +87,10 @@ export function SwapModal({ item, playerId, onClose }: Props) {
           newFats: selected.fats,
         },
       });
-      addToast(`Swapped to ${selected.foodName}`, 'success');
+      addToast(t('nutrition.swappedTo', 'Swapped to {{food}}', { food: selected.foodName }), 'success');
       onClose();
     } catch {
-      addToast('Swap failed. Please try again.', 'error');
+      addToast(t('nutrition.swapFailed', 'Swap failed. Please try again.'), 'error');
     }
   }
 
@@ -103,7 +108,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center gap-2">
             <ArrowLeftRight size={16} className="text-indigo-400" />
-            <h2 className="font-bold text-gray-900 dark:text-white text-sm">Swap {item.foodName}</h2>
+            <h2 className="font-bold text-gray-900 dark:text-white text-sm">{t('nutrition.swapTitle', 'Swap {{food}}', { food: item.foodName })}</h2>
           </div>
           <button
             onClick={onClose}
@@ -116,7 +121,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
         <div className="flex flex-col gap-3 p-4 overflow-y-auto flex-1 min-h-0">
           {/* Current food */}
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">Currently in your plan</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1.5">{t('nutrition.currentlyInPlan', 'Currently in your plan')}</p>
             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-3">
               <p className="font-bold text-gray-900 dark:text-white text-sm">{item.foodName}</p>
               <p className="text-xs text-gray-500 mt-0.5">{item.portion}</p>
@@ -136,20 +141,20 @@ export function SwapModal({ item, playerId, onClose }: Props) {
               type="text"
               value={query}
               onChange={e => setQuery(e.target.value)}
-              placeholder="Search alternatives..."
+              placeholder={t('nutrition.searchAlternatives', 'Search alternatives...')}
               className="w-full pl-9 pr-3 py-2 text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500"
             />
           </div>
 
           {/* Food list */}
           <div className="flex-shrink-0">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">Portion-matched to {item.calories} kcal</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-2">{t('nutrition.portionMatched', 'Portion-matched to {{cal}} kcal', { cal: item.calories })}</p>
             {isLoading ? (
               <div className="flex items-center justify-center py-8 text-gray-400">
                 <Loader2 size={18} className="animate-spin" />
               </div>
             ) : filtered.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No foods found</p>
+              <p className="text-sm text-gray-400 text-center py-4">{t('nutrition.noFoodsFound', 'No foods found')}</p>
             ) : (
               <div className="space-y-2 max-h-48 overflow-y-auto pr-0.5">
                 {filtered.map(food => {
@@ -184,7 +189,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                             ui.badge
                           )}>
                             <Icon size={9} />
-                            {ui.label}
+                            {t(ui.labelKey, ui.label)}
                           </span>
                           {isSelected && (
                             <div className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
@@ -211,10 +216,10 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                 className="overflow-hidden"
               >
                 <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">Nutritional Comparison</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-3">{t('nutrition.nutritionalComparison', 'Nutritional Comparison')}</p>
                   <div className="grid grid-cols-5 gap-2">
                     <div className="text-center">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">Calories</p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mb-1">{t('nutrition.calories', 'Calories')}</p>
                       <p className={clsx('text-base font-black', selected.caloriesDiffPct > 20 ? 'text-amber-500' : 'text-gray-900 dark:text-white')}>{selected.calories}</p>
                       {selected.calories !== item.calories && (
                         <p className={clsx('text-[10px] font-semibold', selected.calories > item.calories ? 'text-emerald-500' : 'text-red-500')}>
@@ -222,9 +227,9 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                         </p>
                       )}
                     </div>
-                    <MacDiff label="Protein" original={item.protein} next={selected.protein} color="text-blue-500" />
-                    <MacDiff label="Carbs" original={item.carbs} next={selected.carbs} color="text-amber-500" />
-                    <MacDiff label="Fats" original={item.fats} next={selected.fats} color="text-red-500" />
+                    <MacDiff label={t('nutrition.protein', 'Protein')} original={item.protein} next={selected.protein} color="text-blue-500" />
+                    <MacDiff label={t('nutrition.carbs', 'Carbs')} original={item.carbs} next={selected.carbs} color="text-amber-500" />
+                    <MacDiff label={t('nutrition.fats', 'Fats')} original={item.fats} next={selected.fats} color="text-red-500" />
                     <div className="flex items-center justify-center">
                       {goodMatch ? (
                         <span className="text-emerald-500"><Check size={18} /></span>
@@ -239,9 +244,9 @@ export function SwapModal({ item, playerId, onClose }: Props) {
                       : selected.matchQuality === 'similar' ? 'text-amber-600 dark:text-amber-400'
                       : 'text-red-600 dark:text-red-400'
                   )}>
-                    {goodMatch ? '✓ Macros are similar'
-                      : selected.matchQuality === 'similar' ? 'Macros are close but not identical'
-                      : 'Macros differ significantly from original'}
+                    {goodMatch ? t('nutrition.macrosSimilar', '✓ Macros are similar')
+                      : selected.matchQuality === 'similar' ? t('nutrition.macrosClose', 'Macros are close but not identical')
+                      : t('nutrition.macrosDiffer', 'Macros differ significantly from original')}
                   </p>
                 </div>
               </motion.div>
@@ -255,7 +260,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
             <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
               <AlertTriangle size={13} className="text-amber-500 mt-0.5 flex-shrink-0" />
               <p className="text-xs text-amber-700 dark:text-amber-300">
-                This replacement has different nutritional values. Your coach will be notified.
+                {t('nutrition.swapWarning', 'This replacement has different nutritional values. Your coach will be notified.')}
               </p>
             </div>
           )}
@@ -265,7 +270,7 @@ export function SwapModal({ item, playerId, onClose }: Props) {
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer"
           >
             {swap.isPending ? <Loader2 size={15} className="animate-spin" /> : <Check size={15} />}
-            {swap.isPending ? 'Swapping…' : selected ? 'Confirm Swap' : 'Select a food to swap'}
+            {swap.isPending ? t('nutrition.swapping', 'Swapping…') : selected ? t('nutrition.confirmSwap', 'Confirm Swap') : t('nutrition.selectFoodToSwap', 'Select a food to swap')}
           </button>
         </div>
       </motion.div>

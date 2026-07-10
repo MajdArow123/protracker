@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PageWrapper } from '../../components/layout/PageWrapper';
@@ -25,6 +26,7 @@ import {
 import { useGenerateNutritionGuidance } from '../../hooks/useAI';
 import { clsx } from 'clsx';
 import { WeeklyNutritionPlanView } from '../../components/nutrition/WeeklyNutritionPlanView';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import type { NutritionProfileItem, NutritionGuidance, StructuredMealPlan, Meal } from '../../types';
 
 type Tab = 'profile' | 'guidance' | 'weekly';
@@ -83,12 +85,13 @@ const CHIP_CATEGORY_LABELS: Record<string, string> = {
 // Shown around AI plan generation so the caller sees the restrictions are applied
 // automatically — no need to re-enter them ("self" = the athlete viewing their own).
 function RestrictionsNotice({ items, generating, self }: { items: NutritionProfileItem[]; generating?: boolean; self?: boolean }) {
+  const { t } = useTranslation();
   if (items.length === 0) return null;
   return (
     <div className="flex flex-wrap items-center justify-center gap-1.5 px-4 py-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-900/40">
       <Salad size={13} className="text-emerald-500" />
       <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">
-        {generating ? 'Generating plan respecting:' : 'This plan will automatically respect:'}
+        {generating ? t('nutrition.generatingRespecting', 'Generating plan respecting:') : t('nutrition.willRespect', 'This plan will automatically respect:')}
       </span>
       {items.map(r => (
         <span key={r.id} className={clsx(
@@ -97,11 +100,11 @@ function RestrictionsNotice({ items, generating, self }: { items: NutritionProfi
             ? 'bg-red-500/15 text-red-500'
             : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
         )}>
-          {r.specificItem ? `No ${r.specificItem}` : (CHIP_CATEGORY_LABELS[r.category] ?? r.category)}
+          {r.specificItem ? t('nutrition.noItem', 'No {{item}}', { item: r.specificItem }) : (CHIP_CATEGORY_LABELS[r.category] ?? r.category)}
         </span>
       ))}
       <span className="text-[11px] text-emerald-600/70 dark:text-emerald-400/60 w-full text-center mt-0.5">
-        {self ? 'Loaded from your dietary profile — nothing to re-enter.' : "Loaded from the athlete's dietary profile — nothing to re-enter."}
+        {self ? t('nutrition.loadedSelf', 'Loaded from your dietary profile — nothing to re-enter.') : t('nutrition.loadedCoach', "Loaded from the athlete's dietary profile — nothing to re-enter.")}
       </span>
     </div>
   );
@@ -137,6 +140,7 @@ function MacroBar({ value, max, color, label }: { value: number; max: number; co
 }
 
 function MealCard({ meal }: { meal: Meal }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(true);
   const Icon = MEAL_ICONS[meal.name] ?? Utensils;
   const totalCals = meal.items.reduce((s, i) => s + (i.calories || 0), 0);
@@ -191,7 +195,7 @@ function MealCard({ meal }: { meal: Meal }) {
               </div>
               {/* Meal totals */}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800 text-xs">
-                <span className="text-gray-500">Meal totals:</span>
+                <span className="text-gray-500">{t('nutrition.mealTotals', 'Meal totals:')}</span>
                 <span className="font-semibold text-gray-700 dark:text-gray-300">{totalCals} kcal</span>
                 <span className="text-blue-500">P:{totalProtein}g</span>
                 <span className="text-amber-500">C:{totalCarbs}g</span>
@@ -206,6 +210,7 @@ function MealCard({ meal }: { meal: Meal }) {
 }
 
 function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
+  const { t } = useTranslation();
   const priorityFoods = parseList(plan.foodsToPrioritize);
   const limitFoods = parseList(plan.foodsToLimit);
 
@@ -213,26 +218,26 @@ function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
     <div className="space-y-4">
       {/* Daily overview */}
       <div className="rounded-2xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10 p-5">
-        <h4 className="font-bold text-indigo-800 dark:text-indigo-300 text-sm mb-3 uppercase tracking-wide">Daily Overview</h4>
+        <h4 className="font-bold text-indigo-800 dark:text-indigo-300 text-sm mb-3 uppercase tracking-wide">{t('nutrition.dailyOverview', 'Daily Overview')}</h4>
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">Daily Calories</span>
+              <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t('nutrition.dailyCalories', 'Daily Calories')}</span>
               <span className="text-xl font-black text-indigo-600 dark:text-indigo-400">{plan.dailyCalories} kcal</span>
             </div>
           </div>
           {plan.macros && (
             <div className="col-span-2 space-y-2.5">
-              <MacroBar value={plan.macros.protein} max={250} color="#6366f1" label="Protein" />
-              <MacroBar value={plan.macros.carbs} max={500} color="#f59e0b" label="Carbs" />
-              <MacroBar value={plan.macros.fats} max={150} color="#ef4444" label="Fats" />
-              {plan.macros.fiber > 0 && <MacroBar value={plan.macros.fiber} max={50} color="#10b981" label="Fiber" />}
+              <MacroBar value={plan.macros.protein} max={250} color="#6366f1" label={t('nutrition.protein', 'Protein')} />
+              <MacroBar value={plan.macros.carbs} max={500} color="#f59e0b" label={t('nutrition.carbs', 'Carbs')} />
+              <MacroBar value={plan.macros.fats} max={150} color="#ef4444" label={t('nutrition.fats', 'Fats')} />
+              {plan.macros.fiber > 0 && <MacroBar value={plan.macros.fiber} max={50} color="#10b981" label={t('nutrition.fiber', 'Fiber')} />}
             </div>
           )}
           {plan.hydrationMl > 0 && (
             <div className="col-span-2 flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
               <Droplets size={15} />
-              <span>Hydration target: <strong>{(plan.hydrationMl / 1000).toFixed(1)}L / day</strong></span>
+              <span>{t('nutrition.hydrationTarget', 'Hydration target:')} <strong>{t('nutrition.litersPerDay', '{{liters}}L / day', { liters: (plan.hydrationMl / 1000).toFixed(1) })}</strong></span>
             </div>
           )}
         </div>
@@ -241,7 +246,7 @@ function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
       {/* Meal schedule */}
       {plan.meals && plan.meals.length > 0 && (
         <div className="space-y-2">
-          <h4 className="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wide">Meal Schedule</h4>
+          <h4 className="font-bold text-gray-700 dark:text-gray-300 text-sm uppercase tracking-wide">{t('nutrition.mealSchedule', 'Meal Schedule')}</h4>
           {plan.meals.map((meal, i) => (
             <MealCard key={i} meal={meal} />
           ))}
@@ -253,7 +258,7 @@ function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {priorityFoods.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">Prioritize</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">{t('nutrition.prioritize', 'Prioritize')}</p>
               <div className="flex flex-wrap gap-1.5">
                 {priorityFoods.map(f => (
                   <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40">
@@ -265,7 +270,7 @@ function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
           )}
           {limitFoods.length > 0 && (
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Limit</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">{t('nutrition.limit', 'Limit')}</p>
               <div className="flex flex-wrap gap-1.5">
                 {limitFoods.map(f => (
                   <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40">
@@ -282,6 +287,7 @@ function StructuredPlanView({ plan }: { plan: StructuredMealPlan }) {
 }
 
 function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdit: () => void }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(true);
   const mealPlan = parseMealPlan(guidance.mealPlanJson);
   const priorityFoods = parseList(guidance.foodsToPrioritize);
@@ -295,8 +301,8 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
             <Salad size={17} className="text-indigo-500 dark:text-indigo-400" />
           </div>
           <div>
-            <p className="font-bold text-gray-900 dark:text-white text-sm">Nutrition Plan</p>
-            <p className="text-xs text-gray-500">{guidance.createdDate}{guidance.isAIGenerated ? ' · AI Generated' : ''}</p>
+            <p className="font-bold text-gray-900 dark:text-white text-sm">{t('nutrition.nutritionPlan', 'Nutrition Plan')}</p>
+            <p className="text-xs text-gray-500">{guidance.createdDate}{guidance.isAIGenerated ? t('nutrition.aiGeneratedSuffix', ' · AI Generated') : ''}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -322,7 +328,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
               {/* Goal */}
               {guidance.goal && (
                 <div className="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-900/30">
-                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1.5">Goal</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-400 mb-1.5">{t('nutrition.goal', 'Goal')}</p>
                   <p className="text-base font-semibold text-indigo-900 dark:text-indigo-100">{guidance.goal}</p>
                 </div>
               )}
@@ -335,7 +341,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
                   {guidance.mealSuggestions && (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-2 flex items-center gap-1.5">
-                        <Utensils size={11} /> Meal Suggestions
+                        <Utensils size={11} /> {t('nutrition.mealSuggestions', 'Meal Suggestions')}
                       </p>
                       <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{guidance.mealSuggestions}</p>
                     </div>
@@ -344,7 +350,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {priorityFoods.length > 0 && (
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">Prioritize</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2">{t('nutrition.prioritize', 'Prioritize')}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {priorityFoods.map(f => (
                               <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-900/40">{f}</span>
@@ -354,7 +360,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
                       )}
                       {limitFoods.length > 0 && (
                         <div>
-                          <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">Limit</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-red-600 dark:text-red-400 mb-2">{t('nutrition.limit', 'Limit')}</p>
                           <div className="flex flex-wrap gap-1.5">
                             {limitFoods.map(f => (
                               <span key={f} className="px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/40">{f}</span>
@@ -371,7 +377,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
               {guidance.hydrationTips && !mealPlan && (
                 <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/20">
                   <p className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-1.5">
-                    <Droplets size={11} /> Hydration
+                    <Droplets size={11} /> {t('nutrition.hydration', 'Hydration')}
                   </p>
                   <p className="text-sm text-blue-800 dark:text-blue-200 leading-relaxed whitespace-pre-wrap">{guidance.hydrationTips}</p>
                 </div>
@@ -381,7 +387,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
               {guidance.recoveryTips && (
                 <div className="p-4 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-900/20">
                   <p className="text-xs font-bold uppercase tracking-widest text-green-600 dark:text-green-400 mb-2 flex items-center gap-1.5">
-                    <Zap size={11} /> Recovery
+                    <Zap size={11} /> {t('nutrition.recovery', 'Recovery')}
                   </p>
                   <p className="text-sm text-green-800 dark:text-green-200 leading-relaxed whitespace-pre-wrap">{guidance.recoveryTips}</p>
                 </div>
@@ -404,6 +410,7 @@ function GuidanceCard({ guidance, onEdit }: { guidance: NutritionGuidance; onEdi
 
 // Coach route shell: /players/:id/nutrition
 export function NutritionPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const playerId = Number(id);
   const navigate = useNavigate();
@@ -414,10 +421,10 @@ export function NutritionPage() {
   return (
     <NutritionManager
       playerId={playerId}
-      title={`Nutrition — ${player?.fullName ?? ''}`}
+      title={t('nutrition.titleFor', 'Nutrition — {{name}}', { name: player?.fullName ?? '' })}
       actions={
         <button onClick={() => navigate(`/players/${id}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">
-          <ArrowLeft size={15} /> Back
+          <ArrowLeft size={15} /> {t('common.back', 'Back')}
         </button>
       }
     />
@@ -433,6 +440,8 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
   title: string;
   actions?: React.ReactNode;
 }) {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const [searchParams, setSearchParams] = useSearchParams();
   const { addToast: showToast } = useToast();
 
@@ -484,10 +493,10 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
         setEditingItem(null);
       } else {
         await createItem.mutateAsync(data);
-        showToast('Item added', 'success');
+        showToast(t('nutrition.itemAdded', 'Item added'), 'success');
         setShowNewItem(false);
       }
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t('nutrition.saveFailed', 'Save failed'), 'error'); }
   }
 
   function openNewGuidance() { setEditingGuidance(null); setGuidanceForm({}); setShowNewGuidance(true); }
@@ -518,19 +527,19 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
         setEditingGuidance(null);
       } else {
         await createGuidance.mutateAsync(buildGuidancePayload());
-        showToast('Guidance created', 'success');
+        showToast(t('nutrition.guidanceCreated', 'Guidance created'), 'success');
         setShowNewGuidance(false);
       }
-    } catch (err) { showToast(err instanceof Error ? err.message : 'Save failed', 'error'); }
+    } catch (err) { showToast(err instanceof Error ? err.message : t('nutrition.saveFailed', 'Save failed'), 'error'); }
   }
 
   async function handleGenerateWeekly() {
     setWeeklyError(null);
     try {
       await generateWeekly.mutateAsync(playerId);
-      showToast('Your weekly plan is ready!', 'success');
+      showToast(t('nutrition.weeklyReady', 'Your weekly plan is ready!'), 'success');
     } catch {
-      setWeeklyError('Plan generation failed. Please try again.');
+      setWeeklyError(t('nutrition.weeklyFailed', 'Plan generation failed. Please try again.'));
     }
   }
 
@@ -538,9 +547,9 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
     setAiError(null);
     try {
       await generateAI.mutateAsync(playerId);
-      showToast('Nutrition plan generated!', 'success');
+      showToast(t('nutrition.planGeneratedToast', 'Nutrition plan generated!'), 'success');
     } catch {
-      setAiError('AI generation failed. Please try again.');
+      setAiError(t('nutrition.aiGenFailed', 'AI generation failed. Please try again.'));
     }
   }
 
@@ -557,13 +566,13 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
     <PageWrapper title={title} actions={actions}>
       {/* Tab switcher */}
       <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800/50 rounded-2xl w-fit">
-        {([['profile', 'Dietary Profile'], ['guidance', 'Nutrition Guidance'], ['weekly', 'Weekly Plan']] as [Tab, string][]).map(([t, label]) => (
+        {([['profile', t('nutrition.dietaryProfile', 'Dietary Profile')], ['guidance', t('nutrition.nutritionGuidance', 'Nutrition Guidance')], ['weekly', t('nutrition.weeklyPlan', 'Weekly Plan')]] as [Tab, string][]).map(([tabKey, label]) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={clsx(
               'px-4 py-2 rounded-xl text-sm font-medium transition-all cursor-pointer',
-              tab === t ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              tab === tabKey ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
             )}
           >
             {label}
@@ -577,40 +586,40 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
           {!isItemFormOpen && (
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {profileItems.length > 0 ? `${profileItems.length} dietary restriction${profileItems.length !== 1 ? 's' : ''} on file` : 'No dietary preferences set yet'}
+                {profileItems.length > 0 ? t('nutrition.restrictionsOnFile', '{{count}} dietary restriction on file', { count: profileItems.length }) : t('nutrition.noPreferencesYet', 'No dietary preferences set yet')}
               </p>
               <button onClick={openNewItem} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                <Plus size={15} /> Add Restriction
+                <Plus size={15} /> {t('nutrition.addRestriction', 'Add Restriction')}
               </button>
             </div>
           )}
 
           {isItemFormOpen && (
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingItem ? 'Edit Preference' : 'New Dietary Restriction'}</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingItem ? t('nutrition.editPreference', 'Edit Preference') : t('nutrition.newRestriction', 'New Dietary Restriction')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Select label="Type" value={profileForm.preferenceType} onChange={e => setProfileForm(v => ({ ...v, preferenceType: e.target.value }))} options={PREFERENCE_TYPES.map(t => ({ value: t, label: t }))} />
-                <Select label="Category" value={profileForm.category} onChange={e => setProfileForm(v => ({ ...v, category: e.target.value }))} options={CATEGORIES.map(c => ({ value: c, label: c }))} />
-                <Select label="Severity" value={profileForm.severity} onChange={e => setProfileForm(v => ({ ...v, severity: e.target.value }))} options={SEVERITIES.map(s => ({ value: s, label: s }))} />
-                <Input label="Specific Item" value={profileForm.specificItem} onChange={e => setProfileForm(v => ({ ...v, specificItem: e.target.value }))} placeholder="e.g. peanuts" />
+                <Select label={t('common.type', 'Type')} value={profileForm.preferenceType} onChange={e => setProfileForm(v => ({ ...v, preferenceType: e.target.value }))} options={PREFERENCE_TYPES.map(pt => ({ value: pt, label: dyn.generic('preferenceType', pt) }))} />
+                <Select label={t('common.category', 'Category')} value={profileForm.category} onChange={e => setProfileForm(v => ({ ...v, category: e.target.value }))} options={CATEGORIES.map(c => ({ value: c, label: dyn.category(c) }))} />
+                <Select label={t('nutrition.severity', 'Severity')} value={profileForm.severity} onChange={e => setProfileForm(v => ({ ...v, severity: e.target.value }))} options={SEVERITIES.map(s => ({ value: s, label: dyn.generic('severity', s) }))} />
+                <Input label={t('nutrition.specificItem', 'Specific Item')} value={profileForm.specificItem} onChange={e => setProfileForm(v => ({ ...v, specificItem: e.target.value }))} placeholder={t('nutrition.specificItemPlaceholder', 'e.g. peanuts')} />
                 <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                  <textarea value={profileForm.notes} onChange={e => setProfileForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="Additional notes…" className={TEXTAREA_CLS} />
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.notes', 'Notes')}</label>
+                  <textarea value={profileForm.notes} onChange={e => setProfileForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder={t('nutrition.notesPlaceholder', 'Additional notes…')} className={TEXTAREA_CLS} />
                 </div>
               </div>
 
               {profileForm.severity === 'Hard' && (
                 <div className="mt-3 flex items-start gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30">
                   <ShieldAlert size={14} className="text-red-500 mt-0.5 flex-shrink-0" />
-                  <p className="text-xs text-red-600 dark:text-red-400">Hard allergy — AI will never suggest foods containing this ingredient.</p>
+                  <p className="text-xs text-red-600 dark:text-red-400">{t('nutrition.hardAllergyWarn', 'Hard allergy — AI will never suggest foods containing this ingredient.')}</p>
                 </div>
               )}
 
               <div className="flex items-center justify-end gap-3 mt-4">
                 {editingItem && <AutoSaveStatus status={itemSaveStatus} />}
-                <button onClick={() => { setEditingItem(null); setShowNewItem(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
+                <button onClick={() => { setEditingItem(null); setShowNewItem(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">{t('common.cancel', 'Cancel')}</button>
                 <button onClick={saveProfileItem} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                  {editingItem ? 'Done' : 'Add Restriction'}
+                  {editingItem ? t('common.done', 'Done') : t('nutrition.addRestriction', 'Add Restriction')}
                 </button>
               </div>
             </div>
@@ -619,9 +628,9 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
           {profileItems.length === 0 && !isItemFormOpen ? (
             <EmptyState
               icon={<Salad size={36} />}
-              title="No dietary restrictions"
-              description="Add dietary preferences to customize AI nutrition recommendations"
-              action={{ label: 'Add First Restriction', onClick: openNewItem }}
+              title={t('nutrition.noRestrictions', 'No dietary restrictions')}
+              description={t('nutrition.noRestrictionsDesc', 'Add dietary preferences to customize AI nutrition recommendations')}
+              action={{ label: t('nutrition.addFirstRestriction', 'Add First Restriction'), onClick: openNewItem }}
             />
           ) : (
             <div className="space-y-3">
@@ -633,10 +642,10 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           {style.icon && <ShieldAlert size={13} className="text-red-500 flex-shrink-0" />}
-                          <span className="font-semibold text-gray-900 dark:text-white text-sm">{item.category}</span>
+                          <span className="font-semibold text-gray-900 dark:text-white text-sm">{dyn.category(item.category)}</span>
                           {item.specificItem && <span className="text-xs text-gray-500">({item.specificItem})</span>}
-                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-semibold', style.badge)}>{item.severity}</span>
-                          <span className="text-xs text-gray-400">{item.preferenceType}</span>
+                          <span className={clsx('text-xs px-2 py-0.5 rounded-full font-semibold', style.badge)}>{dyn.generic('severity', item.severity)}</span>
+                          <span className="text-xs text-gray-400">{dyn.generic('preferenceType', item.preferenceType)}</span>
                         </div>
                         {item.notes && <p className="text-sm text-gray-600 dark:text-gray-400">{item.notes}</p>}
                       </div>
@@ -672,31 +681,31 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
                 >
                   <Sparkles size={15} />
                   {isGenerating
-                    ? <span className="flex items-center gap-1">Generating<span className="inline-flex gap-0.5">{[0,1,2].map(i=><span key={i} className="w-1 h-1 bg-white rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}</span></span>
-                    : 'Generate with AI'
+                    ? <span className="flex items-center gap-1">{t('nutrition.generatingWord', 'Generating')}<span className="inline-flex gap-0.5">{[0,1,2].map(i=><span key={i} className="w-1 h-1 bg-white rounded-full animate-bounce" style={{animationDelay:`${i*0.15}s`}}/>)}</span></span>
+                    : t('nutrition.generateWithAI', 'Generate with AI')
                   }
                 </button>
                 <button onClick={openNewGuidance} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                  <Plus size={15} /> New Guidance
+                  <Plus size={15} /> {t('nutrition.newGuidance', 'New Guidance')}
                 </button>
               </div>
 
               {consideredLabels.length > 0 && (
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  AI will consider: <span className="text-violet-600 dark:text-violet-400 font-medium">{consideredLabels.join(', ')}</span>
-                  {hardRestrictions.length > 0 && <span className="ml-1 text-red-500 font-semibold">({hardRestrictions.length} hard restriction{hardRestrictions.length > 1 ? 's' : ''})</span>}
+                  {t('nutrition.aiWillConsider', 'AI will consider:')} <span className="text-violet-600 dark:text-violet-400 font-medium">{consideredLabels.join(', ')}</span>
+                  {hardRestrictions.length > 0 && <span className="ml-1 text-red-500 font-semibold">{t('nutrition.hardRestrictionCount', '({{count}} hard restriction)', { count: hardRestrictions.length })}</span>}
                 </p>
               )}
 
               {isGenerating && (
                 <AILoadingPanel
                   compact
-                  primaryText="Generating nutrition plan..."
+                  primaryText={t('nutrition.genPlanPrimary', 'Generating nutrition plan...')}
                   messages={[
-                    'Analyzing dietary restrictions...',
-                    'Designing a balanced meal schedule...',
-                    'Calculating macros and calories...',
-                    'Finalizing recommendations...',
+                    t('nutrition.genMsg1', 'Analyzing dietary restrictions...'),
+                    t('nutrition.genMsg2', 'Designing a balanced meal schedule...'),
+                    t('nutrition.genMsg3', 'Calculating macros and calories...'),
+                    t('nutrition.genMsg4', 'Finalizing recommendations...'),
                   ]}
                   estimatedSeconds={15}
                 />
@@ -705,7 +714,7 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
               {aiError && (
                 <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
                   {aiError}
-                  <button onClick={handleGenerateAI} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+                  <button onClick={handleGenerateAI} className="ml-auto text-xs font-semibold underline cursor-pointer">{t('common.retry', 'Retry')}</button>
                 </div>
               )}
             </div>
@@ -713,18 +722,18 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
 
           {isGuidanceFormOpen && (
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingGuidance ? 'Edit Guidance' : 'New Nutrition Guidance'}</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editingGuidance ? t('nutrition.editGuidance', 'Edit Guidance') : t('nutrition.newGuidanceTitle', 'New Nutrition Guidance')}</h3>
               <div className="space-y-4">
                 {GUIDANCE_FIELDS.map(f => (
                   <div key={String(f.key)}>
                     <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      <f.icon size={13} className="text-gray-400" /> {f.label}
+                      <f.icon size={13} className="text-gray-400" /> {t(`nutrition.field_${String(f.key)}`, f.label)}
                     </label>
                     <textarea
                       value={guidanceForm[f.key] ?? ''}
                       onChange={e => setGuidanceForm(prev => ({ ...prev, [f.key]: e.target.value }))}
                       rows={f.key === 'goal' ? 1 : 2}
-                      placeholder={f.placeholder}
+                      placeholder={t(`nutrition.fieldPh_${String(f.key)}`, f.placeholder)}
                       className={TEXTAREA_CLS}
                     />
                   </div>
@@ -732,9 +741,9 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
               </div>
               <div className="flex items-center justify-end gap-3 mt-5">
                 {editingGuidance && <AutoSaveStatus status={guidanceSaveStatus} />}
-                <button onClick={() => { setEditingGuidance(null); setShowNewGuidance(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
+                <button onClick={() => { setEditingGuidance(null); setShowNewGuidance(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">{t('common.cancel', 'Cancel')}</button>
                 <button onClick={saveGuidance} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                  {editingGuidance ? 'Done' : 'Create Guidance'}
+                  {editingGuidance ? t('common.done', 'Done') : t('nutrition.createGuidance', 'Create Guidance')}
                 </button>
               </div>
             </div>
@@ -743,9 +752,9 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
           {guidanceList.length === 0 && !isGuidanceFormOpen ? (
             <EmptyState
               icon={<Salad size={36} />}
-              title="No nutrition guidance yet"
-              description="Generate an AI-powered structured meal plan or create one manually"
-              action={{ label: 'Generate with AI', onClick: handleGenerateAI }}
+              title={t('nutrition.noGuidanceYet', 'No nutrition guidance yet')}
+              description={t('nutrition.noGuidanceDesc', 'Generate an AI-powered structured meal plan or create one manually')}
+              action={{ label: t('nutrition.generateWithAI', 'Generate with AI'), onClick: handleGenerateAI }}
             />
           ) : (
             <div className="space-y-4">
@@ -766,16 +775,16 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
             <>
             <RestrictionsNotice items={profileItems} generating self={self} />
             <AILoadingPanel
-              primaryText="Generating your weekly plan..."
+              primaryText={t('nutrition.genWeeklyPrimary', 'Generating your weekly plan...')}
               messages={[
-                'Analyzing dietary restrictions...',
-                'Planning Monday through Wednesday...',
-                'Balancing macros across the week...',
-                'Planning Thursday through Sunday...',
-                'Finalizing nutritional values...',
-                'Almost done...',
+                t('nutrition.weeklyMsg1', 'Analyzing dietary restrictions...'),
+                t('nutrition.weeklyMsg2', 'Planning Monday through Wednesday...'),
+                t('nutrition.weeklyMsg3', 'Balancing macros across the week...'),
+                t('nutrition.weeklyMsg4', 'Planning Thursday through Sunday...'),
+                t('nutrition.weeklyMsg5', 'Finalizing nutritional values...'),
+                t('nutrition.weeklyMsg6', 'Almost done...'),
               ]}
-              note="This usually takes 30-60 seconds since we're planning every meal for the full week"
+              note={t('nutrition.weeklyNote', "This usually takes 30-60 seconds since we're planning every meal for the full week")}
               estimatedSeconds={45}
             />
             </>
@@ -784,15 +793,15 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
               {weeklyError && (
                 <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
                   {weeklyError}
-                  <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+                  <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">{t('common.retry', 'Retry')}</button>
                 </div>
               )}
               <RestrictionsNotice items={profileItems} self={self} />
               <EmptyState
                 icon={<CalendarDays size={36} />}
-                title="No weekly plan yet"
-                description={self ? 'Generate your personalized 7-day meal plan using AI' : 'Generate a personalized 7-day meal plan for this player using AI'}
-                action={{ label: self ? 'Generate My Weekly Plan' : 'Generate with AI', onClick: handleGenerateWeekly }}
+                title={t('nutrition.noWeeklyYet', 'No weekly plan yet')}
+                description={self ? t('nutrition.noWeeklyDescSelf', 'Generate your personalized 7-day meal plan using AI') : t('nutrition.noWeeklyDescCoach', 'Generate a personalized 7-day meal plan for this player using AI')}
+                action={{ label: self ? t('nutrition.generateMyWeekly', 'Generate My Weekly Plan') : t('nutrition.generateWithAI', 'Generate with AI'), onClick: handleGenerateWeekly }}
               />
             </div>
           ) : (
@@ -805,7 +814,7 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
               {weeklyError && (
                 <div className="flex items-center gap-2 px-4 py-3 mb-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
                   {weeklyError}
-                  <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+                  <button onClick={handleGenerateWeekly} className="ml-auto text-xs font-semibold underline cursor-pointer">{t('common.retry', 'Retry')}</button>
                 </div>
               )}
               <WeeklyNutritionPlanView
@@ -825,13 +834,13 @@ export function NutritionManager({ playerId, self = false, title, actions }: {
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
           if (!deleteTarget) return;
-          try { await deleteItem.mutateAsync(deleteTarget.id); showToast('Preference deleted', 'success'); }
-          catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); }
+          try { await deleteItem.mutateAsync(deleteTarget.id); showToast(t('nutrition.prefDeleted', 'Preference deleted'), 'success'); }
+          catch (err) { showToast(err instanceof Error ? err.message : t('nutrition.deleteFailed', 'Delete failed'), 'error'); }
           finally { setDeleteTarget(null); }
         }}
-        title="Delete Preference"
-        message={`Remove "${deleteTarget?.category}" from dietary profile?`}
-        confirmLabel="Delete"
+        title={t('nutrition.deletePreference', 'Delete Preference')}
+        message={t('nutrition.removePrefMsg', 'Remove "{{category}}" from dietary profile?', { category: deleteTarget?.category })}
+        confirmLabel={t('common.delete', 'Delete')}
         isLoading={deleteItem.isPending}
       />
     </PageWrapper>

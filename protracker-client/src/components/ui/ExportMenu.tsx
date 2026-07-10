@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Download, ChevronDown, Loader2, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -19,7 +20,9 @@ interface Props {
   onError?: (message: string) => void;
 }
 
-export function ExportMenu({ options, label = 'Export Data', className, variant = 'default', onError }: Props) {
+export function ExportMenu({ options, label, className, variant = 'default', onError }: Props) {
+  const { t } = useTranslation();
+  const menuLabel = label ?? t('ui.exportData', 'Export Data');
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState<number | null>(null);
   const [done, setDone] = useState<number | null>(null);
@@ -60,7 +63,7 @@ export function ExportMenu({ options, label = 'Export Data', className, variant 
       setDone(idx);
       setTimeout(() => setDone(null), 1200);
     } catch (e) {
-      onError?.(e instanceof Error ? e.message : 'Export failed.');
+      onError?.(e instanceof Error ? e.message : t('ui.exportFailed', 'Export failed.'));
     } finally {
       setBusy(null);
       setOpen(false);
@@ -79,7 +82,7 @@ export function ExportMenu({ options, label = 'Export Data', className, variant 
         className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all cursor-pointer', trigger)}
       >
         {busy != null ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
-        {label}
+        {menuLabel}
         <ChevronDown size={13} className={clsx('transition-transform', open && 'rotate-180')} />
       </button>
 

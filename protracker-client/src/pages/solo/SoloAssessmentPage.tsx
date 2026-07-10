@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -33,6 +35,8 @@ function avgOf(a: PlayerAssessment): number | null {
 // coach flow uses, but always for yourself — no player selector, no period picker
 // (assessments land in an auto-created "Personal Training" period).
 export function SoloAssessmentPage() {
+  const { t: tr } = useTranslation();
+  const { formatDate } = useLocaleFormat();
   const { addToast: showToast } = useToast();
   const qc = useQueryClient();
 
@@ -65,8 +69,8 @@ export function SoloAssessmentPage() {
   async function submitAssessment(e: React.FormEvent) {
     e.preventDefault();
     if (!playerId) return;
-    if (!dateRecorded) { showToast('Select a date', 'error'); return; }
-    if (!allScored) { showToast('Score every category before saving', 'error'); return; }
+    if (!dateRecorded) { showToast(tr('assessment.selectDateError', 'Select a date'), 'error'); return; }
+    if (!allScored) { showToast(tr('assessment.scoreAllSaveError', 'Score every category before saving'), 'error'); return; }
 
     try {
       await createAssessment.mutateAsync({
@@ -81,7 +85,7 @@ export function SoloAssessmentPage() {
           score: scores[c.id] as number,
         })),
       } as Parameters<typeof createAssessment.mutateAsync>[0]);
-      showToast('Assessment saved — nice work!', 'success');
+      showToast(tr('assessment.soloSaved', 'Assessment saved — nice work!'), 'success');
       setTab('history');
       setNotes('');
       setScores(prev => {
@@ -90,7 +94,7 @@ export function SoloAssessmentPage() {
         return next;
       });
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to save', 'error');
+      showToast(err instanceof Error ? err.message : tr('assessment.saveFailed', 'Failed to save'), 'error');
     }
   }
 
@@ -100,9 +104,9 @@ export function SoloAssessmentPage() {
     try {
       await assessmentsApi.deleteAssessment(deleteTarget.id);
       qc.invalidateQueries({ queryKey: ['assessments', playerId] });
-      showToast('Assessment deleted', 'success');
+      showToast(tr('assessment.deleted', 'Assessment deleted'), 'success');
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Failed to delete', 'error');
+      showToast(err instanceof Error ? err.message : tr('assessment.deleteFailed', 'Failed to delete'), 'error');
     } finally {
       setDeleting(false);
       setDeleteTarget(null);
@@ -134,7 +138,7 @@ export function SoloAssessmentPage() {
   if (loadingId || loadingPlayer) return <PageSpinner />;
 
   return (
-    <PageWrapper title="My Assessment">
+    <PageWrapper title={tr('assessment.myAssessment', 'My Assessment')}>
       <div className="flex gap-2 mb-6">
         {(['new', 'history'] as Tab[]).map(t => (
           <button
@@ -146,7 +150,7 @@ export function SoloAssessmentPage() {
                 : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
-            {t === 'new' ? 'Log My Assessment' : `History (${existingAssessments.length})`}
+            {t === 'new' ? tr('assessment.logMyAssessment', 'Log My Assessment') : tr('assessment.historyCount', 'History ({{count}})', { count: existingAssessments.length })}
           </button>
         ))}
       </div>
@@ -158,26 +162,25 @@ export function SoloAssessmentPage() {
               <Sparkles size={16} className="text-indigo-500" />
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              Be honest with yourself — this is how you'll see real progress over time.
-              Score every {player?.positionName ? `${player.positionName.toLowerCase()} ` : ''}category from 1 to 10.
+              {tr('assessment.soloHonesty', "Be honest with yourself — this is how you'll see real progress over time. Score every {{position}}category from 1 to 10.", { position: player?.positionName ? `${player.positionName.toLowerCase()} ` : '' })}
             </p>
           </div>
 
-          <Card header="Date & Notes">
+          <Card header={tr('assessment.dateAndNotes', 'Date & Notes')}>
             <div className="space-y-4">
               <Input
-                label="Date"
+                label={tr('assessment.date', 'Date')}
                 type="date"
                 value={dateRecorded}
                 onChange={e => setDateRecorded(e.target.value)}
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('assessment.notes', 'Notes')}</label>
                 <textarea
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                   rows={2}
-                  placeholder="How did today feel? What went well, what didn't…"
+                  placeholder={tr('assessment.howDidTodayFeel', "How did today feel? What went well, what didn't…")}
                   className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
               </div>
@@ -194,12 +197,12 @@ export function SoloAssessmentPage() {
           {/* Stat score cards */}
           <div>
             <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
-              Stat Scores
+              {tr('assessment.statScores', 'Stat Scores')}
             </h3>
             {loadingStats ? (
               <Spinner />
             ) : statCategories.length === 0 ? (
-              <p className="text-sm text-gray-500 dark:text-gray-400">No stat categories for this sport.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{tr('assessment.noStatCategories', 'No stat categories for this sport.')}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {statCategories.map(cat => (
@@ -221,7 +224,7 @@ export function SoloAssessmentPage() {
             disabled={!allScored}
             className="w-full justify-center"
           >
-            Save Assessment
+            {tr('assessment.saveAssessment', 'Save Assessment')}
           </Button>
         </form>
       )}
@@ -229,7 +232,7 @@ export function SoloAssessmentPage() {
       {tab === 'history' && (
         <div className="max-w-3xl space-y-4">
           <Button size="sm" onClick={() => setTab('new')} className="mb-1">
-            <Sparkles size={14} /> Add Assessment
+            <Sparkles size={14} /> {tr('assessment.addAssessment', 'Add Assessment')}
           </Button>
 
           {summary && (
@@ -237,14 +240,14 @@ export function SoloAssessmentPage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar size={13} className="text-indigo-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.count', 'Assessments')}</p>
                 </div>
                 <p className="text-xl font-black text-gray-900 dark:text-white">{summary.total}</p>
               </div>
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <BarChart3 size={13} className="text-indigo-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Improvement</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.improvement', 'Improvement')}</p>
                 </div>
                 {summary.improvement !== null ? (
                   <p className={clsx('text-xl font-black', summary.improvement >= 0 ? 'text-green-500' : 'text-red-500')}>
@@ -255,7 +258,7 @@ export function SoloAssessmentPage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Trophy size={13} className="text-green-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.best', 'Best')}</p>
                 </div>
                 {summary.best ? (
                   <>
@@ -267,7 +270,7 @@ export function SoloAssessmentPage() {
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <AlertTriangle size={13} className="text-amber-500" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Weakest</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.weakest', 'Weakest')}</p>
                 </div>
                 {summary.worst ? (
                   <>
@@ -282,8 +285,8 @@ export function SoloAssessmentPage() {
           {existingAssessments.length === 0 ? (
             <div className="text-gray-500 dark:text-gray-400 py-12 text-center">
               <Calendar size={32} className="mx-auto mb-3 text-gray-400" />
-              <p className="font-medium">No assessments yet</p>
-              <p className="text-sm mt-1">Log your first self-assessment to start tracking progress.</p>
+              <p className="font-medium">{tr('assessment.noAssessments', 'No assessments yet')}</p>
+              <p className="text-sm mt-1">{tr('assessment.noAssessmentsSoloDesc', 'Log your first self-assessment to start tracking progress.')}</p>
             </div>
           ) : (
             [...existingAssessments]
@@ -307,7 +310,7 @@ export function SoloAssessmentPage() {
                       <div>
                         <p className="font-bold text-gray-900 dark:text-white text-sm">{a.assessmentPeriodName}</p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          {new Date(a.dateRecorded).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                          {formatDate(a.dateRecorded, { year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                         {a.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{a.notes}</p>}
                       </div>
@@ -331,7 +334,7 @@ export function SoloAssessmentPage() {
                           onClick={() => setExpandedId(isExpanded ? null : a.id)}
                           className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                         >
-                          {isExpanded ? 'Collapse' : 'Expand'}
+                          {isExpanded ? tr('common.collapse', 'Collapse') : tr('common.expand', 'Expand')}
                         </button>
                         <button
                           onClick={() => setDeleteTarget(a)}
@@ -396,9 +399,9 @@ export function SoloAssessmentPage() {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-        title="Delete Assessment"
-        message={`Delete your assessment from ${deleteTarget ? new Date(deleteTarget.dateRecorded).toLocaleDateString() : ''}? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={tr('assessment.deleteTitle', 'Delete Assessment')}
+        message={tr('assessment.deleteMessageSolo', 'Delete your assessment from {{date}}? This cannot be undone.', { date: deleteTarget ? formatDate(deleteTarget.dateRecorded) : '' })}
+        confirmLabel={tr('common.delete', 'Delete')}
         isLoading={deleting}
       />
     </PageWrapper>

@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Users, ChevronRight, ShieldAlert, Activity, Trophy } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
@@ -16,29 +17,35 @@ function scoreColor(v: number | null | undefined): string {
 }
 
 export function ParentDashboardPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { data: children = [], isLoading, isError, refetch } = useChildren();
 
-  const firstName = user?.fullName?.split(' ')[0] ?? 'there';
+  const firstName = user?.fullName?.split(' ')[0] ?? t('parent.thereFallback', 'there');
+  const title = t('parent.myChildren', 'My Children');
 
-  if (isLoading) return <PageWrapper title="My Children"><CardListSkeleton count={3} /></PageWrapper>;
-  if (isError) return <PageWrapper title="My Children"><ErrorState onRetry={refetch} /></PageWrapper>;
+  if (isLoading) return <PageWrapper title={title}><CardListSkeleton count={3} /></PageWrapper>;
+  if (isError) return <PageWrapper title={title}><ErrorState onRetry={refetch} /></PageWrapper>;
 
   return (
-    <PageWrapper title="My Children">
+    <PageWrapper title={title}>
       {/* Welcome */}
       <div className="rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-700 p-6 text-white">
-        <p className="text-sm text-white/80">Welcome back</p>
-        <h1 className="text-2xl font-black tracking-tight">Hi, {firstName}</h1>
-        <p className="text-sm text-white/80 mt-1">Follow your {children.length === 1 ? "child's" : "children's"} progress, sessions and wellbeing.</p>
+        <p className="text-sm text-white/80">{t('parent.welcomeBack', 'Welcome back')}</p>
+        <h1 className="text-2xl font-black tracking-tight">{t('parent.greeting', 'Hi, {{name}}', { name: firstName })}</h1>
+        <p className="text-sm text-white/80 mt-1">
+          {children.length === 1
+            ? t('parent.subtitleOne', "Follow your child's progress, sessions and wellbeing.")
+            : t('parent.subtitleMany', "Follow your children's progress, sessions and wellbeing.")}
+        </p>
       </div>
 
       {children.length === 0 ? (
         <EmptyState
           icon={<Users size={40} />}
-          title="No linked children yet"
-          description="When a coach links you to a player, they'll appear here."
+          title={t('parent.noChildrenTitle', 'No linked children yet')}
+          description={t('parent.noChildrenDesc', "When a coach links you to a player, they'll appear here.")}
         />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -65,13 +72,13 @@ export function ParentDashboardPage() {
                   <span className={clsx('text-sm font-bold', scoreColor(c.overallAverage))}>
                     {c.overallAverage != null ? c.overallAverage.toFixed(1) : '—'}
                   </span>
-                  <span className="text-[11px] text-gray-400">avg</span>
+                  <span className="text-[11px] text-gray-400">{t('parent.avg', 'avg')}</span>
                 </div>
                 {c.fitnessLevel != null && (
                   <div className="flex items-center gap-1.5">
                     <Activity size={14} className="text-gray-400" />
                     <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{c.fitnessLevel}/10</span>
-                    <span className="text-[11px] text-gray-400">fit</span>
+                    <span className="text-[11px] text-gray-400">{t('parent.fit', 'fit')}</span>
                   </div>
                 )}
                 {c.activeInjuryCount > 0 && (

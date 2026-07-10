@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Check, Circle, UserCog, X } from 'lucide-react';
 import type { ProfileCompletion } from '../../utils/profileCompletion';
@@ -20,6 +21,7 @@ export function isReminderDismissed(): boolean {
 // Athlete-dashboard nudge shown while the profile is under 80% complete.
 // Dismissing hides it for 7 days.
 export function ProfileCompletionReminder({ completion }: { completion: ProfileCompletion }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [dismissed, setDismissed] = useState(isReminderDismissed());
 
@@ -40,11 +42,11 @@ export function ProfileCompletionReminder({ completion }: { completion: ProfileC
             <UserCog size={16} className="text-indigo-500" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white">Complete your profile</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{completion.percent}% done — a complete profile helps your coach plan for you.</p>
+            <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('profile.completion.reminderTitle', 'Complete your profile')}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.completion.reminderSubtitle', '{{percent}}% done — a complete profile helps your coach plan for you.', { percent: completion.percent })}</p>
           </div>
         </div>
-        <button onClick={dismiss} aria-label="Dismiss for 7 days" className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer">
+        <button onClick={dismiss} aria-label={t('profile.completion.dismissAria', 'Dismiss for 7 days')} className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors cursor-pointer">
           <X size={15} />
         </button>
       </div>
@@ -69,7 +71,7 @@ export function ProfileCompletionReminder({ completion }: { completion: ProfileC
         onClick={() => navigate('/player-dashboard/profile')}
         className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors cursor-pointer"
       >
-        Complete Now
+        {t('profile.completion.completeNow', 'Complete Now')}
       </button>
     </div>
   );

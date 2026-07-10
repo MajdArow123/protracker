@@ -3,8 +3,10 @@ import { Target, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCoachGoalOverview } from '../../hooks/useGoals';
 import { progressColor } from './goalUtils';
+import { useTranslation } from 'react-i18next';
 
 export function TeamGoalsCard() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, isLoading } = useCoachGoalOverview();
 
@@ -18,21 +20,21 @@ export function TeamGoalsCard() {
             <Target size={16} className="text-indigo-500" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-gray-900 dark:text-white">Player Goals</h2>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('goals.playerGoals', 'Player Goals')}</h2>
             {data && data.totalActiveGoals > 0 && (
-              <p className="text-xs text-gray-500 dark:text-gray-400">{data.totalActiveGoals} active across {data.playersWithGoals} {data.playersWithGoals === 1 ? 'player' : 'players'}</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t('goals.activeAcross', '{{count}} active across {{players}} players', { count: data.totalActiveGoals, players: data.playersWithGoals })}</p>
             )}
           </div>
         </div>
         <button onClick={() => navigate('/goals')} className="flex items-center gap-0.5 text-sm font-medium text-indigo-500 hover:underline cursor-pointer">
-          View All <ChevronRight size={15} />
+          {t('common.viewAll', 'View All')} <ChevronRight size={15} />
         </button>
       </div>
 
       {isLoading ? (
         <div className="space-y-2">{[0, 1, 2].map(i => <div key={i} className="h-10 skeleton rounded-lg" />)}</div>
       ) : rows.length === 0 ? (
-        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No players have set goals yet.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">{t('goals.noPlayersGoals', 'No players have set goals yet.')}</p>
       ) : (
         <div className="space-y-2.5">
           {rows.slice(0, 6).map(r => (
@@ -45,7 +47,7 @@ export function TeamGoalsCard() {
                 <div className="flex items-center justify-between gap-2 mb-1">
                   <span className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{r.playerName}</span>
                   <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
-                    {r.activeGoals} active{r.achievedGoals > 0 ? ` · ${r.achievedGoals} done` : ''}
+                    {t('goals.activeCount', '{{count}} active', { count: r.activeGoals })}{r.achievedGoals > 0 ? ` · ${t('goals.doneCount', '{{count}} done', { count: r.achievedGoals })}` : ''}
                   </span>
                 </div>
                 <div className="h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">

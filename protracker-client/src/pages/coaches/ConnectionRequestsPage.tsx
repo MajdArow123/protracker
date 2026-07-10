@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { UserPlus, Check, X, Copy, CheckCircle2, MessageSquare, Clock } from 'lucide-react';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -30,6 +32,8 @@ const STATUS_STYLE: Record<ConnectionRequestStatus, string> = {
 };
 
 export function ConnectionRequestsPage() {
+  const { t: tr } = useTranslation();
+  const dyn = useDynamicLabels();
   const { addToast } = useToast();
   const [tab, setTab] = useState<ConnectionRequestStatus | 'all'>('Pending');
   const { data: requests = [], isLoading } = useIncomingRequests(tab === 'all' ? undefined : tab);
@@ -42,9 +46,9 @@ export function ConnectionRequestsPage() {
   const doAccept = async (r: ConnectionRequest) => {
     try {
       const res = await accept.mutateAsync(r.id);
-      addToast(res.resultJoinCode ? `Accepted — join code ${res.resultJoinCode}` : 'Request accepted', 'success');
+      addToast(res.resultJoinCode ? tr('coaches.acceptedWithCode', 'Accepted — join code {{code}}', { code: res.resultJoinCode }) : tr('coaches.requestAccepted', 'Request accepted'), 'success');
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Failed to accept', 'error');
+      addToast(e instanceof Error ? e.message : tr('coaches.failedAccept', 'Failed to accept'), 'error');
     }
   };
 
@@ -52,10 +56,10 @@ export function ConnectionRequestsPage() {
     if (!declineTarget) return;
     try {
       await decline.mutateAsync({ id: declineTarget.id, reason: reason.trim() || undefined });
-      addToast('Request declined', 'success');
+      addToast(tr('coaches.requestDeclined', 'Request declined'), 'success');
       setDeclineTarget(null); setReason('');
     } catch (e) {
-      addToast(e instanceof Error ? e.message : 'Failed to decline', 'error');
+      addToast(e instanceof Error ? e.message : tr('coaches.failedDecline', 'Failed to decline'), 'error');
     }
   };
 
@@ -66,7 +70,7 @@ export function ConnectionRequestsPage() {
   };
 
   return (
-    <PageWrapper title="Connection Requests">
+    <PageWrapper title={tr('coaches.connectionRequestsTitle', 'Connection Requests')}>
       <div className="flex gap-2 mb-5 flex-wrap">
         {TABS.map(t => (
           <button
@@ -75,7 +79,7 @@ export function ConnectionRequestsPage() {
             className={clsx('px-3.5 py-1.5 rounded-full text-sm font-semibold transition-colors cursor-pointer',
               tab === t.value ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300')}
           >
-            {t.label}
+            {tr(`coaches.tab_${t.value}`, t.label)}
           </button>
         ))}
       </div>
@@ -85,8 +89,8 @@ export function ConnectionRequestsPage() {
       ) : requests.length === 0 ? (
         <EmptyState
           icon={<UserPlus size={30} />}
-          title={tab === 'Pending' ? 'No pending requests' : 'Nothing here'}
-          description="Athletes who find you on the marketplace can request to connect. They'll show up here."
+          title={tab === 'Pending' ? tr('coaches.noPendingRequests', 'No pending requests') : tr('coaches.nothingHere', 'Nothing here')}
+          description={tr('coaches.requestsEmptyDesc', "Athletes who find you on the marketplace can request to connect. They'll show up here.")}
         />
       ) : (
         <div className="space-y-3">
@@ -96,8 +100,8 @@ export function ConnectionRequestsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="font-bold text-gray-900 dark:text-white">{r.athleteName}</h3>
-                    {r.sportName && <span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', sportBadge(r.sportName))}>{r.sportName}</span>}
-                    <span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', STATUS_STYLE[r.status])}>{r.status}</span>
+                    {r.sportName && <span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', sportBadge(r.sportName))}>{dyn.sport(r.sportName)}</span>}
+                    <span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', STATUS_STYLE[r.status])}>{dyn.status(r.status)}</span>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-400 mt-1"><Clock size={11} /> {fmt(r.requestedAt)}</div>
                 </div>
@@ -105,11 +109,11 @@ export function ConnectionRequestsPage() {
                   <div className="flex gap-2">
                     <button onClick={() => doAccept(r)} disabled={accept.isPending}
                       className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-green-600 hover:bg-green-500 text-white text-sm font-semibold cursor-pointer disabled:opacity-50">
-                      <Check size={15} /> Accept
+                      <Check size={15} /> {tr('coaches.accept', 'Accept')}
                     </button>
                     <button onClick={() => setDeclineTarget(r)}
                       className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 text-sm font-semibold cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <X size={15} /> Decline
+                      <X size={15} /> {tr('coaches.decline', 'Decline')}
                     </button>
                   </div>
                 )}
@@ -124,35 +128,35 @@ export function ConnectionRequestsPage() {
               {r.status === 'Accepted' && r.resultJoinCode && (
                 <div className="mt-3 flex items-center gap-2 p-3 rounded-xl bg-green-50 dark:bg-green-900/15 border border-green-200 dark:border-green-900/40">
                   <CheckCircle2 size={16} className="text-green-600 dark:text-green-400 flex-shrink-0" />
-                  <span className="text-sm text-gray-700 dark:text-gray-200">Share this join code so they can join your team:</span>
+                  <span className="text-sm text-gray-700 dark:text-gray-200">{tr('coaches.shareJoinCode', 'Share this join code so they can join your team:')}</span>
                   <code className="font-bold text-green-700 dark:text-green-300 tracking-wide">{r.resultJoinCode}</code>
                   <button onClick={() => copyCode(r.id, r.resultJoinCode!)} className="ml-auto flex items-center gap-1 text-xs font-semibold text-indigo-600 dark:text-indigo-400 cursor-pointer">
-                    {copied === r.id ? <Check size={13} /> : <Copy size={13} />} {copied === r.id ? 'Copied' : 'Copy'}
+                    {copied === r.id ? <Check size={13} /> : <Copy size={13} />} {copied === r.id ? tr('coaches.copied', 'Copied') : tr('coaches.copy', 'Copy')}
                   </button>
                 </div>
               )}
               {r.status === 'Accepted' && !r.resultJoinCode && (
-                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">Accepted — this athlete is already on one of your teams.</p>
+                <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{tr('coaches.acceptedAlreadyOnTeam', 'Accepted — this athlete is already on one of your teams.')}</p>
               )}
             </div>
           ))}
         </div>
       )}
 
-      <Modal isOpen={!!declineTarget} onClose={() => { setDeclineTarget(null); setReason(''); }} title="Decline request" size="sm">
+      <Modal isOpen={!!declineTarget} onClose={() => { setDeclineTarget(null); setReason(''); }} title={tr('coaches.declineRequestTitle', 'Decline request')} size="sm">
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          Decline {declineTarget?.athleteName}'s request? You can add an optional internal note (the athlete won't see it).
+          {tr('coaches.declineConfirm', "Decline {{name}}'s request? You can add an optional internal note (the athlete won't see it).", { name: declineTarget?.athleteName })}
         </p>
         <textarea
           value={reason}
           onChange={e => setReason(e.target.value)}
           rows={3}
-          placeholder="Optional note…"
+          placeholder={tr('coaches.optionalNote', 'Optional note…')}
           className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4"
         />
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={() => { setDeclineTarget(null); setReason(''); }}>Cancel</Button>
-          <Button variant="danger" onClick={doDecline} isLoading={decline.isPending}>Decline</Button>
+          <Button variant="secondary" onClick={() => { setDeclineTarget(null); setReason(''); }}>{tr('common.cancel', 'Cancel')}</Button>
+          <Button variant="danger" onClick={doDecline} isLoading={decline.isPending}>{tr('coaches.decline', 'Decline')}</Button>
         </div>
       </Modal>
     </PageWrapper>

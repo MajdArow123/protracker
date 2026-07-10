@@ -6,6 +6,7 @@ import { AssignDrillModal } from './AssignDrillModal';
 import { AIDrillRecommendationsModal } from './AIDrillRecommendationsModal';
 import { useRecommendedDrills } from '../../hooks/useDrills';
 import type { Drill } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 interface PlayerOption { id: number; name: string; }
 
@@ -21,6 +22,7 @@ interface Props {
 // button for ranked + explained picks. Shows for a solo/team athlete (self) or a coach who
 // has picked a player.
 export function RecommendedDrillsSection({ isCoach, canAssign, players, lockedPlayerId }: Props) {
+  const { t } = useTranslation();
   const [selectedPlayer, setSelectedPlayer] = useState<number | ''>('');
   const contextId = lockedPlayerId ?? (selectedPlayer || undefined);
 
@@ -38,11 +40,11 @@ export function RecommendedDrillsSection({ isCoach, canAssign, players, lockedPl
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <div className="flex items-center gap-2 flex-1">
             <Sparkles size={17} className="text-indigo-500 flex-shrink-0" />
-            <p className="text-sm text-gray-600 dark:text-gray-300">See drills recommended for a player's weak areas:</p>
+            <p className="text-sm text-gray-600 dark:text-gray-300">{t('drills.recommendPrompt', "See drills recommended for a player's weak areas:")}</p>
           </div>
           <select value={selectedPlayer} onChange={(e) => setSelectedPlayer(e.target.value ? Number(e.target.value) : '')}
             className="rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-1.5 text-sm text-gray-900 dark:text-white">
-            <option value="">Select a player…</option>
+            <option value="">{t('drills.selectPlayerOption', 'Select a player…')}</option>
             {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </div>
@@ -57,9 +59,9 @@ export function RecommendedDrillsSection({ isCoach, canAssign, players, lockedPl
       <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <div>
           <h2 className="flex items-center gap-1.5 text-base font-bold text-gray-900 dark:text-white">
-            <Sparkles size={17} className="text-indigo-500" /> Recommended {isCoach ? 'drills' : 'for you'}
+            <Sparkles size={17} className="text-indigo-500" /> {isCoach ? t('drills.recommendedDrills', 'Recommended drills') : t('drills.recommendedForYou', 'Recommended for you')}
           </h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Based on the latest assessment</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">{t('drills.basedOnAssessment', 'Based on the latest assessment')}</p>
         </div>
         <div className="flex items-center gap-2">
           {isCoach && (
@@ -71,7 +73,7 @@ export function RecommendedDrillsSection({ isCoach, canAssign, players, lockedPl
           {canAssign && (
             <button onClick={() => setAiOpen(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white cursor-pointer shadow-sm">
-              <Wand2 size={15} /> AI Recommendations
+              <Wand2 size={15} /> {t('drills.aiRecommendations', 'AI Recommendations')}
             </button>
           )}
         </div>
@@ -81,7 +83,7 @@ export function RecommendedDrillsSection({ isCoach, canAssign, players, lockedPl
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{[0, 1, 2].map(i => <div key={i} className="h-40 skeleton rounded-2xl" />)}</div>
       ) : drills.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 p-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          No recommendations yet — log an assessment to get drill suggestions for weak areas.
+          {t('drills.noRecommendations', 'No recommendations yet — log an assessment to get drill suggestions for weak areas.')}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

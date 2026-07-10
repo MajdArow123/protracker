@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { AlertTriangle, Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
@@ -17,6 +18,7 @@ function passwordStrength(pw: string): { label: string; color: string; ok: boole
 const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all';
 
 export function AccountSettingsSection({ isCoach }: { isCoach: boolean }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const { logout } = useAuth();
   const navigate = useNavigate();
@@ -40,11 +42,11 @@ export function AccountSettingsSection({ isCoach }: { isCoach: boolean }) {
     if (!canSubmitPw) return;
     try {
       await changePassword.mutateAsync({ currentPassword: current, newPassword: next });
-      addToast('Password updated successfully', 'success');
+      addToast(t('profile.account.passwordUpdated', 'Password updated successfully'), 'success');
       setPwOpen(false);
       setCurrent(''); setNext(''); setConfirm('');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not update password', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.account.passwordUpdateFailed', 'Could not update password'), 'error');
     }
   };
 
@@ -53,32 +55,32 @@ export function AccountSettingsSection({ isCoach }: { isCoach: boolean }) {
     setDeleting(true);
     try {
       await profileApi.deleteAccount(deletePassword);
-      addToast('Your account has been deleted', 'success');
+      addToast(t('profile.account.accountDeleted', 'Your account has been deleted'), 'success');
       await logout();
       navigate('/');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not delete account', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.account.deleteFailed', 'Could not delete account'), 'error');
       setDeleting(false);
     }
   };
 
   return (
     <div>
-      <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Account Settings</h2>
+      <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">{t('profile.account.title', 'Account Settings')}</h2>
       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden divide-y divide-gray-100 dark:divide-gray-800">
         {/* Change password */}
         <div className="p-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <KeyRound size={14} className="text-indigo-400" /> Password
+              <KeyRound size={14} className="text-indigo-400" /> {t('profile.account.password', 'Password')}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Change your account password</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t('profile.account.passwordDesc', 'Change your account password')}</p>
           </div>
           <button
             onClick={() => setPwOpen(true)}
             className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-xs font-semibold text-gray-700 dark:text-gray-200 transition-colors cursor-pointer flex-shrink-0"
           >
-            Change Password
+            {t('profile.account.changePassword', 'Change Password')}
           </button>
         </div>
 
@@ -87,31 +89,31 @@ export function AccountSettingsSection({ isCoach }: { isCoach: boolean }) {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-semibold text-red-600 dark:text-red-400 flex items-center gap-2">
-                <AlertTriangle size={14} /> Delete Account
+                <AlertTriangle size={14} /> {t('profile.account.deleteAccount', 'Delete Account')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                 {isCoach
-                  ? 'Permanently delete your account. Teams must be deleted first.'
-                  : 'Permanently delete your account. Your training history stays with your coach.'}
+                  ? t('profile.account.deleteDescCoach', 'Permanently delete your account. Teams must be deleted first.')
+                  : t('profile.account.deleteDescAthlete', 'Permanently delete your account. Your training history stays with your coach.')}
               </p>
             </div>
             <button
               onClick={() => setDeleteOpen(true)}
               className="px-3.5 py-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-xs font-semibold text-red-500 transition-colors cursor-pointer flex-shrink-0"
             >
-              Delete…
+              {t('profile.account.deleteEllipsis', 'Delete…')}
             </button>
           </div>
         </div>
       </div>
 
       {/* Change password modal */}
-      <Modal isOpen={pwOpen} onClose={() => setPwOpen(false)} title="Change Password" size="sm">
+      <Modal isOpen={pwOpen} onClose={() => setPwOpen(false)} title={t('profile.account.changePassword', 'Change Password')} size="sm">
         <div className="space-y-3">
           {[
-            { label: 'Current password', value: current, set: setCurrent },
-            { label: 'New password', value: next, set: setNext },
-            { label: 'Confirm new password', value: confirm, set: setConfirm },
+            { label: t('profile.account.currentPassword', 'Current password'), value: current, set: setCurrent },
+            { label: t('profile.account.newPassword', 'New password'), value: next, set: setNext },
+            { label: t('profile.account.confirmPassword', 'Confirm new password'), value: confirm, set: setConfirm },
           ].map(({ label, value, set }) => (
             <div key={label}>
               <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{label}</label>
@@ -134,40 +136,40 @@ export function AccountSettingsSection({ isCoach }: { isCoach: boolean }) {
               <div className="flex-1 h-1.5 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden">
                 <div className={clsx('h-full transition-all', strength.color)} style={{ width: strength.ok ? '100%' : next.length >= 8 ? '66%' : '33%' }} />
               </div>
-              <span className="text-[11px] text-gray-400">{strength.label}</span>
+              <span className="text-[11px] text-gray-400">{t(`profile.account.strength.${strength.label}`, strength.label)}</span>
             </div>
           )}
           {confirm.length > 0 && next !== confirm && (
-            <p className="text-[11px] text-red-400">Passwords don't match.</p>
+            <p className="text-[11px] text-red-400">{t('profile.account.passwordsMismatch', "Passwords don't match.")}</p>
           )}
-          <p className="text-[11px] text-gray-400">At least 8 characters, with an uppercase letter and a number.</p>
+          <p className="text-[11px] text-gray-400">{t('profile.account.passwordHint', 'At least 8 characters, with an uppercase letter and a number.')}</p>
           <button
             onClick={submitPassword}
             disabled={!canSubmitPw}
             className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
-            {changePassword.isPending ? <><Loader2 size={14} className="animate-spin" /> Updating…</> : 'Update Password'}
+            {changePassword.isPending ? <><Loader2 size={14} className="animate-spin" /> {t('profile.account.updating', 'Updating…')}</> : t('profile.account.updatePassword', 'Update Password')}
           </button>
         </div>
       </Modal>
 
       {/* Delete account modal */}
-      <Modal isOpen={deleteOpen} onClose={() => { setDeleteOpen(false); setDeleteText(''); setDeletePassword(''); }} title="Delete Account" size="sm">
+      <Modal isOpen={deleteOpen} onClose={() => { setDeleteOpen(false); setDeleteText(''); setDeletePassword(''); }} title={t('profile.account.deleteAccount', 'Delete Account')} size="sm">
         <div className="space-y-3">
           <div className="flex items-start gap-2 rounded-xl bg-red-500/10 border border-red-500/30 p-3">
             <AlertTriangle size={15} className="text-red-500 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-red-500">
-              This permanently deletes your ProTracker account and signs you out everywhere. This cannot be undone.
+              {t('profile.account.deleteWarning', 'This permanently deletes your ProTracker account and signs you out everywhere. This cannot be undone.')}
             </p>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Type <span className="font-black text-red-500">DELETE</span> to confirm
+              {t('profile.account.typeToConfirmPre', 'Type')} <span className="font-black text-red-500">DELETE</span> {t('profile.account.typeToConfirmPost', 'to confirm')}
             </label>
             <input value={deleteText} onChange={e => setDeleteText(e.target.value)} placeholder="DELETE" className={inputCls} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Your password</label>
+            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">{t('profile.account.yourPassword', 'Your password')}</label>
             <input type="password" value={deletePassword} onChange={e => setDeletePassword(e.target.value)} placeholder="••••••••" className={inputCls} />
           </div>
           <button
@@ -175,7 +177,7 @@ export function AccountSettingsSection({ isCoach }: { isCoach: boolean }) {
             disabled={deleteText !== 'DELETE' || !deletePassword || deleting}
             className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
-            {deleting ? <><Loader2 size={14} className="animate-spin" /> Deleting…</> : 'Permanently Delete My Account'}
+            {deleting ? <><Loader2 size={14} className="animate-spin" /> {t('profile.account.deleting', 'Deleting…')}</> : t('profile.account.deleteConfirmButton', 'Permanently Delete My Account')}
           </button>
         </div>
       </Modal>

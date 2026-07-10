@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { WeeklyNutritionPlan, PlannedMealItem, DailyMealPlan, PlannedMeal } from '../../types';
 import { Sun, Salad, Apple, UtensilsCrossed, Dumbbell, ArrowLeftRight, Loader2, Sparkles } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -34,6 +35,7 @@ function MealCard({
   canSwap: boolean;
   onSwapClick: (item: PlannedMealItem) => void;
 }) {
+  const { t } = useTranslation();
   const Icon = MEAL_ICONS[meal.mealType] ?? UtensilsCrossed;
   const mealTotal = {
     calories: meal.plannedMealItems.reduce((s, i) => s + i.calories, 0),
@@ -66,7 +68,7 @@ function MealCard({
                 {item.foodName}
                 {item.isSwapped && (
                   <span className="ml-2 text-[10px] font-semibold text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-full">
-                    swapped
+                    {t('nutrition.swapped', 'swapped')}
                   </span>
                 )}
               </p>
@@ -96,6 +98,7 @@ function MealCard({
 }
 
 function DaySummaryCard({ day }: { day: DailyMealPlan }) {
+  const { t } = useTranslation();
   const proteinPct = day.dailyCalories > 0 ? Math.round((day.dailyProtein * 4 / day.dailyCalories) * 100) : 0;
   const carbsPct = day.dailyCalories > 0 ? Math.round((day.dailyCarbs * 4 / day.dailyCalories) * 100) : 0;
   const fatsPct = day.dailyCalories > 0 ? Math.round((day.dailyFats * 9 / day.dailyCalories) * 100) : 0;
@@ -103,13 +106,13 @@ function DaySummaryCard({ day }: { day: DailyMealPlan }) {
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm font-bold text-gray-900 dark:text-white">Daily Summary</p>
+        <p className="text-sm font-bold text-gray-900 dark:text-white">{t('nutrition.dailySummary', 'Daily Summary')}</p>
         <span className="text-lg font-black text-indigo-500">{day.dailyCalories.toLocaleString()} <span className="text-xs font-normal text-gray-400">kcal</span></span>
       </div>
       <div className="space-y-2">
-        <MacroBar label="Protein" grams={day.dailyProtein} pct={proteinPct} color="bg-blue-500" />
-        <MacroBar label="Carbs" grams={day.dailyCarbs} pct={carbsPct} color="bg-amber-500" />
-        <MacroBar label="Fats" grams={day.dailyFats} pct={fatsPct} color="bg-red-400" />
+        <MacroBar label={t('nutrition.protein', 'Protein')} grams={day.dailyProtein} pct={proteinPct} color="bg-blue-500" />
+        <MacroBar label={t('nutrition.carbs', 'Carbs')} grams={day.dailyCarbs} pct={carbsPct} color="bg-amber-500" />
+        <MacroBar label={t('nutrition.fats', 'Fats')} grams={day.dailyFats} pct={fatsPct} color="bg-red-400" />
       </div>
     </div>
   );
@@ -138,6 +141,7 @@ interface Props {
 }
 
 export function WeeklyNutritionPlanView({ plan, canSwap = false, onGenerate, isGenerating, playerId }: Props) {
+  const { t } = useTranslation();
   const [selectedDay, setSelectedDay] = useState(0);
   const [swapItem, setSwapItem] = useState<PlannedMealItem | null>(null);
 
@@ -152,7 +156,7 @@ export function WeeklyNutritionPlanView({ plan, canSwap = false, onGenerate, isG
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-gray-400 dark:text-gray-500">
-            Week of {new Date(plan.weekStartDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            {t('nutrition.weekOf', 'Week of')} {new Date(plan.weekStartDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
             {plan.isAIGenerated && (
               <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-semibold">
                 <Sparkles size={9} />AI
@@ -167,7 +171,7 @@ export function WeeklyNutritionPlanView({ plan, canSwap = false, onGenerate, isG
             className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-xs font-semibold transition-colors"
           >
             {isGenerating ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-            {isGenerating ? 'Generating…' : 'Generate New Week'}
+            {isGenerating ? t('nutrition.generating', 'Generating…') : t('nutrition.generateNewWeek', 'Generate New Week')}
           </button>
         )}
       </div>

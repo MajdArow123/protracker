@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarDays, MapPin, Clock } from 'lucide-react';
 import { Modal, ConfirmModal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -8,6 +9,8 @@ import { useToast } from '../../context/ToastContext';
 import { useTeamSessions, useCreateSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
 import { useSoloSessions, useCreateSoloSession } from '../../hooks/useSolo';
 import { CoachSessionFeedbackPanel } from './CoachSessionFeedbackPanel';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import type { ScheduledSession, SessionType } from '../../types';
 
 const SESSION_TYPES: { value: SessionType; label: string }[] = [
@@ -28,10 +31,6 @@ const TYPE_STYLES: Record<SessionType, string> = {
   Other: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700',
 };
 
-const TYPE_LABEL: Record<SessionType, string> = {
-  Training: 'Training', MatchPrep: 'Match Prep', Recovery: 'Recovery', Strength: 'Strength', Tactical: 'Tactical', Other: 'Other',
-};
-
 // Monday-based start of the week containing `d`.
 function startOfWeek(d: Date): Date {
   const r = new Date(d);
@@ -39,10 +38,6 @@ function startOfWeek(d: Date): Date {
   const day = (r.getDay() + 6) % 7; // 0 = Monday
   r.setDate(r.getDate() - day);
   return r;
-}
-
-function fmtTime(s: string) {
-  return new Date(s).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function toLocalInput(s: string) {
@@ -55,6 +50,8 @@ function toLocalInput(s: string) {
 function SessionModal({ teamId, solo, session, defaultDate, isOpen, onClose }: {
   teamId?: number; solo?: boolean; session: ScheduledSession | null; defaultDate: Date | null; isOpen: boolean; onClose: () => void;
 }) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const createSession = useCreateSession();
   const createSoloSession = useCreateSoloSession();
@@ -90,8 +87,8 @@ function SessionModal({ teamId, solo, session, defaultDate, isOpen, onClose }: {
   }, [isOpen, session, defaultDate]);
 
   async function handleSubmit() {
-    if (!title.trim()) { setError('Title is required'); return; }
-    if (!startTime) { setError('Date & time are required'); return; }
+    if (!title.trim()) { setError(tr('sessions.errTitleRequired', 'Title is required')); return; }
+    if (!startTime) { setError(tr('sessions.errDateRequired', 'Date & time are required')); return; }
     const payload = {
       title: title.trim(),
       sessionType,
@@ -104,55 +101,55 @@ function SessionModal({ teamId, solo, session, defaultDate, isOpen, onClose }: {
     try {
       if (isEdit && session) {
         await updateSession.mutateAsync({ id: session.id, data: payload });
-        addToast('Session updated', 'success');
+        addToast(tr('sessions.sessionUpdated', 'Session updated'), 'success');
       } else if (solo) {
         await createSoloSession.mutateAsync(payload);
-        addToast('Session scheduled', 'success');
+        addToast(tr('sessions.sessionScheduled', 'Session scheduled'), 'success');
       } else {
         await createSession.mutateAsync({ teamId: teamId!, data: payload });
-        addToast('Session scheduled', 'success');
+        addToast(tr('sessions.sessionScheduled', 'Session scheduled'), 'success');
       }
       onClose();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Save failed', 'error');
+      addToast(err instanceof Error ? err.message : tr('sessions.saveFailed', 'Save failed'), 'error');
     }
   }
 
   const saving = createSession.isPending || createSoloSession.isPending || updateSession.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Session' : 'Schedule Session'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? tr('sessions.editSession', 'Edit Session') : tr('sessions.scheduleSession', 'Schedule Session')}>
       <div className="space-y-4">
-        <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Speed & Agility" />
+        <Input label={tr('common.title', 'Title')} value={title} onChange={e => setTitle(e.target.value)} placeholder={tr('sessions.titlePlaceholder', 'e.g. Speed & Agility')} />
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Type</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('common.type', 'Type')}</label>
           <div className="grid grid-cols-3 gap-2">
             {SESSION_TYPES.map(t => (
               <button key={t.value} type="button" onClick={() => setSessionType(t.value)}
                 className={clsx('py-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer',
                   sessionType === t.value ? 'bg-indigo-600 text-white border-transparent' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400')}>
-                {t.label}
+                {L.sessionType(t.value)}
               </button>
             ))}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Date & Time" type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} />
-          <Input label="Duration (min)" type="number" min={0} value={durationMinutes} onChange={e => setDuration(e.target.value)} />
+          <Input label={tr('sessions.dateTime', 'Date & Time')} type="datetime-local" value={startTime} onChange={e => setStartTime(e.target.value)} />
+          <Input label={tr('sessions.duration', 'Duration (min)')} type="number" min={0} value={durationMinutes} onChange={e => setDuration(e.target.value)} />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Location (optional)" value={location} onChange={e => setLocation(e.target.value)} placeholder="Main Pitch" />
-          <Input label="Focus (optional)" value={focus} onChange={e => setFocus(e.target.value)} placeholder="Finishing" />
+          <Input label={tr('sessions.location', 'Location (optional)')} value={location} onChange={e => setLocation(e.target.value)} placeholder={tr('sessions.locationPlaceholder', 'Main Pitch')} />
+          <Input label={tr('sessions.focus', 'Focus (optional)')} value={focus} onChange={e => setFocus(e.target.value)} placeholder={tr('sessions.focusPlaceholder', 'Finishing')} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Session details…"
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('common.notes', 'Notes')}</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={tr('sessions.notesPlaceholder', 'Session details…')}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? 'Save Changes' : 'Schedule'}</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? tr('sessions.saveChanges', 'Save Changes') : tr('sessions.schedule', 'Schedule')}</Button>
         </div>
       </div>
     </Modal>
@@ -161,6 +158,10 @@ function SessionModal({ teamId, solo, session, defaultDate, isOpen, onClose }: {
 
 // ── Section ──────────────────────────────────────────────────────────────────
 export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?: number; isCoach: boolean; solo?: boolean; }) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
+  const { formatDate, formatTime } = useLocaleFormat();
+  const fmtTime = (s: string) => formatTime(s, { hour: 'numeric', minute: '2-digit' });
   const { data: teamSessions = [], isLoading: loadingTeam } = useTeamSessions(solo ? null : teamId);
   const { data: soloSessions = [], isLoading: loadingSolo } = useSoloSessions(solo);
   const sessions = solo ? soloSessions : teamSessions;
@@ -203,28 +204,28 @@ export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?
   return (
     <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><CalendarDays size={16} className="text-indigo-400" /> Training Schedule</h3>
+        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><CalendarDays size={16} className="text-indigo-400" /> {tr('sessions.trainingSchedule', 'Training Schedule')}</h3>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
             <button onClick={() => shiftWeek(-1)} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"><ChevronLeft size={16} /></button>
-            <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="px-2 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">Today</button>
+            <button onClick={() => setWeekStart(startOfWeek(new Date()))} className="px-2 py-1 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer">{tr('common.today', 'Today')}</button>
             <button onClick={() => shiftWeek(1)} className="p-1.5 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"><ChevronRight size={16} /></button>
           </div>
           {canManage && (
             <button onClick={() => openCreate(null)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
-              <Plus size={13} /> Schedule
+              <Plus size={13} /> {tr('sessions.schedule', 'Schedule')}
             </button>
           )}
         </div>
       </div>
 
       <p className="text-xs text-gray-500 mb-3">
-        {weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – {weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        {formatDate(weekStart, { month: 'short', day: 'numeric' })} – {formatDate(weekEnd, { month: 'short', day: 'numeric', year: 'numeric' })}
       </p>
 
       {isLoading ? (
-        <p className="text-sm text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">{tr('common.loading', 'Loading...')}</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-7 gap-2">
           {days.map((d, i) => {
@@ -235,7 +236,7 @@ export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?
                 isToday ? 'border-indigo-300 dark:border-indigo-700 bg-indigo-50/40 dark:bg-indigo-900/10' : 'border-gray-200 dark:border-gray-800')}>
                 <div className="flex items-center justify-between mb-2">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase text-gray-400">{d.toLocaleDateString('en-US', { weekday: 'short' })}</p>
+                    <p className="text-[10px] font-semibold uppercase text-gray-400">{L.dayNames('short')[d.getDay()]}</p>
                     <p className={clsx('text-sm font-bold', isToday ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-white')}>{d.getDate()}</p>
                   </div>
                   {canManage && (
@@ -254,7 +255,7 @@ export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?
                           </div>
                         )}
                       </div>
-                      <p className="text-[10px] font-medium opacity-80">{TYPE_LABEL[s.sessionType]}</p>
+                      <p className="text-[10px] font-medium opacity-80">{L.sessionType(s.sessionType)}</p>
                       <div className="flex items-center gap-1 mt-1 text-[10px] opacity-90">
                         <Clock size={9} /> {fmtTime(s.startTime)} · {s.durationMinutes}m
                       </div>
@@ -278,8 +279,8 @@ export function TeamScheduleSection({ teamId, isCoach, solo = false }: { teamId?
           <SessionModal teamId={teamId} solo={solo} session={editSession} defaultDate={defaultDate} isOpen={modalOpen}
             onClose={() => { setModalOpen(false); setEditSession(null); setDefaultDate(null); }} />
           <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}
-            onConfirm={async () => { if (!deleteTarget) return; try { await deleteSession.mutateAsync(deleteTarget.id); addToast('Session deleted', 'success'); } catch (err) { addToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteTarget(null); } }}
-            title="Delete Session" message={`Delete "${deleteTarget?.title}"?`} confirmLabel="Delete" isLoading={deleteSession.isPending} />
+            onConfirm={async () => { if (!deleteTarget) return; try { await deleteSession.mutateAsync(deleteTarget.id); addToast(tr('sessions.sessionDeleted', 'Session deleted'), 'success'); } catch (err) { addToast(err instanceof Error ? err.message : tr('sessions.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteTarget(null); } }}
+            title={tr('sessions.deleteSessionTitle', 'Delete Session')} message={tr('sessions.deleteSessionMsg', 'Delete "{{title}}"?', { title: deleteTarget?.title })} confirmLabel={tr('common.delete', 'Delete')} isLoading={deleteSession.isPending} />
         </>
       )}
     </div>

@@ -3,9 +3,13 @@ import { BookOpen, PenLine, ChevronRight } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTodayJournal } from '../../hooks/useJournal';
 import { MOOD_CONFIG } from './journalUtils';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 // Athlete/solo dashboard nudge: prompts today's entry, or celebrates that it's done.
 export function JournalPromptCard({ journalPath }: { journalPath: string }) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { data: today, isLoading } = useTodayJournal();
 
   if (isLoading) return <div className="h-[92px] skeleton rounded-2xl" />;
@@ -22,8 +26,8 @@ export function JournalPromptCard({ journalPath }: { journalPath: string }) {
           <Icon size={20} className={cfg.color} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 dark:text-white">Good job writing today! 📖</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400">You logged a <span className={cfg.color}>{today.mood.toLowerCase()}</span> day. View your journal.</p>
+          <p className="font-semibold text-gray-900 dark:text-white">{t('journal.goodJobToday', 'Good job writing today! 📖')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('journal.youLoggedPrefix', 'You logged a')} <span className={cfg.color}>{L.mood(today.mood).toLowerCase()}</span> {t('journal.dayViewJournal', 'day. View your journal.')}</p>
         </div>
         <ChevronRight size={18} className="text-gray-400 flex-shrink-0" />
       </Link>
@@ -39,8 +43,8 @@ export function JournalPromptCard({ journalPath }: { journalPath: string }) {
         <PenLine size={20} className="text-indigo-600 dark:text-indigo-400" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 dark:text-white">Write today's entry</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Reflect on your training and how you're feeling.</p>
+        <p className="font-semibold text-gray-900 dark:text-white">{t('journal.writeTodaysEntryLower', "Write today's entry")}</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('journal.reflectPrompt', "Reflect on your training and how you're feeling.")}</p>
       </div>
       <BookOpen size={18} className="text-indigo-400 flex-shrink-0" />
     </Link>

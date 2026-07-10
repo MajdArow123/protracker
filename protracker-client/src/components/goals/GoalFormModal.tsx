@@ -10,6 +10,8 @@ import { useToast } from '../../context/ToastContext';
 import { CATEGORY_ORDER, PRIORITY_ORDER, CATEGORY_BADGE, PRIORITY_BADGE } from './goalUtils';
 import type { PersonalGoal, GoalCategory, GoalPriority } from '../../types';
 import type { CreateGoalMilestoneInput } from '../../api/goalsApi';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface Props {
   isOpen: boolean;
@@ -27,6 +29,8 @@ function toDateInput(iso?: string | null): string {
 }
 
 export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBePrivate }: Props) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const createGoal = useCreateGoal();
   const updateGoal = useUpdateGoal();
@@ -78,7 +82,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
 
   async function handleSubmit() {
     if (!title.trim()) {
-      addToast('A goal title is required', 'error');
+      addToast(t('goals.titleRequired', 'A goal title is required'), 'error');
       return;
     }
     const numOrNull = (s: string) => (s.trim() ? Number(s) : null);
@@ -99,26 +103,26 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
     try {
       if (isEdit && goal) {
         await updateGoal.mutateAsync({ id: goal.id, data: { ...common, status: goal.status } });
-        addToast('Goal updated', 'success');
+        addToast(t('goals.goalUpdated', 'Goal updated'), 'success');
       } else {
         await createGoal.mutateAsync({ ...common, playerId, milestones });
-        addToast('Goal created', 'success');
+        addToast(t('goals.goalCreated', 'Goal created'), 'success');
       }
       onClose();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to save goal', 'error');
+      addToast(err instanceof Error ? err.message : t('goals.failedSave', 'Failed to save goal'), 'error');
     }
   }
 
   const saving = createGoal.isPending || updateGoal.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Goal' : 'New Goal'} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? t('goals.editGoal', 'Edit Goal') : t('goals.newGoal', 'New Goal')} size="lg">
       <div className="space-y-5">
         <div>
           <Input
-            label="Goal"
-            placeholder="e.g. Improve my passing score from 6 to 8"
+            label={t('goals.goalLabel', 'Goal')}
+            placeholder={t('goals.goalPlaceholder', 'e.g. Improve my passing score from 6 to 8')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             autoFocus
@@ -127,7 +131,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
 
         {/* Category pills */}
         <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Category</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('common.category', 'Category')}</p>
           <div className="flex flex-wrap gap-2">
             {CATEGORY_ORDER.map((c) => (
               <button
@@ -139,7 +143,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
                   category === c ? CATEGORY_BADGE[c] + ' ring-2 ring-offset-1 ring-current dark:ring-offset-gray-800' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 hover:opacity-80',
                 )}
               >
-                {c}
+                {L.category(c)}
               </button>
             ))}
           </div>
@@ -147,7 +151,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
 
         {/* Priority pills */}
         <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Priority</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('common.priority', 'Priority')}</p>
           <div className="flex gap-2">
             {PRIORITY_ORDER.map((p) => (
               <button
@@ -159,7 +163,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
                   priority === p ? PRIORITY_BADGE[p] + ' ring-2 ring-offset-1 ring-current dark:ring-offset-gray-800' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 hover:opacity-80',
                 )}
               >
-                {p}
+                {L.priority(p)}
               </button>
             ))}
           </div>
@@ -167,23 +171,23 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
 
         {/* Measurable target */}
         <div className="grid grid-cols-3 gap-3">
-          <Input label="Current" type="number" step="0.1" placeholder="6.0" value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} />
-          <Input label="Target" type="number" step="0.1" placeholder="8.0" value={targetValue} onChange={(e) => setTargetValue(e.target.value)} />
-          <Input label="Unit" placeholder="score, kg, min" value={unit} onChange={(e) => setUnit(e.target.value)} />
+          <Input label={t('goals.current', 'Current')} type="number" step="0.1" placeholder="6.0" value={currentValue} onChange={(e) => setCurrentValue(e.target.value)} />
+          <Input label={t('goals.target', 'Target')} type="number" step="0.1" placeholder="8.0" value={targetValue} onChange={(e) => setTargetValue(e.target.value)} />
+          <Input label={t('goals.unit', 'Unit')} placeholder={t('goals.unitPlaceholder', 'score, kg, min')} value={unit} onChange={(e) => setUnit(e.target.value)} />
         </div>
 
         {/* Link to assessment category — enables auto-tracking from assessments */}
         {category === 'Performance' && statCategories.length > 0 && (
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Link to assessment category <span className="text-gray-400 font-normal">(auto-tracks from assessments)</span>
+              {t('goals.linkToCategory', 'Link to assessment category')} <span className="text-gray-400 font-normal">{t('goals.autoTracks', '(auto-tracks from assessments)')}</span>
             </label>
             <select
               value={linkedStatCategoryId}
               onChange={(e) => setLinkedStatCategoryId(e.target.value ? Number(e.target.value) : '')}
               className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
             >
-              <option value="">None</option>
+              <option value="">{t('common.none', 'None')}</option>
               {statCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -193,18 +197,18 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
 
         {/* Dates */}
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Start date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          <Input label="Target date" type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+          <Input label={t('goals.startDate', 'Start date')} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <Input label={t('goals.targetDate', 'Target date')} type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
         </div>
 
         {/* Description */}
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('common.description', 'Description')}</label>
           <textarea
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="More detail about this goal…"
+            placeholder={t('goals.descriptionPlaceholder', 'More detail about this goal…')}
             className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white resize-none"
           />
         </div>
@@ -212,7 +216,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
         {/* Privacy toggle (owner only) */}
         {canBePrivate && (
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Visibility</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('goals.visibility', 'Visibility')}</p>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -220,7 +224,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
                 className={clsx('flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all cursor-pointer',
                   !isPrivate ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'border-gray-300 dark:border-gray-600 text-gray-500')}
               >
-                <Users size={15} /> Visible to coach
+                <Users size={15} /> {t('goals.visibleToCoach', 'Visible to coach')}
               </button>
               <button
                 type="button"
@@ -228,7 +232,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
                 className={clsx('flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-all cursor-pointer',
                   isPrivate ? 'border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'border-gray-300 dark:border-gray-600 text-gray-500')}
               >
-                <Lock size={15} /> Private (only you)
+                <Lock size={15} /> {t('goals.privateOnlyYou', 'Private (only you)')}
               </button>
             </div>
           </div>
@@ -237,8 +241,8 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
         {/* Milestones (create only) */}
         {!isEdit && (
           <div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Milestones</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Add checkpoints to track progress along the way.</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('goals.milestones', 'Milestones')}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">{t('goals.milestonesHint', 'Add checkpoints to track progress along the way.')}</p>
             {milestones.length > 0 && (
               <ul className="space-y-1.5 mb-2">
                 {milestones.map((m, i) => (
@@ -256,7 +260,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
                 value={msTitle}
                 onChange={(e) => setMsTitle(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMilestone(); } }}
-                placeholder="Milestone title"
+                placeholder={t('goals.milestoneTitle', 'Milestone title')}
                 className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
               />
               <input
@@ -265,7 +269,7 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
                 onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addMilestone(); } }}
                 type="number"
                 step="0.1"
-                placeholder="Target"
+                placeholder={t('goals.target', 'Target')}
                 className="w-24 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
               />
               <Button type="button" variant="secondary" size="sm" onClick={addMilestone}><Plus size={15} /></Button>
@@ -274,8 +278,8 @@ export function GoalFormModal({ isOpen, onClose, playerId, sportId, goal, canBeP
         )}
 
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Goal'}</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleSubmit} disabled={saving}>{saving ? t('common.saving', 'Saving…') : isEdit ? t('common.saveChanges', 'Save Changes') : t('goals.createGoal', 'Create Goal')}</Button>
         </div>
       </div>
     </Modal>

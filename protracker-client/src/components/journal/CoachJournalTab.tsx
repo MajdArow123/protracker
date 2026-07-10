@@ -5,6 +5,7 @@ import { JournalHeatMap } from './JournalHeatMap';
 import { EmptyState } from '../ui/EmptyState';
 import { CardListSkeleton } from '../ui/Skeleton';
 import { ErrorState } from '../ui/ErrorState';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   playerId: number;
@@ -13,6 +14,7 @@ interface Props {
 // Coach's read-only view of a player's journal. Only shared (non-private) entries are ever
 // returned by the API, so nothing here can leak a private entry.
 export function CoachJournalTab({ playerId }: Props) {
+  const { t } = useTranslation();
   const query = usePlayerJournal(playerId);
   const entries = query.data ?? [];
 
@@ -23,11 +25,11 @@ export function CoachJournalTab({ playerId }: Props) {
     <div className="space-y-4">
       <div className="flex items-start gap-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/60 rounded-lg px-3 py-2">
         <Lock size={13} className="flex-shrink-0 mt-0.5" />
-        <span>You only see entries the athlete has chosen to share. Private entries are never visible.</span>
+        <span>{t('journal.coachPrivacyNote', 'You only see entries the athlete has chosen to share. Private entries are never visible.')}</span>
       </div>
 
       {entries.length === 0 ? (
-        <EmptyState icon={<BookOpen />} title="No shared entries" description="This athlete hasn't shared any journal entries yet." />
+        <EmptyState icon={<BookOpen />} title={t('journal.noSharedEntries', 'No shared entries')} description={t('journal.noSharedEntriesDesc', "This athlete hasn't shared any journal entries yet.")} />
       ) : (
         <>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">

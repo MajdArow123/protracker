@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Star, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { useSubmitSessionFeedback } from '../../hooks/useSessionFeedback';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import type { ScheduledSession, SessionFeedback } from '../../types';
 
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex gap-1.5">
       {[1, 2, 3, 4, 5].map(n => (
@@ -16,7 +19,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
           type="button"
           onClick={() => onChange(n)}
           className="cursor-pointer transition-transform hover:scale-110"
-          aria-label={`${n} star${n > 1 ? 's' : ''}`}
+          aria-label={t('sessions.starRatingAria', '{{count}} stars', { count: n })}
         >
           <Star
             size={30}
@@ -64,6 +67,8 @@ export function SessionFeedbackModal({ session, existing, isOpen, onClose }: {
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+  const { formatDate } = useLocaleFormat();
   const { addToast } = useToast();
   const submit = useSubmitSessionFeedback();
 
@@ -91,7 +96,7 @@ export function SessionFeedbackModal({ session, existing, isOpen, onClose }: {
   if (!session) return null;
 
   const handleSubmit = async () => {
-    if (rating < 1) { setError('Please give the session a star rating.'); return; }
+    if (rating < 1) { setError(t('sessions.errRating', 'Please give the session a star rating.')); return; }
     setError('');
     try {
       await submit.mutateAsync({
@@ -103,19 +108,19 @@ export function SessionFeedbackModal({ session, existing, isOpen, onClose }: {
           injuryNote: injuryNote.trim() || null,
         },
       });
-      addToast(existing ? 'Feedback updated' : 'Thanks for your feedback!', 'success');
+      addToast(existing ? t('sessions.feedbackUpdated', 'Feedback updated') : t('sessions.feedbackThanks', 'Thanks for your feedback!'), 'success');
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to submit feedback.');
+      setError(e instanceof Error ? e.message : t('sessions.errSubmit', 'Failed to submit feedback.'));
     }
   };
 
-  const sessionDate = new Date(session.startTime).toLocaleDateString('en-US', {
+  const sessionDate = formatDate(session.startTime, {
     weekday: 'short', month: 'short', day: 'numeric',
   });
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="How did the session go?" size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('sessions.feedbackTitle', 'How did the session go?')} size="lg">
       <div className="space-y-5">
         <div className="flex items-center gap-2.5 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
           <CalendarDays size={18} className="text-indigo-500" />
@@ -126,57 +131,57 @@ export function SessionFeedbackModal({ session, existing, isOpen, onClose }: {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Overall rating</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('sessions.overallRating', 'Overall rating')}</label>
           <StarRating value={rating} onChange={setRating} />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Energy before</label>
-            <DotScale value={energyBefore} onChange={setEnergyBefore} lowLabel="Drained" highLabel="Fresh" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('sessions.energyBefore', 'Energy before')}</label>
+            <DotScale value={energyBefore} onChange={setEnergyBefore} lowLabel={t('sessions.drained', 'Drained')} highLabel={t('sessions.fresh', 'Fresh')} />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Energy after</label>
-            <DotScale value={energyAfter} onChange={setEnergyAfter} lowLabel="Drained" highLabel="Fresh" />
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('sessions.energyAfter', 'Energy after')}</label>
+            <DotScale value={energyAfter} onChange={setEnergyAfter} lowLabel={t('sessions.drained', 'Drained')} highLabel={t('sessions.fresh', 'Fresh')} />
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Difficulty</label>
-          <DotScale value={difficulty} onChange={setDifficulty} lowLabel="Easy" highLabel="Brutal" />
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('sessions.difficulty', 'Difficulty')}</label>
+          <DotScale value={difficulty} onChange={setDifficulty} lowLabel={t('sessions.easy', 'Easy')} highLabel={t('sessions.brutal', 'Brutal')} />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">What went well?</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('sessions.whatWentWell', 'What went well?')}</label>
           <textarea
             value={whatWentWell}
             onChange={e => setWhatWentWell(e.target.value)}
             rows={2}
-            placeholder="Optional"
+            placeholder={t('common.optional', 'Optional')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">What was hard?</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('sessions.whatWasHard', 'What was hard?')}</label>
           <textarea
             value={whatWasHard}
             onChange={e => setWhatWasHard(e.target.value)}
             rows={2}
-            placeholder="Optional"
+            placeholder={t('common.optional', 'Optional')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
 
         <div>
           <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-            <AlertTriangle size={14} className="text-amber-500" /> Any pain or injury?
+            <AlertTriangle size={14} className="text-amber-500" /> {t('sessions.painInjury', 'Any pain or injury?')}
           </label>
           <textarea
             value={injuryNote}
             onChange={e => setInjuryNote(e.target.value)}
             rows={2}
-            placeholder="Leave blank if you felt fine — your coach is alerted if you note pain"
+            placeholder={t('sessions.injuryPlaceholder', 'Leave blank if you felt fine — your coach is alerted if you note pain')}
             className="w-full rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/40 dark:bg-amber-900/10 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
           />
         </div>
@@ -184,9 +189,9 @@ export function SessionFeedbackModal({ session, existing, isOpen, onClose }: {
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
           <Button onClick={handleSubmit} isLoading={submit.isPending}>
-            {existing ? 'Update feedback' : 'Submit feedback'}
+            {existing ? t('sessions.updateFeedback', 'Update feedback') : t('sessions.submitFeedback', 'Submit feedback')}
           </Button>
         </div>
       </div>

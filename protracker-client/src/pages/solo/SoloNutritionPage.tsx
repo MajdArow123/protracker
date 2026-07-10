@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useMyPlayerId } from '../../hooks/useDashboard';
 import { NutritionManager } from '../nutrition/NutritionPage';
 import { StatGridSkeleton } from '../../components/ui/Skeleton';
@@ -6,11 +7,12 @@ import { StatGridSkeleton } from '../../components/ui/Skeleton';
 // (Dietary Profile / Nutrition Guidance / Weekly Plan), scoped to themselves,
 // with food swapping enabled and first-person wording.
 export function SoloNutritionPage() {
+  const { t } = useTranslation();
   const { data: playerId, isLoading } = useMyPlayerId();
 
   if (isLoading || !playerId) {
     return <div className="flex-1 p-4 lg:p-6"><StatGridSkeleton count={2} /></div>;
   }
 
-  return <NutritionManager playerId={playerId} self title="My Nutrition" />;
+  return <NutritionManager playerId={playerId} self title={t('nutrition.myNutrition', 'My Nutrition')} />;
 }

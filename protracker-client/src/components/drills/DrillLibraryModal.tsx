@@ -13,6 +13,8 @@ import { useTeams } from '../../hooks/useTeams';
 import { useMyPlayer } from '../../hooks/usePlayers';
 import { useAuth } from '../../context/AuthContext';
 import type { Drill } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface PlayerOption { id: number; name: string; }
 
@@ -26,6 +28,8 @@ interface Props {
 
 // Compact drill browser shown from the Tasks page — pick a drill, then assign it as a task.
 export function DrillLibraryModal({ isOpen, onClose, players, lockedPlayerId, defaultSportId }: Props) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
   const isAdmin = user?.role === 'Admin';
@@ -53,18 +57,18 @@ export function DrillLibraryModal({ isOpen, onClose, players, lockedPlayerId, de
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="Browse Drill Library" size="xl">
+      <Modal isOpen={isOpen} onClose={onClose} title={tr('drills.browseTitle', 'Browse Drill Library')} size="xl">
         <div className="space-y-4">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drills…"
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tr('drills.searchPlaceholder', 'Search drills…')}
               className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-white" />
           </div>
           {showSportPills && (
             <div className="flex items-center gap-1.5 flex-wrap">
-              <button onClick={() => setSportId(null)} className={pill(sportId === null)}>All</button>
+              <button onClick={() => setSportId(null)} className={pill(sportId === null)}>{tr('common.all', 'All')}</button>
               {sports.map(s => (
-                <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{SPORT_SHORT[s.id] ?? s.name}</button>
+                <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{L.sport(SPORT_SHORT[s.id] ?? s.name)}</button>
               ))}
             </div>
           )}
@@ -73,7 +77,7 @@ export function DrillLibraryModal({ isOpen, onClose, players, lockedPlayerId, de
             {isLoading ? (
               <div className="flex justify-center py-10"><Spinner /></div>
             ) : drills.length === 0 ? (
-              <EmptyState icon={<Search />} title="No drills found" description="Try a different search or sport." size="sm" />
+              <EmptyState icon={<Search />} title={tr('drills.noDrillsFound', 'No drills found')} description={tr('drills.tryDifferentSearch', 'Try a different search or sport.')} size="sm" />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {drills.map(d => (

@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useMyPlayerId } from '../../hooks/useDashboard';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
@@ -20,10 +22,10 @@ function scoreColor(s: number): string {
   return '#ef4444';
 }
 
-function scoreLabel(s: number): { text: string; cls: string } {
-  if (s > 7) return { text: 'Good', cls: 'text-green-500 bg-green-500/10' };
-  if (s >= 5) return { text: 'Fair', cls: 'text-amber-500 bg-amber-500/10' };
-  return { text: 'Low', cls: 'text-red-500 bg-red-500/10' };
+function scoreLabel(s: number): { text: string; cls: string; key: string } {
+  if (s > 7) return { text: 'Good', cls: 'text-green-500 bg-green-500/10', key: 'dashboard.scoreGood' };
+  if (s >= 5) return { text: 'Fair', cls: 'text-amber-500 bg-amber-500/10', key: 'dashboard.scoreFair' };
+  return { text: 'Low', cls: 'text-red-500 bg-red-500/10', key: 'dashboard.scoreLow' };
 }
 
 function pct(from: number, to: number) {
@@ -32,6 +34,8 @@ function pct(from: number, to: number) {
 }
 
 export function PlayerStatsPage() {
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data: assessments, isLoading } = usePlayerAssessments(playerId);
   const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
@@ -64,7 +68,7 @@ export function PlayerStatsPage() {
   const chartData: Array<{ name: string; [key: string]: string | number }> =
     sorted.map((a) => {
       const point: { name: string; [key: string]: string | number } = {
-        name: a.assessmentPeriodName || new Date(a.dateRecorded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        name: a.assessmentPeriodName || fmt.formatDate(a.dateRecorded, { month: 'short', day: 'numeric' }),
       };
       a.statScores?.forEach((s) => {
         point[s.statCategoryName] = s.score;
@@ -87,12 +91,12 @@ export function PlayerStatsPage() {
   }
 
   return (
-    <PageWrapper title="My Stats">
+    <PageWrapper title={t('nav.myStats', 'My Stats')}>
       {!assessments?.length ? (
         <EmptyState
           icon={<TrendingUp size={32} />}
-          title="No stats yet"
-          description="Your coach will add assessments here"
+          title={t('dashboard.noStatsYet', 'No stats yet')}
+          description={t('dashboard.noStatsDesc', 'Your coach will add assessments here')}
         />
       ) : (
         <div className="space-y-6">
@@ -101,14 +105,14 @@ export function PlayerStatsPage() {
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Calendar size={13} className="text-indigo-500" />
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('nav.assessments', 'Assessments')}</p>
               </div>
               <p className="text-xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
             </div>
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <BarChart3 size={13} className="text-indigo-500" />
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Improvement</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('dashboard.improvement', 'Improvement')}</p>
               </div>
               {overallChange !== null ? (
                 <p className={clsx('text-xl font-black', overallChange >= 0 ? 'text-green-500' : 'text-red-500')}>
@@ -119,7 +123,7 @@ export function PlayerStatsPage() {
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Trophy size={13} className="text-green-500" />
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('dashboard.best', 'Best')}</p>
               </div>
               {summary?.best ? (
                 <>
@@ -131,7 +135,7 @@ export function PlayerStatsPage() {
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle size={13} className="text-amber-500" />
-                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Weakest</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('dashboard.weakest', 'Weakest')}</p>
               </div>
               {summary?.worst ? (
                 <>
@@ -143,7 +147,7 @@ export function PlayerStatsPage() {
           </div>
 
           {/* Progress chart */}
-          <Card header="Progress Over Time">
+          <Card header={t('dashboard.progressOverTime', 'Progress Over Time')}>
             <div className="flex flex-wrap gap-2 mb-5">
               {allCategories.map((cat, i) => {
                 const color = CHART_COLORS[i % CHART_COLORS.length];
@@ -176,7 +180,7 @@ export function PlayerStatsPage() {
                   onClick={() => setFocusedCategory(null)}
                   className="px-3 py-1 rounded-full text-xs font-semibold border border-dashed border-gray-400 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-500 transition-all cursor-pointer"
                 >
-                  Show all
+                  {t('dashboard.showAll', 'Show all')}
                 </button>
               )}
             </div>
@@ -190,7 +194,7 @@ export function PlayerStatsPage() {
               }))}
               height={280}
               focusedKey={focusedCategory}
-              yAxisLabel="Score / 10"
+              yAxisLabel={t('dashboard.scoreOutOf10', 'Score / 10')}
             />
           </Card>
 
@@ -198,7 +202,7 @@ export function PlayerStatsPage() {
           <div>
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
               <Calendar size={16} className="text-indigo-400" />
-              Assessment History
+              {t('dashboard.assessmentHistory', 'Assessment History')}
             </h2>
             <div className="space-y-3">
               {[...assessments]
@@ -229,11 +233,11 @@ export function PlayerStatsPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-bold text-gray-900 dark:text-white text-sm">{a.assessmentPeriodName}</p>
                             {idx === 0 && (
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">Latest</span>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400">{t('dashboard.latest', 'Latest')}</span>
                             )}
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            {new Date(a.dateRecorded).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            {fmt.formatDate(a.dateRecorded, { year: 'numeric', month: 'long', day: 'numeric' })}
                           </p>
                         </div>
 
@@ -241,7 +245,7 @@ export function PlayerStatsPage() {
                           {avgCurr !== null && (
                             <div className="flex items-center gap-1.5">
                               <span className="text-lg font-black" style={{ color }}>{avgCurr.toFixed(1)}</span>
-                              {label && <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-full font-semibold', label.cls)}>{label.text}</span>}
+                              {label && <span className={clsx('text-[10px] px-1.5 py-0.5 rounded-full font-semibold', label.cls)}>{t(label.key, label.text)}</span>}
                             </div>
                           )}
                           {trend !== null && (
@@ -257,7 +261,7 @@ export function PlayerStatsPage() {
                             onClick={() => setExpandedId(isExpanded ? null : a.id)}
                             className="text-xs px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                           >
-                            {isExpanded ? 'Collapse' : 'Expand'}
+                            {isExpanded ? t('common.collapse', 'Collapse') : t('common.expand', 'Expand')}
                           </button>
                         </div>
                       </div>

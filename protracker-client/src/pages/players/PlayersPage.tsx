@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Users, Plus, Search, AlertTriangle } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
@@ -33,6 +34,7 @@ function scoreColor(score: number) {
 }
 
 export function PlayersPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data: players, isLoading, isError, refetch } = usePlayers();
   const { data: teams = [] } = useTeams();
@@ -42,8 +44,8 @@ export function PlayersPage() {
 
   const injuredIds = new Set(activeInjuries.map(i => i.playerId));
 
-  if (isLoading) return <PageWrapper title="Players"><CardListSkeleton count={6} /></PageWrapper>;
-  if (isError) return <PageWrapper title="Players"><ErrorState thing="players" onRetry={() => refetch()} /></PageWrapper>;
+  if (isLoading) return <PageWrapper title={t('players.title', 'Players')}><CardListSkeleton count={6} /></PageWrapper>;
+  if (isError) return <PageWrapper title={t('players.title', 'Players')}><ErrorState thing="players" onRetry={() => refetch()} /></PageWrapper>;
 
   const filtered = (players ?? []).filter(p => {
     const matchesSearch = p.fullName.toLowerCase().includes(search.toLowerCase());
@@ -53,10 +55,10 @@ export function PlayersPage() {
 
   return (
     <PageWrapper
-      title="Players"
+      title={t('players.title', 'Players')}
       actions={
         <Button onClick={() => navigate('/players/new')}>
-          <Plus size={16} /> Add Player
+          <Plus size={16} /> {t('players.addPlayer', 'Add Player')}
         </Button>
       }
     >
@@ -67,7 +69,7 @@ export function PlayersPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search players…"
+            placeholder={t('players.searchPlayers', 'Search players...')}
             className="w-full pl-9 pr-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
           />
         </div>
@@ -76,7 +78,7 @@ export function PlayersPage() {
           onChange={e => setTeamFilter(e.target.value)}
           className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all"
         >
-          <option value="">All teams</option>
+          <option value="">{t('players.allTeams', 'All teams')}</option>
           {teams.map(t => (
             <option key={t.id} value={String(t.id)}>{t.name}</option>
           ))}
@@ -85,13 +87,13 @@ export function PlayersPage() {
 
       {!filtered.length ? (
         search || teamFilter ? (
-          <p className="text-gray-500 dark:text-gray-400 text-sm">No players match your filters.</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm">{t('players.noMatchFilters', 'No players match your filters.')}</p>
         ) : (
           <EmptyState
             icon={<Users size={48} />}
-            title="No players yet"
-            description="Add your first player to get started"
-            action={{ label: 'Add Player', onClick: () => navigate('/players/new') }}
+            title={t('players.noPlayers', 'No players yet')}
+            description={t('players.noPlayersDesc', 'Add your first player to get started')}
+            action={{ label: t('players.addPlayer', 'Add Player'), onClick: () => navigate('/players/new') }}
           />
         )
       ) : (
@@ -124,15 +126,15 @@ export function PlayersPage() {
                     </p>
                     <span className="text-base flex-shrink-0">{emoji}</span>
                     {injuredIds.has(player.id) && (
-                      <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" aria-label="Active injury" />
+                      <AlertTriangle size={13} className="text-amber-500 flex-shrink-0" aria-label={t('players.activeInjury', 'Active injury')} />
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{player.positionName ?? 'Player'} · {player.teamName ?? '—'}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{player.positionName ?? t('players.player', 'Player')} · {player.teamName ?? '—'}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
                   {player.fitnessLevel != null && (
                     <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(player.fitnessLevel))}>
-                      Fit {player.fitnessLevel}/10
+                      {t('players.fitShort', 'Fit')} {player.fitnessLevel}/10
                     </span>
                   )}
                   <PlayerStatusBadge status={player.status} hideActive />

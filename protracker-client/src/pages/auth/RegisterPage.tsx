@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Activity, AlertCircle, ArrowRight, Ticket, User } from 'lucide-react';
 import { joinApi } from '../../api/joinApi';
@@ -8,6 +9,7 @@ import { joinApi } from '../../api/joinApi';
 // Landing spot for athletes who were given a join code (rather than a direct /join/{code}
 // link or QR). A valid code drops them into the full /join/{code} registration flow.
 export function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [checking, setChecking] = useState(false);
@@ -25,15 +27,15 @@ export function RegisterPage() {
         navigate(`/join/${normalized}`);
       } else {
         setError(
-          info.reason === 'expired' ? 'That code has expired. Ask your coach for a new one.'
-          : info.reason === 'maxed' ? 'That code has reached its maximum uses. Ask your coach for a new one.'
-          : info.reason === 'inactive' ? 'That code has been deactivated. Ask your coach for a new one.'
-          : "We couldn't find that code. Double-check it and try again.",
+          info.reason === 'expired' ? t('register.codeExpired', 'That code has expired. Ask your coach for a new one.')
+          : info.reason === 'maxed' ? t('register.codeMaxed', 'That code has reached its maximum uses. Ask your coach for a new one.')
+          : info.reason === 'inactive' ? t('register.codeInactive', 'That code has been deactivated. Ask your coach for a new one.')
+          : t('register.codeNotFound', "We couldn't find that code. Double-check it and try again."),
         );
         setChecking(false);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not check the code. Try again.');
+      setError(err instanceof Error ? err.message : t('register.codeCheckFailed', 'Could not check the code. Try again.'));
       setChecking(false);
     }
   };
@@ -55,16 +57,16 @@ export function RegisterPage() {
         <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 flex items-center justify-center mb-4">
           <Ticket size={22} className="text-indigo-400" />
         </div>
-        <h1 className="text-xl font-bold text-white mb-1.5">Join your team</h1>
+        <h1 className="text-xl font-bold text-white mb-1.5">{t('register.joinYourTeam', 'Join your team')}</h1>
         <p className="text-sm text-gray-400 mb-6">
-          Enter the join code your coach shared with you — it's on the team's QR poster or invite link.
+          {t('register.joinCodeIntro', "Enter the join code your coach shared with you — it's on the team's QR poster or invite link.")}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
             value={code}
             onChange={e => { setCode(e.target.value.toUpperCase()); setError(''); }}
-            placeholder="e.g. CITY2026"
+            placeholder={t('register.codePlaceholder', 'e.g. CITY2026')}
             maxLength={12}
             autoFocus
             autoCapitalize="characters"
@@ -85,21 +87,20 @@ export function RegisterPage() {
             disabled={code.trim().length < 4 || checking}
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
-            {checking ? 'Checking…' : <>Continue <ArrowRight size={15} /></>}
+            {checking ? t('register.checking', 'Checking…') : <>{t('register.continue', 'Continue')} <ArrowRight size={15} /></>}
           </button>
         </form>
 
         <div className="mt-6 rounded-xl bg-gray-800/40 border border-gray-800 p-3.5">
           <p className="text-xs text-gray-400">
-            <span className="font-semibold text-gray-300">Don't have a code?</span> Ask your coach to share the
-            team's join link or QR code from their team page.
+            <span className="font-semibold text-gray-300">{t('register.noCodeQ', "Don't have a code?")}</span> {t('register.noCodeHelp', "Ask your coach to share the team's join link or QR code from their team page.")}
           </p>
         </div>
 
         {/* No team? Solo mode */}
         <div className="mt-4 flex items-center gap-3">
           <div className="flex-1 h-px bg-gray-800" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">or</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{t('common.or', 'or')}</span>
           <div className="flex-1 h-px bg-gray-800" />
         </div>
         <Link
@@ -110,14 +111,14 @@ export function RegisterPage() {
             <User size={18} className="text-indigo-400" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">Train Solo</p>
-            <p className="text-xs text-gray-400">No coach? Track your own performance and improve at your own pace.</p>
+            <p className="text-sm font-bold text-white">{t('auth.trainSolo', 'Train Solo')}</p>
+            <p className="text-xs text-gray-400">{t('register.soloDesc', 'No coach? Track your own performance and improve at your own pace.')}</p>
           </div>
           <ArrowRight size={16} className="text-gray-600 group-hover:text-indigo-400 transition-colors flex-shrink-0" />
         </Link>
 
         <p className="text-center text-xs text-gray-500 mt-6">
-          Already have an account? <Link to="/login" className="text-indigo-400 hover:underline">Sign in</Link>
+          {t('auth.hasAccount', 'Already have an account?')} <Link to="/login" className="text-indigo-400 hover:underline">{t('auth.signIn', 'Sign in')}</Link>
         </p>
       </motion.div>
     </div>

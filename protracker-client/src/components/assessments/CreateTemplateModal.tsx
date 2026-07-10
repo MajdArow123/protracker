@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -20,6 +21,7 @@ interface Props {
 interface Row { defaultScore: string; required: boolean; }
 
 export function CreateTemplateModal({ isOpen, onClose, sportId, statCategories, initialScores, template }: Props) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const createTemplate = useCreateTemplate();
   const updateTemplate = useUpdateTemplate();
@@ -48,7 +50,7 @@ export function CreateTemplateModal({ isOpen, onClose, sportId, statCategories, 
   }, [isOpen, template, statCategories, initialScores]);
 
   async function handleSave() {
-    if (!name.trim()) { addToast('A template name is required', 'error'); return; }
+    if (!name.trim()) { addToast(t('assessment.templateNameRequired', 'A template name is required'), 'error'); return; }
     const scores = statCategories.map(c => {
       const r = rows[c.id] ?? { defaultScore: '', required: false };
       return {
@@ -61,35 +63,35 @@ export function CreateTemplateModal({ isOpen, onClose, sportId, statCategories, 
     try {
       if (isEdit && template) await updateTemplate.mutateAsync({ id: template.id, data });
       else await createTemplate.mutateAsync(data);
-      addToast(isEdit ? 'Template updated' : 'Template saved', 'success');
+      addToast(isEdit ? t('assessment.templateUpdated', 'Template updated') : t('assessment.templateSaved', 'Template saved'), 'success');
       onClose();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to save template', 'error');
+      addToast(err instanceof Error ? err.message : t('assessment.templateSaveFailed', 'Failed to save template'), 'error');
     }
   }
 
   const saving = createTemplate.isPending || updateTemplate.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Template' : 'Save as Template'} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? t('assessment.editTemplate', 'Edit Template') : t('assessment.saveAsTemplate', 'Save as Template')} size="lg">
       <div className="space-y-4">
-        <Input label="Template name" placeholder="e.g. Preseason baseline" value={name} onChange={e => setName(e.target.value)} autoFocus />
+        <Input label={t('assessment.templateName', 'Template name')} placeholder={t('assessment.templateNamePlaceholder', 'e.g. Preseason baseline')} value={name} onChange={e => setName(e.target.value)} autoFocus />
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Description (optional)</label>
-          <input value={description} onChange={e => setDescription(e.target.value)} placeholder="What this template is for…"
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('assessment.descriptionOptional', 'Description (optional)')}</label>
+          <input value={description} onChange={e => setDescription(e.target.value)} placeholder={t('assessment.templateDescPlaceholder', 'What this template is for…')}
             className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white" />
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Default notes (optional)</label>
-          <textarea rows={2} value={defaultNotes} onChange={e => setDefaultNotes(e.target.value)} placeholder="Notes pre-filled when this template is used…"
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('assessment.defaultNotesOptional', 'Default notes (optional)')}</label>
+          <textarea rows={2} value={defaultNotes} onChange={e => setDefaultNotes(e.target.value)} placeholder={t('assessment.defaultNotesPlaceholder', 'Notes pre-filled when this template is used…')}
             className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white resize-none" />
         </div>
 
         <div>
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categories</p>
+          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t('assessment.categories', 'Categories')}</p>
           <div className="space-y-1.5">
             <div className="grid grid-cols-[1fr,80px,80px] gap-2 px-1 text-[11px] font-medium text-gray-400">
-              <span>Category</span><span className="text-center">Default</span><span className="text-center">Required</span>
+              <span>{t('common.category', 'Category')}</span><span className="text-center">{t('assessment.default', 'Default')}</span><span className="text-center">{t('common.required', 'Required')}</span>
             </div>
             {statCategories.map(c => {
               const r = rows[c.id] ?? { defaultScore: '', required: false };
@@ -112,8 +114,8 @@ export function CreateTemplateModal({ isOpen, onClose, sportId, statCategories, 
         </div>
 
         <div className="flex justify-end gap-2 pt-1">
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Template'}</Button>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleSave} disabled={saving}>{saving ? t('common.saving', 'Saving…') : isEdit ? t('assessment.saveChanges', 'Save Changes') : t('assessment.saveTemplate', 'Save Template')}</Button>
         </div>
       </div>
     </Modal>

@@ -15,10 +15,14 @@ import { useMyGoals, usePlayerGoals } from '../../hooks/useGoals';
 import { useMyPlayer, usePlayers } from '../../hooks/usePlayers';
 import { useAuth } from '../../context/AuthContext';
 import type { PersonalGoal } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 const FILTERS: GoalFilter[] = ['All', 'Active', 'Achieved', 'Paused'];
 
 export function GoalsPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
   const isSolo = user?.role === 'SoloAthlete';
@@ -58,7 +62,9 @@ export function GoalsPage() {
     Paused: goals.filter(g => g.status === 'Paused').length,
   }), [goals]);
 
-  const title = isCoach ? 'Player Goals' : 'My Goals';
+  const title = isCoach ? t('goals.playerGoals', 'Player Goals') : t('goals.title', 'My Goals');
+
+  const filterLabel = (f: GoalFilter) => f === 'All' ? t('common.all', 'All') : L.status(f);
 
   function openNew() {
     setEditing(null);
@@ -75,11 +81,11 @@ export function GoalsPage() {
     <div className="flex items-center gap-2">
       {showAI && (
         <Button variant="secondary" onClick={() => setAiOpen(true)} disabled={!canCreate}>
-          <Sparkles size={16} className="mr-1.5" /> Suggest with AI
+          <Sparkles size={16} className="mr-1.5" /> {t('goals.suggestWithAI', 'Suggest with AI')}
         </Button>
       )}
       <Button onClick={openNew} disabled={!canCreate}>
-        <Plus size={16} className="mr-1.5" /> New Goal
+        <Plus size={16} className="mr-1.5" /> {t('goals.newGoal', 'New Goal')}
       </Button>
     </div>
   );
@@ -94,14 +100,14 @@ export function GoalsPage() {
             onChange={(e) => setSelectedPlayerId(e.target.value ? Number(e.target.value) : '')}
             className="w-full sm:w-72 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white"
           >
-            <option value="">Select a player…</option>
+            <option value="">{t('goals.selectPlayer', 'Select a player…')}</option>
             {allPlayers.map(p => <option key={p.id} value={p.id}>{p.fullName}</option>)}
           </select>
         </div>
       )}
 
       {isCoach && !activePlayerId ? (
-        <EmptyState icon={<Target />} title="Select a player" description="Choose a player above to view and set their goals." />
+        <EmptyState icon={<Target />} title={t('goals.selectPlayerTitle', 'Select a player')} description={t('goals.selectPlayerDesc', 'Choose a player above to view and set their goals.')} />
       ) : goalsQuery.isLoading ? (
         <CardListSkeleton count={3} />
       ) : goalsQuery.isError ? (
@@ -121,7 +127,7 @@ export function GoalsPage() {
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700',
                 )}
               >
-                {f} <span className="opacity-60">{counts[f]}</span>
+                {filterLabel(f)} <span className="opacity-60">{counts[f]}</span>
               </button>
             ))}
           </div>
@@ -129,9 +135,9 @@ export function GoalsPage() {
           {filtered.length === 0 ? (
             <EmptyState
               icon={<Target />}
-              title={goals.length === 0 ? 'No goals yet' : `No ${filter.toLowerCase()} goals`}
-              description={goals.length === 0 ? 'Set your first goal to start tracking your progress.' : 'Try a different filter.'}
-              action={goals.length === 0 && canCreate ? { label: 'New Goal', onClick: openNew } : undefined}
+              title={goals.length === 0 ? t('goals.noGoals', 'No goals yet') : t('goals.noFilteredGoals', 'No {{filter}} goals', { filter: filterLabel(filter).toLowerCase() })}
+              description={goals.length === 0 ? t('goals.emptyDesc', 'Set your first goal to start tracking your progress.') : t('goals.tryDifferentFilter', 'Try a different filter.')}
+              action={goals.length === 0 && canCreate ? { label: t('goals.newGoal', 'New Goal'), onClick: openNew } : undefined}
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">

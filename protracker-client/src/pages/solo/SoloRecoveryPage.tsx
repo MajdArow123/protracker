@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Activity, Calendar, Edit2, Plus, ShieldAlert, Trash2 } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
@@ -12,6 +13,8 @@ import { useMyPlayerId } from '../../hooks/useDashboard';
 import { useInjuries, useCreateInjury, useUpdateInjury, useDeleteInjury, useRecoverInjury } from '../../hooks/useInjuries';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';
 import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import type { InjuryRecord, InjurySeverity, RecoveryStatus } from '../../types';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
@@ -45,6 +48,9 @@ const EMPTY_INJURY: InjuryFormState = {
 // them recovered, and open the full recovery-program modal (manual / template / AI)
 // with the same manage rights a coach has — but only ever for themselves.
 export function SoloRecoveryPage() {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
+  const { formatDate } = useLocaleFormat();
   const { addToast: showToast } = useToast();
   const { data: playerId } = useMyPlayerId();
   const { data: injuries = [], isLoading } = useInjuries(playerId);
@@ -75,7 +81,7 @@ export function SoloRecoveryPage() {
 
   async function save() {
     if (!playerId) return;
-    if (!form.injuryType.trim()) { showToast('Injury type is required', 'error'); return; }
+    if (!form.injuryType.trim()) { showToast(t('injuries.typeRequired', 'Injury type is required'), 'error'); return; }
     const payload = {
       playerId,
       injuryDate: form.injuryDate,
@@ -90,15 +96,15 @@ export function SoloRecoveryPage() {
     try {
       if (editing) {
         await updateInjury.mutateAsync({ id: editing.id, data: payload });
-        showToast('Injury updated', 'success');
+        showToast(t('injuries.injuryUpdated', 'Injury updated'), 'success');
         setEditing(null);
       } else {
         await createInjury.mutateAsync(payload as Omit<InjuryRecord, 'id'>);
-        showToast('Injury logged — take care of yourself', 'success');
+        showToast(t('injuries.injuryLogged', 'Injury logged — take care of yourself'), 'success');
         setShowNew(false);
       }
     } catch (err) {
-      showToast(err instanceof Error ? err.message : 'Save failed', 'error');
+      showToast(err instanceof Error ? err.message : t('injuries.saveFailed', 'Save failed'), 'error');
     }
   }
 
@@ -106,11 +112,11 @@ export function SoloRecoveryPage() {
 
   return (
     <PageWrapper
-      title="My Recovery"
+      title={t('injuries.myRecovery', 'My Recovery')}
       actions={!formOpen ? (
         <button onClick={openNew}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-          <Plus size={15} /> Log Injury
+          <Plus size={15} /> {t('injuries.logInjury', 'Log Injury')}
         </button>
       ) : undefined}
     >
@@ -128,7 +134,7 @@ export function SoloRecoveryPage() {
               <div>
                 <p className="text-sm font-bold text-gray-900 dark:text-white">{activePlan.title}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Week {activePlan.currentWeek} of {activePlan.estimatedWeeks} · {activePlan.injuryType}
+                  {t('recovery.weekOf', 'Week {{current}} of {{total}}', { current: activePlan.currentWeek, total: activePlan.estimatedWeeks })} · {activePlan.injuryType}
                 </p>
               </div>
             </div>
@@ -136,40 +142,40 @@ export function SoloRecoveryPage() {
               <p className="text-lg font-black text-rose-500">
                 {activePlan.totalExercises > 0 ? Math.round((activePlan.completedExercises / activePlan.totalExercises) * 100) : 0}%
               </p>
-              <p className="text-[11px] text-gray-500">{activePlan.completedExercises}/{activePlan.totalExercises} exercises</p>
+              <p className="text-[11px] text-gray-500">{t('recovery.exercisesShort', '{{done}}/{{total}} exercises', { done: activePlan.completedExercises, total: activePlan.totalExercises })}</p>
             </div>
           </div>
           <div className="mt-3 h-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-full overflow-hidden">
             <div className="h-full bg-rose-500 rounded-full" style={{ width: `${activePlan.totalExercises > 0 ? Math.round((activePlan.completedExercises / activePlan.totalExercises) * 100) : 0}%` }} />
           </div>
-          <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2">Open my recovery program →</p>
+          <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2">{t('recovery.openMyProgram', 'Open my recovery program →')}</p>
         </button>
       )}
 
       <div className="max-w-2xl space-y-4">
         {formOpen && (
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editing ? 'Edit Injury' : 'Log Injury'}</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-4">{editing ? t('injuries.editInjury', 'Edit Injury') : t('injuries.logInjury', 'Log Injury')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input label="Injury Date" type="date" value={form.injuryDate} onChange={e => setForm(v => ({ ...v, injuryDate: e.target.value }))} />
-              <Input label="Injury Type *" value={form.injuryType} onChange={e => setForm(v => ({ ...v, injuryType: e.target.value }))} placeholder="e.g. Ankle sprain" />
-              <Select label="Body Part" value={form.bodyPart} onChange={e => setForm(v => ({ ...v, bodyPart: e.target.value }))} options={BODY_PARTS.map(s => ({ value: s, label: s }))} />
-              <Select label="Severity" value={form.severity} onChange={e => setForm(v => ({ ...v, severity: e.target.value }))} options={INJURY_SEVERITIES.map(s => ({ value: s, label: s }))} />
-              <Select label="Recovery Status" value={form.recoveryStatus} onChange={e => setForm(v => ({ ...v, recoveryStatus: e.target.value }))} options={RECOVERY_STATUSES.map(s => ({ value: s, label: s === 'FullyRecovered' ? 'Fully Recovered' : s }))} />
-              <Input label="Expected Return Date" type="date" value={form.expectedReturnDate} onChange={e => setForm(v => ({ ...v, expectedReturnDate: e.target.value }))} />
+              <Input label={t('injuries.injuryDate', 'Injury Date')} type="date" value={form.injuryDate} onChange={e => setForm(v => ({ ...v, injuryDate: e.target.value }))} />
+              <Input label={t('injuries.injuryTypeRequired', 'Injury Type *')} value={form.injuryType} onChange={e => setForm(v => ({ ...v, injuryType: e.target.value }))} placeholder={t('injuries.injuryTypePlaceholder', 'e.g. Ankle sprain')} />
+              <Select label={t('injuries.bodyPart', 'Body Part')} value={form.bodyPart} onChange={e => setForm(v => ({ ...v, bodyPart: e.target.value }))} options={BODY_PARTS.map(s => ({ value: s, label: dyn.generic('bodyPart', s) }))} />
+              <Select label={t('injuries.severity', 'Severity')} value={form.severity} onChange={e => setForm(v => ({ ...v, severity: e.target.value }))} options={INJURY_SEVERITIES.map(s => ({ value: s, label: dyn.generic('severity', s) }))} />
+              <Select label={t('injuries.recoveryStatus', 'Recovery Status')} value={form.recoveryStatus} onChange={e => setForm(v => ({ ...v, recoveryStatus: e.target.value }))} options={RECOVERY_STATUSES.map(s => ({ value: s, label: s === 'FullyRecovered' ? t('injuries.fullyRecovered', 'Fully Recovered') : dyn.status(s) }))} />
+              <Input label={t('injuries.expectedReturn', 'Expected Return Date')} type="date" value={form.expectedReturnDate} onChange={e => setForm(v => ({ ...v, expectedReturnDate: e.target.value }))} />
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Treatment Plan</label>
-                <textarea value={form.treatmentPlan} onChange={e => setForm(v => ({ ...v, treatmentPlan: e.target.value }))} rows={2} placeholder="Physio schedule, rest days, rehab protocol…" className={TEXTAREA_CLS} />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('injuries.treatmentPlan', 'Treatment Plan')}</label>
+                <textarea value={form.treatmentPlan} onChange={e => setForm(v => ({ ...v, treatmentPlan: e.target.value }))} rows={2} placeholder={t('injuries.treatmentPlaceholder', 'Physio schedule, rest days, rehab protocol…')} className={TEXTAREA_CLS} />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-                <textarea value={form.notes} onChange={e => setForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder="How it happened, how it feels…" className={TEXTAREA_CLS} />
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.notes', 'Notes')}</label>
+                <textarea value={form.notes} onChange={e => setForm(v => ({ ...v, notes: e.target.value }))} rows={2} placeholder={t('injuries.notesPlaceholder', 'How it happened, how it feels…')} className={TEXTAREA_CLS} />
               </div>
             </div>
             <div className="flex items-center justify-end gap-3 mt-4">
-              <button onClick={() => { setEditing(null); setShowNew(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">Cancel</button>
+              <button onClick={() => { setEditing(null); setShowNew(false); }} className="px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all cursor-pointer">{t('common.cancel', 'Cancel')}</button>
               <button onClick={save} className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer">
-                {editing ? 'Save Changes' : 'Log Injury'}
+                {editing ? t('injuries.saveChanges', 'Save Changes') : t('injuries.logInjury', 'Log Injury')}
               </button>
             </div>
           </div>
@@ -178,14 +184,14 @@ export function SoloRecoveryPage() {
         {isLoading ? (
           <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}</div>
         ) : injuries.length === 0 && !formOpen ? (
-          <EmptyState icon={<ShieldAlert size={36} />} title="No injuries logged"
-            description="Hopefully it stays that way! If something happens, log it here to track your recovery."
-            action={{ label: 'Log Injury', onClick: openNew }} />
+          <EmptyState icon={<ShieldAlert size={36} />} title={t('injuries.noInjuriesLogged', 'No injuries logged')}
+            description={t('injuries.noInjuriesDesc', 'Hopefully it stays that way! If something happens, log it here to track your recovery.')}
+            action={{ label: t('injuries.logInjury', 'Log Injury'), onClick: openNew }} />
         ) : (
           <>
             {activeInjuries.length > 0 && (
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                <span className="font-semibold text-red-500">{activeInjuries.length}</span> active injur{activeInjuries.length === 1 ? 'y' : 'ies'} · {injuries.length} total
+                <span className="font-semibold text-red-500">{activeInjuries.length}</span> {activeInjuries.length === 1 ? t('injuries.activeCountOne', 'active injury · {{total}} total', { total: injuries.length }) : t('injuries.activeCountMany', 'active injuries · {{total}} total', { total: injuries.length })}
               </p>
             )}
             {injuries.map(r => (
@@ -194,15 +200,15 @@ export function SoloRecoveryPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-semibold text-gray-900 dark:text-white">{r.injuryType}</span>
-                      {r.bodyPart && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{r.bodyPart}</span>}
-                      <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', SEVERITY_STYLES[r.severity])}>{r.severity}</span>
-                      <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', RECOVERY_STYLES[r.recoveryStatus])}>{r.recoveryStatus === 'FullyRecovered' ? 'Recovered' : r.recoveryStatus}</span>
+                      {r.bodyPart && <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">{dyn.generic('bodyPart', r.bodyPart)}</span>}
+                      <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', SEVERITY_STYLES[r.severity])}>{dyn.generic('severity', r.severity)}</span>
+                      <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium', RECOVERY_STYLES[r.recoveryStatus])}>{r.recoveryStatus === 'FullyRecovered' ? t('injuries.recovered', 'Recovered') : dyn.status(r.recoveryStatus)}</span>
                     </div>
                     <p className="text-xs text-gray-500 flex items-center gap-1.5">
-                      <Calendar size={11} /> {r.injuryDate.split('T')[0]}{r.expectedReturnDate ? ` → ${r.expectedReturnDate.split('T')[0]}` : ''}
-                      {r.recoveredDate && <span className="text-green-500 ml-1">· recovered {r.recoveredDate.split('T')[0]}</span>}
+                      <Calendar size={11} /> {formatDate(r.injuryDate)}{r.expectedReturnDate ? ` → ${formatDate(r.expectedReturnDate)}` : ''}
+                      {r.recoveredDate && <span className="text-green-500 ml-1">{t('injuries.recoveredOn', '· recovered {{date}}', { date: formatDate(r.recoveredDate) })}</span>}
                     </p>
-                    {r.treatmentPlan && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5"><span className="font-semibold text-gray-500 dark:text-gray-400">Treatment:</span> {r.treatmentPlan}</p>}
+                    {r.treatmentPlan && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1.5"><span className="font-semibold text-gray-500 dark:text-gray-400">{t('injuries.treatmentLabel', 'Treatment:')}</span> {r.treatmentPlan}</p>}
                     {r.notes && <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{r.notes}</p>}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
@@ -212,17 +218,17 @@ export function SoloRecoveryPage() {
                     </div>
                     {r.recoveryStatus !== 'FullyRecovered' && (
                       <button
-                        onClick={async () => { try { await recoverInjury.mutateAsync(r.id); showToast('Marked recovered — welcome back!', 'success'); } catch (err) { showToast(err instanceof Error ? err.message : 'Failed', 'error'); } }}
+                        onClick={async () => { try { await recoverInjury.mutateAsync(r.id); showToast(t('injuries.markedRecovered', 'Marked recovered — welcome back!'), 'success'); } catch (err) { showToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error'); } }}
                         className="flex items-center gap-1 px-2 py-1 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-[11px] font-semibold hover:bg-green-200 dark:hover:bg-green-900/50 transition-all cursor-pointer whitespace-nowrap"
                       >
-                        <ShieldAlert size={11} /> Mark Recovered
+                        <ShieldAlert size={11} /> {t('injuries.markRecoveredShort', 'Mark Recovered')}
                       </button>
                     )}
                     <button
                       onClick={() => setRecoveryInjury(r)}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 text-[11px] font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-all cursor-pointer whitespace-nowrap"
                     >
-                      <Activity size={11} /> Recovery Program
+                      <Activity size={11} /> {t('recovery.recoveryProgram', 'Recovery Program')}
                     </button>
                   </div>
                 </div>
@@ -247,13 +253,13 @@ export function SoloRecoveryPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={async () => {
           if (!deleteTarget) return;
-          try { await deleteInjury.mutateAsync(deleteTarget.id); showToast('Injury deleted', 'success'); }
-          catch (err) { showToast(err instanceof Error ? err.message : 'Delete failed', 'error'); }
+          try { await deleteInjury.mutateAsync(deleteTarget.id); showToast(t('injuries.injuryDeleted', 'Injury deleted'), 'success'); }
+          catch (err) { showToast(err instanceof Error ? err.message : t('injuries.deleteFailed', 'Delete failed'), 'error'); }
           finally { setDeleteTarget(null); }
         }}
-        title="Delete Injury"
-        message={`Delete "${deleteTarget?.injuryType}"? Any recovery plan attached to it will be removed too.`}
-        confirmLabel="Delete"
+        title={t('injuries.deleteInjury', 'Delete Injury')}
+        message={t('injuries.deleteInjuryMsg', 'Delete "{{type}}"? Any recovery plan attached to it will be removed too.', { type: deleteTarget?.injuryType })}
+        confirmLabel={t('common.delete', 'Delete')}
         isLoading={deleteInjury.isPending}
       />
     </PageWrapper>

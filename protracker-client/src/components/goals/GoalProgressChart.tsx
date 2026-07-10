@@ -5,6 +5,8 @@ import type { DotProps } from 'recharts';
 import { useGoalProgress } from '../../hooks/useGoals';
 import type { PersonalGoal, GoalProgress } from '../../types';
 import { Spinner } from '../ui/Spinner';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface Props {
   goal: PersonalGoal;
@@ -20,13 +22,14 @@ function TooltipBox({ active, payload }: {
   active?: boolean;
   payload?: { payload: Point }[];
 }) {
+  const L = useDynamicLabels();
   if (!active || !payload?.length) return null;
   const p = payload[0].payload;
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl p-3 shadow-2xl">
       <p className="text-xs font-semibold text-gray-400 mb-1">{p.name}</p>
       <p className="text-sm text-white font-medium">{p.value}{' '}
-        <span className="text-xs text-gray-400 font-normal">· {p.source}</span>
+        <span className="text-xs text-gray-400 font-normal">· {L.generic('progressSource', p.source)}</span>
       </p>
     </div>
   );
@@ -50,6 +53,7 @@ function ProgressDot(props: DotProps & { payload?: Point }) {
 }
 
 export function GoalProgressChart({ goal }: Props) {
+  const { t } = useTranslation();
   const { data: progress = [], isLoading } = useGoalProgress(goal.id);
 
   if (isLoading) {
@@ -64,13 +68,13 @@ export function GoalProgressChart({ goal }: Props) {
 
   // Seed the line with the starting value so a single log still draws a trend.
   if (goal.currentValue != null && points.length === 0) {
-    points.push({ name: 'Start', value: goal.currentValue, source: 'Manual' });
+    points.push({ name: t('goals.start', 'Start'), value: goal.currentValue, source: 'Manual' });
   }
 
   if (points.length === 0) {
     return (
       <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">
-        No progress logged yet. Use “Log Progress” to start tracking.
+        {t('goals.noProgressYet', 'No progress logged yet. Use “Log Progress” to start tracking.')}
       </p>
     );
   }
@@ -95,7 +99,7 @@ export function GoalProgressChart({ goal }: Props) {
               y={target}
               stroke="#22c55e"
               strokeDasharray="5 4"
-              label={{ value: `Target ${target}${goal.unit ? ' ' + goal.unit : ''}`, position: 'insideTopRight', fontSize: 10, fill: '#22c55e' }}
+              label={{ value: t('goals.targetValueLabel', 'Target {{value}}', { value: `${target}${goal.unit ? ' ' + goal.unit : ''}` }), position: 'insideTopRight', fontSize: 10, fill: '#22c55e' }}
             />
           )}
           <Line

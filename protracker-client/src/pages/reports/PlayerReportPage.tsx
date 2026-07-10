@@ -1,6 +1,9 @@
 import { useState, Fragment } from 'react';
 import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   ArrowLeft, Printer, Download, TrendingUp, TrendingDown, Minus,
   AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb, Trophy,
@@ -42,6 +45,9 @@ function pct(from: number, to: number) {
 export function PlayerReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t: tr } = useTranslation();
+  const { formatDate } = useLocaleFormat();
+  const labels = useDynamicLabels();
   const { data: billing } = useBilling();
   const { addToast } = useToast();
   const playerId = id ? parseInt(id) : undefined;
@@ -54,10 +60,10 @@ export function PlayerReportPage() {
   const generateInsights = useGeneratePerformanceInsights();
 
   if (isLoading) return <ReportSkeleton />;
-  if (isError) return <PageWrapper><ErrorState thing="the report" onRetry={() => refetch()} /></PageWrapper>;
+  if (isError) return <PageWrapper><ErrorState thing={tr('reports.theReport', 'the report')} onRetry={() => refetch()} /></PageWrapper>;
   if (!report) return (
     <PageWrapper>
-      <EmptyState title="Report not found" description="Could not load player report" action={{ label: 'Back', onClick: () => navigate('/reports') }} />
+      <EmptyState title={tr('reports.reportNotFound', 'Report not found')} description={tr('reports.couldNotLoadPlayer', 'Could not load player report')} action={{ label: tr('common.back', 'Back'), onClick: () => navigate('/reports') }} />
     </PageWrapper>
   );
 
@@ -73,7 +79,7 @@ export function PlayerReportPage() {
 
   const lineData: Array<{ name: string; [key: string]: string | number }> = sorted.map(a => {
     const point: { name: string; [key: string]: string | number } = {
-      name: new Date(a.dateRecorded).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      name: formatDate(a.dateRecorded, { month: 'short', day: 'numeric' }),
     };
     a.statScores?.forEach(s => { point[s.statCategoryName] = s.score; });
     return point;
@@ -88,7 +94,7 @@ export function PlayerReportPage() {
   }));
 
   const matchBarData = recentMatches.map(m => ({
-    name: `${m.opponent} (${new Date(m.matchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })})`,
+    name: `${m.opponent} (${formatDate(m.matchDate, { month: 'short', day: 'numeric' })})`,
     rating: m.performanceRating,
   }));
 
@@ -101,17 +107,17 @@ export function PlayerReportPage() {
     const sorted2 = [...entries].sort((a, b) => a[1] - b[1]);
     const weakest = sorted2[0];
     const strongest = sorted2[sorted2.length - 1];
-    insights.push({ text: `${weakest[0]} is the weakest area at ${weakest[1].toFixed(1)}/10`, type: 'bad' });
-    insights.push({ text: `${strongest[0]} is the strongest area at ${strongest[1].toFixed(1)}/10`, type: 'good' });
+    insights.push({ text: tr('reports.insightWeakest', '{{name}} is the weakest area at {{score}}/10', { name: weakest[0], score: weakest[1].toFixed(1) }), type: 'bad' });
+    insights.push({ text: tr('reports.insightStrongest', '{{name}} is the strongest area at {{score}}/10', { name: strongest[0], score: strongest[1].toFixed(1) }), type: 'good' });
   }
   if (latest) {
     const daysSince = (Date.now() - new Date(latest.dateRecorded).getTime()) / 86400000;
-    if (daysSince > 30) insights.push({ text: `No assessments in the last 30 days`, type: 'neutral' });
+    if (daysSince > 30) insights.push({ text: tr('reports.insightNoRecent', 'No assessments in the last 30 days'), type: 'neutral' });
   } else {
-    insights.push({ text: 'No assessments recorded yet', type: 'neutral' });
+    insights.push({ text: tr('reports.insightNoneYet', 'No assessments recorded yet'), type: 'neutral' });
   }
   if (activeInjuries.length) {
-    insights.push({ text: 'Active injury may be affecting performance', type: 'bad' });
+    insights.push({ text: tr('reports.insightActiveInjury', 'Active injury may be affecting performance'), type: 'bad' });
   }
   if (sorted.length >= 2) {
     const firstAvg = sorted[0].statScores?.reduce((s, x) => s + x.score, 0) / (sorted[0].statScores?.length || 1);
@@ -120,8 +126,8 @@ export function PlayerReportPage() {
     if (change !== null) {
       insights.push(
         change > 0
-          ? { text: `Overall score improved ${change.toFixed(0)}% from first to latest assessment`, type: 'good' }
-          : { text: `Overall score declined ${Math.abs(change).toFixed(0)}% from first to latest assessment`, type: 'bad' }
+          ? { text: tr('reports.insightImproved', 'Overall score improved {{pct}}% from first to latest assessment', { pct: change.toFixed(0) }), type: 'good' }
+          : { text: tr('reports.insightDeclined', 'Overall score declined {{pct}}% from first to latest assessment', { pct: Math.abs(change).toFixed(0) }), type: 'bad' }
       );
     }
   }
@@ -145,7 +151,7 @@ export function PlayerReportPage() {
       const result = await generateInsights.mutateAsync(playerId);
       setAiInsights(result.insights);
     } catch {
-      setAiError('AI analysis failed. Please try again.');
+      setAiError(tr('reports.aiFailed', 'AI analysis failed. Please try again.'));
     }
   }
 
@@ -168,7 +174,7 @@ export function PlayerReportPage() {
   async function handleExportPdf() {
     // PDF export is a Pro feature (generated client-side, so it must be gated here).
     if (billing && !billing.limits.pdf) {
-      addToast('PDF export is available on the Pro plan.', 'info');
+      addToast(tr('reports.pdfProOnly', 'PDF export is available on the Pro plan.'), 'info');
       navigate('/settings/billing');
       return;
     }
@@ -190,13 +196,13 @@ export function PlayerReportPage() {
       actions={
         <div className="flex gap-2">
           <Button variant="secondary" size="sm" onClick={() => navigate('/reports')}>
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16} /> {tr('common.back', 'Back')}
           </Button>
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
-            <Printer size={16} /> Print
+            <Printer size={16} /> {tr('reports.print', 'Print')}
           </Button>
           <Button size="sm" onClick={handleExportPdf} isLoading={exporting}>
-            <Download size={16} /> {exporting ? 'Generating PDF…' : 'Export PDF'}
+            <Download size={16} /> {exporting ? tr('reports.generatingPdf', 'Generating PDF…') : tr('reports.exportPdf', 'Export PDF')}
           </Button>
         </div>
       }
@@ -211,17 +217,17 @@ export function PlayerReportPage() {
           <div className="flex flex-wrap gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
             {player.positionName && <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">{player.positionName}</span>}
             {player.teamName && <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">{player.teamName}</span>}
-            {player.sportName && <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-xs font-medium text-indigo-700 dark:text-indigo-300">{player.sportName}</span>}
+            {player.sportName && <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-xs font-medium text-indigo-700 dark:text-indigo-300">{labels.sport(player.sportName)}</span>}
           </div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {player.fitnessLevel != null && (
             <span className="px-3 py-1.5 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
-              Fitness {player.fitnessLevel}/10
+              {tr('reports.fitnessLevel', 'Fitness {{level}}/10', { level: player.fitnessLevel })}
             </span>
           )}
           <Link to={`/players/${player.id}/nutrition`} className="text-sm text-indigo-500 hover:underline font-medium">
-            View Nutrition →
+            {tr('reports.viewNutrition', 'View Nutrition →')}
           </Link>
         </div>
       </div>
@@ -231,14 +237,14 @@ export function PlayerReportPage() {
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Activity size={14} className="text-indigo-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Assessments</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.count', 'Assessments')}</p>
           </div>
           <p className="text-2xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
         </div>
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={14} className="text-emerald-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Current Avg Score</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('reports.currentAvgScore', 'Current Avg Score')}</p>
           </div>
           {latestAvg !== null ? (
             <p className="text-2xl font-black" style={{
@@ -249,7 +255,7 @@ export function PlayerReportPage() {
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Trophy size={14} className="text-amber-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Best Category</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('reports.bestCategory', 'Best Category')}</p>
           </div>
           {bestCategory ? (
             <>
@@ -261,7 +267,7 @@ export function PlayerReportPage() {
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             {overallTrend !== null && overallTrend >= 0 ? <TrendingUp size={14} className="text-green-500" /> : <TrendingDown size={14} className="text-red-500" />}
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Improvement</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.improvement', 'Improvement')}</p>
           </div>
           {overallTrend !== null ? (
             <p className={`text-2xl font-black ${overallTrend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -277,15 +283,15 @@ export function PlayerReportPage() {
           <AlertTriangle size={18} className="shrink-0" />
           <span className="text-sm font-medium">
             {activeInjuries.length === 1
-              ? `Active injury: ${activeInjuries[0].injuryType}`
-              : `${activeInjuries.length} active injuries may be affecting performance`}
+              ? tr('reports.activeInjuryOne', 'Active injury: {{type}}', { type: activeInjuries[0].injuryType })
+              : tr('reports.activeInjuriesMany', '{{count}} active injuries may be affecting performance', { count: activeInjuries.length })}
           </span>
         </div>
       )}
 
       {/* Insights */}
       {insights.length > 0 && (
-        <Card header="Auto-generated Insights">
+        <Card header={tr('reports.autoInsights', 'Auto-generated Insights')}>
           <ul className="space-y-2">
             {insights.map((ins, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">
@@ -304,7 +310,7 @@ export function PlayerReportPage() {
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <span className="flex items-center gap-2">
             <Sparkles size={15} className="text-violet-500" />
-            AI Performance Analysis
+            {tr('reports.aiPerformanceAnalysis', 'AI Performance Analysis')}
           </span>
           <button
             onClick={handleGenerateInsights}
@@ -312,19 +318,19 @@ export function PlayerReportPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 transition-all shadow-md shadow-indigo-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
           >
             <Sparkles size={12} />
-            {aiInsights ? 'Regenerate' : 'Generate AI Insights'}
+            {aiInsights ? tr('common.regenerate', 'Regenerate') : tr('reports.generateAiInsights', 'Generate AI Insights')}
           </button>
         </div>
       }>
         {isGenerating && (
           <AILoadingPanel
             compact
-            primaryText="Analyzing performance data..."
+            primaryText={tr('reports.aiAnalyzingPerformance', 'Analyzing performance data...')}
             messages={[
-              'Reviewing assessment history...',
-              'Identifying strengths and weaknesses...',
-              'Generating data-driven insights...',
-              'Finalizing analysis...',
+              tr('reports.aiMsgReviewHistory', 'Reviewing assessment history...'),
+              tr('reports.aiMsgIdentifyStrengths', 'Identifying strengths and weaknesses...'),
+              tr('reports.aiMsgGenerateInsights', 'Generating data-driven insights...'),
+              tr('reports.aiMsgFinalizing', 'Finalizing analysis...'),
             ]}
             estimatedSeconds={10}
           />
@@ -332,12 +338,12 @@ export function PlayerReportPage() {
         {aiError && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
             {aiError}
-            <button onClick={handleGenerateInsights} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+            <button onClick={handleGenerateInsights} className="ml-auto text-xs font-semibold underline cursor-pointer">{tr('common.retry', 'Retry')}</button>
           </div>
         )}
         {!aiInsights && !isGenerating && !aiError && (
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-            Click "Generate AI Insights" to get data-driven analysis from Claude.
+            {tr('reports.aiPlayerHint', 'Click "Generate AI Insights" to get data-driven analysis from Claude.')}
           </p>
         )}
         {aiInsights && !isGenerating && (
@@ -361,17 +367,17 @@ export function PlayerReportPage() {
       {/* Performance over time */}
       <Card header={
         <div>
-          <p className="font-semibold text-gray-800 dark:text-gray-100">Performance Over Time</p>
+          <p className="font-semibold text-gray-800 dark:text-gray-100">{tr('reports.performanceOverTime', 'Performance Over Time')}</p>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 font-normal">
-            Score per stat across assessment periods (0–10) · click a stat to focus it
+            {tr('reports.performanceOverTimeSub', 'Score per stat across assessment periods (0–10) · click a stat to focus it')}
           </p>
         </div>
       }>
         {sorted.length < 2 ? (
           <EmptyState
-            title="Not enough data"
-            description="Needs at least 2 assessments to show trends"
-            action={{ label: 'Add Assessment', onClick: () => navigate(`/players/${player.id}/assessment`) }}
+            title={tr('reports.notEnoughData', 'Not enough data')}
+            description={tr('reports.needTwoAssessments', 'Needs at least 2 assessments to show trends')}
+            action={{ label: tr('assessment.addAssessment', 'Add Assessment'), onClick: () => navigate(`/players/${player.id}/assessment`) }}
           />
         ) : (
           <>
@@ -406,7 +412,7 @@ export function PlayerReportPage() {
                   onClick={() => setFocusedCategory(null)}
                   className="text-xs px-3 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-gray-400 transition-colors cursor-pointer"
                 >
-                  Show all
+                  {tr('reports.showAll', 'Show all')}
                 </button>
               )}
             </div>
@@ -419,7 +425,7 @@ export function PlayerReportPage() {
               }))}
               height={300}
               focusedKey={focusedCategory}
-              yAxisLabel="Score / 10"
+              yAxisLabel={tr('reports.scoreOutOf10', 'Score / 10')}
             />
           </>
         )}
@@ -427,18 +433,18 @@ export function PlayerReportPage() {
 
       {/* Radar chart */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card header={previous ? 'Skill Radar — Current vs Previous' : 'Skill Radar — Latest'}>
+        <Card header={previous ? tr('reports.skillRadarVs', 'Skill Radar — Current vs Previous') : tr('reports.skillRadarLatest', 'Skill Radar — Latest')}>
           {!latest ? (
-            <EmptyState title="No assessments" description="No data to display" />
+            <EmptyState title={tr('reports.noAssessments', 'No assessments')} description={tr('reports.noDataToDisplay', 'No data to display')} />
           ) : (
             <RadarChartWrapper data={radarData} showPrevious={!!previous} height={380} />
           )}
         </Card>
 
         {/* Improvement trends */}
-        <Card header="Improvement Trends">
+        <Card header={tr('reports.improvementTrends', 'Improvement Trends')}>
           {trends.length === 0 ? (
-            <EmptyState title="No data" description="No assessment data available" />
+            <EmptyState title={tr('reports.noData', 'No data')} description={tr('reports.noAssessmentDataAvailable', 'No assessment data available')} />
           ) : (
             <div className="space-y-3">
               {trends.map(t => (
@@ -470,22 +476,22 @@ export function PlayerReportPage() {
       </div>
 
       {/* Assessment history table */}
-      <Card header="Assessment History">
+      <Card header={tr('assessment.assessmentHistory', 'Assessment History')}>
         {!assessments.length ? (
           <EmptyState
-            title="No assessments"
-            description="No assessments recorded yet"
-            action={{ label: 'Add Assessment', onClick: () => navigate(`/players/${player.id}/assessment`) }}
+            title={tr('reports.noAssessments', 'No assessments')}
+            description={tr('reports.noAssessmentsRecorded', 'No assessments recorded yet')}
+            action={{ label: tr('assessment.addAssessment', 'Add Assessment'), onClick: () => navigate(`/players/${player.id}/assessment`) }}
           />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 text-left">
-                  <th className="pb-2 pr-4 font-medium">Date</th>
-                  <th className="pb-2 pr-4 font-medium">Period</th>
-                  <th className="pb-2 pr-4 font-medium">Avg Score</th>
-                  <th className="pb-2 font-medium"># Stats</th>
+                  <th className="pb-2 pr-4 font-medium">{tr('assessment.date', 'Date')}</th>
+                  <th className="pb-2 pr-4 font-medium">{tr('assessment.periodLabel', 'Period')}</th>
+                  <th className="pb-2 pr-4 font-medium">{tr('reports.avgScore', 'Avg Score')}</th>
+                  <th className="pb-2 font-medium">{tr('reports.numStats', '# Stats')}</th>
                   <th className="pb-2" />
                 </tr>
               </thead>
@@ -502,7 +508,7 @@ export function PlayerReportPage() {
                         onClick={() => setExpandedRow(isExpanded ? null : a.id)}
                       >
                         <td className="py-2.5 pr-4 text-gray-700 dark:text-gray-300">
-                          {new Date(a.dateRecorded).toLocaleDateString()}
+                          {formatDate(a.dateRecorded)}
                         </td>
                         <td className="py-2.5 pr-4 text-gray-500 dark:text-gray-400">{a.assessmentPeriodName}</td>
                         <td className="py-2.5 pr-4">
@@ -540,22 +546,22 @@ export function PlayerReportPage() {
       </Card>
 
       {/* Match performance */}
-      <Card header="Match Performance">
+      <Card header={tr('reports.matchPerformance', 'Match Performance')}>
         {!recentMatches.length ? (
-          <EmptyState title="No match data" description="No match performances recorded" />
+          <EmptyState title={tr('reports.noMatchData', 'No match data')} description={tr('reports.noMatchPerformances', 'No match performances recorded')} />
         ) : (
           <BarChartWrapper
             data={matchBarData}
-            series={[{ key: 'rating', name: 'Performance Rating', color: '#6366f1' }]}
+            series={[{ key: 'rating', name: tr('reports.performanceRating', 'Performance Rating'), color: '#6366f1' }]}
             height={240}
           />
         )}
       </Card>
 
       {/* Injury history */}
-      <Card header="Injury History">
+      <Card header={tr('reports.injuryHistory', 'Injury History')}>
         {!injuries.length ? (
-          <EmptyState title="No injuries recorded" description="No injury history" />
+          <EmptyState title={tr('reports.noInjuriesRecorded', 'No injuries recorded')} description={tr('reports.noInjuryHistory', 'No injury history')} />
         ) : (
           <div className="space-y-3">
             {injuries.map(inj => (
@@ -563,16 +569,16 @@ export function PlayerReportPage() {
                 <div>
                   <p className="font-medium text-gray-800 dark:text-gray-200 text-sm">{inj.injuryType}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {new Date(inj.injuryDate).toLocaleDateString()}
-                    {inj.expectedReturnDate && ` · Expected return: ${new Date(inj.expectedReturnDate).toLocaleDateString()}`}
+                    {formatDate(inj.injuryDate)}
+                    {inj.expectedReturnDate && ` · ${tr('reports.expectedReturn', 'Expected return: {{date}}', { date: formatDate(inj.expectedReturnDate) })}`}
                   </p>
                 </div>
                 <div className="flex gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${SEVERITY_COLORS[inj.severity] ?? ''}`}>
-                    {inj.severity}
+                    {labels.generic('severity', inj.severity)}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${RECOVERY_COLORS[inj.recoveryStatus] ?? ''}`}>
-                    {inj.recoveryStatus === 'FullyRecovered' ? 'Recovered' : inj.recoveryStatus}
+                    {inj.recoveryStatus === 'FullyRecovered' ? labels.status('Recovered') : labels.status(inj.recoveryStatus)}
                   </span>
                 </div>
               </div>

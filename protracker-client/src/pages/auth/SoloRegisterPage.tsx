@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx } from 'clsx';
 import {
@@ -11,6 +12,7 @@ import type { DietaryRestrictionInput } from '../../api/joinApi';
 import { useAuth } from '../../context/AuthContext';
 import { Spinner } from '../../components/ui/Spinner';
 import { preloadDashboard } from '../../routes/lazyPages';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { cmToFtIn, ftInToCm, kgToLb, lbToKg } from '../../utils/units';
 
 // Visuals per sport id (names come from the API; ids are stable seed data).
@@ -73,8 +75,12 @@ const RESTRICTION_SEVERITIES = [
 const STEP_TITLES = ['Account', 'Sport', 'Level', 'Body', 'Goals', 'Diet', 'Start'];
 
 export function SoloRegisterPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const STEP_KEYS = ['stepAccount', 'stepSport', 'stepLevel', 'stepBody', 'stepGoals', 'stepDiet', 'stepStart'];
 
   const [sports, setSports] = useState<SoloSportOption[] | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -201,7 +207,7 @@ export function SoloRegisterPage() {
       preloadDashboard('SoloAthlete');
       navigate('/solo-dashboard', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not complete registration.');
+      setError(err instanceof Error ? err.message : t('register.registrationFailed', 'Could not complete registration.'));
       setSubmitting(false);
     }
   };
@@ -211,8 +217,8 @@ export function SoloRegisterPage() {
       <div className="min-h-screen flex items-center justify-center bg-[#0b0d12] px-4">
         <div className="w-full max-w-md rounded-2xl border border-gray-800 bg-gray-900/70 p-8 text-center">
           <AlertCircle className="mx-auto text-red-400 mb-3" size={24} />
-          <p className="text-sm text-gray-300">Couldn't load the sports list. Check your connection and try again.</p>
-          <Link to="/" className="inline-block mt-4 text-sm text-indigo-400 hover:underline">Back home</Link>
+          <p className="text-sm text-gray-300">{t('register.sportsLoadError', "Couldn't load the sports list. Check your connection and try again.")}</p>
+          <Link to="/" className="inline-block mt-4 text-sm text-indigo-400 hover:underline">{t('register.backHome', 'Back home')}</Link>
         </div>
       </div>
     );
@@ -238,7 +244,7 @@ export function SoloRegisterPage() {
             <span className="text-lg font-bold text-white tracking-tight">ProTracker</span>
           </div>
           <span className="px-2.5 py-1 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-[11px] font-bold uppercase tracking-wide">
-            Solo mode
+            {t('register.soloMode', 'Solo mode')}
           </span>
         </div>
 
@@ -247,7 +253,7 @@ export function SoloRegisterPage() {
           <div className="flex items-center justify-between mb-2">
             {STEP_TITLES.map((title, i) => (
               <span key={title} className={clsx('text-[10px] font-semibold uppercase tracking-wide', i + 1 <= step ? 'text-indigo-400' : 'text-gray-600')}>
-                {title}
+                {t(`register.${STEP_KEYS[i]}`, title)}
               </span>
             ))}
           </div>
@@ -269,28 +275,28 @@ export function SoloRegisterPage() {
               {step === 1 && (
                 <div className="p-6 sm:p-8 space-y-4">
                   <div>
-                    <h2 className="text-lg font-bold text-white">Track your sports performance solo</h2>
-                    <p className="text-xs text-gray-400 mt-1">No coach, no team required — you're in charge of your own progress.</p>
+                    <h2 className="text-lg font-bold text-white">{t('register.soloAccountTitle', 'Track your sports performance solo')}</h2>
+                    <p className="text-xs text-gray-400 mt-1">{t('register.soloAccountSubtitle', "No coach, no team required — you're in charge of your own progress.")}</p>
                   </div>
                   <div>
-                    <label className={labelCls}>Full name</label>
+                    <label className={labelCls}>{t('auth.fullName', 'Full name')}</label>
                     <div className="relative">
                       <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder="e.g. Jordan Smith" className={iconInputCls} autoFocus />
+                      <input value={fullName} onChange={e => setFullName(e.target.value)} placeholder={t('register.namePlaceholder', 'e.g. Jordan Smith')} className={iconInputCls} autoFocus />
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Email</label>
+                    <label className={labelCls}>{t('auth.email', 'Email')}</label>
                     <div className="relative">
                       <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className={iconInputCls} />
+                      <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('register.emailPlaceholder', 'you@example.com')} className={iconInputCls} />
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Password</label>
+                    <label className={labelCls}>{t('auth.password', 'Password')}</label>
                     <div className="relative">
                       <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password" className={iconInputCls} />
+                      <input type={showPw ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder={t('register.createPasswordPlaceholder', 'Create a password')} className={iconInputCls} />
                       <button type="button" onClick={() => setShowPw(s => !s)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 cursor-pointer">
                         {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
@@ -300,23 +306,23 @@ export function SoloRegisterPage() {
                         <div className="flex-1 h-1.5 rounded-full bg-gray-800 overflow-hidden">
                           <div className={clsx('h-full transition-all', strength.color)} style={{ width: strength.ok ? '100%' : password.length >= 8 ? '66%' : '33%' }} />
                         </div>
-                        <span className="text-[11px] text-gray-400">{strength.label}</span>
+                        <span className="text-[11px] text-gray-400">{t(strength.ok ? 'auth.strong' : password.length >= 8 ? 'auth.fair' : 'auth.weak', strength.label)}</span>
                       </div>
                     )}
-                    <p className="text-[11px] text-gray-500 mt-1.5">At least 8 characters, with an uppercase letter and a number.</p>
+                    <p className="text-[11px] text-gray-500 mt-1.5">{t('auth.passwordHint', 'At least 8 characters, with an uppercase letter and a number.')}</p>
                   </div>
                   <div>
-                    <label className={labelCls}>Confirm password</label>
+                    <label className={labelCls}>{t('auth.confirmPassword', 'Confirm password')}</label>
                     <div className="relative">
                       <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input type={showPw ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat your password" className={iconInputCls} />
+                      <input type={showPw ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('register.repeatPasswordPlaceholder', 'Repeat your password')} className={iconInputCls} />
                     </div>
                     {confirm.length > 0 && password !== confirm && (
-                      <p className="text-[11px] text-red-400 mt-1.5">Passwords don't match.</p>
+                      <p className="text-[11px] text-red-400 mt-1.5">{t('auth.passwordsNoMatch', "Passwords don't match.")}</p>
                     )}
                   </div>
                   <p className="text-center text-xs text-gray-500">
-                    Already have an account? <Link to="/login" className="text-indigo-400 hover:underline">Sign in instead</Link>
+                    {t('auth.hasAccount', 'Already have an account?')} <Link to="/login" className="text-indigo-400 hover:underline">{t('register.signInInstead', 'Sign in instead')}</Link>
                   </p>
                 </div>
               )}
@@ -325,8 +331,8 @@ export function SoloRegisterPage() {
               {step === 2 && (
                 <div className="p-6 sm:p-8 space-y-4">
                   <div>
-                    <h2 className="text-lg font-bold text-white">What sport do you play?</h2>
-                    <p className="text-xs text-gray-400 mt-1">Your assessments, stats and AI plans are tailored to your sport.</p>
+                    <h2 className="text-lg font-bold text-white">{t('register.sportQuestion', 'What sport do you play?')}</h2>
+                    <p className="text-xs text-gray-400 mt-1">{t('register.sportSubtitle', 'Your assessments, stats and AI plans are tailored to your sport.')}</p>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {sports.map(s => {
@@ -346,8 +352,8 @@ export function SoloRegisterPage() {
                           <div className="relative flex items-center gap-3">
                             <span className="text-3xl">{m.emoji}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-white">{s.name}</p>
-                              <p className="text-[11px] text-gray-500">{s.positions.length} positions</p>
+                              <p className="text-sm font-bold text-white">{L.sport(s.name)}</p>
+                              <p className="text-[11px] text-gray-500">{t('register.positionsCount', '{{count}} positions', { count: s.positions.length })}</p>
                             </div>
                             {active && (
                               <span className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0">
@@ -366,25 +372,25 @@ export function SoloRegisterPage() {
               {step === 3 && (
                 <div className="p-6 sm:p-8 space-y-5">
                   <div>
-                    <h2 className="text-lg font-bold text-white">Your position & level</h2>
-                    <p className="text-xs text-gray-400 mt-1">{selectedSport ? `${meta.emoji} ${selectedSport.name}` : ''}</p>
+                    <h2 className="text-lg font-bold text-white">{t('register.positionLevelTitle', 'Your position & level')}</h2>
+                    <p className="text-xs text-gray-400 mt-1">{selectedSport ? `${meta.emoji} ${L.sport(selectedSport.name)}` : ''}</p>
                   </div>
                   <div>
-                    <label className={labelCls}>Position</label>
+                    <label className={labelCls}>{t('register.position', 'Position')}</label>
                     <div className="relative">
                       <select
                         value={positionId}
                         onChange={e => setPositionId(e.target.value ? Number(e.target.value) : '')}
                         className={clsx(inputCls, 'appearance-none cursor-pointer', positionId === '' && 'text-gray-500')}
                       >
-                        <option value="">Choose your position…</option>
+                        <option value="">{t('register.choosePosition', 'Choose your position…')}</option>
                         {selectedSport?.positions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                       <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Skill level</label>
+                    <label className={labelCls}>{t('register.skillLevel', 'Skill level')}</label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       {SKILL_LEVELS.map(l => (
                         <button
@@ -399,16 +405,16 @@ export function SoloRegisterPage() {
                           )}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-bold text-white">{l.label}</span>
+                            <span className="text-sm font-bold text-white">{t(`register.skill${l.value}`, l.label)}</span>
                             {skillLevel === l.value && <Check size={14} className="text-indigo-400" />}
                           </div>
-                          <p className="text-[11px] text-gray-400 mt-1 leading-snug">{l.desc}</p>
+                          <p className="text-[11px] text-gray-400 mt-1 leading-snug">{t(`register.skill${l.value}Desc`, l.desc)}</p>
                         </button>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>How often do you train?</label>
+                    <label className={labelCls}>{t('register.trainFrequencyQuestion', 'How often do you train?')}</label>
                     <div className="flex flex-wrap gap-1.5">
                       {FREQUENCIES.map(f => (
                         <button
@@ -422,7 +428,7 @@ export function SoloRegisterPage() {
                               : 'bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500',
                           )}
                         >
-                          {f.label}
+                          {t(`register.freq${f.value}`, f.label)}
                         </button>
                       ))}
                     </div>
@@ -433,16 +439,16 @@ export function SoloRegisterPage() {
               {/* ── Step 4: Physical profile ── */}
               {step === 4 && (
                 <div className="p-6 sm:p-8 space-y-4">
-                  <h2 className="text-lg font-bold text-white">Your physical profile</h2>
+                  <h2 className="text-lg font-bold text-white">{t('register.physicalProfileTitle', 'Your physical profile')}</h2>
                   <div>
-                    <label className={labelCls}>Date of birth</label>
+                    <label className={labelCls}>{t('register.dateOfBirth', 'Date of birth')}</label>
                     <input type="date" value={dob} onChange={e => setDob(e.target.value)} max={new Date().toISOString().slice(0, 10)} className={clsx(inputCls, 'scheme-dark')} />
-                    {age != null && age >= 5 && age <= 90 && <p className="text-[11px] text-gray-500 mt-1.5">{age} years old</p>}
+                    {age != null && age >= 5 && age <= 90 && <p className="text-[11px] text-gray-500 mt-1.5">{t('register.yearsOld', '{{count}} years old', { count: age })}</p>}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Height</label>
+                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('register.height', 'Height')}</label>
                         <div className="flex rounded-lg bg-gray-800 p-0.5">
                           {(['cm', 'ftin'] as const).map(u => (
                             <button
@@ -472,14 +478,14 @@ export function SoloRegisterPage() {
                         </div>
                       ) : (
                         <div className="flex gap-2">
-                          <input type="number" inputMode="numeric" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" className={inputCls} aria-label="feet" />
-                          <input type="number" inputMode="numeric" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="9" className={inputCls} aria-label="inches" />
+                          <input type="number" inputMode="numeric" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" className={inputCls} aria-label={t('register.feet', 'feet')} />
+                          <input type="number" inputMode="numeric" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="9" className={inputCls} aria-label={t('register.inches', 'inches')} />
                         </div>
                       )}
                     </div>
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Weight</label>
+                        <label className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{t('register.weight', 'Weight')}</label>
                         <div className="flex rounded-lg bg-gray-800 p-0.5">
                           {(['kg', 'lb'] as const).map(u => (
                             <button
@@ -509,7 +515,7 @@ export function SoloRegisterPage() {
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>Jersey # <span className="text-gray-600 normal-case">(optional)</span></label>
+                    <label className={labelCls}>{t('register.jerseyNumber', 'Jersey #')} <span className="text-gray-600 normal-case">{t('register.optionalParen', '(optional)')}</span></label>
                     <input type="number" inputMode="numeric" min={0} max={999} value={jersey} onChange={e => setJersey(e.target.value)} placeholder="23" className={inputCls} />
                   </div>
                 </div>
@@ -523,29 +529,29 @@ export function SoloRegisterPage() {
                       <Target size={18} className="text-indigo-400" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-white">Your goals</h2>
-                      <p className="text-xs text-gray-400 mt-0.5">Optional — used to personalize your AI training and nutrition plans.</p>
+                      <h2 className="text-lg font-bold text-white">{t('register.goalsTitle', 'Your goals')}</h2>
+                      <p className="text-xs text-gray-400 mt-0.5">{t('register.goalsSubtitle', 'Optional — used to personalize your AI training and nutrition plans.')}</p>
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls}>What do you want to improve?</label>
+                    <label className={labelCls}>{t('register.improveQuestion', 'What do you want to improve?')}</label>
                     <textarea
                       value={goals}
                       onChange={e => setGoals(e.target.value)}
                       rows={3}
                       maxLength={500}
-                      placeholder='e.g. "Improve my shooting accuracy and build more stamina for full matches"'
+                      placeholder={t('register.goalsPlaceholder', 'e.g. "Improve my shooting accuracy and build more stamina for full matches"')}
                       className={clsx(inputCls, 'resize-none')}
                     />
                   </div>
                   <div>
-                    <label className={labelCls}>What motivates you? <span className="text-gray-600 normal-case">(optional)</span></label>
+                    <label className={labelCls}>{t('register.motivationQuestion', 'What motivates you?')} <span className="text-gray-600 normal-case">{t('register.optionalParen', '(optional)')}</span></label>
                     <textarea
                       value={motivation}
                       onChange={e => setMotivation(e.target.value)}
                       rows={3}
                       maxLength={500}
-                      placeholder="e.g. I want to make the varsity team next season"
+                      placeholder={t('register.motivationPlaceholder', 'e.g. I want to make the varsity team next season')}
                       className={clsx(inputCls, 'resize-none')}
                     />
                   </div>
@@ -560,8 +566,8 @@ export function SoloRegisterPage() {
                       <Utensils size={18} className="text-emerald-400" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-white">Any dietary restrictions or allergies?</h2>
-                      <p className="text-xs text-gray-400 mt-0.5">Used for your AI nutrition planning. You can skip this.</p>
+                      <h2 className="text-lg font-bold text-white">{t('register.dietaryTitle', 'Any dietary restrictions or allergies?')}</h2>
+                      <p className="text-xs text-gray-400 mt-0.5">{t('register.dietarySubtitleSolo', 'Used for your AI nutrition planning. You can skip this.')}</p>
                     </div>
                   </div>
 
@@ -573,13 +579,13 @@ export function SoloRegisterPage() {
                             'px-2 py-0.5 rounded-full text-[10px] font-bold',
                             r.severity === 'Hard' ? 'bg-red-500/15 text-red-400' : r.severity === 'Lifestyle' ? 'bg-amber-500/15 text-amber-400' : 'bg-blue-500/15 text-blue-400',
                           )}>
-                            {RESTRICTION_SEVERITIES.find(s => s.value === r.severity)?.label}
+                            {t(`register.rsev${r.severity}`, RESTRICTION_SEVERITIES.find(s => s.value === r.severity)?.label ?? r.severity)}
                           </span>
                           <span className="text-sm text-white font-medium flex-1 truncate">
-                            {RESTRICTION_CATEGORIES.find(c => c.value === r.category)?.label ?? r.category}
+                            {t(`register.rcat${r.category}`, RESTRICTION_CATEGORIES.find(c => c.value === r.category)?.label ?? r.category)}
                             {r.specificItem ? ` · ${r.specificItem}` : ''}
                           </span>
-                          <span className="text-[10px] text-gray-500">{RESTRICTION_TYPES.find(t => t.value === r.type)?.label}</span>
+                          <span className="text-[10px] text-gray-500">{t(`register.rtype${r.type}`, RESTRICTION_TYPES.find(rt => rt.value === r.type)?.label ?? r.type)}</span>
                           <button onClick={() => setRestrictions(rs => rs.filter((_, j) => j !== i))} className="text-gray-500 hover:text-red-400 cursor-pointer p-0.5">
                             <Trash2 size={14} />
                           </button>
@@ -591,26 +597,26 @@ export function SoloRegisterPage() {
                   <div className="rounded-xl border border-gray-800 bg-gray-950/50 p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={labelCls}>Type</label>
+                        <label className={labelCls}>{t('common.type', 'Type')}</label>
                         <div className="relative">
                           <select value={rType} onChange={e => setRType(e.target.value as DietaryRestrictionInput['type'])} className={clsx(inputCls, 'appearance-none cursor-pointer')}>
-                            {RESTRICTION_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                            {RESTRICTION_TYPES.map(opt => <option key={opt.value} value={opt.value}>{t(`register.rtype${opt.value}`, opt.label)}</option>)}
                           </select>
                           <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
                       </div>
                       <div>
-                        <label className={labelCls}>Severity</label>
+                        <label className={labelCls}>{t('register.severity', 'Severity')}</label>
                         <div className="relative">
                           <select value={rSeverity} onChange={e => setRSeverity(e.target.value as DietaryRestrictionInput['severity'])} className={clsx(inputCls, 'appearance-none cursor-pointer')}>
-                            {RESTRICTION_SEVERITIES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                            {RESTRICTION_SEVERITIES.map(s => <option key={s.value} value={s.value}>{t(`register.rsev${s.value}`, s.label)}</option>)}
                           </select>
                           <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
                         </div>
                       </div>
                     </div>
                     <div>
-                      <label className={labelCls}>Category</label>
+                      <label className={labelCls}>{t('common.category', 'Category')}</label>
                       <div className="flex flex-wrap gap-1.5">
                         {RESTRICTION_CATEGORIES.map(c => (
                           <button
@@ -624,14 +630,14 @@ export function SoloRegisterPage() {
                                 : 'bg-gray-800/60 border-gray-700 text-gray-300 hover:border-gray-500',
                             )}
                           >
-                            {c.label}
+                            {t(`register.rcat${c.value}`, c.label)}
                           </button>
                         ))}
                       </div>
                     </div>
                     <div>
-                      <label className={labelCls}>Specific item {rCategory === 'Custom' ? '' : '(optional)'}</label>
-                      <input value={rItem} onChange={e => setRItem(e.target.value)} placeholder={rCategory === 'Custom' ? 'e.g. shellfish' : 'e.g. peanuts'} className={inputCls} />
+                      <label className={labelCls}>{t('register.specificItem', 'Specific item')} {rCategory === 'Custom' ? '' : t('register.optionalParen', '(optional)')}</label>
+                      <input value={rItem} onChange={e => setRItem(e.target.value)} placeholder={rCategory === 'Custom' ? t('register.itemPlaceholderShellfish', 'e.g. shellfish') : t('register.itemPlaceholderPeanuts', 'e.g. peanuts')} className={inputCls} />
                     </div>
                     <button
                       type="button"
@@ -639,7 +645,7 @@ export function SoloRegisterPage() {
                       disabled={rCategory === 'Custom' && !rItem.trim()}
                       className="w-full py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                     >
-                      <Plus size={14} /> Add restriction
+                      <Plus size={14} /> {t('register.addRestriction', 'Add restriction')}
                     </button>
                   </div>
                 </div>
@@ -652,12 +658,12 @@ export function SoloRegisterPage() {
                     <div className="flex items-center gap-4">
                       <span className="text-4xl">{meta.emoji}</span>
                       <div>
-                        <p className="text-white/80 text-sm font-medium">Ready to train solo</p>
-                        <h2 className="text-2xl font-black text-white tracking-tight">{fullName || 'Your account'}</h2>
+                        <p className="text-white/80 text-sm font-medium">{t('register.readyToTrainSolo', 'Ready to train solo')}</p>
+                        <h2 className="text-2xl font-black text-white tracking-tight">{fullName || t('register.yourAccount', 'Your account')}</h2>
                         <div className="flex flex-wrap items-center gap-2 mt-2">
-                          <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{selectedSport?.name}</span>
-                          {skillLevel && <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{skillLevel}</span>}
-                          {frequency && <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{FREQUENCIES.find(f => f.value === frequency)?.label}</span>}
+                          <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{L.sport(selectedSport?.name)}</span>
+                          {skillLevel && <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{t(`register.skill${skillLevel}`, skillLevel)}</span>}
+                          {frequency && <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{t(`register.freq${frequency}`, FREQUENCIES.find(f => f.value === frequency)?.label ?? frequency)}</span>}
                         </div>
                       </div>
                     </div>
@@ -665,15 +671,15 @@ export function SoloRegisterPage() {
                   <div className="p-6 sm:p-8 space-y-4">
                     <div className="rounded-xl border border-gray-800 divide-y divide-gray-800 overflow-hidden">
                       {[
-                        ['Email', email],
-                        ['Date of birth', dob ? `${new Date(dob + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}${age != null ? ` (${age})` : ''}` : '—'],
-                        ['Height / Weight', `${Math.round(heightNum)} cm · ${Math.round(weightNum)} kg`],
-                        ['Position', selectedPosition?.name ?? '—'],
-                        ['Jersey #', jersey || '—'],
-                        ['Goals', goals.trim() || 'Not set'],
-                        ['Dietary restrictions', restrictions.length > 0
-                          ? restrictions.map(r => RESTRICTION_CATEGORIES.find(c => c.value === r.category)?.label + (r.specificItem ? ` (${r.specificItem})` : '')).join(', ')
-                          : 'None'],
+                        [t('auth.email', 'Email'), email],
+                        [t('register.dateOfBirth', 'Date of birth'), dob ? `${new Date(dob + 'T00:00:00').toLocaleDateString(L.locale, { year: 'numeric', month: 'short', day: 'numeric' })}${age != null ? ` (${age})` : ''}` : '—'],
+                        [t('register.heightWeight', 'Height / Weight'), `${Math.round(heightNum)} cm · ${Math.round(weightNum)} kg`],
+                        [t('register.position', 'Position'), selectedPosition?.name ?? '—'],
+                        [t('register.jerseyNumber', 'Jersey #'), jersey || '—'],
+                        [t('register.goals', 'Goals'), goals.trim() || t('register.notSet', 'Not set')],
+                        [t('register.dietaryRestrictions', 'Dietary restrictions'), restrictions.length > 0
+                          ? restrictions.map(r => t(`register.rcat${r.category}`, RESTRICTION_CATEGORIES.find(c => c.value === r.category)?.label ?? r.category) + (r.specificItem ? ` (${r.specificItem})` : '')).join(', ')
+                          : t('common.none', 'None')],
                       ].map(([label, value]) => (
                         <div key={label} className="flex items-start justify-between gap-4 px-4 py-2.5 bg-gray-950/40">
                           <span className="text-xs text-gray-500 font-medium pt-0.5 flex-shrink-0">{label}</span>
@@ -694,7 +700,7 @@ export function SoloRegisterPage() {
                       disabled={submitting}
                       className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer flex items-center justify-center gap-2"
                     >
-                      {submitting ? <>Creating your account…</> : <><Sparkles size={16} /> Start Training Solo</>}
+                      {submitting ? <>{t('register.creatingAccount', 'Creating your account…')}</> : <><Sparkles size={16} /> {t('register.startTrainingSolo', 'Start Training Solo')}</>}
                     </button>
                   </div>
                 </div>
@@ -710,11 +716,11 @@ export function SoloRegisterPage() {
                   onClick={() => setStep(s => s - 1)}
                   className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white font-medium transition-colors cursor-pointer"
                 >
-                  <ArrowLeft size={15} /> Back
+                  <ArrowLeft size={15} /> {t('common.back', 'Back')}
                 </button>
               ) : (
                 <Link to="/register" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white font-medium transition-colors">
-                  <ArrowLeft size={15} /> Back
+                  <ArrowLeft size={15} /> {t('common.back', 'Back')}
                 </Link>
               )}
               <div className="flex items-center gap-3">
@@ -723,7 +729,7 @@ export function SoloRegisterPage() {
                     onClick={() => setStep(s => s + 1)}
                     className="text-sm text-gray-500 hover:text-gray-300 font-medium transition-colors cursor-pointer flex items-center gap-1"
                   >
-                    Skip for now <X size={13} />
+                    {t('register.skipForNow', 'Skip for now')} <X size={13} />
                   </button>
                 )}
                 <button
@@ -731,7 +737,7 @@ export function SoloRegisterPage() {
                   disabled={!canNext}
                   className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer"
                 >
-                  Next <ArrowRight size={15} />
+                  {t('common.next', 'Next')} <ArrowRight size={15} />
                 </button>
               </div>
             </div>
@@ -739,7 +745,7 @@ export function SoloRegisterPage() {
         </motion.div>
 
         <p className="text-center text-xs text-gray-600 mt-5">
-          Have a team join code instead? <Link to="/register" className="text-indigo-400 hover:underline">Join your team</Link>
+          {t('register.haveTeamCode', 'Have a team join code instead?')} <Link to="/register" className="text-indigo-400 hover:underline">{t('register.joinYourTeam', 'Join your team')}</Link>
         </p>
       </div>
     </div>

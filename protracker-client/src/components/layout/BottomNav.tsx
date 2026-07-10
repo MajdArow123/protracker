@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad, Heart, Dumbbell, User } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
@@ -7,42 +8,44 @@ import { useUnreadMessageCount } from '../../hooks/useMessages';
 interface Item {
   to: string;
   label: string;
+  labelKey: string;
   icon: typeof Home;
   end?: boolean;
   badge?: 'messages';
 }
 
 const coachItems: Item[] = [
-  { to: '/dashboard', label: 'Home', icon: Home, end: true },
-  { to: '/players', label: 'Players', icon: Users },
-  { to: '/teams', label: 'Teams', icon: Shield },
-  { to: '/tasks', label: 'Tasks', icon: CheckSquare },
-  { to: '/messages', label: 'Chat', icon: MessageSquare, badge: 'messages' },
+  { to: '/dashboard', label: 'Home', labelKey: 'nav.home', icon: Home, end: true },
+  { to: '/players', label: 'Players', labelKey: 'nav.players', icon: Users },
+  { to: '/teams', label: 'Teams', labelKey: 'nav.teams', icon: Shield },
+  { to: '/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+  { to: '/messages', label: 'Chat', labelKey: 'nav.chat', icon: MessageSquare, badge: 'messages' },
 ];
 
 const athleteItems: Item[] = [
-  { to: '/player-dashboard', label: 'Home', icon: Home, end: true },
-  { to: '/player-dashboard/stats', label: 'Stats', icon: TrendingUp },
-  { to: '/player-dashboard/tasks', label: 'Tasks', icon: CheckSquare },
-  { to: '/messages', label: 'Chat', icon: MessageSquare, badge: 'messages' },
-  { to: '/player-dashboard/nutrition', label: 'Nutrition', icon: Salad },
+  { to: '/player-dashboard', label: 'Home', labelKey: 'nav.home', icon: Home, end: true },
+  { to: '/player-dashboard/stats', label: 'Stats', labelKey: 'nav.stats', icon: TrendingUp },
+  { to: '/player-dashboard/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+  { to: '/messages', label: 'Chat', labelKey: 'nav.chat', icon: MessageSquare, badge: 'messages' },
+  { to: '/player-dashboard/nutrition', label: 'Nutrition', labelKey: 'nav.nutrition', icon: Salad },
 ];
 
 const soloItems: Item[] = [
-  { to: '/solo-dashboard', label: 'Home', icon: Home, end: true },
-  { to: '/solo/performance', label: 'Performance', icon: TrendingUp },
-  { to: '/solo/nutrition', label: 'Nutrition', icon: Salad },
-  { to: '/solo/training', label: 'Training', icon: Dumbbell },
-  { to: '/solo/profile', label: 'Profile', icon: User },
+  { to: '/solo-dashboard', label: 'Home', labelKey: 'nav.home', icon: Home, end: true },
+  { to: '/solo/performance', label: 'Performance', labelKey: 'nav.performance', icon: TrendingUp },
+  { to: '/solo/nutrition', label: 'Nutrition', labelKey: 'nav.nutrition', icon: Salad },
+  { to: '/solo/training', label: 'Training', labelKey: 'nav.training', icon: Dumbbell },
+  { to: '/solo/profile', label: 'Profile', labelKey: 'nav.profile', icon: User },
 ];
 
 const parentItems: Item[] = [
-  { to: '/parent-dashboard', label: 'My Children', icon: Heart, end: true },
+  { to: '/parent-dashboard', label: 'My Children', labelKey: 'nav.myChildren', icon: Heart, end: true },
 ];
 
 // Fixed bottom tab bar shown only on phones (< md). Replaces the sidebar for primary
 // navigation; the hamburger drawer remains for overflow items (Reports, Profile, etc.).
 export function BottomNav() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: unread = 0 } = useUnreadMessageCount();
   if (!user) return null;
@@ -70,7 +73,7 @@ export function BottomNav() {
               </span>
             )}
           </span>
-          <span>{item.label}</span>
+          <span>{t(item.labelKey, item.label)}</span>
         </NavLink>
       ))}
     </nav>

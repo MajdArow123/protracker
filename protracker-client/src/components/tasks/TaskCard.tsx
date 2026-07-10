@@ -4,6 +4,8 @@ import { CheckCircle2, Circle, Clock, Pencil, Trash2, Undo2, Dumbbell } from 'lu
 import { clsx } from 'clsx';
 import type { PlayerTask } from '../../types';
 import { PRIORITY_BADGE, CATEGORY_BADGE, PRIORITY_BORDER, isOverdue, formatDate, getInitials } from './taskUtils';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface Props {
   task: PlayerTask;
@@ -18,6 +20,8 @@ interface Props {
 }
 
 export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onIncomplete, isMutating }: Props) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const [noteOpen, setNoteOpen] = useState(false);
   const [note, setNote] = useState('');
   const overdue = isOverdue(task);
@@ -70,14 +74,14 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                   {task.title}
                 </p>
                 <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', CATEGORY_BADGE[task.category])}>
-                  {task.category}
+                  {L.category(task.category)}
                 </span>
                 <span className={clsx('text-[10px] font-semibold px-2 py-0.5 rounded-full', PRIORITY_BADGE[task.priority])}>
-                  {task.priority}
+                  {L.priority(task.priority)}
                 </span>
                 {task.drillId && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400">
-                    <Dumbbell size={9} /> Drill{task.drillDifficulty ? ` · ${task.drillDifficulty}` : ''}
+                    <Dumbbell size={9} /> {t('drills.drill', 'Drill')}{task.drillDifficulty ? ` · ${L.difficulty(task.drillDifficulty)}` : ''}
                   </span>
                 )}
               </div>
@@ -88,7 +92,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                   overdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400',
                 )}>
                   <Clock size={12} />
-                  <span>{overdue ? 'Overdue · ' : 'Due '}{formatDate(task.dueDate)}</span>
+                  <span>{overdue ? t('tasks.overduePrefix', 'Overdue · ') : t('tasks.duePrefix', 'Due ')}{formatDate(task.dueDate)}</span>
                 </div>
               )}
             </div>
@@ -100,7 +104,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                   <button
                     onClick={onEdit}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"
-                    aria-label="Edit task"
+                    aria-label={t('tasks.editTask', 'Edit task')}
                   >
                     <Pencil size={14} />
                   </button>
@@ -109,7 +113,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                   <button
                     onClick={onDelete}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"
-                    aria-label="Delete task"
+                    aria-label={t('tasks.deleteTaskAria', 'Delete task')}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -133,7 +137,9 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
             <div className="mt-3 rounded-xl bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-900/30 px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-semibold text-green-700 dark:text-green-400">
-                  Completed by {task.playerName}{task.completedAt ? ` on ${formatDate(task.completedAt)}` : ''}
+                  {task.completedAt
+                    ? t('tasks.completedByOn', 'Completed by {{name}} on {{date}}', { name: task.playerName, date: formatDate(task.completedAt) })
+                    : t('tasks.completedBy', 'Completed by {{name}}', { name: task.playerName })}
                 </p>
                 {onIncomplete && (
                   <button
@@ -141,7 +147,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                     disabled={isMutating}
                     className="flex items-center gap-1 text-[11px] font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    <Undo2 size={11} /> Undo
+                    <Undo2 size={11} /> {t('common.undo', 'Undo')}
                   </button>
                 )}
               </div>
@@ -161,7 +167,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                     onChange={e => setNote(e.target.value)}
                     rows={2}
                     autoFocus
-                    placeholder="Add a note (optional)…"
+                    placeholder={t('tasks.addNotePlaceholder', 'Add a note (optional)…')}
                     className="w-full rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"
                   />
                   <div className="flex items-center gap-2">
@@ -170,13 +176,13 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                       disabled={isMutating}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
                     >
-                      <CheckCircle2 size={13} /> Confirm Complete
+                      <CheckCircle2 size={13} /> {t('tasks.confirmComplete', 'Confirm Complete')}
                     </button>
                     <button
                       onClick={() => { setNoteOpen(false); setNote(''); }}
                       className="px-3 py-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-xs font-semibold transition-colors cursor-pointer"
                     >
-                      Cancel
+                      {t('common.cancel', 'Cancel')}
                     </button>
                   </div>
                 </div>
@@ -185,7 +191,7 @@ export function TaskCard({ task, showPlayer, onEdit, onDelete, onComplete, onInc
                   onClick={() => setNoteOpen(true)}
                   className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition-all cursor-pointer"
                 >
-                  <CheckCircle2 size={13} /> Mark Complete
+                  <CheckCircle2 size={13} /> {t('tasks.markComplete', 'Mark Complete')}
                 </button>
               )}
             </div>

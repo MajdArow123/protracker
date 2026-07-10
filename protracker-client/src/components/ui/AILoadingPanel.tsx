@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 
@@ -22,6 +23,7 @@ export function AILoadingPanel({
   messageInterval = 4500,
   compact = false,
 }: Props) {
+  const { t } = useTranslation();
   const [msgIdx, setMsgIdx] = useState(0);
   const [progress, setProgress] = useState(0);
   const [slow, setSlow] = useState(false);
@@ -45,7 +47,7 @@ export function AILoadingPanel({
     return () => clearTimeout(t);
   }, []);
 
-  const currentMsg = slow ? 'This is taking longer than usual, hang tight…' : messages[msgIdx];
+  const currentMsg = slow ? t('ui.takingLonger', 'This is taking longer than usual, hang tight…') : messages[msgIdx];
 
   if (compact) {
     return (

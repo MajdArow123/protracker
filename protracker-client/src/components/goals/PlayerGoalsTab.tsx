@@ -9,6 +9,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { CardListSkeleton } from '../ui/Skeleton';
 import { ErrorState } from '../ui/ErrorState';
 import type { PersonalGoal } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
   playerId: number;
@@ -18,6 +19,7 @@ interface Props {
 // Coach view of a player's (non-private) goals on the player detail page. Coaches can add,
 // edit and log progress; private goals never appear here.
 export function PlayerGoalsTab({ playerId, sportId }: Props) {
+  const { t } = useTranslation();
   const query = usePlayerGoals(playerId);
   const goals = query.data ?? [];
 
@@ -35,21 +37,21 @@ export function PlayerGoalsTab({ playerId, sportId }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {goals.length} {goals.length === 1 ? 'goal' : 'goals'} · private goals are hidden from coaches
+          {t('goals.goalsCountPrivacy', '{{count}} goals · private goals are hidden from coaches', { count: goals.length })}
         </p>
         <div className="flex items-center gap-2">
           <button onClick={() => setAiOpen(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 cursor-pointer">
-            <Sparkles size={15} /> Suggest with AI
+            <Sparkles size={15} /> {t('goals.suggestWithAI', 'Suggest with AI')}
           </button>
           <button onClick={openNew} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer">
-            <Plus size={15} /> New Goal
+            <Plus size={15} /> {t('goals.newGoal', 'New Goal')}
           </button>
         </div>
       </div>
 
       {goals.length === 0 ? (
-        <EmptyState icon={<Target />} title="No goals yet" description="Set a goal for this player to start tracking their progress."
-          action={{ label: 'New Goal', onClick: openNew }} />
+        <EmptyState icon={<Target />} title={t('goals.noGoals', 'No goals yet')} description={t('goals.emptyPlayerDesc', 'Set a goal for this player to start tracking their progress.')}
+          action={{ label: t('goals.newGoal', 'New Goal'), onClick: openNew }} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {goals.map(g => (

@@ -11,8 +11,12 @@ import { JournalHeatMap } from '../../components/journal/JournalHeatMap';
 import { MOOD_CONFIG } from '../../components/journal/journalUtils';
 import { useMyJournal, useTodayJournal } from '../../hooks/useJournal';
 import type { JournalEntry } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 export function JournalPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const journalQuery = useMyJournal(90);
   const { data: today } = useTodayJournal();
   const entries = journalQuery.data ?? [];
@@ -37,12 +41,12 @@ export function JournalPage() {
 
   const actions = (
     <Button onClick={writeToday}>
-      {wroteToday ? <><PenLine size={16} className="mr-1.5" /> Edit Today</> : <><Plus size={16} className="mr-1.5" /> Write Today's Entry</>}
+      {wroteToday ? <><PenLine size={16} className="mr-1.5" /> {t('journal.editToday', 'Edit Today')}</> : <><Plus size={16} className="mr-1.5" /> {t('journal.writeTodaysEntry', "Write Today's Entry")}</>}
     </Button>
   );
 
   return (
-    <PageWrapper title="My Journal" actions={actions}>
+    <PageWrapper title={t('journal.myJournal', 'My Journal')} actions={actions}>
       {journalQuery.isLoading ? (
         <CardListSkeleton count={3} />
       ) : journalQuery.isError ? (
@@ -56,9 +60,9 @@ export function JournalPage() {
                 <Check size={18} className="text-green-600 dark:text-green-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Nice work journaling today!</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('journal.niceWorkToday', 'Nice work journaling today!')}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                  You felt <span className={MOOD_CONFIG[today!.mood].color}>{today!.mood.toLowerCase()}</span> today.
+                  {t('journal.youFeltPrefix', 'You felt')} <span className={MOOD_CONFIG[today!.mood].color}>{L.mood(today!.mood).toLowerCase()}</span> {t('journal.todaySuffix', 'today.')}
                 </p>
               </div>
             </div>
@@ -68,8 +72,8 @@ export function JournalPage() {
                 <PenLine size={18} className="text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">Write today's entry</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Reflect on your training and how you're feeling.</p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('journal.writeTodaysEntryLower', "Write today's entry")}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('journal.reflectPrompt', "Reflect on your training and how you're feeling.")}</p>
               </div>
             </button>
           )}
@@ -78,8 +82,8 @@ export function JournalPage() {
           {entries.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Last 3 months</h2>
-                <span className="text-xs text-gray-500 dark:text-gray-400">{entries.length} {entries.length === 1 ? 'entry' : 'entries'}</span>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-white">{t('journal.last3Months', 'Last 3 months')}</h2>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{entries.length === 1 ? t('journal.entryCount', '{{count}} entry', { count: entries.length }) : t('journal.entryCount_plural', '{{count}} entries', { count: entries.length })}</span>
               </div>
               <JournalHeatMap entries={entries} onSelectDate={scrollToDate} />
             </div>
@@ -89,9 +93,9 @@ export function JournalPage() {
           {entries.length === 0 ? (
             <EmptyState
               icon={<BookOpen />}
-              title="Your journal is empty"
-              description="Start reflecting on your training — one entry a day builds a powerful record of your growth."
-              action={{ label: "Write Today's Entry", onClick: writeToday }}
+              title={t('journal.emptyTitle', 'Your journal is empty')}
+              description={t('journal.emptyDesc', 'Start reflecting on your training — one entry a day builds a powerful record of your growth.')}
+              action={{ label: t('journal.writeTodaysEntry', "Write Today's Entry"), onClick: writeToday }}
             />
           ) : (
             <div className="space-y-3">

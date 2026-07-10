@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { Activity, Lock, Eye, EyeOff, AlertCircle, Users, ArrowLeft } from 'lucide-react';
@@ -18,10 +19,17 @@ function passwordStrength(pw: string): { label: string; color: string; ok: boole
 }
 
 export function ParentInviteAcceptPage() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const token = params.get('token') ?? '';
   const navigate = useNavigate();
   const { login } = useAuth();
+
+  const strengthLabels: Record<string, string> = {
+    Weak: t('parent.strengthWeak', 'Weak'),
+    Fair: t('parent.strengthFair', 'Fair'),
+    Strong: t('parent.strengthStrong', 'Strong'),
+  };
 
   const [validating, setValidating] = useState(true);
   const [info, setInfo] = useState<ParentInviteInfo | null>(null);
@@ -62,7 +70,7 @@ export function ParentInviteAcceptPage() {
       await login(info.email, password);
       navigate('/parent-dashboard');
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not accept the invite.';
+      const msg = err instanceof Error ? err.message : t('parent.acceptError', 'Could not accept the invite.');
       setError(msg);
       setSubmitting(false);
     }
@@ -89,10 +97,10 @@ export function ParentInviteAcceptPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mb-4">
               <AlertCircle className="text-red-400" size={22} />
             </div>
-            <h1 className="text-lg font-bold text-white mb-1">Invite not valid</h1>
-            <p className="text-sm text-gray-400 mb-6">This invite link is invalid or has expired. Ask the coach to send a new one.</p>
+            <h1 className="text-lg font-bold text-white mb-1">{t('parent.inviteInvalidTitle', 'Invite not valid')}</h1>
+            <p className="text-sm text-gray-400 mb-6">{t('parent.inviteInvalidDesc', 'This invite link is invalid or has expired. Ask the coach to send a new one.')}</p>
             <Link to="/login" className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:underline">
-              <ArrowLeft size={14} /> Back to sign in
+              <ArrowLeft size={14} /> {t('parent.backToSignIn', 'Back to sign in')}
             </Link>
           </div>
         ) : (
@@ -100,19 +108,19 @@ export function ParentInviteAcceptPage() {
             <div className="flex items-start gap-3 rounded-xl bg-indigo-900/20 border border-indigo-800/50 p-3.5 mb-5">
               <Users size={18} className="text-indigo-400 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-300">
-                <span className="font-semibold text-white">{info.coachName}</span> invited you to follow{' '}
-                <span className="font-semibold text-white">{info.playerName}</span>'s progress on ProTracker
-                (read-only).
+                <span className="font-semibold text-white">{info.coachName}</span> {t('parent.invitedToFollow', 'invited you to follow')}{' '}
+                <span className="font-semibold text-white">{info.playerName}</span>{t('parent.sProgressOn', "'s progress on")} ProTracker{' '}
+                {t('parent.readonlyParen', '(read-only).')}
               </p>
             </div>
 
             <h1 className="text-lg font-bold text-white mb-1">
-              {existing ? 'Confirm your account' : 'Set your password'}
+              {existing ? t('parent.confirmAccount', 'Confirm your account') : t('parent.setPassword', 'Set your password')}
             </h1>
             <p className="text-sm text-gray-400 mb-5">
               {existing
-                ? `Enter your existing ProTracker password to link ${info.playerName}.`
-                : `Create a password for ${info.email}.`}
+                ? t('parent.confirmDesc', 'Enter your existing ProTracker password to link {{name}}.', { name: info.playerName })
+                : t('parent.createDesc', 'Create a password for {{email}}.', { email: info.email })}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -123,7 +131,7 @@ export function ParentInviteAcceptPage() {
                     type={showPw ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder={existing ? 'Your password' : 'Create a password'}
+                    placeholder={existing ? t('parent.yourPassword', 'Your password') : t('parent.createPassword', 'Create a password')}
                     className={inputCls}
                     autoFocus
                   />
@@ -136,11 +144,11 @@ export function ParentInviteAcceptPage() {
                     <div className="flex-1 h-1.5 rounded-full bg-gray-800 overflow-hidden">
                       <div className={clsx('h-full transition-all', strength.color)} style={{ width: strength.ok ? '100%' : password.length >= 8 ? '66%' : '33%' }} />
                     </div>
-                    <span className="text-[11px] text-gray-400">{strength.label}</span>
+                    <span className="text-[11px] text-gray-400">{strengthLabels[strength.label] ?? strength.label}</span>
                   </div>
                 )}
                 {!existing && (
-                  <p className="text-[11px] text-gray-500 mt-1.5">At least 8 characters, with an uppercase letter and a number.</p>
+                  <p className="text-[11px] text-gray-500 mt-1.5">{t('parent.passwordHint', 'At least 8 characters, with an uppercase letter and a number.')}</p>
                 )}
               </div>
 
@@ -156,12 +164,12 @@ export function ParentInviteAcceptPage() {
                 disabled={!canSubmit}
                 className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer"
               >
-                {submitting ? 'Setting up…' : 'Accept & continue'}
+                {submitting ? t('parent.settingUp', 'Setting up…') : t('parent.acceptContinue', 'Accept & continue')}
               </button>
             </form>
 
             <p className="text-center text-xs text-gray-500 mt-5">
-              Already have access? <Link to="/login" className="text-indigo-400 hover:underline">Sign in</Link>
+              {t('parent.alreadyHaveAccess', 'Already have access?')} <Link to="/login" className="text-indigo-400 hover:underline">{t('parent.signIn', 'Sign in')}</Link>
             </p>
           </>
         )}

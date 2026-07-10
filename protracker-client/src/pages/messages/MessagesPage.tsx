@@ -1,39 +1,47 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Send, Search, MessageSquare, ArrowLeft } from 'lucide-react';
 import { useConversations, useContacts, useConversation, useSendMessage, useMarkConversationRead } from '../../hooks/useMessages';
 import { useChatRealtime } from '../../context/ChatRealtimeContext';
 import type { Conversation, MessageContact, Message } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Skeleton, SkeletonAvatar } from '../../components/ui/Skeleton';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
 interface Partner { userId: string; name: string; role: string; lastMessage?: string; lastMessageAt?: string; unreadCount: number; }
+
+type Translate = (key: string, fallback: string) => string;
 
 function initials(name: string) {
   return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 }
 
-function dayLabel(iso: string) {
+function dayLabel(iso: string, t: Translate, formatDate: (v: string, opts?: Intl.DateTimeFormatOptions) => string) {
   const d = new Date(iso);
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const that = new Date(d); that.setHours(0, 0, 0, 0);
   const diff = (today.getTime() - that.getTime()) / 86_400_000;
-  if (diff === 0) return 'Today';
-  if (diff === 1) return 'Yesterday';
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (diff === 0) return t('common.today', 'Today');
+  if (diff === 1) return t('common.yesterday', 'Yesterday');
+  return formatDate(iso, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 function RoleBadge({ role }: { role: string }) {
+  const { t } = useTranslation();
+  const key = role.charAt(0).toLowerCase() + role.slice(1);
   return (
     <span className={clsx('text-[10px] font-bold px-1.5 py-0.5 rounded-full',
       role === 'Coach' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300'
         : 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300')}>
-      {role}
+      {t(`enums.role.${key}`, role)}
     </span>
   );
 }
 
 export function MessagesPage() {
+  const { t } = useTranslation();
+  const { formatDate, formatTime } = useLocaleFormat();
   const { data: conversations = [], isLoading: convLoading } = useConversations();
   const { data: contacts = [] } = useContacts();
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -51,7 +59,7 @@ export function MessagesPage() {
     const byId = new Map<string, Partner>();
     conversations.forEach((c: Conversation) => byId.set(c.otherUserId, {
       userId: c.otherUserId, name: c.otherUserName, role: c.otherUserRole,
-      lastMessage: (c.lastMessageMine ? 'You: ' : '') + c.lastMessage, lastMessageAt: c.lastMessageAt, unreadCount: c.unreadCount,
+      lastMessage: (c.lastMessageMine ? t('messages.youPrefix', 'You: ') : '') + c.lastMessage, lastMessageAt: c.lastMessageAt, unreadCount: c.unreadCount,
     }));
     contacts.forEach((ct: MessageContact) => {
       if (!byId.has(ct.userId)) byId.set(ct.userId, { userId: ct.userId, name: ct.name, role: ct.role, unreadCount: 0 });
@@ -64,7 +72,7 @@ export function MessagesPage() {
       if (b.lastMessageAt) return 1;
       return a.name.localeCompare(b.name);
     });
-  }, [conversations, contacts, search]);
+  }, [conversations, contacts, search, t]);
 
   const selected = partners.find(p => p.userId === selectedId) ?? null;
   const partnerTyping = !!selectedId && typingUsers.has(selectedId);
@@ -98,7 +106,7 @@ export function MessagesPage() {
         <div className="p-3 border-b border-gray-100 dark:border-gray-800">
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search…"
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder={t('messages.searchPlaceholder', 'Search…')}
               className="w-full pl-9 pr-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
         </div>
@@ -113,7 +121,7 @@ export function MessagesPage() {
               ))}
             </div>
           ) : partners.length === 0 ? (
-            <div className="p-6"><EmptyState icon={<MessageSquare size={28} />} title="No conversations yet" description="Message a player to start a conversation." size="sm" /></div>
+            <div className="p-6"><EmptyState icon={<MessageSquare size={28} />} title={t('messages.noConversations', 'No conversations yet')} description={t('messages.noConversationsDesc', 'Message a player to start a conversation.')} size="sm" /></div>
           ) : partners.map(p => (
             <button key={p.userId} onClick={() => setSelectedId(p.userId)}
               className={clsx('w-full flex items-center gap-3 px-3 py-3 text-left border-b border-gray-50 dark:border-gray-800/50 transition-colors cursor-pointer',
@@ -122,7 +130,7 @@ export function MessagesPage() {
                 <div className="w-10 h-10 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-xs font-bold">
                   {initials(p.name)}
                 </div>
-                {isOnline(p.userId) && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" title="Online" />}
+                {isOnline(p.userId) && <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-gray-900" title={t('messages.online', 'Online')} />}
                 {p.unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-blue-500 ring-2 ring-white dark:ring-gray-900" />}
               </div>
               <div className="min-w-0 flex-1">
@@ -131,7 +139,7 @@ export function MessagesPage() {
                   <RoleBadge role={p.role} />
                 </div>
                 <p className={clsx('text-xs truncate', p.unreadCount > 0 ? 'text-gray-700 dark:text-gray-300 font-medium' : 'text-gray-400')}>
-                  {p.lastMessage ?? 'Start a conversation'}
+                  {p.lastMessage ?? t('messages.startConversation', 'Start a conversation')}
                 </p>
               </div>
               {p.unreadCount > 0 && (
@@ -146,7 +154,7 @@ export function MessagesPage() {
       <div className={clsx('flex-1 flex-col bg-gray-50 dark:bg-gray-950', selectedId ? 'flex' : 'hidden sm:flex')}>
         {!selected ? (
           <div className="flex-1 flex items-center justify-center">
-            <EmptyState icon={<MessageSquare size={36} />} title="Select a conversation" description="Choose someone to start messaging." />
+            <EmptyState icon={<MessageSquare size={36} />} title={t('messages.selectConversation', 'Select a conversation')} description={t('messages.selectConversationDesc', 'Choose someone to start messaging.')} />
           </div>
         ) : (
           <>
@@ -164,7 +172,7 @@ export function MessagesPage() {
                   <RoleBadge role={selected.role} />
                 </div>
                 <p className={clsx('text-xs mt-0.5', partnerTyping ? 'text-indigo-500 font-medium' : isOnline(selected.userId) ? 'text-emerald-500' : 'text-gray-400')}>
-                  {partnerTyping ? 'typing…' : isOnline(selected.userId) ? 'Online' : 'Offline'}
+                  {partnerTyping ? t('messages.typing', 'typing…') : isOnline(selected.userId) ? t('messages.online', 'Online') : t('messages.offline', 'Offline')}
                 </p>
               </div>
             </div>
@@ -172,16 +180,16 @@ export function MessagesPage() {
             <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
               {messages.length === 0 ? (
                 <div className="h-full flex items-center justify-center">
-                  <p className="text-sm text-gray-400">No messages yet. Say hello 👋</p>
+                  <p className="text-sm text-gray-400">{t('messages.noMessages', 'No messages yet. Say hello 👋')}</p>
                 </div>
               ) : messages.map((m: Message, i: number) => {
                 const prev = messages[i - 1];
-                const showDay = !prev || dayLabel(prev.sentAt) !== dayLabel(m.sentAt);
+                const showDay = !prev || dayLabel(prev.sentAt, t, formatDate) !== dayLabel(m.sentAt, t, formatDate);
                 return (
                   <div key={m.id}>
                     {showDay && (
                       <div className="flex justify-center my-3">
-                        <span className="text-[11px] font-medium text-gray-400 bg-gray-200/60 dark:bg-gray-800/60 px-2.5 py-0.5 rounded-full">{dayLabel(m.sentAt)}</span>
+                        <span className="text-[11px] font-medium text-gray-400 bg-gray-200/60 dark:bg-gray-800/60 px-2.5 py-0.5 rounded-full">{dayLabel(m.sentAt, t, formatDate)}</span>
                       </div>
                     )}
                     <div className={clsx('flex', m.isMine ? 'justify-end' : 'justify-start')}>
@@ -189,7 +197,7 @@ export function MessagesPage() {
                         m.isMine ? 'bg-indigo-600 text-white rounded-br-sm' : 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-sm')}>
                         <p className="whitespace-pre-wrap break-words">{m.content}</p>
                         <p className={clsx('text-[10px] mt-0.5 text-right', m.isMine ? 'text-indigo-200' : 'text-gray-400')}>
-                          {new Date(m.sentAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                          {formatTime(m.sentAt, { hour: 'numeric', minute: '2-digit' })}
                         </p>
                       </div>
                     </div>
@@ -215,7 +223,7 @@ export function MessagesPage() {
                   onChange={e => { setDraft(e.target.value); if (selectedId && e.target.value) sendTyping(selectedId); }}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   rows={1}
-                  placeholder="Type a message… (Enter to send, Shift+Enter for new line)"
+                  placeholder={t('messages.typeMessageHint', 'Type a message… (Enter to send, Shift+Enter for new line)')}
                   className="flex-1 resize-none max-h-32 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <button onClick={handleSend} disabled={!draft.trim() || sendMessage.isPending}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Star, Trophy } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -12,6 +13,8 @@ import { useTeamMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, useSave
 import type { MatchResult, MatchOutcome, PlayerMatchRating } from '../../types';
 import type { RatingInput } from '../../api/matchesApi';
 import { statFieldsForSport, scoreLabelsForSport, setDetailConfig, scoreUnit, parseStatJson } from '../../utils/matchSport';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
 interface PlayerOption { id: number; name: string; }
 
@@ -20,10 +23,6 @@ const RESULT_STYLES: Record<MatchOutcome, { text: string; badge: string; score: 
   Draw: { text: 'text-gray-500', badge: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', score: 'text-gray-400' },
   Loss: { text: 'text-red-500', badge: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400', score: 'text-red-500' },
 };
-
-function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 // Read a stat value: prefer statJson, fall back to legacy soccer columns for old rows.
 function statValue(r: PlayerMatchRating, key: string): number {
@@ -37,6 +36,7 @@ function statValue(r: PlayerMatchRating, key: string): number {
 function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }: {
   teamId: number; sportName?: string; match: MatchResult | null; isOpen: boolean; onClose: () => void; onCreated: (m: MatchResult) => void;
 }) {
+  const { t: tr } = useTranslation();
   const { addToast } = useToast();
   const createMatch = useCreateMatch();
   const updateMatch = useUpdateMatch();
@@ -75,8 +75,8 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
   }, [isOpen, match]);
 
   async function handleSubmit() {
-    if (!opponentName.trim()) { setError('Opponent is required'); return; }
-    if (!matchDate) { setError('Match date is required'); return; }
+    if (!opponentName.trim()) { setError(tr('matches.errOpponentRequired', 'Opponent is required')); return; }
+    if (!matchDate) { setError(tr('matches.errDateRequired', 'Match date is required')); return; }
     const our = Number(ourScore) || 0;
     const opp = Number(oppScore) || 0;
     const payload = {
@@ -93,34 +93,34 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
     try {
       if (isEdit && match) {
         await updateMatch.mutateAsync({ id: match.id, data: payload });
-        addToast('Match updated', 'success');
+        addToast(tr('matches.matchUpdated', 'Match updated'), 'success');
         onClose();
       } else {
         const created = await createMatch.mutateAsync({ teamId, data: payload });
-        addToast('Match logged', 'success');
+        addToast(tr('matches.matchLogged', 'Match logged'), 'success');
         onCreated(created);
       }
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Save failed', 'error');
+      addToast(err instanceof Error ? err.message : tr('matches.saveFailed', 'Save failed'), 'error');
     }
   }
 
   const saving = createMatch.isPending || updateMatch.isPending;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Match' : 'Log Match'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? tr('matches.editMatch', 'Edit Match') : tr('matches.logMatch', 'Log Match')}>
       <div className="space-y-4">
-        <Input label="Opponent" value={opponentName} onChange={e => setOpponent(e.target.value)} placeholder="e.g. Rovers FC" />
+        <Input label={tr('matches.opponent', 'Opponent')} value={opponentName} onChange={e => setOpponent(e.target.value)} placeholder={tr('matches.opponentPlaceholder', 'e.g. Rovers FC')} />
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Date" type="date" value={matchDate} onChange={e => setMatchDate(e.target.value)} />
+          <Input label={tr('common.date', 'Date')} type="date" value={matchDate} onChange={e => setMatchDate(e.target.value)} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Home / Away</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{tr('matches.homeAway', 'Home / Away')}</label>
             <div className="flex gap-2">
               {([['Home', true], ['Away', false]] as [string, boolean][]).map(([label, val]) => (
                 <button key={label} type="button" onClick={() => setIsHome(val)}
                   className={clsx('flex-1 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer',
                     isHome === val ? 'bg-indigo-600 text-white border-transparent' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400')}>
-                  {label}
+                  {label === 'Home' ? tr('matches.home', 'Home') : tr('matches.away', 'Away')}
                 </button>
               ))}
             </div>
@@ -134,18 +134,18 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
           <Input label={setCfg.label} value={setScores} onChange={e => setSetScores(e.target.value)} placeholder={setCfg.placeholder} />
         )}
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Competition" value={competition} onChange={e => setCompetition(e.target.value)} placeholder="League / Cup" />
-          <Input label="Venue (optional)" value={venue} onChange={e => setVenue(e.target.value)} placeholder="Stadium" />
+          <Input label={tr('matches.competition', 'Competition')} value={competition} onChange={e => setCompetition(e.target.value)} placeholder={tr('matches.competitionPlaceholder', 'League / Cup')} />
+          <Input label={tr('matches.venue', 'Venue (optional)')} value={venue} onChange={e => setVenue(e.target.value)} placeholder={tr('matches.venuePlaceholder', 'Stadium')} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
-          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Match summary…"
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('common.notes', 'Notes')}</label>
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={tr('matches.notesPlaceholder', 'Match summary…')}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? 'Save Changes' : 'Log Match & Add Ratings'}</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
+          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? tr('matches.saveChanges', 'Save Changes') : tr('matches.logMatchAndRate', 'Log Match & Add Ratings')}</Button>
         </div>
       </div>
     </Modal>
@@ -158,6 +158,7 @@ interface RatingRow { playerId: number; name: string; rating: number; stats: Rec
 function RateMatchModal({ match, sportName, players, isOpen, onClose }: {
   match: MatchResult | null; sportName?: string; players: PlayerOption[]; isOpen: boolean; onClose: () => void;
 }) {
+  const { t: tr } = useTranslation();
   const { addToast } = useToast();
   const saveRatings = useSaveMatchRatings();
   const fields = statFieldsForSport(sportName);
@@ -193,17 +194,17 @@ function RateMatchModal({ match, sportName, players, isOpen, onClose }: {
     });
     try {
       await saveRatings.mutateAsync({ id: match.id, ratings });
-      addToast('Ratings saved', 'success');
+      addToast(tr('matches.ratingsSaved', 'Ratings saved'), 'success');
       onClose();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Save failed', 'error');
+      addToast(err instanceof Error ? err.message : tr('matches.saveFailed', 'Save failed'), 'error');
     }
   }
 
   const cols = Math.min(fields.length, 5);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={match ? `Rate Players — vs ${match.opponentName}` : 'Rate Players'} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={match ? tr('matches.ratePlayersVs', 'Rate Players — vs {{opponent}}', { opponent: match.opponentName }) : tr('matches.ratePlayers', 'Rate Players')} size="lg">
       <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
         {rows.map(row => (
           <div key={row.playerId} className="rounded-xl border border-gray-200 dark:border-gray-700 p-3">
@@ -228,8 +229,8 @@ function RateMatchModal({ match, sportName, players, isOpen, onClose }: {
         ))}
       </div>
       <div className="flex justify-end gap-3 mt-4">
-        <Button variant="secondary" onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSave} isLoading={saveRatings.isPending}>Save Ratings</Button>
+        <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
+        <Button onClick={handleSave} isLoading={saveRatings.isPending}>{tr('matches.saveRatings', 'Save Ratings')}</Button>
       </div>
     </Modal>
   );
@@ -237,6 +238,10 @@ function RateMatchModal({ match, sportName, players, isOpen, onClose }: {
 
 // ── Section ──────────────────────────────────────────────────────────────────
 export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { teamId: number; sportName?: string; players: PlayerOption[]; isCoach: boolean; }) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
+  const { formatDate } = useLocaleFormat();
+  const fmtDate = (s: string) => formatDate(s, { month: 'short', day: 'numeric', year: 'numeric' });
   const { data: matches = [], isLoading } = useTeamMatches(teamId);
   const deleteMatch = useDeleteMatch();
   const { addToast } = useToast();
@@ -253,11 +258,11 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Star size={16} className="text-indigo-400" /> Match Results</h3>
+        <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Star size={16} className="text-indigo-400" /> {tr('matches.matchResults', 'Match Results')}</h3>
         {isCoach && (
           <button onClick={() => { setEditMatch(null); setLogOpen(true); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
-            <Plus size={13} /> Log Match
+            <Plus size={13} /> {tr('matches.logMatch', 'Log Match')}
           </button>
         )}
       </div>
@@ -265,10 +270,10 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : matches.length === 0 ? (
-        <EmptyState icon={<Trophy size={40} />} title="No matches recorded yet"
-          description={isCoach ? 'Log your first match result to start tracking performances.' : 'Your coach hasn\'t logged any matches yet.'}
+        <EmptyState icon={<Trophy size={40} />} title={tr('matches.noMatches', 'No matches recorded yet')}
+          description={isCoach ? tr('matches.noMatchesCoach', 'Log your first match result to start tracking performances.') : tr('matches.noMatchesAthlete', "Your coach hasn't logged any matches yet.")}
           size="sm"
-          action={isCoach ? { label: 'Log First Match', onClick: () => { setEditMatch(null); setLogOpen(true); } } : undefined} />
+          action={isCoach ? { label: tr('matches.logFirstMatch', 'Log First Match'), onClick: () => { setEditMatch(null); setLogOpen(true); } } : undefined} />
       ) : (
         <div className="space-y-3">
           {matches.map(m => {
@@ -281,11 +286,11 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
                 <div className="flex items-center gap-4 p-4">
                   <div className="text-center flex-shrink-0 w-20">
                     <p className={clsx('text-2xl font-black tabular-nums', rs.score)}>{m.ourScore} - {m.opponentScore}</p>
-                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', rs.badge)}>{m.result}{unit ? ` · ${unit}` : ''}</span>
+                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', rs.badge)}>{L.status(m.result)}{unit ? ` · ${unit}` : ''}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
-                      {m.isHome ? 'vs' : '@'} {m.opponentName}
+                      {m.isHome ? tr('matches.vs', 'vs') : tr('matches.at', '@')} {m.opponentName}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-xs text-gray-500">{fmtDate(m.matchDate)}</span>
@@ -296,7 +301,7 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isCoach && (
                       <>
-                        <button onClick={() => setRateMatch(m)} className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">Rate Players</button>
+                        <button onClick={() => setRateMatch(m)} className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">{tr('matches.ratePlayers', 'Rate Players')}</button>
                         <button onClick={() => { setEditMatch(m); setLogOpen(true); }} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Pencil size={14} /></button>
                         <button onClick={() => setDeleteTarget(m)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"><Trash2 size={14} /></button>
                       </>
@@ -313,15 +318,15 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
                   <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3 overflow-x-auto">
                     {m.setScores && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        <span className="font-semibold">Set scores:</span> {m.setScores}
+                        <span className="font-semibold">{tr('matches.setScoresLabel', 'Set scores:')}</span> {m.setScores}
                       </p>
                     )}
                     {m.ratings.length > 0 && (
                       <table className="w-full text-sm">
                         <thead>
                           <tr className="text-[11px] uppercase tracking-wide text-gray-400 text-left">
-                            <th className="font-semibold pb-2 pr-3">Player</th>
-                            <th className="font-semibold pb-2 px-2">Rating</th>
+                            <th className="font-semibold pb-2 pr-3">{tr('matches.colPlayer', 'Player')}</th>
+                            <th className="font-semibold pb-2 px-2">{tr('matches.colRating', 'Rating')}</th>
                             {fields.map(f => <th key={f.key} className="font-semibold pb-2 px-2">{f.label}</th>)}
                           </tr>
                         </thead>
@@ -353,8 +358,8 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
             onCreated={(m) => { setLogOpen(false); setRateMatch(m); }} />
           <RateMatchModal match={rateMatchLive} sportName={sportName} players={players} isOpen={!!rateMatch} onClose={() => setRateMatch(null)} />
           <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}
-            onConfirm={async () => { if (!deleteTarget) return; try { await deleteMatch.mutateAsync(deleteTarget.id); addToast('Match deleted', 'success'); } catch (err) { addToast(err instanceof Error ? err.message : 'Delete failed', 'error'); } finally { setDeleteTarget(null); } }}
-            title="Delete Match" message={`Delete the match vs ${deleteTarget?.opponentName}?`} confirmLabel="Delete" isLoading={deleteMatch.isPending} />
+            onConfirm={async () => { if (!deleteTarget) return; try { await deleteMatch.mutateAsync(deleteTarget.id); addToast(tr('matches.matchDeleted', 'Match deleted'), 'success'); } catch (err) { addToast(err instanceof Error ? err.message : tr('matches.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteTarget(null); } }}
+            title={tr('matches.deleteMatchTitle', 'Delete Match')} message={tr('matches.deleteMatchMsg', 'Delete the match vs {{opponent}}?', { opponent: deleteTarget?.opponentName })} confirmLabel={tr('common.delete', 'Delete')} isLoading={deleteMatch.isPending} />
         </>
       )}
     </div>

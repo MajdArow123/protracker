@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Shield } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToast } from '../../context/ToastContext';
 import { useTeams } from '../../hooks/useTeams';
 import { useRegisterLeagueTeam } from '../../hooks/useLeagues';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import type { LeagueDetail } from '../../types';
 
 export function RegisterTeamModal({ league, isOpen, onClose }: {
   league: LeagueDetail; isOpen: boolean; onClose: () => void;
 }) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const { data: teams = [] } = useTeams(isOpen);
   const register = useRegisterLeagueTeam(league.id);
@@ -26,28 +30,28 @@ export function RegisterTeamModal({ league, isOpen, onClose }: {
   }, [isOpen]);
 
   const submit = async () => {
-    if (!teamId) { setError('Select a team.'); return; }
+    if (!teamId) { setError(tr('leagues.errSelectTeam', 'Select a team.')); return; }
     setError('');
     try {
       const res = await register.mutateAsync(teamId);
-      addToast(res.status === 'Approved' ? 'Team registered' : 'Registration submitted — awaiting approval', 'success');
+      addToast(res.status === 'Approved' ? tr('leagues.teamRegistered', 'Team registered') : tr('leagues.registrationSubmitted', 'Registration submitted — awaiting approval'), 'success');
       onClose();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to register.');
+      setError(e instanceof Error ? e.message : tr('leagues.errRegisterFailed', 'Failed to register.'));
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Register a team" size="md">
+    <Modal isOpen={isOpen} onClose={onClose} title={tr('leagues.registerTeamTitle', 'Register a team')} size="md">
       <div className="space-y-4">
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Register one of your {league.sportName} teams for <span className="font-semibold text-gray-900 dark:text-white">{league.name}</span>.
-          {!league.isOrganizer && ' The organizer will need to approve it.'}
+          {tr('leagues.registerIntro', 'Register one of your {{sport}} teams for', { sport: L.sport(league.sportName) })} <span className="font-semibold text-gray-900 dark:text-white">{league.name}</span>.
+          {!league.isOrganizer && ' ' + tr('leagues.organizerApproval', 'The organizer will need to approve it.')}
         </p>
 
         {eligible.length === 0 ? (
           <div className="text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-4 text-center">
-            You have no eligible {league.sportName} teams to register.
+            {tr('leagues.noEligibleTeams', 'You have no eligible {{sport}} teams to register.', { sport: L.sport(league.sportName) })}
           </div>
         ) : (
           <div className="space-y-2">
@@ -60,7 +64,7 @@ export function RegisterTeamModal({ league, isOpen, onClose }: {
                 </div>
                 <div className="min-w-0">
                   <div className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t.name}</div>
-                  <div className="text-xs text-gray-500">{t.playerCount} players</div>
+                  <div className="text-xs text-gray-500">{t.playerCount} {tr('leagues.playersLabel', 'players')}</div>
                 </div>
               </button>
             ))}
@@ -70,8 +74,8 @@ export function RegisterTeamModal({ league, isOpen, onClose }: {
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <div className="flex justify-end gap-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} isLoading={register.isPending} disabled={eligible.length === 0}>Register</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
+          <Button onClick={submit} isLoading={register.isPending} disabled={eligible.length === 0}>{tr('leagues.registerBtn', 'Register')}</Button>
         </div>
       </div>
     </Modal>

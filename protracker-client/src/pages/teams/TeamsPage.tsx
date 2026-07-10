@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import {
   Shield, Plus, Users, BarChart3,
   Trophy, ClipboardList, ShieldAlert,
 } from 'lucide-react';
 import { useTeams } from '../../hooks/useTeams';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useTeamReport } from '../../hooks/useReports';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -34,6 +36,8 @@ const SPORT_DOTS: Record<string, string> = {
 interface TeamCardProps { team: Team; index: number }
 
 function TeamCard({ team, index }: TeamCardProps) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const navigate = useNavigate();
   const grad = SPORT_GRADIENTS[team.sportName] ?? 'from-indigo-500 to-violet-600';
   const dot = SPORT_DOTS[team.sportName] ?? 'bg-indigo-500';
@@ -66,7 +70,7 @@ function TeamCard({ team, index }: TeamCardProps) {
               <h3 className="font-black text-white text-base leading-tight">{team.name}</h3>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className={clsx('w-1.5 h-1.5 rounded-full', dot)} />
-                <span className="text-white/80 text-xs font-medium">{team.sportName}</span>
+                <span className="text-white/80 text-xs font-medium">{L.sport(team.sportName)}</span>
               </div>
             </div>
           </div>
@@ -78,27 +82,27 @@ function TeamCard({ team, index }: TeamCardProps) {
         <div className="flex items-center gap-4 mb-3">
           <div className="flex items-center gap-1.5 text-sm text-gray-600 dark:text-gray-400">
             <Users size={14} />
-            <span>{team.playerCount ?? 0} players</span>
+            <span>{t('teams.playersCount', '{{count}} players', { count: team.playerCount ?? 0 })}</span>
           </div>
         </div>
 
         {report && (
           <div className="grid grid-cols-3 gap-2 mb-4">
             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-2.5 text-center">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Avg Score</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{t('teams.avgScore', 'Avg Score')}</p>
               <p className={clsx('text-sm font-black', avgScore == null ? 'text-gray-400' :
                 avgScore > 7 ? 'text-green-500' : avgScore >= 5 ? 'text-amber-500' : 'text-red-500')}>
                 {avgScore != null ? avgScore.toFixed(1) : '—'}
               </p>
             </div>
             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-2.5 text-center">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Top Player</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{t('teams.topPlayer', 'Top Player')}</p>
               <p className="text-sm font-black text-gray-900 dark:text-white truncate">
                 {topPerformer ? topPerformer.playerName.split(' ')[0] : '—'}
               </p>
             </div>
             <div className="rounded-xl bg-gray-50 dark:bg-gray-800 p-2.5 text-center">
-              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">Injuries</p>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-0.5">{t('teams.injuries', 'Injuries')}</p>
               <p className={clsx('text-sm font-black flex items-center justify-center gap-1',
                 report.activeInjuryCount > 0 ? 'text-red-500' : 'text-gray-900 dark:text-white')}>
                 {report.activeInjuryCount > 0 && <ShieldAlert size={12} />}
@@ -115,14 +119,14 @@ function TeamCard({ team, index }: TeamCardProps) {
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-600 hover:text-white text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer group/btn"
           >
             <ClipboardList size={13} />
-            View Roster
+            {t('teams.viewRoster', 'View Roster')}
           </button>
           <button
             onClick={() => navigate(`/reports/team/${team.id}`)}
             className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-600 hover:text-white text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer"
           >
             <BarChart3 size={13} />
-            View Report
+            {t('teams.viewReport', 'View Report')}
           </button>
         </div>
       </div>
@@ -131,6 +135,8 @@ function TeamCard({ team, index }: TeamCardProps) {
 }
 
 export function TeamsPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const navigate = useNavigate();
   const { data: teams, isLoading } = useTeams();
 
@@ -148,16 +154,16 @@ export function TeamsPage() {
         <div className="relative z-10 px-4 lg:px-6 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">My Teams</h1>
+              <h1 className="text-2xl font-black text-white tracking-tight">{t('teams.myTeams', 'My Teams')}</h1>
               <p className="text-white/70 text-sm mt-0.5">
-                {teams?.length ?? 0} team{teams?.length !== 1 ? 's' : ''} · {totalPlayers} total players
+                {t('teams.teamsPlayersSummary', '{{count}} teams · {{players}} total players', { count: teams?.length ?? 0, players: totalPlayers })}
               </p>
             </div>
             <button
               onClick={() => navigate('/teams/new')}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-indigo-700 font-bold text-sm hover:bg-indigo-50 transition-all shadow-lg shadow-black/20 cursor-pointer"
             >
-              <Plus size={16} /> New Team
+              <Plus size={16} /> {t('teams.newTeam', 'New Team')}
             </button>
           </div>
 
@@ -166,11 +172,11 @@ export function TeamsPage() {
             <div className="flex items-center gap-4 mt-4">
               <div className="flex items-center gap-1.5 text-white/80 text-sm">
                 <Trophy size={14} className="text-yellow-300" />
-                <span>{teams[0].sportName}</span>
+                <span>{L.sport(teams[0].sportName)}</span>
               </div>
               <div className="flex items-center gap-1.5 text-white/80 text-sm">
                 <Users size={14} />
-                <span>{totalPlayers} players tracked</span>
+                <span>{t('teams.playersTracked', '{{count}} players tracked', { count: totalPlayers })}</span>
               </div>
             </div>
           )}
@@ -182,9 +188,9 @@ export function TeamsPage() {
         {!teams?.length ? (
           <EmptyState
             icon={<Shield size={48} />}
-            title="No teams yet"
-            description="Create your first team to start tracking players and performance"
-            action={{ label: 'Create First Team', onClick: () => navigate('/teams/new') }}
+            title={t('teams.noTeams', 'No teams yet')}
+            description={t('teams.noTeamsDesc', 'Create your first team to start tracking players and performance')}
+            action={{ label: t('teams.createFirstTeam', 'Create First Team'), onClick: () => navigate('/teams/new') }}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

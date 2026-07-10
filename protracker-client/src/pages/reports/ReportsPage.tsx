@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { BarChart2, Users, ArrowRight, GitCompare } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
@@ -10,18 +11,19 @@ import { usePlayers } from '../../hooks/usePlayers';
 
 export function ReportsPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { data: teams, isLoading: loadingTeams } = useTeams();
   const { data: players, isLoading: loadingPlayers } = usePlayers();
 
-  if (loadingTeams || loadingPlayers) return <PageWrapper title="Reports"><CardListSkeleton count={6} /></PageWrapper>;
+  if (loadingTeams || loadingPlayers) return <PageWrapper title={t('reports.title', 'Reports')}><CardListSkeleton count={6} /></PageWrapper>;
 
   return (
     <PageWrapper
-      title="Reports"
+      title={t('reports.title', 'Reports')}
       actions={
         <Button variant="secondary" size="sm" onClick={() => navigate('/reports/compare')}>
           <GitCompare size={16} />
-          Compare Players
+          {t('reports.comparePlayers', 'Compare Players')}
         </Button>
       }
     >
@@ -29,10 +31,10 @@ export function ReportsPage() {
       <section>
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
           <BarChart2 size={18} className="text-indigo-500" />
-          Team Reports
+          {t('reports.teamReports', 'Team Reports')}
         </h3>
         {!teams?.length ? (
-          <EmptyState title="No teams yet" description="Create a team to generate team reports" />
+          <EmptyState title={t('reports.noTeams', 'No teams yet')} description={t('reports.noTeamsDesc', 'Create a team to generate team reports')} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {teams.map(team => (
@@ -42,7 +44,7 @@ export function ReportsPage() {
                     <p className="font-semibold text-gray-900 dark:text-white">{team.name}</p>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{team.sportName}</p>
                     <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-                      {team.playerCount ?? 0} players
+                      {t('reports.playersCount', '{{count}} players', { count: team.playerCount ?? 0 })}
                     </p>
                   </div>
                   <div className="text-indigo-500">
@@ -55,7 +57,7 @@ export function ReportsPage() {
                     variant="secondary"
                     onClick={e => { e.stopPropagation(); navigate(`/reports/team/${team.id}`); }}
                   >
-                    View Report <ArrowRight size={14} />
+                    {t('reports.viewReport', 'View Report')} <ArrowRight size={14} />
                   </Button>
                 </div>
               </Card>
@@ -68,10 +70,10 @@ export function ReportsPage() {
       <section>
         <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 flex items-center gap-2">
           <Users size={18} className="text-indigo-500" />
-          Player Reports
+          {t('reports.playerReports', 'Player Reports')}
         </h3>
         {!players?.length ? (
-          <EmptyState title="No players yet" description="Add players to generate individual reports" />
+          <EmptyState title={t('reports.noPlayers', 'No players yet')} description={t('reports.noPlayersDesc', 'Add players to generate individual reports')} />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {players.map(player => (
@@ -96,7 +98,7 @@ export function ReportsPage() {
                     variant="secondary"
                     onClick={e => { e.stopPropagation(); navigate(`/reports/player/${player.id}`); }}
                   >
-                    View Report <ArrowRight size={14} />
+                    {t('reports.viewReport', 'View Report')} <ArrowRight size={14} />
                   </Button>
                 </div>
               </Card>

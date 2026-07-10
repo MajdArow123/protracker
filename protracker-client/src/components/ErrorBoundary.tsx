@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { Activity, RotateCw, LayoutDashboard } from 'lucide-react';
+import i18n from '../i18n';
 
 interface Props {
   children: ReactNode;
@@ -26,6 +27,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (!this.state.hasError) return this.props.children;
 
+    const t = i18n.t.bind(i18n);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-950 text-center px-6">
         <div className="flex items-center gap-2.5 mb-8">
@@ -38,10 +40,9 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="inline-flex p-4 rounded-2xl bg-red-500/10 mb-5">
           <RotateCw size={32} className="text-red-500" />
         </div>
-        <h1 className="text-2xl font-black text-white">Something went wrong</h1>
+        <h1 className="text-2xl font-black text-white">{t('ui.somethingWrong', 'Something went wrong')}</h1>
         <p className="mt-2 text-sm text-gray-400 max-w-sm leading-relaxed">
-          We hit an unexpected error. Our team has been notified. You can head back to your
-          dashboard or reload the page.
+          {t('ui.errorBoundaryDesc', 'We hit an unexpected error. Our team has been notified. You can head back to your dashboard or reload the page.')}
         </p>
 
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
@@ -49,13 +50,13 @@ export class ErrorBoundary extends Component<Props, State> {
             href="/"
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer"
           >
-            <LayoutDashboard size={16} /> Go to Dashboard
+            <LayoutDashboard size={16} /> {t('nav.goToDashboard', 'Go to Dashboard')}
           </a>
           <button
             onClick={() => window.location.reload()}
             className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold transition-all cursor-pointer"
           >
-            <RotateCw size={16} /> Reload Page
+            <RotateCw size={16} /> {t('ui.reloadPage', 'Reload Page')}
           </button>
         </div>
       </div>

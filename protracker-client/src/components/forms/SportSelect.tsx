@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Select } from '../ui/Select';
 import { useSports } from '../../hooks/useSports';
 
@@ -12,18 +13,19 @@ export function SportSelect({
   value,
   onChange,
   error,
-  label = 'Sport',
+  label,
 }: Props) {
+  const { t } = useTranslation();
   const { data: sports, isLoading } = useSports();
   return (
     <Select
-      label={label}
+      label={label ?? t('common.sport', 'Sport')}
       value={value ?? ''}
       onChange={(e) => onChange(Number(e.target.value))}
       error={error}
       disabled={isLoading}
     >
-      <option value="">Select sport...</option>
+      <option value="">{t('ui.selectSport', 'Select sport...')}</option>
       {sports?.map((s) => (
         <option key={s.id} value={s.id}>
           {s.name}

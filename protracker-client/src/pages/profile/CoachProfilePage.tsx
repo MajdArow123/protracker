@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Shield, Users, Mail, Phone, Edit2, Loader2, X, Award, Briefcase, Target, HeartPulse,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile';
 import { useToast } from '../../context/ToastContext';
 import { PageWrapper } from '../../components/layout/PageWrapper';
@@ -27,13 +29,14 @@ const inputCls = 'w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:bord
 const labelCls = 'block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1';
 
 function ViewRow({ label, value, onEdit }: { label: string; value?: string | null; onEdit: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="group flex items-start justify-between gap-3 py-2.5">
       <div className="min-w-0">
         <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-        <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5 whitespace-pre-wrap">{value || <span className="text-gray-400 dark:text-gray-600 font-normal">Not set</span>}</p>
+        <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5 whitespace-pre-wrap">{value || <span className="text-gray-400 dark:text-gray-600 font-normal">{t('profile.notSet', 'Not set')}</span>}</p>
       </div>
-      <button onClick={onEdit} aria-label={`Edit ${label}`} className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-indigo-500 transition-all cursor-pointer flex-shrink-0">
+      <button onClick={onEdit} aria-label={t('profile.editField', 'Edit {{label}}', { label })} className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-indigo-500 transition-all cursor-pointer flex-shrink-0">
         <Edit2 size={13} />
       </button>
     </div>
@@ -41,6 +44,8 @@ function ViewRow({ label, value, onEdit }: { label: string; value?: string | nul
 }
 
 export function CoachProfilePage() {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const navigate = useNavigate();
   const { addToast } = useToast();
   const { data } = useCoachDashboard();
@@ -74,13 +79,13 @@ export function CoachProfilePage() {
   };
 
   const save = async () => {
-    if (!form.displayName.trim()) { addToast('Name cannot be empty', 'error'); return; }
+    if (!form.displayName.trim()) { addToast(t('profile.toast.nameEmpty', 'Name cannot be empty'), 'error'); return; }
     try {
       await updateProfile.mutateAsync(form);
-      addToast('Profile updated', 'success');
+      addToast(t('profile.toast.updated', 'Profile updated'), 'success');
       setEditing(false);
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not save profile', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.toast.saveFailed', 'Could not save profile'), 'error');
     }
   };
 
@@ -105,11 +110,11 @@ export function CoachProfilePage() {
                 <h1 className="text-2xl font-black text-gray-900 dark:text-white tracking-tight truncate">{profile.displayName}</h1>
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mt-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-600/15 border border-indigo-500/30 text-indigo-500 dark:text-indigo-400 text-xs font-semibold">
-                    <Shield size={11} /> Coach
+                    <Shield size={11} /> {t('profile.coach', 'Coach')}
                   </span>
                   {data?.teams?.[0]?.sportName && (
                     <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-semibold">
-                      {data.teams[0].sportName}
+                      {dyn.sport(data.teams[0].sportName)}
                     </span>
                   )}
                   <span className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
@@ -121,15 +126,15 @@ export function CoachProfilePage() {
                 {editing ? (
                   <div className="flex gap-2">
                     <button onClick={() => setEditing(false)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-                      <X size={13} /> Cancel
+                      <X size={13} /> {t('common.cancel', 'Cancel')}
                     </button>
                     <button onClick={save} disabled={updateProfile.isPending} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white text-xs font-bold transition-colors cursor-pointer">
-                      {updateProfile.isPending ? <Loader2 size={13} className="animate-spin" /> : null} Save Changes
+                      {updateProfile.isPending ? <Loader2 size={13} className="animate-spin" /> : null} {t('profile.saveChanges', 'Save Changes')}
                     </button>
                   </div>
                 ) : (
                   <button onClick={startEdit} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-colors cursor-pointer">
-                    <Edit2 size={13} /> Edit Profile
+                    <Edit2 size={13} /> {t('profile.editProfile', 'Edit Profile')}
                   </button>
                 )}
               </div>
@@ -143,14 +148,14 @@ export function CoachProfilePage() {
                   onChange={set('bio')}
                   maxLength={500}
                   rows={2}
-                  placeholder="Write a short bio — your coaching philosophy, background…"
+                  placeholder={t('profile.bioPlaceholderCoach', 'Write a short bio — your coaching philosophy, background…')}
                   className={inputCls}
                 />
               ) : profile.bio ? (
                 <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{profile.bio}</p>
               ) : (
                 <button onClick={startEdit} className="text-sm text-gray-400 dark:text-gray-500 italic hover:text-indigo-500 transition-colors cursor-pointer">
-                  + Add a short bio
+                  {t('profile.addShortBio', '+ Add a short bio')}
                 </button>
               )}
             </div>
@@ -166,57 +171,57 @@ export function CoachProfilePage() {
         <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Personal information */}
           <div className="lg:col-span-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-2">Personal Information</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('profile.personalInfo', 'Personal Information')}</h3>
             {editing ? (
               <div className="space-y-3">
                 <div>
-                  <label className={labelCls}>Full name</label>
+                  <label className={labelCls}>{t('profile.fullName', 'Full name')}</label>
                   <input value={form.displayName} onChange={set('displayName')} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Email</label>
+                  <label className={labelCls}>{t('profile.email', 'Email')}</label>
                   <input value={profile.email} disabled className={`${inputCls} opacity-60 cursor-not-allowed`} />
                 </div>
                 <div>
-                  <label className={labelCls}>Phone number</label>
-                  <input type="tel" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="+1 555 123 4567" className={inputCls} />
+                  <label className={labelCls}>{t('profile.phoneNumber', 'Phone number')}</label>
+                  <input type="tel" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder={t('profile.phonePlaceholder', '+1 555 123 4567')} className={inputCls} />
                 </div>
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                <ViewRow label="Full name" value={profile.displayName} onEdit={startEdit} />
+                <ViewRow label={t('profile.fullName', 'Full name')} value={profile.displayName} onEdit={startEdit} />
                 <div className="py-2.5">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Email</p>
-                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{profile.email} <span className="text-[10px] text-gray-400 font-normal">(read-only)</span></p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{t('profile.email', 'Email')}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-white mt-0.5">{profile.email} <span className="text-[10px] text-gray-400 font-normal">{t('profile.readOnlyParen', '(read-only)')}</span></p>
                 </div>
-                <ViewRow label="Phone number" value={profile.phoneNumber} onEdit={startEdit} />
+                <ViewRow label={t('profile.phoneNumber', 'Phone number')} value={profile.phoneNumber} onEdit={startEdit} />
               </div>
             )}
           </div>
 
           {/* Coaching info */}
           <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-2">Coaching</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-2">{t('profile.coaching', 'Coaching')}</h3>
             {editing ? (
               <div className="space-y-3">
                 <div>
-                  <label className={labelCls}>Experience</label>
-                  <input value={form.coachingExperience} onChange={set('coachingExperience')} placeholder="e.g. 8 years, youth academies" className={inputCls} />
+                  <label className={labelCls}>{t('profile.experience', 'Experience')}</label>
+                  <input value={form.coachingExperience} onChange={set('coachingExperience')} placeholder={t('profile.experiencePlaceholder', 'e.g. 8 years, youth academies')} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Certifications</label>
-                  <input value={form.certifications} onChange={set('certifications')} placeholder="e.g. UEFA B License" className={inputCls} />
+                  <label className={labelCls}>{t('profile.certifications', 'Certifications')}</label>
+                  <input value={form.certifications} onChange={set('certifications')} placeholder={t('profile.certificationsPlaceholder', 'e.g. UEFA B License')} className={inputCls} />
                 </div>
                 <div>
-                  <label className={labelCls}>Specialization</label>
-                  <input value={form.specialization} onChange={set('specialization')} placeholder="e.g. Youth development, tactical analysis" className={inputCls} />
+                  <label className={labelCls}>{t('profile.specialization', 'Specialization')}</label>
+                  <input value={form.specialization} onChange={set('specialization')} placeholder={t('profile.specializationPlaceholderCoach', 'e.g. Youth development, tactical analysis')} className={inputCls} />
                 </div>
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-gray-800">
-                <ViewRow label="Experience" value={profile.coachingExperience} onEdit={startEdit} />
-                <ViewRow label="Certifications" value={profile.certifications} onEdit={startEdit} />
-                <ViewRow label="Specialization" value={profile.specialization} onEdit={startEdit} />
+                <ViewRow label={t('profile.experience', 'Experience')} value={profile.coachingExperience} onEdit={startEdit} />
+                <ViewRow label={t('profile.certifications', 'Certifications')} value={profile.certifications} onEdit={startEdit} />
+                <ViewRow label={t('profile.specialization', 'Specialization')} value={profile.specialization} onEdit={startEdit} />
               </div>
             )}
             <div className="flex items-center gap-3 mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
@@ -229,7 +234,7 @@ export function CoachProfilePage() {
                   <Icon size={13} />
                 </div>
               ))}
-              <p className="text-[11px] text-gray-400">Shown to athletes and parents</p>
+              <p className="text-[11px] text-gray-400">{t('profile.shownToAthletes', 'Shown to athletes and parents')}</p>
             </div>
           </div>
         </motion.div>
@@ -239,21 +244,21 @@ export function CoachProfilePage() {
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
           <h3 className="font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-            <HeartPulse size={15} className="text-rose-400" /> Emergency Contact
+            <HeartPulse size={15} className="text-rose-400" /> {t('profile.emergencyContact', 'Emergency Contact')}
           </h3>
           {editing ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className={labelCls}>Name</label>
-                <input value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="e.g. Sarah Daniels" className={inputCls} />
+                <label className={labelCls}>{t('profile.ec.name', 'Name')}</label>
+                <input value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder={t('profile.ec.namePlaceholderCoach', 'e.g. Sarah Daniels')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Phone</label>
-                <input type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder="+1 555 987 6543" className={inputCls} />
+                <label className={labelCls}>{t('profile.ec.phone', 'Phone')}</label>
+                <input type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder={t('profile.ec.phonePlaceholder', '+1 555 987 6543')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Relationship</label>
-                <input value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="e.g. Partner" className={inputCls} />
+                <label className={labelCls}>{t('profile.ec.relationship', 'Relationship')}</label>
+                <input value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder={t('profile.ec.relationshipPlaceholderCoach', 'e.g. Partner')} className={inputCls} />
               </div>
             </div>
           ) : profile.emergencyContactName ? (
@@ -268,17 +273,17 @@ export function CoachProfilePage() {
               <button onClick={startEdit} className="p-1 text-gray-400 hover:text-indigo-500 transition-colors cursor-pointer"><Edit2 size={13} /></button>
             </div>
           ) : (
-            <button onClick={startEdit} className="text-sm text-indigo-500 hover:underline font-semibold cursor-pointer">+ Add Emergency Contact</button>
+            <button onClick={startEdit} className="text-sm text-indigo-500 hover:underline font-semibold cursor-pointer">{t('profile.ec.add', '+ Add Emergency Contact')}</button>
           )}
         </motion.div>
 
         {/* ── Overview stats + teams (kept from previous design) ── */}
         <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
-          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">Overview</h2>
+          <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">{t('common.overview', 'Overview')}</h2>
           <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
             {[
-              { label: 'Total Teams', value: data?.totalTeams ?? 0, icon: Shield, color: 'text-purple-400 bg-purple-500/10' },
-              { label: 'Total Players', value: data?.totalPlayers ?? 0, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
+              { label: t('profile.totalTeams', 'Total Teams'), value: data?.totalTeams ?? 0, icon: Shield, color: 'text-purple-400 bg-purple-500/10' },
+              { label: t('profile.totalPlayers', 'Total Players'), value: data?.totalPlayers ?? 0, icon: Users, color: 'text-blue-400 bg-blue-500/10' },
             ].map((s) => (
               <div key={s.label} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
                 <div className={`inline-flex p-2 rounded-xl mb-2 ${s.color}`}>
@@ -293,20 +298,20 @@ export function CoachProfilePage() {
 
         {data?.teams?.length ? (
           <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
-            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">My Teams</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-gray-500 dark:text-gray-400 mb-3">{t('profile.myTeams', 'My Teams')}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {data.teams.map(t => (
+              {data.teams.map(team => (
                 <div
-                  key={t.id}
-                  onClick={() => navigate(`/teams/${t.id}`)}
+                  key={team.id}
+                  onClick={() => navigate(`/teams/${team.id}`)}
                   className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-400 dark:hover:border-indigo-600 cursor-pointer transition-all"
                 >
                   <div className="w-10 h-10 rounded-xl bg-indigo-600/20 flex items-center justify-center text-indigo-400 flex-shrink-0">
                     <Shield size={18} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{t.name}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.sportName} · {t.playerCount ?? 0} players</p>
+                    <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">{team.name}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{dyn.sport(team.sportName)} · {t('profile.playersCount', '{{count}} players', { count: team.playerCount ?? 0 })}</p>
                   </div>
                 </div>
               ))}

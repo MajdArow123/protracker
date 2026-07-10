@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { Button } from './Button';
@@ -23,6 +24,7 @@ export function Modal({
   children,
   size = 'md',
 }: Props) {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export function Modal({
               <button
                 onClick={onClose}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors p-1 -m-1"
-                aria-label="Close"
+                aria-label={t('common.close', 'Close')}
               >
                 <X size={20} />
               </button>
@@ -91,18 +93,19 @@ export function ConfirmModal({
   onConfirm,
   title,
   message,
-  confirmLabel = 'Confirm',
+  confirmLabel,
   isLoading,
 }: ConfirmModalProps) {
+  const { t } = useTranslation();
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       <p className="text-gray-600 dark:text-gray-400 mb-6">{message}</p>
       <div className="flex justify-end gap-3">
         <Button variant="secondary" onClick={onClose}>
-          Cancel
+          {t('common.cancel', 'Cancel')}
         </Button>
         <Button variant="danger" onClick={onConfirm} isLoading={isLoading}>
-          {confirmLabel}
+          {confirmLabel ?? t('common.confirm', 'Confirm')}
         </Button>
       </div>
     </Modal>

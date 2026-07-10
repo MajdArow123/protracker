@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import { WifiOff } from 'lucide-react';
 
 // Subtle top banner shown while the browser reports no network connection.
 // Disappears automatically when the connection returns.
 export function OfflineBanner() {
+  const { t } = useTranslation();
   const [offline, setOffline] = useState(() => typeof navigator !== 'undefined' && !navigator.onLine);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export function OfflineBanner() {
           role="status"
         >
           <WifiOff size={15} />
-          You're offline. Some features may not work.
+          {t('ui.offline', "You're offline. Some features may not work.")}
         </motion.div>
       )}
     </AnimatePresence>

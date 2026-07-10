@@ -14,10 +14,10 @@ export const NOTE_CATEGORY_STYLES: Record<AthleteNoteCategory, string> = {
   Other: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300',
 };
 
-export function noteTitleOf(note: { title?: string | null; content: string }): string {
+export function noteTitleOf(note: { title?: string | null; content: string }, untitledLabel = 'Untitled note'): string {
   if (note.title && note.title.trim()) return note.title.trim();
   const firstLine = note.content.split('\n')[0].trim();
-  return firstLine.length > 60 ? `${firstLine.slice(0, 60)}…` : firstLine || 'Untitled note';
+  return firstLine.length > 60 ? `${firstLine.slice(0, 60)}…` : firstLine || untitledLabel;
 }
 
 export function fmtNoteDate(s: string): string {

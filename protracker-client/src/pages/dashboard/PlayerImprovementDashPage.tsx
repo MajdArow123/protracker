@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { useMyPlayerId } from '../../hooks/useDashboard';
 import { usePlayerImprovementPlans } from '../../hooks/useImprovement';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -41,6 +43,8 @@ function PlanSection({ label, icon: Icon, iconBg, iconColor, borderColor, value 
 }
 
 export function PlayerImprovementDashPage() {
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data: plans, isLoading } = usePlayerImprovementPlans(playerId);
 
@@ -49,12 +53,12 @@ export function PlayerImprovementDashPage() {
   const latestPlan = plans?.[0];
 
   return (
-    <PageWrapper title="My Improvement Plan">
+    <PageWrapper title={t('dashboard.myImprovementPlan', 'My Improvement Plan')}>
       {!latestPlan ? (
         <EmptyState
           icon={<ClipboardList size={32} />}
-          title="No improvement plan yet"
-          description="Your coach hasn't created a plan for you yet"
+          title={t('dashboard.noImprovementPlan', 'No improvement plan yet')}
+          description={t('dashboard.noImprovementPlanDesc', "Your coach hasn't created a plan for you yet")}
         />
       ) : (
         <div className="space-y-4">
@@ -62,22 +66,22 @@ export function PlayerImprovementDashPage() {
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="font-bold text-gray-900 dark:text-white text-base">Current Training Plan</h2>
+                <h2 className="font-bold text-gray-900 dark:text-white text-base">{t('dashboard.currentTrainingPlan', 'Current Training Plan')}</h2>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  Created {new Date(latestPlan.createdDate).toLocaleDateString('en-US', {
+                  {t('dashboard.created', 'Created')} {fmt.formatDate(latestPlan.createdDate, {
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                   })}
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {latestPlan.isAIGenerated && <Badge variant="info">AI Generated</Badge>}
+                {latestPlan.isAIGenerated && <Badge variant="info">{t('dashboard.aiGenerated', 'AI Generated')}</Badge>}
               </div>
             </div>
           </div>
 
           {/* Section cards */}
           <PlanSection
-            label="Weekly Goals"
+            label={t('dashboard.weeklyGoals', 'Weekly Goals')}
             icon={Target}
             iconBg="bg-amber-500/10"
             iconColor="text-amber-500"
@@ -85,7 +89,7 @@ export function PlayerImprovementDashPage() {
             value={latestPlan.weeklyGoals}
           />
           <PlanSection
-            label="Training Recommendations"
+            label={t('dashboard.trainingRecommendations', 'Training Recommendations')}
             icon={Dumbbell}
             iconBg="bg-indigo-500/10"
             iconColor="text-indigo-500"
@@ -93,7 +97,7 @@ export function PlayerImprovementDashPage() {
             value={latestPlan.trainingRecommendations}
           />
           <PlanSection
-            label="Skill Targets"
+            label={t('dashboard.skillTargets', 'Skill Targets')}
             icon={Star}
             iconBg="bg-purple-500/10"
             iconColor="text-purple-500"
@@ -101,7 +105,7 @@ export function PlayerImprovementDashPage() {
             value={latestPlan.skillTargets}
           />
           <PlanSection
-            label="Sport-Specific Drills"
+            label={t('dashboard.sportSpecificDrills', 'Sport-Specific Drills')}
             icon={Zap}
             iconBg="bg-cyan-500/10"
             iconColor="text-cyan-500"
@@ -109,7 +113,7 @@ export function PlayerImprovementDashPage() {
             value={latestPlan.sportSpecificDrills}
           />
           <PlanSection
-            label="Position Focus"
+            label={t('dashboard.positionFocus', 'Position Focus')}
             icon={MapPin}
             iconBg="bg-blue-500/10"
             iconColor="text-blue-500"
@@ -117,7 +121,7 @@ export function PlayerImprovementDashPage() {
             value={latestPlan.positionFocus}
           />
           <PlanSection
-            label="Coach Notes"
+            label={t('dashboard.coachNotes', 'Coach Notes')}
             icon={MessageSquare}
             iconBg="bg-green-500/10"
             iconColor="text-green-500"
@@ -127,7 +131,7 @@ export function PlayerImprovementDashPage() {
 
           {plans && plans.length > 1 && (
             <p className="text-xs text-gray-400 dark:text-gray-500 text-center pt-2">
-              {plans.length - 1} previous plan{plans.length > 2 ? 's' : ''} not shown
+              {plans.length - 1} {plans.length > 2 ? t('dashboard.previousPlans', 'previous plans not shown') : t('dashboard.previousPlan', 'previous plan not shown')}
             </p>
           )}
         </div>

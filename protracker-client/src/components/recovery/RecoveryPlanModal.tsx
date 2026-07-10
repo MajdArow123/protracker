@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import {
   Sparkles, Plus, Pencil, Trash2, Check, Star, CheckCircle2, Circle, Activity,
@@ -16,6 +17,7 @@ import {
   useAddExercise, useUpdateExercise, useDeleteExercise, useCompleteExercise,
   useAddMilestone, useAchieveMilestone, useRecoveryTemplates, useApplyRecoveryTemplate,
 } from '../../hooks/useRecovery';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import type { RecoveryExercise, RecoveryExerciseCategory, RecoveryPlan } from '../../types';
 import type { ExerciseInput } from '../../api/recoveryApi';
 
@@ -53,6 +55,7 @@ function Stars({ value, onChange }: { value: number; onChange?: (v: number) => v
 
 // ── Complete-exercise modal (athlete) ────────────────────────────────────────
 function CompleteExerciseModal({ exercise, isOpen, onClose }: { exercise: RecoveryExercise | null; isOpen: boolean; onClose: () => void }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const complete = useCompleteExercise();
   const [note, setNote] = useState('');
@@ -63,27 +66,27 @@ function CompleteExerciseModal({ exercise, isOpen, onClose }: { exercise: Recove
     if (!exercise) return;
     try {
       await complete.mutateAsync({ exerciseId: exercise.id, data: { completedNote: note.trim() || undefined, difficultyRating: difficulty } });
-      addToast('Exercise completed', 'success');
+      addToast(t('recovery.exerciseCompleted', 'Exercise completed'), 'success');
       onClose();
-    } catch (err) { addToast(err instanceof Error ? err.message : 'Failed', 'error'); }
+    } catch (err) { addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error'); }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Mark Exercise Complete">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('recovery.markExerciseComplete', 'Mark Exercise Complete')}>
       <div className="space-y-4">
         <p className="text-sm text-gray-600 dark:text-gray-300">{exercise?.title}</p>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">How hard was it?</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('recovery.howHard', 'How hard was it?')}</label>
           <Stars value={difficulty} onChange={setDifficulty} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note (optional)</label>
-          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder="How did it feel?"
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('recovery.noteOptional', 'Note (optional)')}</label>
+          <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} placeholder={t('recovery.howDidItFeel', 'How did it feel?')}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} isLoading={complete.isPending}>Confirm Complete</Button>
+          <Button variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={submit} isLoading={complete.isPending}>{t('recovery.confirmComplete', 'Confirm Complete')}</Button>
         </div>
       </div>
     </Modal>
@@ -94,6 +97,8 @@ function CompleteExerciseModal({ exercise, isOpen, onClose }: { exercise: Recove
 function ExerciseModal({ planId, exercise, defaultWeek, isOpen, onClose }: {
   planId: number; exercise: RecoveryExercise | null; defaultWeek: number; isOpen: boolean; onClose: () => void;
 }) {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const { addToast } = useToast();
   const add = useAddExercise();
   const update = useUpdateExercise();
@@ -110,50 +115,50 @@ function ExerciseModal({ planId, exercise, defaultWeek, isOpen, onClose }: {
   function num(v: string): number | null { return v === '' ? null : Number(v); }
 
   async function submit() {
-    if (!form.title.trim()) { addToast('Title is required', 'error'); return; }
+    if (!form.title.trim()) { addToast(t('recovery.titleRequired', 'Title is required'), 'error'); return; }
     try {
       if (isEdit && exercise) await update.mutateAsync({ exerciseId: exercise.id, data: form });
       else await add.mutateAsync({ planId, data: form });
-      addToast(isEdit ? 'Exercise updated' : 'Exercise added', 'success');
+      addToast(isEdit ? t('recovery.exerciseUpdated', 'Exercise updated') : t('recovery.exerciseAdded', 'Exercise added'), 'success');
       onClose();
-    } catch (err) { addToast(err instanceof Error ? err.message : 'Failed', 'error'); }
+    } catch (err) { addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error'); }
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? 'Edit Exercise' : 'Add Exercise'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? t('recovery.editExercise', 'Edit Exercise') : t('recovery.addExercise', 'Add Exercise')}>
       <div className="space-y-4">
-        <Input label="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Hamstring stretch" />
+        <Input label={t('common.title', 'Title')} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t('recovery.titlePlaceholder', 'e.g. Hamstring stretch')} />
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('common.description', 'Description')}</label>
           <textarea value={form.description ?? ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <Input label="Week" type="number" min={1} value={String(form.week)} onChange={e => setForm(f => ({ ...f, week: Number(e.target.value) || 1 }))} />
+          <Input label={t('recovery.week', 'Week')} type="number" min={1} value={String(form.week)} onChange={e => setForm(f => ({ ...f, week: Number(e.target.value) || 1 }))} />
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Day</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('common.day', 'Day')}</label>
             <select value={form.dayOfWeek} onChange={e => setForm(f => ({ ...f, dayOfWeek: e.target.value }))}
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
               {['All', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => <option key={d} value={d}>{d}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{t('common.category', 'Category')}</label>
             <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value as RecoveryExerciseCategory }))}
               className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-2 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map(c => <option key={c} value={c}>{dyn.category(c)}</option>)}
             </select>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2">
-          <Input label="Sets" type="number" min={0} value={form.sets == null ? '' : String(form.sets)} onChange={e => setForm(f => ({ ...f, sets: num(e.target.value) }))} />
-          <Input label="Reps" type="number" min={0} value={form.reps == null ? '' : String(form.reps)} onChange={e => setForm(f => ({ ...f, reps: num(e.target.value) }))} />
-          <Input label="Min" type="number" min={0} value={form.durationMinutes == null ? '' : String(form.durationMinutes)} onChange={e => setForm(f => ({ ...f, durationMinutes: num(e.target.value) }))} />
-          <Input label="Rest(s)" type="number" min={0} value={form.restSeconds == null ? '' : String(form.restSeconds)} onChange={e => setForm(f => ({ ...f, restSeconds: num(e.target.value) }))} />
+          <Input label={t('recovery.sets', 'Sets')} type="number" min={0} value={form.sets == null ? '' : String(form.sets)} onChange={e => setForm(f => ({ ...f, sets: num(e.target.value) }))} />
+          <Input label={t('recovery.reps', 'Reps')} type="number" min={0} value={form.reps == null ? '' : String(form.reps)} onChange={e => setForm(f => ({ ...f, reps: num(e.target.value) }))} />
+          <Input label={t('recovery.min', 'Min')} type="number" min={0} value={form.durationMinutes == null ? '' : String(form.durationMinutes)} onChange={e => setForm(f => ({ ...f, durationMinutes: num(e.target.value) }))} />
+          <Input label={t('recovery.restS', 'Rest(s)')} type="number" min={0} value={form.restSeconds == null ? '' : String(form.restSeconds)} onChange={e => setForm(f => ({ ...f, restSeconds: num(e.target.value) }))} />
         </div>
         <div className="flex justify-end gap-3">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} isLoading={add.isPending || update.isPending}>{isEdit ? 'Save' : 'Add'}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={submit} isLoading={add.isPending || update.isPending}>{isEdit ? t('common.save', 'Save') : t('common.add', 'Add')}</Button>
         </div>
       </div>
     </Modal>
@@ -162,6 +167,8 @@ function ExerciseModal({ planId, exercise, defaultWeek, isOpen, onClose }: {
 
 // ── Template picker (coach) ──────────────────────────────────────────────────
 function TemplatePicker({ injuryId, bodyPart, onBack }: { injuryId: number; bodyPart?: string | null; onBack: () => void }) {
+  const { t: tr } = useTranslation();
+  const dyn = useDynamicLabels();
   const { addToast } = useToast();
   const { data: templates = [], isLoading } = useRecoveryTemplates();
   const apply = useApplyRecoveryTemplate();
@@ -171,11 +178,11 @@ function TemplatePicker({ injuryId, bodyPart, onBack }: { injuryId: number; body
     setApplyingId(templateId);
     try {
       await apply.mutateAsync({ injuryId, templateId });
-      addToast('Recovery plan created from template', 'success');
+      addToast(tr('recovery.planFromTemplate', 'Recovery plan created from template'), 'success');
       // Leave the picker so the modal shows the freshly-created plan.
       onBack();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to apply template', 'error');
+      addToast(err instanceof Error ? err.message : tr('recovery.applyFailed', 'Failed to apply template'), 'error');
     } finally {
       setApplyingId(null);
     }
@@ -192,11 +199,11 @@ function TemplatePicker({ injuryId, bodyPart, onBack }: { injuryId: number; body
   return (
     <div className="space-y-4">
       <button onClick={onBack} className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 cursor-pointer">
-        <ChevronLeft size={16} /> Back
+        <ChevronLeft size={16} /> {tr('common.back', 'Back')}
       </button>
       <div>
-        <h3 className="text-lg font-black text-gray-900 dark:text-white">Choose a Template</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">Start from a built-in program — you can edit every exercise afterwards.</p>
+        <h3 className="text-lg font-black text-gray-900 dark:text-white">{tr('recovery.chooseTemplate', 'Choose a Template')}</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{tr('recovery.templateDesc', 'Start from a built-in program — you can edit every exercise afterwards.')}</p>
       </div>
 
       {isLoading ? (
@@ -212,19 +219,19 @@ function TemplatePicker({ injuryId, bodyPart, onBack }: { injuryId: number; body
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap mb-1">
                       <h4 className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</h4>
-                      {suggested && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">Suggested</span>}
-                      <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', SEV_STYLES[t.typicalSeverity])}>{t.typicalSeverity}</span>
+                      {suggested && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{tr('recovery.suggested', 'Suggested')}</span>}
+                      <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', SEV_STYLES[t.typicalSeverity])}>{dyn.generic('severity', t.typicalSeverity)}</span>
                     </div>
                     {t.description && <p className="text-xs text-gray-600 dark:text-gray-400">{t.description}</p>}
                     <div className="flex items-center gap-3 mt-1.5 text-[11px] text-gray-500 dark:text-gray-400">
-                      <span className="inline-flex items-center gap-1"><Activity size={11} /> {t.estimatedWeeks} wks</span>
-                      <span className="inline-flex items-center gap-1"><Dumbbell size={11} /> {t.exerciseCount} exercises</span>
-                      <span className="inline-flex items-center gap-1"><Flag size={11} /> {t.milestoneCount} milestones</span>
+                      <span className="inline-flex items-center gap-1"><Activity size={11} /> {tr('recovery.wks', '{{n}} wks', { n: t.estimatedWeeks })}</span>
+                      <span className="inline-flex items-center gap-1"><Dumbbell size={11} /> {tr('recovery.exercisesCount', '{{n}} exercises', { n: t.exerciseCount })}</span>
+                      <span className="inline-flex items-center gap-1"><Flag size={11} /> {tr('recovery.milestonesCount', '{{n}} milestones', { n: t.milestoneCount })}</span>
                     </div>
                   </div>
                   <button onClick={() => applyTemplate(t.id)} disabled={applyingId != null}
                     className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-semibold hover:bg-indigo-500 transition-all cursor-pointer disabled:opacity-60">
-                    {applyingId === t.id ? 'Applying…' : 'Use'}
+                    {applyingId === t.id ? tr('recovery.applying', 'Applying…') : tr('recovery.use', 'Use')}
                   </button>
                 </div>
               </div>
@@ -240,6 +247,8 @@ function TemplatePicker({ injuryId, bodyPart, onBack }: { injuryId: number; body
 export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach, injuryBodyPart }: {
   isOpen: boolean; onClose: () => void; injuryId?: number; playerId?: number; isCoach: boolean; injuryBodyPart?: string | null;
 }) {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const { addToast } = useToast();
   const injuryQuery = useInjuryRecoveryPlan(injuryId ?? null);
   const playerQuery = usePlayerRecoveryPlan(injuryId ? null : playerId ?? null);
@@ -265,20 +274,20 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
 
   async function handleGenerate() {
     if (!injuryId) return;
-    try { await generate.mutateAsync(injuryId); addToast('Recovery plan generated', 'success'); }
-    catch (err) { addToast(err instanceof Error ? err.message : 'Generation failed', 'error'); }
+    try { await generate.mutateAsync(injuryId); addToast(t('recovery.planGenerated', 'Recovery plan generated'), 'success'); }
+    catch (err) { addToast(err instanceof Error ? err.message : t('recovery.generationFailed', 'Generation failed'), 'error'); }
   }
   async function handleCreateManual() {
     if (!injuryId) return;
-    try { await createPlan.mutateAsync({ injuryId, data: { title: '', estimatedWeeks: 4 } }); addToast('Plan created — add exercises', 'success'); }
-    catch (err) { addToast(err instanceof Error ? err.message : 'Failed', 'error'); }
+    try { await createPlan.mutateAsync({ injuryId, data: { title: '', estimatedWeeks: 4 } }); addToast(t('recovery.planCreated', 'Plan created — add exercises'), 'success'); }
+    catch (err) { addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error'); }
   }
   async function handleAddMilestone() {
     if (!plan) return;
-    const title = window.prompt('Milestone title (e.g. "Walk without pain")');
+    const title = window.prompt(t('recovery.milestonePrompt', 'Milestone title (e.g. "Walk without pain")'));
     if (!title?.trim()) return;
     try { await addMilestone.mutateAsync({ planId: plan.id, data: { title: title.trim(), targetWeek: week } }); }
-    catch (err) { addToast(err instanceof Error ? err.message : 'Failed', 'error'); }
+    catch (err) { addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error'); }
   }
 
   const weeks = plan ? Array.from({ length: Math.max(plan.estimatedWeeks, ...plan.exercises.map(e => e.week), 1) }, (_, i) => i + 1) : [];
@@ -286,13 +295,13 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
   const pct = plan && plan.totalExercises > 0 ? Math.round((plan.completedExercises / plan.totalExercises) * 100) : 0;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Recovery Program" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('recovery.recoveryProgram', 'Recovery Program')} size="xl">
       {isLoading ? (
         <div className="py-12 flex justify-center"><Spinner /></div>
       ) : generate.isPending ? (
         <AILoadingPanel
-          primaryText="Building recovery program…"
-          messages={['Analyzing injury type & severity…', 'Considering sport & position…', 'Planning week-by-week exercises…', 'Setting recovery milestones…']}
+          primaryText={t('recovery.buildingProgram', 'Building recovery program…')}
+          messages={[t('recovery.aiMsg1', 'Analyzing injury type & severity…'), t('recovery.aiMsg2', 'Considering sport & position…'), t('recovery.aiMsg3', 'Planning week-by-week exercises…'), t('recovery.aiMsg4', 'Setting recovery milestones…')]}
           estimatedSeconds={40}
         />
       ) : showTemplates && isCoach && injuryId ? (
@@ -300,15 +309,15 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
       ) : !plan ? (
         isCoach ? (
           <div className="space-y-4 py-4">
-            <EmptyState icon={<Activity size={32} />} title="No recovery program yet" description="Pick a template, generate with AI, or build it manually." size="sm" />
+            <EmptyState icon={<Activity size={32} />} title={t('recovery.noProgramYet', 'No recovery program yet')} description={t('recovery.noProgramDesc', 'Pick a template, generate with AI, or build it manually.')} size="sm" />
             <div className="flex flex-wrap justify-center gap-3">
-              <Button variant="secondary" onClick={handleCreateManual} isLoading={createPlan.isPending}><Plus size={15} className="mr-1" /> Create Manually</Button>
-              <Button variant="secondary" onClick={() => setShowTemplates(true)}><LayoutTemplate size={15} className="mr-1" /> Use Template</Button>
-              <Button onClick={handleGenerate}><Sparkles size={15} className="mr-1" /> Generate with AI</Button>
+              <Button variant="secondary" onClick={handleCreateManual} isLoading={createPlan.isPending}><Plus size={15} className="mr-1" /> {t('recovery.createManually', 'Create Manually')}</Button>
+              <Button variant="secondary" onClick={() => setShowTemplates(true)}><LayoutTemplate size={15} className="mr-1" /> {t('recovery.useTemplate', 'Use Template')}</Button>
+              <Button onClick={handleGenerate}><Sparkles size={15} className="mr-1" /> {t('recovery.generateWithAI', 'Generate with AI')}</Button>
             </div>
           </div>
         ) : (
-          <EmptyState icon={<Activity size={32} />} title="No recovery program" description="Your coach hasn't set up a recovery program yet." size="sm" />
+          <EmptyState icon={<Activity size={32} />} title={t('recovery.noProgram', 'No recovery program')} description={t('recovery.noProgramAthlete', "Your coach hasn't set up a recovery program yet.")} size="sm" />
         )
       ) : (
         <div className="space-y-5">
@@ -320,13 +329,13 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
                 <span className="text-sm text-gray-600 dark:text-gray-300">{plan.playerName}</span>
                 <span className="text-gray-300">·</span>
                 <span className="text-sm text-gray-600 dark:text-gray-300">{plan.injuryType}{plan.bodyPart ? ` (${plan.bodyPart})` : ''}</span>
-                <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', SEV_STYLES[plan.severity])}>{plan.severity}</span>
+                <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', SEV_STYLES[plan.severity])}>{dyn.generic('severity', plan.severity)}</span>
               </div>
             </div>
             {isCoach && (
               <div className="flex items-center gap-2">
                 <button onClick={handleGenerate} className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-xs font-semibold text-gray-700 dark:text-gray-200 transition-all cursor-pointer">
-                  <Sparkles size={13} /> Regenerate
+                  <Sparkles size={13} /> {t('common.regenerate', 'Regenerate')}
                 </button>
               </div>
             )}
@@ -335,8 +344,8 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
           {/* Progress */}
           <div>
             <div className="flex items-center justify-between text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-              <span>Week {plan.currentWeek} of {plan.estimatedWeeks}</span>
-              <span>{plan.completedExercises}/{plan.totalExercises} exercises · {pct}%</span>
+              <span>{t('recovery.weekOf', 'Week {{current}} of {{total}}', { current: plan.currentWeek, total: plan.estimatedWeeks })}</span>
+              <span>{t('recovery.exercisesProgress', '{{done}}/{{total}} exercises · {{pct}}%', { done: plan.completedExercises, total: plan.totalExercises, pct })}</span>
             </div>
             <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
               <div className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all" style={{ width: `${pct}%` }} />
@@ -347,8 +356,8 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
           {(plan.milestones.length > 0 || isCoach) && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-500">Milestones</p>
-                {isCoach && <button onClick={handleAddMilestone} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">+ Add</button>}
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-500">{t('recovery.milestones', 'Milestones')}</p>
+                {isCoach && <button onClick={handleAddMilestone} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">+ {t('common.add', 'Add')}</button>}
               </div>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {plan.milestones.map(m => (
@@ -357,12 +366,12 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
                       m.isAchieved ? 'border-green-300 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10' : 'border-gray-200 dark:border-gray-800')}>
                     <div className="flex items-center gap-1.5 mb-1">
                       {m.isAchieved ? <CheckCircle2 size={15} className="text-green-500" /> : <Circle size={15} className="text-gray-300 dark:text-gray-600" />}
-                      <span className="text-[10px] font-semibold text-gray-400">Week {m.targetWeek}</span>
+                      <span className="text-[10px] font-semibold text-gray-400">{t('recovery.weekN', 'Week {{n}}', { n: m.targetWeek })}</span>
                     </div>
                     <p className="text-xs font-medium text-gray-800 dark:text-gray-200 leading-tight">{m.title}</p>
                   </button>
                 ))}
-                {plan.milestones.length === 0 && <p className="text-xs text-gray-400">No milestones yet.</p>}
+                {plan.milestones.length === 0 && <p className="text-xs text-gray-400">{t('recovery.noMilestones', 'No milestones yet.')}</p>}
               </div>
             </div>
           )}
@@ -373,7 +382,7 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
               <button key={w} onClick={() => setWeek(w)}
                 className={clsx('px-3 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-all cursor-pointer',
                   week === w ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}>
-                Week {w}
+                {t('recovery.weekN', 'Week {{n}}', { n: w })}
               </button>
             ))}
           </div>
@@ -383,16 +392,16 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
             {isCoach && (
               <button onClick={() => { setEditEx(null); setExModalOpen(true); }}
                 className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-dashed border-gray-300 dark:border-gray-700 text-xs font-semibold text-gray-500 hover:border-indigo-400 hover:text-indigo-500 transition-all cursor-pointer">
-                <Plus size={13} /> Add Exercise to Week {week}
+                <Plus size={13} /> {t('recovery.addExerciseToWeek', 'Add Exercise to Week {{n}}', { n: week })}
               </button>
             )}
             {weekExercises.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No exercises for week {week}.</p>
+              <p className="text-sm text-gray-400 text-center py-4">{t('recovery.noExercisesWeek', 'No exercises for week {{n}}.', { n: week })}</p>
             ) : weekExercises.map(ex => (
               <div key={ex.id} className={clsx('rounded-xl border p-3', ex.isCompleted ? 'border-green-200 dark:border-green-900 bg-green-50/40 dark:bg-green-900/10' : 'border-gray-200 dark:border-gray-800')}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', CAT_STYLES[ex.category])}>{ex.category}</span>
+                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', CAT_STYLES[ex.category])}>{dyn.category(ex.category)}</span>
                     <span className="text-[10px] font-semibold text-gray-400 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded-full">{ex.dayOfWeek}</span>
                     <h4 className="text-sm font-bold text-gray-900 dark:text-white">{ex.title}</h4>
                   </div>
@@ -406,19 +415,19 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
                 {ex.description && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">{ex.description}</p>}
                 <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
                   {ex.sets != null && ex.reps != null && <span>{ex.sets}×{ex.reps}</span>}
-                  {ex.durationMinutes != null && <span>{ex.durationMinutes} min</span>}
-                  {ex.restSeconds != null && <span>{ex.restSeconds}s rest</span>}
+                  {ex.durationMinutes != null && <span>{t('recovery.minShort', '{{n}} min', { n: ex.durationMinutes })}</span>}
+                  {ex.restSeconds != null && <span>{t('recovery.restShort', '{{n}}s rest', { n: ex.restSeconds })}</span>}
                 </div>
                 {ex.isCompleted ? (
                   <div className="mt-2 flex items-center gap-2 flex-wrap text-xs">
-                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold"><Check size={13} /> Done</span>
+                    <span className="inline-flex items-center gap-1 text-green-600 dark:text-green-400 font-semibold"><Check size={13} /> {t('common.done', 'Done')}</span>
                     {ex.difficultyRating != null && <Stars value={ex.difficultyRating} />}
                     {ex.completedNote && <span className="text-gray-500 italic">“{ex.completedNote}”</span>}
                   </div>
                 ) : (
                   <button onClick={() => setCompleteEx(ex)}
                     className="mt-2 w-full py-1.5 rounded-lg bg-green-600 hover:bg-green-500 text-white text-xs font-semibold transition-all cursor-pointer">
-                    Mark Complete
+                    {t('recovery.markComplete', 'Mark Complete')}
                   </button>
                 )}
               </div>
@@ -432,8 +441,8 @@ export function RecoveryPlanModal({ isOpen, onClose, injuryId, playerId, isCoach
           <ExerciseModal planId={plan.id} exercise={editEx} defaultWeek={week} isOpen={exModalOpen} onClose={() => { setExModalOpen(false); setEditEx(null); }} />
           <CompleteExerciseModal exercise={completeEx} isOpen={!!completeEx} onClose={() => setCompleteEx(null)} />
           <ConfirmModal isOpen={!!deleteEx} onClose={() => setDeleteEx(null)}
-            onConfirm={async () => { if (!deleteEx) return; try { await deleteExercise.mutateAsync(deleteEx.id); addToast('Exercise deleted', 'success'); } catch (err) { addToast(err instanceof Error ? err.message : 'Failed', 'error'); } finally { setDeleteEx(null); } }}
-            title="Delete Exercise" message={`Delete "${deleteEx?.title}"?`} confirmLabel="Delete" isLoading={deleteExercise.isPending} />
+            onConfirm={async () => { if (!deleteEx) return; try { await deleteExercise.mutateAsync(deleteEx.id); addToast(t('recovery.exerciseDeleted', 'Exercise deleted'), 'success'); } catch (err) { addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error'); } finally { setDeleteEx(null); } }}
+            title={t('recovery.deleteExercise', 'Delete Exercise')} message={t('recovery.deleteExerciseMsg', 'Delete "{{title}}"?', { title: deleteEx?.title })} confirmLabel={t('common.delete', 'Delete')} isLoading={deleteExercise.isPending} />
         </>
       )}
     </Modal>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { Globe, Lock, Copy, Check, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
@@ -16,6 +17,7 @@ const TOGGLES: { key: ShowKey; label: string; hint: string }[] = [
 ];
 
 export function PublicProfileSettingsSection() {
+  const { t } = useTranslation();
   const { data: settings, isLoading } = usePublicProfileSettings();
   const update = useUpdatePublicProfile();
   const { addToast } = useToast();
@@ -49,10 +51,10 @@ export function PublicProfileSettingsSection() {
     try {
       await navigator.clipboard.writeText(publicUrl);
       setCopied(true);
-      addToast('Link copied', 'success');
+      addToast(t('profile.publicSettings.linkCopied', 'Link copied'), 'success');
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      addToast('Could not copy link', 'error');
+      addToast(t('profile.publicSettings.copyFailed', 'Could not copy link'), 'error');
     }
   }
 
@@ -61,10 +63,10 @@ export function PublicProfileSettingsSection() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-            <Globe size={17} className="text-indigo-500" /> Public Profile
+            <Globe size={17} className="text-indigo-500" /> {t('profile.publicSettings.title', 'Public Profile')}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            Share a public page of your progress with anyone — no account needed to view it.
+            {t('profile.publicSettings.subtitle', 'Share a public page of your progress with anyone — no account needed to view it.')}
           </p>
         </div>
         {/* Public toggle */}
@@ -82,14 +84,14 @@ export function PublicProfileSettingsSection() {
 
       {!settings.isPublic ? (
         <div className="mt-4 flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/40 rounded-lg px-3 py-2.5">
-          <Lock size={15} /> Your profile is private. Turn it on to get a shareable link.
+          <Lock size={15} /> {t('profile.publicSettings.privateNotice', 'Your profile is private. Turn it on to get a shareable link.')}
         </div>
       ) : (
         <div className="mt-5 space-y-5">
           {/* URL + QR */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 min-w-0">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Public link</label>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('profile.publicSettings.publicLink', 'Public link')}</label>
               <div className="mt-1 flex gap-2">
                 <input
                   readOnly
@@ -98,7 +100,7 @@ export function PublicProfileSettingsSection() {
                   className="flex-1 min-w-0 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 px-3 py-2 text-sm text-gray-700 dark:text-gray-200"
                 />
                 <button onClick={copyLink} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium cursor-pointer flex-shrink-0">
-                  {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? 'Copied' : 'Copy'}
+                  {copied ? <Check size={15} /> : <Copy size={15} />} {copied ? t('common.copied', 'Copied') : t('common.copy', 'Copy')}
                 </button>
               </div>
               <a
@@ -107,7 +109,7 @@ export function PublicProfileSettingsSection() {
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-1.5 text-sm text-indigo-500 hover:underline"
               >
-                <ExternalLink size={14} /> Preview my public page
+                <ExternalLink size={14} /> {t('profile.previewPublicPage', 'Preview my public page')}
               </a>
             </div>
             <div className="flex-shrink-0 bg-white p-2.5 rounded-xl border border-gray-200 self-start">
@@ -117,7 +119,7 @@ export function PublicProfileSettingsSection() {
 
           {/* What to show */}
           <div>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">What to show</label>
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('profile.publicSettings.whatToShow', 'What to show')}</label>
             <div className="mt-2 grid sm:grid-cols-2 gap-2">
               {TOGGLES.map(({ key, label, hint }) => (
                 <label key={key} className="flex items-start gap-2.5 rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2 cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-700">
@@ -128,8 +130,8 @@ export function PublicProfileSettingsSection() {
                     className="mt-0.5 w-4 h-4 rounded accent-indigo-600 cursor-pointer"
                   />
                   <span>
-                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">{label}</span>
-                    <span className="block text-xs text-gray-400 dark:text-gray-500">{hint}</span>
+                    <span className="block text-sm font-medium text-gray-800 dark:text-gray-200">{t(`profile.publicSettings.${key}.label`, label)}</span>
+                    <span className="block text-xs text-gray-400 dark:text-gray-500">{t(`profile.publicSettings.${key}.hint`, hint)}</span>
                   </span>
                 </label>
               ))}

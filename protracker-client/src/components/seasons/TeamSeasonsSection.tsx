@@ -4,6 +4,7 @@ import {
   Minus, Link2, ChevronDown, Target,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Modal, ConfirmModal } from '../ui/Modal';
@@ -13,11 +14,8 @@ import {
   useSeasons, useSeasonSummary, useCreateSeason, useUpdateSeason, useDeleteSeason, useLinkPeriod,
 } from '../../hooks/useSeasons';
 import { useAssessmentPeriods } from '../../hooks/useAssessmentPeriods';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import type { Season, CreateSeasonInput } from '../../types';
-
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-}
 
 function ImprovementChip({ value }: { value: number }) {
   const Icon = value > 0 ? TrendingUp : value < 0 ? TrendingDown : Minus;
@@ -36,6 +34,7 @@ function ImprovementChip({ value }: { value: number }) {
 
 // --- Season create/edit form ---
 function SeasonFormModal({ teamId, editing, onClose }: { teamId: number; editing: Season | null; onClose: () => void }) {
+  const { t: tr } = useTranslation();
   const { addToast } = useToast();
   const create = useCreateSeason(teamId);
   const update = useUpdateSeason(teamId);
@@ -51,53 +50,53 @@ function SeasonFormModal({ teamId, editing, onClose }: { teamId: number; editing
 
   async function submit() {
     if (!form.name.trim() || !form.startDate || !form.endDate) {
-      addToast('Name, start and end dates are required.', 'error');
+      addToast(tr('seasons.errRequired', 'Name, start and end dates are required.'), 'error');
       return;
     }
     if (form.endDate < form.startDate) {
-      addToast('End date must be on or after the start date.', 'error');
+      addToast(tr('seasons.errEndDate', 'End date must be on or after the start date.'), 'error');
       return;
     }
     try {
       if (editing) await update.mutateAsync({ id: editing.id, data: form });
       else await create.mutateAsync(form);
-      addToast(editing ? 'Season updated' : 'Season created', 'success');
+      addToast(editing ? tr('seasons.seasonUpdated', 'Season updated') : tr('seasons.seasonCreated', 'Season created'), 'success');
       onClose();
     } catch {
-      addToast('Could not save the season.', 'error');
+      addToast(tr('seasons.errSave', 'Could not save the season.'), 'error');
     }
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={editing ? 'Edit Season' : 'New Season'}>
+    <Modal isOpen onClose={onClose} title={editing ? tr('seasons.editSeason', 'Edit Season') : tr('seasons.newSeason', 'New Season')}>
       <div className="space-y-4">
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tr('common.name', 'Name')}</label>
           <input
             className={inputClass}
             value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })}
-            placeholder="e.g. 2025/26 Season"
+            placeholder={tr('seasons.namePlaceholder', 'e.g. 2025/26 Season')}
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start date</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tr('seasons.startDate', 'Start date')}</label>
             <input type="date" className={inputClass} value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">End date</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tr('seasons.endDate', 'End date')}</label>
             <input type="date" className={inputClass} value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} />
           </div>
         </div>
         <div>
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Goals <span className="text-gray-400 font-normal">(optional)</span></label>
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{tr('seasons.goals', 'Goals')} <span className="text-gray-400 font-normal">({tr('common.optional', 'Optional')})</span></label>
           <textarea
             className={clsx(inputClass, 'resize-none')}
             rows={3}
             value={form.goals ?? ''}
             onChange={e => setForm({ ...form, goals: e.target.value })}
-            placeholder="What is the team working towards this season?"
+            placeholder={tr('seasons.goalsPlaceholder', 'What is the team working towards this season?')}
           />
         </div>
         <label className="flex items-center gap-2 cursor-pointer">
@@ -107,12 +106,12 @@ function SeasonFormModal({ teamId, editing, onClose }: { teamId: number; editing
             onChange={e => setForm({ ...form, isActive: e.target.checked })}
             className="w-4 h-4 rounded accent-indigo-600"
           />
-          <span className="text-sm text-gray-700 dark:text-gray-300">Set as the current (active) season</span>
+          <span className="text-sm text-gray-700 dark:text-gray-300">{tr('seasons.setActive', 'Set as the current (active) season')}</span>
         </label>
         <div className="flex justify-end gap-2 pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
           <Button onClick={submit} isLoading={create.isPending || update.isPending}>
-            {editing ? 'Save Changes' : 'Create Season'}
+            {editing ? tr('seasons.saveChanges', 'Save Changes') : tr('seasons.createSeason', 'Create Season')}
           </Button>
         </div>
       </div>
@@ -122,6 +121,9 @@ function SeasonFormModal({ teamId, editing, onClose }: { teamId: number; editing
 
 // --- Expanded season detail: summary + period linking ---
 function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Season; isCoach: boolean }) {
+  const { t: tr } = useTranslation();
+  const { formatDate } = useLocaleFormat();
+  const fmtDate = (iso: string) => formatDate(iso, { month: 'short', day: 'numeric', year: 'numeric' });
   const { addToast } = useToast();
   const { data: summary, isLoading } = useSeasonSummary(season.id);
   const { data: periods = [] } = useAssessmentPeriods();
@@ -136,7 +138,7 @@ function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Sea
     try {
       await linkMut.mutateAsync({ seasonId: season.id, periodId, link });
     } catch {
-      addToast('Could not update the linked period.', 'error');
+      addToast(tr('seasons.errLink', 'Could not update the linked period.'), 'error');
     }
   }
 
@@ -144,11 +146,10 @@ function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Sea
     <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50 space-y-4">
       {/* Season summary */}
       {isLoading ? (
-        <p className="text-sm text-gray-400">Loading summary…</p>
+        <p className="text-sm text-gray-400">{tr('seasons.loadingSummary', 'Loading summary…')}</p>
       ) : !summary?.hasData ? (
         <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-4 text-sm text-gray-500 dark:text-gray-400">
-          No assessment data yet. Link assessment periods below (or record assessments within the season dates)
-          to see start-vs-end progress.
+          {tr('seasons.noData', 'No assessment data yet. Link assessment periods below (or record assessments within the season dates) to see start-vs-end progress.')}
         </div>
       ) : (
         <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 p-4">
@@ -165,7 +166,7 @@ function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Sea
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-bold mb-1">Season change</p>
+              <p className="text-[10px] uppercase tracking-wide text-gray-400 font-bold mb-1">{tr('seasons.seasonChange', 'Season change')}</p>
               <ImprovementChip value={summary.improvement} />
             </div>
           </div>
@@ -190,10 +191,10 @@ function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Sea
       {/* Assessment period linking */}
       <div>
         <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
-          <Link2 size={13} /> Assessment Periods
+          <Link2 size={13} /> {tr('seasons.assessmentPeriods', 'Assessment Periods')}
         </p>
         {teamPeriods.length === 0 ? (
-          <p className="text-sm text-gray-400">This team has no assessment periods yet.</p>
+          <p className="text-sm text-gray-400">{tr('seasons.noPeriods', 'This team has no assessment periods yet.')}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {teamPeriods.map(p => {
@@ -204,7 +205,7 @@ function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Sea
                   key={p.id}
                   disabled={!isCoach || linkedElsewhere || linkMut.isPending}
                   onClick={() => toggleLink(p.id, !linkedHere)}
-                  title={linkedElsewhere ? 'Linked to another season' : undefined}
+                  title={linkedElsewhere ? tr('seasons.linkedElsewhere', 'Linked to another season') : undefined}
                   className={clsx(
                     'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
                     linkedHere
@@ -221,13 +222,16 @@ function SeasonDetail({ teamId, season, isCoach }: { teamId: number; season: Sea
             })}
           </div>
         )}
-        {isCoach && <p className="text-[11px] text-gray-400 mt-2">Tap a period to link or unlink it from this season.</p>}
+        {isCoach && <p className="text-[11px] text-gray-400 mt-2">{tr('seasons.tapToLink', 'Tap a period to link or unlink it from this season.')}</p>}
       </div>
     </div>
   );
 }
 
 export function TeamSeasonsSection({ teamId, isCoach }: { teamId: number; isCoach: boolean }) {
+  const { t: tr } = useTranslation();
+  const { formatDate } = useLocaleFormat();
+  const fmtDate = (iso: string) => formatDate(iso, { month: 'short', day: 'numeric', year: 'numeric' });
   const { addToast } = useToast();
   const { data: seasons = [], isLoading } = useSeasons(teamId);
   const del = useDeleteSeason(teamId);
@@ -244,9 +248,9 @@ export function TeamSeasonsSection({ teamId, isCoach }: { teamId: number; isCoac
     if (!confirmDelete) return;
     try {
       await del.mutateAsync(confirmDelete.id);
-      addToast('Season deleted', 'success');
+      addToast(tr('seasons.seasonDeleted', 'Season deleted'), 'success');
     } catch {
-      addToast('Could not delete the season.', 'error');
+      addToast(tr('seasons.errDelete', 'Could not delete the season.'), 'error');
     } finally {
       setConfirmDelete(null);
     }
@@ -257,23 +261,23 @@ export function TeamSeasonsSection({ teamId, isCoach }: { teamId: number; isCoac
       header={
         <div className="flex items-center justify-between">
           <span className="flex items-center gap-2">
-            <CalendarRange size={16} className="text-indigo-500" /> Seasons
+            <CalendarRange size={16} className="text-indigo-500" /> {tr('seasons.title', 'Seasons')}
           </span>
           {isCoach && (
             <Button size="sm" onClick={openNew}>
-              <Plus size={14} /> New Season
+              <Plus size={14} /> {tr('seasons.newSeason', 'New Season')}
             </Button>
           )}
         </div>
       }
     >
       {isLoading ? (
-        <p className="text-sm text-gray-400">Loading seasons…</p>
+        <p className="text-sm text-gray-400">{tr('seasons.loadingSeasons', 'Loading seasons…')}</p>
       ) : seasons.length === 0 ? (
         <EmptyState
           icon={<CalendarRange size={36} />}
-          title="No seasons yet"
-          description={isCoach ? 'Create a season to track squad progress from start to finish.' : 'No seasons have been set up for this team.'}
+          title={tr('seasons.noSeasons', 'No seasons yet')}
+          description={isCoach ? tr('seasons.noSeasonsCoach', 'Create a season to track squad progress from start to finish.') : tr('seasons.noSeasonsAthlete', 'No seasons have been set up for this team.')}
         />
       ) : (
         <div className="space-y-3">
@@ -298,12 +302,12 @@ export function TeamSeasonsSection({ teamId, isCoach }: { teamId: number; isCoac
                       <span className="font-bold text-gray-900 dark:text-white">{s.name}</span>
                       {s.isActive && (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white">
-                          <Star size={9} className="fill-current" /> CURRENT
+                          <Star size={9} className="fill-current" /> {tr('seasons.current', 'CURRENT')}
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                      {fmtDate(s.startDate)} – {fmtDate(s.endDate)} · {s.linkedPeriodCount} linked period{s.linkedPeriodCount === 1 ? '' : 's'}
+                      {fmtDate(s.startDate)} – {fmtDate(s.endDate)} · {s.linkedPeriodCount} {s.linkedPeriodCount === 1 ? tr('seasons.linkedPeriod', 'linked period') : tr('seasons.linkedPeriods', 'linked periods')}
                     </p>
                     {s.goals && (
                       <p className="text-xs text-gray-600 dark:text-gray-300 mt-1.5 flex items-start gap-1.5">
@@ -314,15 +318,15 @@ export function TeamSeasonsSection({ teamId, isCoach }: { teamId: number; isCoac
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isCoach && (
                       <>
-                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" aria-label="Edit">
+                        <button onClick={() => openEdit(s)} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" aria-label={tr('common.edit', 'Edit')}>
                           <Pencil size={14} />
                         </button>
-                        <button onClick={() => setConfirmDelete(s)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" aria-label="Delete">
+                        <button onClick={() => setConfirmDelete(s)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" aria-label={tr('common.delete', 'Delete')}>
                           <Trash2 size={14} />
                         </button>
                       </>
                     )}
-                    <button onClick={() => setExpandedId(expanded ? null : s.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" aria-label="Expand">
+                    <button onClick={() => setExpandedId(expanded ? null : s.id)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer" aria-label={tr('common.expand', 'Expand')}>
                       <ChevronDown size={16} className={clsx('transition-transform', expanded && 'rotate-180')} />
                     </button>
                   </div>
@@ -340,9 +344,9 @@ export function TeamSeasonsSection({ teamId, isCoach }: { teamId: number; isCoac
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
         onConfirm={doDelete}
-        title="Delete season?"
-        message={`"${confirmDelete?.name}" will be removed. Linked assessment periods are kept (just unlinked).`}
-        confirmLabel="Delete"
+        title={tr('seasons.deleteSeasonTitle', 'Delete season?')}
+        message={tr('seasons.deleteSeasonMsg', '"{{name}}" will be removed. Linked assessment periods are kept (just unlinked).', { name: confirmDelete?.name })}
+        confirmLabel={tr('common.delete', 'Delete')}
         isLoading={del.isPending}
       />
     </Card>

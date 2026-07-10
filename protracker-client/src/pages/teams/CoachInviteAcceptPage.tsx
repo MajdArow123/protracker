@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { Activity, Lock, Eye, EyeOff, AlertCircle, ShieldCheck, ArrowLeft, User } from 'lucide-react';
@@ -10,17 +11,20 @@ import type { ValidateCoachInvite } from '../../types';
 
 const inputCls = 'w-full rounded-xl bg-gray-800/60 border border-gray-700 pl-10 pr-10 py-3 text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all';
 
-function passwordStrength(pw: string): { label: string; color: string; ok: boolean } {
-  if (pw.length < 8) return { label: 'Weak', color: 'bg-red-500', ok: false };
-  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return { label: 'Strong', color: 'bg-green-500', ok: true };
-  return { label: 'Fair', color: 'bg-amber-500', ok: false };
+type TFunc = (key: string, fallback: string) => string;
+
+function passwordStrength(pw: string, t: TFunc): { label: string; color: string; ok: boolean } {
+  if (pw.length < 8) return { label: t('common.weak', 'Weak'), color: 'bg-red-500', ok: false };
+  if (/[A-Z]/.test(pw) && /[0-9]/.test(pw)) return { label: t('common.strong', 'Strong'), color: 'bg-green-500', ok: true };
+  return { label: t('common.fair', 'Fair'), color: 'bg-amber-500', ok: false };
 }
 
-function roleLabel(role: string) {
-  return role === 'AssistantCoach' ? 'Assistant Coach' : role === 'Analyst' ? 'Analyst' : 'Coach';
+function roleLabel(role: string, t: TFunc) {
+  return role === 'AssistantCoach' ? t('teams.roleAssistantCoach', 'Assistant Coach') : role === 'Analyst' ? t('teams.roleAnalyst', 'Analyst') : t('teams.roleCoach', 'Coach');
 }
 
 export function CoachInviteAcceptPage() {
+  const { t } = useTranslation();
   const { token = '' } = useParams();
 
   const [validating, setValidating] = useState(true);
@@ -48,7 +52,7 @@ export function CoachInviteAcceptPage() {
   }, [token]);
 
   const existing = info?.emailHasAccount ?? false;
-  const strength = passwordStrength(password);
+  const strength = passwordStrength(password, t);
   const canSubmit = existing
     ? password.length > 0 && !submitting
     : password.length >= 8 && strength.ok && fullName.trim().length > 0 && !submitting;
@@ -66,7 +70,7 @@ export function CoachInviteAcceptPage() {
       // new session and routes to the coach dashboard.
       window.location.href = '/dashboard';
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not accept the invite.');
+      setError(err instanceof Error ? err.message : t('teams.acceptInviteError', 'Could not accept the invite.'));
       setSubmitting(false);
     }
   };
@@ -92,10 +96,10 @@ export function CoachInviteAcceptPage() {
             <div className="mx-auto w-12 h-12 rounded-full bg-red-500/15 flex items-center justify-center mb-4">
               <AlertCircle className="text-red-400" size={22} />
             </div>
-            <h1 className="text-lg font-bold text-white mb-1">Invite not valid</h1>
-            <p className="text-sm text-gray-400 mb-6">This invite link is invalid or has expired. Ask the head coach to send a new one.</p>
+            <h1 className="text-lg font-bold text-white mb-1">{t('teams.inviteNotValid', 'Invite not valid')}</h1>
+            <p className="text-sm text-gray-400 mb-6">{t('teams.inviteNotValidDesc', 'This invite link is invalid or has expired. Ask the head coach to send a new one.')}</p>
             <Link to="/login" className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:underline">
-              <ArrowLeft size={14} /> Back to sign in
+              <ArrowLeft size={14} /> {t('teams.backToSignIn', 'Back to sign in')}
             </Link>
           </div>
         ) : (
@@ -103,20 +107,20 @@ export function CoachInviteAcceptPage() {
             <div className="flex items-start gap-3 rounded-xl bg-indigo-900/20 border border-indigo-800/50 p-3.5 mb-5">
               <ShieldCheck size={18} className="text-indigo-400 mt-0.5 flex-shrink-0" />
               <p className="text-sm text-gray-300">
-                <span className="font-semibold text-white">{info.inviterName}</span> invited you to join{' '}
+                <span className="font-semibold text-white">{info.inviterName}</span> {t('teams.invitedYouToJoin', 'invited you to join')}{' '}
                 <span className="font-semibold text-white">{info.teamName}</span>
-                {info.sportName ? ` (${info.sportName})` : ''} as{' '}
-                <span className="font-semibold text-white">{roleLabel(info.role)}</span>.
+                {info.sportName ? ` (${info.sportName})` : ''} {t('teams.asRolePrefix', 'as')}{' '}
+                <span className="font-semibold text-white">{roleLabel(info.role, t)}</span>.
               </p>
             </div>
 
             <h1 className="text-lg font-bold text-white mb-1">
-              {existing ? 'Accept invitation' : 'Create your account'}
+              {existing ? t('teams.acceptInvitation', 'Accept invitation') : t('teams.createYourAccount', 'Create your account')}
             </h1>
             <p className="text-sm text-gray-400 mb-5">
               {existing
-                ? `Confirm to add ${info.teamName} to your coaching account.`
-                : `Set up your coach account for ${info.email}.`}
+                ? t('teams.confirmAddTeam', 'Confirm to add {{team}} to your coaching account.', { team: info.teamName })
+                : t('teams.setUpCoachAccount', 'Set up your coach account for {{email}}.', { email: info.email })}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,7 +131,7 @@ export function CoachInviteAcceptPage() {
                     type="text"
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
-                    placeholder="Your full name"
+                    placeholder={t('teams.yourFullName', 'Your full name')}
                     className={inputCls}
                     autoFocus
                   />
@@ -140,7 +144,7 @@ export function CoachInviteAcceptPage() {
                     type={showPw ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder={existing ? 'Your password' : 'Create a password'}
+                    placeholder={existing ? t('teams.yourPassword', 'Your password') : t('teams.createPassword', 'Create a password')}
                     className={inputCls}
                     autoFocus={existing}
                   />
@@ -157,7 +161,7 @@ export function CoachInviteAcceptPage() {
                   </div>
                 )}
                 {!existing && (
-                  <p className="text-[11px] text-gray-500 mt-1.5">At least 8 characters, with an uppercase letter and a number.</p>
+                  <p className="text-[11px] text-gray-500 mt-1.5">{t('teams.passwordHint', 'At least 8 characters, with an uppercase letter and a number.')}</p>
                 )}
               </div>
 
@@ -173,12 +177,12 @@ export function CoachInviteAcceptPage() {
                 disabled={!canSubmit}
                 className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold transition-colors cursor-pointer"
               >
-                {submitting ? 'Setting up…' : 'Accept & continue'}
+                {submitting ? t('teams.settingUp', 'Setting up…') : t('teams.acceptContinue', 'Accept & continue')}
               </button>
             </form>
 
             <p className="text-center text-xs text-gray-500 mt-5">
-              Already signed in elsewhere? <Link to="/login" className="text-indigo-400 hover:underline">Sign in</Link>
+              {t('teams.alreadySignedIn', 'Already signed in elsewhere?')} <Link to="/login" className="text-indigo-400 hover:underline">{t('teams.signIn', 'Sign in')}</Link>
             </p>
           </>
         )}

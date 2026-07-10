@@ -4,6 +4,8 @@ import { clsx } from 'clsx';
 import { useMyGoals } from '../../hooks/useGoals';
 import { completionPercent, progressColor, daysUntil } from './goalUtils';
 import type { PersonalGoal } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 // A goal is "on track" when it's active and not past its target date.
 function onTrack(g: PersonalGoal): boolean {
@@ -11,6 +13,8 @@ function onTrack(g: PersonalGoal): boolean {
 }
 
 export function GoalsMiniCard({ goalsPath }: { goalsPath: string }) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { data: goals = [], isLoading } = useMyGoals();
 
   const active = goals.filter(g => g.status === 'Active');
@@ -24,10 +28,10 @@ export function GoalsMiniCard({ goalsPath }: { goalsPath: string }) {
           <div className="inline-flex p-2 rounded-xl bg-indigo-500/10">
             <Target size={16} className="text-indigo-500" />
           </div>
-          <h2 className="text-base font-bold text-gray-900 dark:text-white">My Goals</h2>
+          <h2 className="text-base font-bold text-gray-900 dark:text-white">{t('goals.title', 'My Goals')}</h2>
         </div>
         <Link to={goalsPath} className="flex items-center gap-0.5 text-sm font-medium text-indigo-500 hover:underline">
-          View All <ChevronRight size={15} />
+          {t('common.viewAll', 'View All')} <ChevronRight size={15} />
         </Link>
       </div>
 
@@ -35,13 +39,13 @@ export function GoalsMiniCard({ goalsPath }: { goalsPath: string }) {
         <div className="h-16 skeleton rounded-xl" />
       ) : active.length === 0 ? (
         <div className="text-center py-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">No active goals yet.</p>
-          <Link to={goalsPath} className="mt-2 inline-block text-sm font-semibold text-indigo-500 hover:underline">Set your first goal →</Link>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t('goals.noActiveGoals', 'No active goals yet.')}</p>
+          <Link to={goalsPath} className="mt-2 inline-block text-sm font-semibold text-indigo-500 hover:underline">{t('goals.setFirstGoal', 'Set your first goal →')}</Link>
         </div>
       ) : (
         <>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            <span className="font-semibold text-gray-900 dark:text-white">{onTrackCount} of {active.length}</span> goals on track
+            <span className="font-semibold text-gray-900 dark:text-white">{t('goals.xOfY', '{{count}} of {{total}}', { count: onTrackCount, total: active.length })}</span> {t('goals.goalsOnTrack', 'goals on track')}
           </p>
           <div className="space-y-3">
             {top.map(g => {
@@ -60,7 +64,7 @@ export function GoalsMiniCard({ goalsPath }: { goalsPath: string }) {
                       <div className={clsx('h-full rounded-full', progressColor(pct))} style={{ width: `${pct}%` }} />
                     </div>
                   ) : (
-                    <p className="text-xs text-gray-400">{g.category}</p>
+                    <p className="text-xs text-gray-400">{L.category(g.category)}</p>
                   )}
                 </div>
               );

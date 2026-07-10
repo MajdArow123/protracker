@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Bell, AlertTriangle, CheckSquare, CalendarDays, Check, MessageSquare, UserPlus, Handshake } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useNotifications, type NotificationKind } from '../../hooks/useNotifications';
@@ -20,6 +21,7 @@ const SEV_STYLES = {
 } as const;
 
 export function NotificationBell() {
+  const { t } = useTranslation();
   const { items, count: derivedCount, markAllSeen } = useNotifications();
   const { data: unreadMessages = 0 } = useUnreadMessageCount();
   const count = derivedCount + unreadMessages;
@@ -49,7 +51,7 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen(o => !o)}
         className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-        aria-label="Notifications"
+        aria-label={t('nav.notifications', 'Notifications')}
       >
         <Bell size={18} />
         {count > 0 && (
@@ -62,10 +64,10 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
-            <p className="text-sm font-bold text-gray-900 dark:text-white">Notifications</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">{t('nav.notifications', 'Notifications')}</p>
             {derivedCount > 0 && (
               <button onClick={() => markAllSeen()} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
-                Mark all as read
+                {t('ui.markAllRead', 'Mark all as read')}
               </button>
             )}
           </div>
@@ -75,8 +77,8 @@ export function NotificationBell() {
               <div className="p-3 rounded-full bg-green-500/10 mb-2">
                 <Check size={20} className="text-green-500" />
               </div>
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">All caught up</p>
-              <p className="text-xs text-gray-400 mt-0.5">No notifications right now.</p>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('ui.allCaughtUp', 'All caught up')}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{t('ui.noNotifications', 'No notifications right now.')}</p>
             </div>
           ) : (
             <div className="max-h-[60vh] overflow-y-auto divide-y divide-gray-100 dark:divide-gray-800">
@@ -89,8 +91,8 @@ export function NotificationBell() {
                     <MessageSquare size={14} />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{unreadMessages} unread message{unreadMessages > 1 ? 's' : ''}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">Tap to open your messages</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t('ui.unreadMessages', '{{count}} unread messages', { count: unreadMessages })}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{t('ui.tapToOpenMessages', 'Tap to open your messages')}</p>
                   </div>
                 </button>
               )}

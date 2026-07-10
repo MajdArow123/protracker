@@ -22,19 +22,25 @@ export const MOOD_CONFIG: Record<JournalMood, MoodConfig> = {
   Rough: { label: 'Rough', icon: CloudRain, color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-900/30', solid: 'bg-red-500' },
 };
 
-// Rotating writing prompts shown when the entry is empty.
-export const JOURNAL_PROMPTS = [
-  'What went well in training today?',
-  'What was the hardest part of today?',
-  "What's one thing you want to improve?",
-  'How are you feeling about your progress?',
-  'What did you learn about yourself today?',
-  'What are you grateful for after today?',
-  'What would make tomorrow a win?',
+// Rotating writing prompts shown when the entry is empty. Each carries an i18n
+// key (translated at render) plus its English fallback text.
+export interface JournalPrompt {
+  key: string;
+  text: string;
+}
+
+export const JOURNAL_PROMPTS: JournalPrompt[] = [
+  { key: 'journal.prompt1', text: 'What went well in training today?' },
+  { key: 'journal.prompt2', text: 'What was the hardest part of today?' },
+  { key: 'journal.prompt3', text: "What's one thing you want to improve?" },
+  { key: 'journal.prompt4', text: 'How are you feeling about your progress?' },
+  { key: 'journal.prompt5', text: 'What did you learn about yourself today?' },
+  { key: 'journal.prompt6', text: 'What are you grateful for after today?' },
+  { key: 'journal.prompt7', text: 'What would make tomorrow a win?' },
 ];
 
-export function randomPrompt(exclude?: string): string {
-  const pool = exclude ? JOURNAL_PROMPTS.filter(p => p !== exclude) : JOURNAL_PROMPTS;
+export function randomPrompt(excludeKey?: string): JournalPrompt {
+  const pool = excludeKey ? JOURNAL_PROMPTS.filter(p => p.key !== excludeKey) : JOURNAL_PROMPTS;
   return pool[Math.floor(Math.random() * pool.length)];
 }
 

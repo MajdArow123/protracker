@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import type { PlayerStatus } from '../../types';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 export const STATUS_STYLES: Record<PlayerStatus, string> = {
   Active: 'bg-green-500/15 text-green-500 border border-green-500/30',
@@ -15,6 +16,7 @@ export function PlayerStatusBadge({ status, hideActive = false, size = 'xs' }: {
   hideActive?: boolean;
   size?: 'xs' | 'sm';
 }) {
+  const L = useDynamicLabels();
   const s: PlayerStatus = status ?? 'Active';
   if (hideActive && s === 'Active') return null;
   return (
@@ -23,7 +25,7 @@ export function PlayerStatusBadge({ status, hideActive = false, size = 'xs' }: {
       size === 'xs' ? 'px-2 py-0.5 text-[10px]' : 'px-2.5 py-1 text-xs',
       STATUS_STYLES[s],
     )}>
-      {s}
+      {L.status(s)}
     </span>
   );
 }

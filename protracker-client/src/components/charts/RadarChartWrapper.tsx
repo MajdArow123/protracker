@@ -2,6 +2,7 @@ import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, Tooltip, Legend, LabelList,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import { useIsMobile } from '../../hooks/useMediaQuery';
 
 interface DataPoint {
@@ -31,6 +32,7 @@ function CustomTooltip({ active, payload }: { active?: boolean; payload?: { name
 }
 
 export function RadarChartWrapper({ data, height = 380, showPrevious }: Props) {
+  const { t } = useTranslation();
   const hasPrev = showPrevious && data.some(d => d.previousValue !== undefined);
   const isMobile = useIsMobile();
   const h = isMobile ? Math.min(height, 280) : height;
@@ -63,7 +65,7 @@ export function RadarChartWrapper({ data, height = 380, showPrevious }: Props) {
         {hasPrev && <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af' }} />}
         {hasPrev && (
           <Radar
-            name="Previous"
+            name={t('reports.previous', 'Previous')}
             dataKey="previousValue"
             stroke="#8b5cf6"
             fill="url(#radarGradPrev)"
@@ -73,7 +75,7 @@ export function RadarChartWrapper({ data, height = 380, showPrevious }: Props) {
           />
         )}
         <Radar
-          name="Current"
+          name={t('reports.current', 'Current')}
           dataKey="value"
           stroke="#6366f1"
           fill="url(#radarGrad)"

@@ -21,14 +21,18 @@ import { usePlayers, useMyPlayer } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
 import { useAuth } from '../../context/AuthContext';
 import type { Drill, DrillCategory, DrillDifficulty } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 const PAGE_SIZE = 12;
-const DURATIONS: { value: DurationFilter; label: string }[] = [
-  { value: 'any', label: 'Any' }, { value: 'under10', label: 'Under 10 min' },
-  { value: '10to20', label: '10–20 min' }, { value: 'over20', label: '20+ min' },
+const DURATIONS: { value: DurationFilter; key: string; label: string }[] = [
+  { value: 'any', key: 'drills.durAny', label: 'Any' }, { value: 'under10', key: 'drills.durUnder10', label: 'Under 10 min' },
+  { value: '10to20', key: 'drills.dur10to20', label: '10–20 min' }, { value: 'over20', key: 'drills.durOver20', label: '20+ min' },
 ];
 
 export function DrillLibraryPage() {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const { user } = useAuth();
   const isCoach = user?.role === 'Coach';
   const isSolo = user?.role === 'SoloAthlete';
@@ -99,12 +103,12 @@ export function DrillLibraryPage() {
 
   const actions = canManage ? (
     <Button onClick={() => { setEditing(null); setCreateOpen(true); }}>
-      <Plus size={16} className="mr-1.5" /> Create Drill
+      <Plus size={16} className="mr-1.5" /> {tr('drills.createDrill', 'Create Drill')}
     </Button>
   ) : undefined;
 
   return (
-    <PageWrapper title="Drill Library" actions={actions}>
+    <PageWrapper title={tr('drills.title', 'Drill Library')} actions={actions}>
       {/* Recommended for you / for a player */}
       <RecommendedDrillsSection
         isCoach={isCoach}
@@ -121,14 +125,14 @@ export function DrillLibraryPage() {
               <button key={t} onClick={() => setTab(t)}
                 className={clsx('px-4 py-1.5 rounded-lg text-sm font-medium transition-all cursor-pointer',
                   tab === t ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300')}>
-                {t === 'all' ? 'All Drills' : 'My Drills'}
+                {t === 'all' ? tr('drills.allDrills', 'All Drills') : tr('drills.myDrills', 'My Drills')}
               </button>
             ))}
           </div>
         )}
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search drills…"
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={tr('drills.searchPlaceholder', 'Search drills…')}
             className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 pl-9 pr-3 py-2 text-sm text-gray-900 dark:text-white" />
         </div>
       </div>
@@ -139,9 +143,9 @@ export function DrillLibraryPage() {
             is locked to their own sport (no pills). */}
         {showSportPills && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            <button onClick={() => setSportId(null)} className={pill(sportId === null)}>All Sports</button>
+            <button onClick={() => setSportId(null)} className={pill(sportId === null)}>{tr('drills.allSports', 'All Sports')}</button>
             {sports.map(s => (
-              <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{SPORT_SHORT[s.id] ?? s.name}</button>
+              <button key={s.id} onClick={() => setSportId(s.id)} className={pill(sportId === s.id)}>{L.sport(SPORT_SHORT[s.id] ?? s.name)}</button>
             ))}
           </div>
         )}
@@ -151,7 +155,7 @@ export function DrillLibraryPage() {
             <button key={c} onClick={() => toggleCategory(c)}
               className={clsx('px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer',
                 categories.has(c) ? CATEGORY_BADGE[c] + ' ring-1 ring-current' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:opacity-80')}>
-              {CATEGORY_LABEL[c]}
+              {L.category(CATEGORY_LABEL[c])}
             </button>
           ))}
         </div>
@@ -160,22 +164,22 @@ export function DrillLibraryPage() {
             <button key={d} onClick={() => setDifficulty(difficulty === d ? null : d)}
               className={clsx('px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer',
                 difficulty === d ? DIFFICULTY_BADGE[d] + ' ring-1 ring-current' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400 hover:opacity-80')}>
-              {d}
+              {L.difficulty(d)}
             </button>
           ))}
           <span className="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1" />
           <select value={duration} onChange={(e) => setDuration(e.target.value as DurationFilter)}
             className="rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 cursor-pointer">
-            {DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+            {DURATIONS.map(d => <option key={d.value} value={d.value}>{tr(d.key, d.label)}</option>)}
           </select>
           <button onClick={() => setFavoritesOnly(v => !v)}
             className={clsx('inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer',
               favoritesOnly ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-300 ring-1 ring-current' : 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400')}>
-            <Heart size={11} className={favoritesOnly ? 'fill-red-500 text-red-500' : ''} /> Favorites
+            <Heart size={11} className={favoritesOnly ? 'fill-red-500 text-red-500' : ''} /> {tr('drills.favorites', 'Favorites')}
           </button>
           {hasFilters && (
             <button onClick={clearFilters} className="inline-flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-600 cursor-pointer">
-              <X size={11} /> Clear
+              <X size={11} /> {tr('common.clear', 'Clear')}
             </button>
           )}
         </div>
@@ -187,12 +191,12 @@ export function DrillLibraryPage() {
       ) : isError ? (
         <ErrorState onRetry={() => refetch()} />
       ) : filtered.length === 0 ? (
-        <EmptyState icon={<Library />} title="No drills found"
-          description={tab === 'mine' ? "You haven't created any drills yet." : 'Try adjusting your filters or search.'}
-          action={tab === 'mine' && canManage ? { label: 'Create Drill', onClick: () => { setEditing(null); setCreateOpen(true); } } : undefined} />
+        <EmptyState icon={<Library />} title={tr('drills.noDrillsFound', 'No drills found')}
+          description={tab === 'mine' ? tr('drills.noneCreated', "You haven't created any drills yet.") : tr('drills.adjustFilters', 'Try adjusting your filters or search.')}
+          action={tab === 'mine' && canManage ? { label: tr('drills.createDrill', 'Create Drill'), onClick: () => { setEditing(null); setCreateOpen(true); } } : undefined} />
       ) : (
         <>
-          <p className="text-xs text-gray-400 mb-3">{filtered.length} {filtered.length === 1 ? 'drill' : 'drills'}</p>
+          <p className="text-xs text-gray-400 mb-3">{filtered.length === 1 ? tr('drills.drillCountOne', '{{count}} drill', { count: filtered.length }) : tr('drills.drillCountOther', '{{count}} drills', { count: filtered.length })}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {pageItems.map(d => (
               <DrillCard key={d.id} drill={d} canAssign={canManage} onOpen={setDetail} onAssign={setAssigning} />
@@ -201,7 +205,7 @@ export function DrillLibraryPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">
               <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 cursor-pointer disabled:cursor-default"><ChevronLeft size={16} /></button>
-              <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+              <span className="text-sm text-gray-500">{tr('drills.pageOf', 'Page {{page}} of {{total}}', { page, total: totalPages })}</span>
               <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 cursor-pointer disabled:cursor-default"><ChevronRight size={16} /></button>
             </div>
           )}

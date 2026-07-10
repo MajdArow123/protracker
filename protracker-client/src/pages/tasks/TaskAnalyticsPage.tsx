@@ -15,6 +15,8 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { useTaskAnalytics } from '../../hooks/useTasks';
 import { CountUp } from '../../components/ui/CountUp';
 import type { PlayerTaskStats } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 function rateColor(rate: number) {
   return rate < 50 ? '#ef4444' : rate < 80 ? '#f59e0b' : '#10b981';
@@ -46,6 +48,7 @@ function ChartTooltip({ active, payload, label, suffix }: {
 }
 
 function CalloutCard({ variant, stats }: { variant: 'top' | 'attention'; stats: PlayerTaskStats }) {
+  const { t } = useTranslation();
   const isTop = variant === 'top';
   return (
     <div className={clsx('rounded-2xl border p-5',
@@ -55,19 +58,21 @@ function CalloutCard({ variant, stats }: { variant: 'top' | 'attention'; stats: 
         <div className={clsx('inline-flex p-2 rounded-xl', isTop ? 'bg-green-500/15' : 'bg-amber-500/15')}>
           {isTop ? <Trophy size={16} className="text-green-500" /> : <TrendingDown size={16} className="text-amber-500" />}
         </div>
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white">{isTop ? 'Top Performer' : 'Needs Attention'}</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white">{isTop ? t('tasks.topPerformer', 'Top Performer') : t('tasks.needsAttention', 'Needs Attention')}</h3>
       </div>
       <p className="text-lg font-black text-gray-900 dark:text-white">{stats.playerName}</p>
       <div className="flex items-center gap-3 mt-1 text-xs text-gray-600 dark:text-gray-400">
-        <span className={clsx('font-bold', rateText(stats.completionRate))}>{stats.completionRate}% complete</span>
-        <span>{stats.completed}/{stats.total} tasks</span>
-        {stats.overdue > 0 && <span className="text-red-500 font-semibold">{stats.overdue} overdue</span>}
+        <span className={clsx('font-bold', rateText(stats.completionRate))}>{t('tasks.percentComplete', '{{pct}}% complete', { pct: stats.completionRate })}</span>
+        <span>{t('tasks.tasksCount', '{{completed}}/{{total}} tasks', { completed: stats.completed, total: stats.total })}</span>
+        {stats.overdue > 0 && <span className="text-red-500 font-semibold">{t('tasks.overdueCount', '{{count}} overdue', { count: stats.overdue })}</span>}
       </div>
     </div>
   );
 }
 
 export function TaskAnalyticsPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const navigate = useNavigate();
   const { data, isLoading } = useTaskAnalytics();
 
@@ -76,35 +81,37 @@ export function TaskAnalyticsPage() {
   const backBtn = (
     <button onClick={() => navigate('/tasks')}
       className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer">
-      <ArrowLeft size={15} /> Back to Tasks
+      <ArrowLeft size={15} /> {t('tasks.backToTasks', 'Back to Tasks')}
     </button>
   );
 
   if (!data || data.total === 0) {
     return (
-      <PageWrapper title="Task Analytics" actions={backBtn}>
-        <EmptyState icon={<BarChart3 size={40} />} title="No task data yet"
-          description="Assign tasks to your players to see completion analytics here." />
+      <PageWrapper title={t('tasks.taskAnalytics', 'Task Analytics')} actions={backBtn}>
+        <EmptyState icon={<BarChart3 size={40} />} title={t('tasks.noTaskData', 'No task data yet')}
+          description={t('tasks.noTaskDataDesc', 'Assign tasks to your players to see completion analytics here.')} />
       </PageWrapper>
     );
   }
 
   const statCards = [
-    { label: 'Total Tasks', num: data.total, suffix: '', decimals: 0, icon: ClipboardList, bg: 'bg-indigo-500/10', text: 'text-indigo-500' },
-    { label: 'Completion Rate', num: data.completionRate, suffix: '%', decimals: 0, icon: CheckCircle2, bg: 'bg-green-500/10', text: rateText(data.completionRate) },
-    { label: 'Overdue', num: data.overdue, suffix: '', decimals: 0, icon: AlertTriangle, bg: 'bg-red-500/10', text: 'text-red-500' },
-    { label: 'Avg Days to Complete', num: data.avgDaysToComplete ?? null, suffix: '', decimals: 1, icon: Clock, bg: 'bg-amber-500/10', text: 'text-amber-500' },
+    { label: t('tasks.totalTasks', 'Total Tasks'), num: data.total, suffix: '', decimals: 0, icon: ClipboardList, bg: 'bg-indigo-500/10', text: 'text-indigo-500' },
+    { label: t('tasks.completionRate', 'Completion Rate'), num: data.completionRate, suffix: '%', decimals: 0, icon: CheckCircle2, bg: 'bg-green-500/10', text: rateText(data.completionRate) },
+    { label: t('tasks.overdue', 'Overdue'), num: data.overdue, suffix: '', decimals: 0, icon: AlertTriangle, bg: 'bg-red-500/10', text: 'text-red-500' },
+    { label: t('tasks.avgDaysToComplete', 'Avg Days to Complete'), num: data.avgDaysToComplete ?? null, suffix: '', decimals: 1, icon: Clock, bg: 'bg-amber-500/10', text: 'text-amber-500' },
   ];
 
+  const assignedLabel = t('tasks.assigned', 'Assigned');
+  const completedLabel = t('tasks.completed', 'Completed');
   const playerChartData = data.playerStats.map(p => ({ name: p.playerName, rate: p.completionRate }));
-  const categoryChartData = data.categoryStats.map(c => ({ name: c.category, Assigned: c.total, Completed: c.completed }));
-  const trendData = data.weeklyTrend.map(w => ({ name: w.weekLabel, Assigned: w.assigned, Completed: w.completed }));
+  const categoryChartData = data.categoryStats.map(c => ({ name: L.category(c.category), [assignedLabel]: c.total, [completedLabel]: c.completed }));
+  const trendData = data.weeklyTrend.map(w => ({ name: w.weekLabel, [assignedLabel]: w.assigned, [completedLabel]: w.completed }));
 
   // Height grows with player count so bars stay readable.
   const playerChartHeight = Math.max(200, data.playerStats.length * 42 + 40);
 
   return (
-    <PageWrapper title="Task Analytics" actions={backBtn}>
+    <PageWrapper title={t('tasks.taskAnalytics', 'Task Analytics')} actions={backBtn}>
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map(c => (
@@ -130,14 +137,14 @@ export function TaskAnalyticsPage() {
 
       {/* Player completion rate */}
       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-        <h3 className="font-bold text-gray-900 dark:text-white mb-4">Completion Rate by Player</h3>
+        <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('tasks.completionByPlayer', 'Completion Rate by Player')}</h3>
         <ResponsiveContainer width="100%" height={playerChartHeight}>
           <BarChart data={playerChartData} layout="vertical" margin={{ top: 4, right: 40, left: 8, bottom: 4 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" horizontal={false} />
             <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} unit="%" />
             <YAxis type="category" dataKey="name" width={110} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
             <Tooltip content={(p) => <ChartTooltip active={p.active} payload={p.payload as never} label={p.label as string} suffix="%" />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-            <Bar dataKey="rate" name="Completion" radius={[0, 5, 5, 0]} maxBarSize={26}>
+            <Bar dataKey="rate" name={t('tasks.completion', 'Completion')} radius={[0, 5, 5, 0]} maxBarSize={26}>
               {playerChartData.map((d, i) => <Cell key={i} fill={rateColor(d.rate)} />)}
             </Bar>
           </BarChart>
@@ -147,7 +154,7 @@ export function TaskAnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Category breakdown */}
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-4">Category Breakdown</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('tasks.categoryBreakdown', 'Category Breakdown')}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <BarChart data={categoryChartData} margin={{ top: 8, right: 16, left: -10, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
@@ -155,15 +162,15 @@ export function TaskAnalyticsPage() {
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <Tooltip content={(p) => <ChartTooltip active={p.active} payload={p.payload as never} label={p.label as string} />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af', paddingTop: 8 }} />
-              <Bar dataKey="Assigned" fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              <Bar dataKey="Completed" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              <Bar dataKey={assignedLabel} fill="#6366f1" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              <Bar dataKey={completedLabel} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Weekly trend */}
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <h3 className="font-bold text-gray-900 dark:text-white mb-4">Weekly Trend (8 weeks)</h3>
+          <h3 className="font-bold text-gray-900 dark:text-white mb-4">{t('tasks.weeklyTrend', 'Weekly Trend (8 weeks)')}</h3>
           <ResponsiveContainer width="100%" height={280}>
             <LineChart data={trendData} margin={{ top: 8, right: 16, left: -10, bottom: 4 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
@@ -171,8 +178,8 @@ export function TaskAnalyticsPage() {
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
               <Tooltip content={(p) => <ChartTooltip active={p.active} payload={p.payload as never} label={p.label as string} />} cursor={{ stroke: '#374151', strokeWidth: 1, strokeDasharray: '3 3' }} />
               <Legend wrapperStyle={{ fontSize: 12, color: '#9ca3af', paddingTop: 8 }} />
-              <Line type="monotone" dataKey="Assigned" stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="Completed" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey={assignedLabel} stroke="#6366f1" strokeWidth={2} dot={{ r: 3 }} />
+              <Line type="monotone" dataKey={completedLabel} stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -181,7 +188,7 @@ export function TaskAnalyticsPage() {
       {/* Drill Usage (Phase C) */}
       <div className="mt-6">
         <h2 className="flex items-center gap-2 text-lg font-bold text-gray-900 dark:text-white mb-4">
-          <Dumbbell size={18} className="text-indigo-500" /> Drill Usage
+          <Dumbbell size={18} className="text-indigo-500" /> {t('drills.drillUsage', 'Drill Usage')}
         </h2>
         <DrillUsageSection />
       </div>

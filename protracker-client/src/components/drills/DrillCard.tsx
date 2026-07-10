@@ -3,6 +3,8 @@ import { clsx } from 'clsx';
 import { useToggleDrillFavorite } from '../../hooks/useDrills';
 import { CATEGORY_BADGE, CATEGORY_LABEL, DIFFICULTY_BADGE, sportBadge, SPORT_SHORT } from './drillUtils';
 import type { Drill } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface Props {
   drill: Drill;
@@ -13,6 +15,8 @@ interface Props {
 }
 
 export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: Props) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const toggleFav = useToggleDrillFavorite();
 
   return (
@@ -25,7 +29,7 @@ export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: P
     >
       {recommended && (
         <span className="absolute -top-2 left-4 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white shadow">
-          <Sparkles size={10} /> Recommended
+          <Sparkles size={10} /> {tr('drills.recommended', 'Recommended')}
         </span>
       )}
 
@@ -33,14 +37,14 @@ export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: P
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         {drill.sportIds.map(id => (
           <span key={id} className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', sportBadge(id))}>
-            {SPORT_SHORT[id] ?? drill.sportNames[0] ?? 'Sport'}
+            {L.sport(SPORT_SHORT[id] ?? drill.sportNames[0]) || tr('drills.sport', 'Sport')}
           </span>
         ))}
         <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', DIFFICULTY_BADGE[drill.difficulty])}>
-          {drill.difficulty}
+          {L.difficulty(drill.difficulty)}
         </span>
         <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', CATEGORY_BADGE[drill.category])}>
-          {CATEGORY_LABEL[drill.category]}
+          {L.category(CATEGORY_LABEL[drill.category])}
         </span>
       </div>
 
@@ -50,7 +54,7 @@ export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: P
         <button
           onClick={(e) => { e.stopPropagation(); toggleFav.mutate(drill.id); }}
           className="flex-shrink-0 p-1 -m-1 cursor-pointer"
-          title={drill.isFavorited ? 'Remove favorite' : 'Add to favorites'}
+          title={drill.isFavorited ? tr('drills.removeFavorite', 'Remove favorite') : tr('drills.addFavorite', 'Add to favorites')}
         >
           <Heart size={17} className={clsx('transition-colors', drill.isFavorited ? 'fill-red-500 text-red-500' : 'text-gray-300 dark:text-gray-600 hover:text-red-400')} />
         </button>
@@ -64,7 +68,7 @@ export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: P
       <div className="flex items-center gap-1.5 flex-wrap mt-3">
         {drill.durationMinutes != null && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300">
-            <Clock size={11} /> {drill.durationMinutes} min
+            <Clock size={11} /> {tr('drills.minutes', '{{count}} min', { count: drill.durationMinutes })}
           </span>
         )}
         {drill.equipment && (
@@ -85,7 +89,7 @@ export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: P
 
       {recommended && drill.recommendReason && (
         <p className="mt-2 text-xs text-indigo-600 dark:text-indigo-300 line-clamp-2">
-          <span className="font-semibold">Why: </span>{drill.recommendReason}
+          <span className="font-semibold">{tr('drills.whyPrefix', 'Why: ')}</span>{drill.recommendReason}
         </p>
       )}
 
@@ -96,11 +100,11 @@ export function DrillCard({ drill, canAssign, onOpen, onAssign, recommended }: P
             onClick={(e) => { e.stopPropagation(); onAssign?.(drill); }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
           >
-            <Plus size={14} /> Assign
+            <Plus size={14} /> {tr('drills.assign', 'Assign')}
           </button>
         ) : <span />}
         <span className="flex items-center gap-1 text-xs font-medium text-gray-400 group-hover:text-indigo-500 transition-colors">
-          View <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+          {tr('common.view', 'View')} <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
         </span>
       </div>
     </div>

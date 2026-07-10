@@ -19,6 +19,8 @@ import { ClipboardList, Plus, ChevronDown, X, Sparkles, BarChart3, Library } fro
 import { DrillLibraryModal } from '../../components/drills/DrillLibraryModal';
 import type { PlayerTask, TaskPriority, TaskCategory } from '../../types';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 const BUCKET_ACCENT: Record<string, string> = {
   Overdue: 'text-red-500',
@@ -33,8 +35,17 @@ type StatusFilter = 'all' | 'pending' | 'completed';
 // `self` = solo-athlete mode: same page, but every task is your own — the player
 // picker disappears, both modals lock to your player, and the wording turns personal.
 export function TasksPage({ self = false }: { self?: boolean }) {
+  const { t: tr } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const navigate = useNavigate();
+  const BUCKET_LABEL: Record<string, string> = {
+    Overdue: tr('tasks.bucket.overdue', 'Overdue'),
+    Today: tr('tasks.bucket.today', 'Today'),
+    'This Week': tr('tasks.bucket.thisWeek', 'This Week'),
+    Later: tr('tasks.bucket.later', 'Later'),
+    Completed: tr('tasks.completed', 'Completed'),
+  };
   const { data: players = [] } = usePlayers();
   const { data: myPlayerId } = useMyPlayerId();
   const [playerFilter, setPlayerFilter] = useState('');
@@ -69,9 +80,9 @@ export function TasksPage({ self = false }: { self?: boolean }) {
     if (!deleteTarget) return;
     try {
       await deleteTask.mutateAsync(deleteTarget.id);
-      addToast('Task deleted', 'success');
+      addToast(tr('tasks.taskDeleted', 'Task deleted'), 'success');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Delete failed', 'error');
+      addToast(err instanceof Error ? err.message : tr('tasks.deleteFailed', 'Delete failed'), 'error');
     } finally {
       setDeleteTarget(null);
     }
@@ -82,8 +93,8 @@ export function TasksPage({ self = false }: { self?: boolean }) {
 
   const exportOptions: ExportOption[] = [
     {
-      label: 'Tasks',
-      description: 'Current list as CSV',
+      label: tr('tasks.exportTasks', 'Tasks'),
+      description: tr('tasks.exportTasksDesc', 'Current list as CSV'),
       run: () => {
         if (tasks.length === 0) throw new Error('No tasks to export.');
         const rows: CsvRow[] = tasks.map(t => ({
@@ -102,7 +113,7 @@ export function TasksPage({ self = false }: { self?: boolean }) {
 
   return (
     <PageWrapper
-      title={self ? 'My Tasks' : 'Tasks'}
+      title={self ? tr('tasks.myTasks', 'My Tasks') : tr('tasks.title', 'Tasks')}
       actions={
         <div className="flex gap-2">
           <ExportMenu options={exportOptions} onError={msg => addToast(msg, 'error')} />
@@ -111,37 +122,37 @@ export function TasksPage({ self = false }: { self?: boolean }) {
             onClick={() => navigate('/tasks/analytics')}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-all cursor-pointer"
           >
-            <BarChart3 size={16} /> Analytics
+            <BarChart3 size={16} /> {tr('nav.analytics', 'Analytics')}
           </button>
           )}
           <button
             onClick={() => setLibraryOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 text-sm font-semibold transition-all cursor-pointer"
           >
-            <Library size={16} /> Browse Library
+            <Library size={16} /> {tr('tasks.browseLibrary', 'Browse Library')}
           </button>
           <button
             onClick={() => setAiOpen(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
           >
-            <Sparkles size={16} /> AI Suggestions
+            <Sparkles size={16} /> {tr('tasks.aiSuggestions', 'AI Suggestions')}
           </button>
           <button
             onClick={() => { setEditTask(null); setAssignOpen(true); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all cursor-pointer"
           >
-            <Plus size={16} /> {self ? 'New Task' : 'Assign Task'}
+            <Plus size={16} /> {self ? tr('tasks.newTask', 'New Task') : tr('tasks.assignTask', 'Assign Task')}
           </button>
         </div>
       }
     >
       {/* Stats line */}
       <div className="flex items-center gap-4 text-sm">
-        <span className="text-gray-500 dark:text-gray-400">{tasks.length} total</span>
+        <span className="text-gray-500 dark:text-gray-400">{tr('tasks.totalCount', '{{count}} total', { count: tasks.length })}</span>
         <span className="text-gray-300 dark:text-gray-700">·</span>
-        <span className="font-semibold text-red-500">{stats.overdue} overdue</span>
-        <span className="font-semibold text-amber-500">{stats.today} due today</span>
-        <span className="font-semibold text-blue-500">{stats.thisWeek} this week</span>
+        <span className="font-semibold text-red-500">{tr('tasks.overdueCount', '{{count}} overdue', { count: stats.overdue })}</span>
+        <span className="font-semibold text-amber-500">{tr('tasks.dueTodayCount', '{{count}} due today', { count: stats.today })}</span>
+        <span className="font-semibold text-blue-500">{tr('tasks.thisWeekCount', '{{count}} this week', { count: stats.thisWeek })}</span>
       </div>
 
       {/* Filter bar */}
@@ -151,7 +162,7 @@ export function TasksPage({ self = false }: { self?: boolean }) {
           <Select
             value={playerFilter}
             onChange={e => setPlayerFilter(e.target.value)}
-            options={[{ value: '', label: 'All Players' }, ...players.map(p => ({ value: String(p.id), label: p.fullName }))]}
+            options={[{ value: '', label: tr('tasks.allPlayers', 'All Players') }, ...players.map(p => ({ value: String(p.id), label: p.fullName }))]}
           />
         </div>
         )}
@@ -161,7 +172,7 @@ export function TasksPage({ self = false }: { self?: boolean }) {
             <button key={p} onClick={() => setPriorityFilter(p)}
               className={clsx('px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer',
                 priorityFilter === p ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400')}>
-              {p}
+              {p === 'all' ? tr('common.all', 'All') : L.priority(p)}
             </button>
           ))}
         </div>
@@ -171,7 +182,7 @@ export function TasksPage({ self = false }: { self?: boolean }) {
             <button key={s} onClick={() => setStatusFilter(s)}
               className={clsx('px-3 py-1.5 rounded-lg text-xs font-semibold capitalize transition-all cursor-pointer',
                 statusFilter === s ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400')}>
-              {s}
+              {s === 'all' ? tr('common.all', 'All') : s === 'pending' ? tr('tasks.pending', 'Pending') : tr('tasks.completed', 'Completed')}
             </button>
           ))}
         </div>
@@ -179,12 +190,12 @@ export function TasksPage({ self = false }: { self?: boolean }) {
           <Select
             value={categoryFilter}
             onChange={e => setCategoryFilter(e.target.value as TaskCategory | '')}
-            options={[{ value: '', label: 'All Categories' }, ...CATEGORY_ORDER.map(c => ({ value: c, label: c }))]}
+            options={[{ value: '', label: tr('tasks.allCategories', 'All Categories') }, ...CATEGORY_ORDER.map(c => ({ value: c, label: L.category(c) }))]}
           />
         </div>
         {anyFilter && (
           <button onClick={clearFilters} className="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer">
-            <X size={13} /> Clear filters
+            <X size={13} /> {tr('tasks.clearFilters', 'Clear filters')}
           </button>
         )}
       </div>
@@ -194,9 +205,9 @@ export function TasksPage({ self = false }: { self?: boolean }) {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={<ClipboardList size={40} />}
-          title={anyFilter ? 'No tasks match your filters' : 'No tasks yet'}
-          description={anyFilter ? 'Try clearing filters.' : self ? 'Set yourself drills and to-dos — small daily wins add up.' : 'Assign drills and tasks to your players to track their progress.'}
-          action={anyFilter ? undefined : { label: self ? 'New Task' : 'Assign Task', onClick: () => { setEditTask(null); setAssignOpen(true); } }}
+          title={anyFilter ? tr('tasks.noMatch', 'No tasks match your filters') : tr('tasks.noTasks', 'No tasks yet')}
+          description={anyFilter ? tr('tasks.tryClearingFilters', 'Try clearing filters.') : self ? tr('tasks.emptySelfDesc', 'Set yourself drills and to-dos — small daily wins add up.') : tr('tasks.emptyCoachDesc', 'Assign drills and tasks to your players to track their progress.')}
+          action={anyFilter ? undefined : { label: self ? tr('tasks.newTask', 'New Task') : tr('tasks.assignTask', 'Assign Task'), onClick: () => { setEditTask(null); setAssignOpen(true); } }}
         />
       ) : (
         <div className="space-y-6">
@@ -207,7 +218,7 @@ export function TasksPage({ self = false }: { self?: boolean }) {
                 <button onClick={() => setCollapsed(c => ({ ...c, [bucket]: !c[bucket] }))}
                   className="flex items-center gap-2 mb-3 cursor-pointer group">
                   <ChevronDown size={15} className={clsx('text-gray-400 transition-transform', isCollapsed && '-rotate-90')} />
-                  <h3 className={clsx('text-sm font-bold uppercase tracking-wide', BUCKET_ACCENT[bucket])}>{bucket}</h3>
+                  <h3 className={clsx('text-sm font-bold uppercase tracking-wide', BUCKET_ACCENT[bucket])}>{BUCKET_LABEL[bucket] ?? bucket}</h3>
                   <span className="text-xs font-semibold text-gray-400 bg-gray-100 dark:bg-gray-800 rounded-full px-2 py-0.5">{bucketTasks.length}</span>
                 </button>
                 {!isCollapsed && (
@@ -255,9 +266,9 @@ export function TasksPage({ self = false }: { self?: boolean }) {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={confirmDelete}
-        title="Delete Task"
-        message={`Delete "${deleteTarget?.title}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={tr('tasks.deleteTask', 'Delete Task')}
+        message={tr('tasks.deleteConfirm', 'Delete "{{title}}"? This cannot be undone.', { title: deleteTarget?.title })}
+        confirmLabel={tr('common.delete', 'Delete')}
         isLoading={deleteTask.isPending}
       />
     </PageWrapper>

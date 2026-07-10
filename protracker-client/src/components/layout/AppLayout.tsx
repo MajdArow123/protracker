@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
@@ -10,16 +11,17 @@ import { PushPrompt } from '../PushPrompt';
 
 // Toasts when the unread-message count rises while the user isn't on the Messages page.
 function useNewMessageToast() {
+  const { t } = useTranslation();
   const { data: unread = 0 } = useUnreadMessageCount();
   const { addToast } = useToast();
   const location = useLocation();
   const prev = useRef<number | null>(null);
   useEffect(() => {
     if (prev.current !== null && unread > prev.current && location.pathname !== '/messages') {
-      addToast('New message received', 'info');
+      addToast(t('ui.newMessage', 'New message received'), 'info');
     }
     prev.current = unread;
-  }, [unread, location.pathname, addToast]);
+  }, [unread, location.pathname, addToast, t]);
 }
 
 export function AppLayout() {

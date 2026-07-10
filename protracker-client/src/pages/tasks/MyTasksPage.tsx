@@ -8,6 +8,7 @@ import { useToast } from '../../context/ToastContext';
 import { CheckCircle, CheckSquare, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PlayerTask } from '../../types';
+import { useTranslation } from 'react-i18next';
 
 function ProgressRing({ pct }: { pct: number }) {
   const r = 34, c = 2 * Math.PI * r;
@@ -26,6 +27,7 @@ function ProgressRing({ pct }: { pct: number }) {
 }
 
 export function MyTasksPage() {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const { data: tasks = [], isLoading } = useMyTasks();
   const completeTask = useCompleteTask();
@@ -42,12 +44,12 @@ export function MyTasksPage() {
   const upcoming = open.filter(t => !['Overdue', 'Today'].includes(bucketOf(t)));
 
   async function handleComplete(id: number, note: string) {
-    try { await completeTask.mutateAsync({ id, completedNote: note || undefined }); addToast('Task completed', 'success'); }
-    catch (err) { addToast(err instanceof Error ? err.message : 'Failed to update', 'error'); }
+    try { await completeTask.mutateAsync({ id, completedNote: note || undefined }); addToast(t('tasks.taskCompleted', 'Task completed'), 'success'); }
+    catch (err) { addToast(err instanceof Error ? err.message : t('tasks.failedToUpdate', 'Failed to update'), 'error'); }
   }
   async function handleIncomplete(id: number) {
     try { await incompleteTask.mutateAsync(id); }
-    catch (err) { addToast(err instanceof Error ? err.message : 'Failed to update', 'error'); }
+    catch (err) { addToast(err instanceof Error ? err.message : t('tasks.failedToUpdate', 'Failed to update'), 'error'); }
   }
 
   if (isLoading) return <PageSpinner />;
@@ -66,12 +68,12 @@ export function MyTasksPage() {
   );
 
   return (
-    <PageWrapper title="My Tasks">
+    <PageWrapper title={t('tasks.myTasks', 'My Tasks')}>
       {total === 0 ? (
         <div className="py-12 flex flex-col items-center text-center">
           <div className="p-4 rounded-full bg-gray-100 dark:bg-gray-800 mb-3"><CheckSquare size={36} className="text-gray-400" /></div>
-          <p className="text-base font-bold text-gray-900 dark:text-white">No tasks assigned yet</p>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Your coach will assign tasks here.</p>
+          <p className="text-base font-bold text-gray-900 dark:text-white">{t('tasks.noAssignedYet', 'No tasks assigned yet')}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('tasks.coachWillAssign', 'Your coach will assign tasks here.')}</p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -79,9 +81,9 @@ export function MyTasksPage() {
           <div className="flex items-center gap-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <ProgressRing pct={pct} />
             <div>
-              <p className="text-base font-black text-gray-900 dark:text-white">{completed.length} of {total} done</p>
+              <p className="text-base font-black text-gray-900 dark:text-white">{t('tasks.doneOf', '{{completed}} of {{total}} done', { completed: completed.length, total })}</p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {open.length === 0 ? "You're all caught up!" : `${actionRequired.length} need attention · ${upcoming.length} upcoming`}
+                {open.length === 0 ? t('tasks.allCaughtUp', "You're all caught up!") : t('tasks.needAttentionUpcoming', '{{attention}} need attention · {{upcoming}} upcoming', { attention: actionRequired.length, upcoming: upcoming.length })}
               </p>
             </div>
           </div>
@@ -89,13 +91,13 @@ export function MyTasksPage() {
           {open.length === 0 ? (
             <div className="py-8 flex flex-col items-center text-center">
               <div className="p-4 rounded-full bg-green-500/10 mb-3"><CheckCircle size={36} className="text-green-500" /></div>
-              <p className="text-base font-bold text-gray-900 dark:text-white">You're all caught up!</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">No pending tasks right now.</p>
+              <p className="text-base font-bold text-gray-900 dark:text-white">{t('tasks.allCaughtUp', "You're all caught up!")}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('tasks.noPendingNow', 'No pending tasks right now.')}</p>
             </div>
           ) : (
             <>
-              {section('Action Required', 'text-red-500', actionRequired)}
-              {section('Upcoming', 'text-blue-500', upcoming)}
+              {section(t('tasks.actionRequired', 'Action Required'), 'text-red-500', actionRequired)}
+              {section(t('tasks.upcoming', 'Upcoming'), 'text-blue-500', upcoming)}
             </>
           )}
 
@@ -104,7 +106,7 @@ export function MyTasksPage() {
             <div>
               <button onClick={() => setShowCompleted(s => !s)} className="flex items-center gap-2 mb-3 cursor-pointer">
                 <ChevronDown size={15} className={clsx('text-gray-400 transition-transform', !showCompleted && '-rotate-90')} />
-                <h3 className="text-sm font-bold uppercase tracking-wide text-green-500">Completed <span className="text-gray-400">({completed.length})</span></h3>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-green-500">{t('tasks.completed', 'Completed')} <span className="text-gray-400">({completed.length})</span></h3>
               </button>
               {showCompleted && (
                 <div className="space-y-3">

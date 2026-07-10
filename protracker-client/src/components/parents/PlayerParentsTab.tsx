@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UserPlus, Mail, Clock, CheckCircle2, Copy, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Card } from '../ui/Card';
@@ -7,9 +8,11 @@ import { Modal } from '../ui/Modal';
 import { EmptyState } from '../ui/EmptyState';
 import { useToast } from '../../context/ToastContext';
 import { usePlayerParents, useInviteParent } from '../../hooks/useParent';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import type { ParentInviteResult } from '../../types';
 
 function InviteModal({ playerId, playerName, onClose }: { playerId: number; playerName: string; onClose: () => void }) {
+  const { t } = useTranslation();
   const { addToast } = useToast();
   const invite = useInviteParent(playerId);
   const [name, setName] = useState('');
@@ -21,15 +24,15 @@ function InviteModal({ playerId, playerName, onClose }: { playerId: number; play
 
   async function submit() {
     if (!name.trim() || !email.trim() || !email.includes('@')) {
-      addToast('Enter a name and a valid email.', 'error');
+      addToast(t('parent.enterNameEmail', 'Enter a name and a valid email.'), 'error');
       return;
     }
     try {
       const res = await invite.mutateAsync({ playerId, parentName: name.trim(), email: email.trim() });
       setResult(res);
-      addToast(res.emailSent ? 'Invite email sent' : 'Invite created', 'success');
+      addToast(res.emailSent ? t('parent.inviteEmailSent', 'Invite email sent') : t('parent.inviteCreatedToast', 'Invite created'), 'success');
     } catch {
-      addToast('Could not send the invite.', 'error');
+      addToast(t('parent.inviteSendError', 'Could not send the invite.'), 'error');
     }
   }
 
@@ -41,15 +44,15 @@ function InviteModal({ playerId, playerName, onClose }: { playerId: number; play
   }
 
   return (
-    <Modal isOpen onClose={onClose} title={`Invite a parent for ${playerName}`}>
+    <Modal isOpen onClose={onClose} title={t('parent.inviteModalTitle', 'Invite a parent for {{name}}', { name: playerName })}>
       {result ? (
         <div className="space-y-4">
           <div className="flex items-start gap-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3.5">
             <CheckCircle2 size={18} className="text-emerald-500 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-gray-700 dark:text-gray-300">
               {result.emailSent
-                ? <>An invite email was sent to <span className="font-semibold">{result.email}</span>.</>
-                : <>Invite created for <span className="font-semibold">{result.email}</span>. Share this link so they can set a password:</>}
+                ? <>{t('parent.emailSentPre', 'An invite email was sent to')} <span className="font-semibold">{result.email}</span>.</>
+                : <>{t('parent.inviteCreatedPre', 'Invite created for')} <span className="font-semibold">{result.email}</span>. {t('parent.shareLink', 'Share this link so they can set a password:')}</>}
             </p>
           </div>
           {!result.emailSent && (
@@ -61,23 +64,23 @@ function InviteModal({ playerId, playerName, onClose }: { playerId: number; play
             </div>
           )}
           <div className="flex justify-end">
-            <Button onClick={onClose}>Done</Button>
+            <Button onClick={onClose}>{t('parent.done', 'Done')}</Button>
           </div>
         </div>
       ) : (
         <div className="space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Parent name</label>
-            <input className={inputClass} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Sarah Ward" />
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('parent.parentName', 'Parent name')}</label>
+            <input className={inputClass} value={name} onChange={e => setName(e.target.value)} placeholder={t('parent.parentNamePlaceholder', 'e.g. Sarah Ward')} />
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Parent email</label>
-            <input type="email" className={inputClass} value={email} onChange={e => setEmail(e.target.value)} placeholder="parent@example.com" />
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('parent.parentEmail', 'Parent email')}</label>
+            <input type="email" className={inputClass} value={email} onChange={e => setEmail(e.target.value)} placeholder={t('parent.parentEmailPlaceholder', 'parent@example.com')} />
           </div>
-          <p className="text-xs text-gray-500">They'll get a read-only account to follow {playerName}'s progress — no access to private notes, messages, or other players.</p>
+          <p className="text-xs text-gray-500">{t('parent.inviteHelp', "They'll get a read-only account to follow {{name}}'s progress — no access to private notes, messages, or other players.", { name: playerName })}</p>
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button onClick={submit} isLoading={invite.isPending}>Send Invite</Button>
+            <Button variant="secondary" onClick={onClose}>{t('parent.cancel', 'Cancel')}</Button>
+            <Button onClick={submit} isLoading={invite.isPending}>{t('parent.sendInvite', 'Send Invite')}</Button>
           </div>
         </div>
       )}
@@ -86,6 +89,8 @@ function InviteModal({ playerId, playerName, onClose }: { playerId: number; play
 }
 
 export function PlayerParentsTab({ playerId, playerName }: { playerId: number; playerName: string }) {
+  const { t } = useTranslation();
+  const labels = useDynamicLabels();
   const { data: parents = [], isLoading } = usePlayerParents(playerId);
   const [inviteOpen, setInviteOpen] = useState(false);
 
@@ -93,18 +98,18 @@ export function PlayerParentsTab({ playerId, playerName }: { playerId: number; p
     <Card
       header={
         <div className="flex items-center justify-between">
-          <span className="flex items-center gap-2"><UserPlus size={16} className="text-indigo-500" /> Parents & Guardians</span>
-          <Button size="sm" onClick={() => setInviteOpen(true)}><UserPlus size={14} /> Invite Parent</Button>
+          <span className="flex items-center gap-2"><UserPlus size={16} className="text-indigo-500" /> {t('parent.parentsGuardians', 'Parents & Guardians')}</span>
+          <Button size="sm" onClick={() => setInviteOpen(true)}><UserPlus size={14} /> {t('parent.inviteParent', 'Invite Parent')}</Button>
         </div>
       }
     >
       {isLoading ? (
-        <p className="text-sm text-gray-400">Loading…</p>
+        <p className="text-sm text-gray-400">{t('parent.loading', 'Loading…')}</p>
       ) : parents.length === 0 ? (
         <EmptyState
           icon={<UserPlus size={36} />}
-          title="No parents linked"
-          description={`Invite a parent or guardian to follow ${playerName}'s progress in read-only mode.`}
+          title={t('parent.noParentsTitle', 'No parents linked')}
+          description={t('parent.noParentsDesc', "Invite a parent or guardian to follow {{name}}'s progress in read-only mode.", { name: playerName })}
         />
       ) : (
         <div className="space-y-2">
@@ -126,7 +131,7 @@ export function PlayerParentsTab({ playerId, playerName }: { playerId: number; p
                   : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
               )}>
                 {p.status === 'Active' ? <CheckCircle2 size={11} /> : <Clock size={11} />}
-                {p.status}
+                {labels.status(p.status)}
               </span>
             </div>
           ))}

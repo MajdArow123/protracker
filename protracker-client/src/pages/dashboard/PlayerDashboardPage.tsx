@@ -1,5 +1,6 @@
 import { motion, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerMatchRatings } from '../../hooks/useMatches';
 import { statFieldsForFormat, parseStatJson } from '../../utils/matchSport';
@@ -27,6 +28,8 @@ import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useAuth } from '../../context/AuthContext';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   Activity, ClipboardList, TrendingUp, Salad, ChevronRight,
   Zap, Star, Target, Shield, Trophy, CalendarDays, Clock, MapPin,
@@ -68,6 +71,9 @@ function ScoreBar({ label, score }: { label: string; score: number }) {
 
 export function PlayerDashboardPage() {
   const { user } = useAuth();
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
+  const L = useDynamicLabels();
   const navigate = useNavigate();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data, isLoading, isError, refetch } = usePlayerDashboard(playerId);
@@ -102,7 +108,7 @@ export function PlayerDashboardPage() {
       </PageWrapper>
     );
 
-  const firstName = user?.fullName?.split(' ')[0] ?? 'Athlete';
+  const firstName = user?.fullName?.split(' ')[0] ?? t('dashboard.athlete', 'Athlete');
   const latestAssessment = data?.recentAssessments?.[0];
   const radarData = latestAssessment?.statScores?.map((s) => ({
     subject: s.statCategoryName,
@@ -149,11 +155,11 @@ export function PlayerDashboardPage() {
                 <Trophy size={18} />
               </div>
               <div>
-                <p className="font-black text-lg leading-tight">Welcome to {welcome.team}, {welcome.name.split(' ')[0]}! 🎉</p>
-                <p className="text-emerald-100 text-sm mt-0.5">Your coach has been notified. Your profile is set up — assessments and tasks will appear here.</p>
+                <p className="font-black text-lg leading-tight">{t('dashboard.welcomeToTeam', 'Welcome to {{team}}, {{name}}!', { team: welcome.team, name: welcome.name.split(' ')[0] })} 🎉</p>
+                <p className="text-emerald-100 text-sm mt-0.5">{t('dashboard.welcomeToTeamDesc', 'Your coach has been notified. Your profile is set up — assessments and tasks will appear here.')}</p>
               </div>
             </div>
-            <button onClick={dismissWelcome} aria-label="Dismiss" className="text-white/70 hover:text-white cursor-pointer text-lg leading-none px-1">×</button>
+            <button onClick={dismissWelcome} aria-label={t('dashboard.dismiss', 'Dismiss')} className="text-white/70 hover:text-white cursor-pointer text-lg leading-none px-1">×</button>
           </div>
         </motion.div>
       )}
@@ -166,10 +172,10 @@ export function PlayerDashboardPage() {
             <div>
               <div className="flex items-center gap-2 text-indigo-200 text-sm mb-2">
                 <Zap size={14} />
-                Ready to train?
+                {t('dashboard.readyToTrain', 'Ready to train?')}
               </div>
-              <h1 className="text-2xl font-black tracking-tight">Hi, {firstName}</h1>
-              <p className="text-indigo-200 text-sm mt-1">Keep pushing — your next level is within reach.</p>
+              <h1 className="text-2xl font-black tracking-tight">{t('dashboard.hi', 'Hi')}, {firstName}</h1>
+              <p className="text-indigo-200 text-sm mt-1">{t('dashboard.keepPushing', 'Keep pushing — your next level is within reach.')}</p>
             </div>
             <ShareProgressButton />
           </div>
@@ -206,7 +212,7 @@ export function PlayerDashboardPage() {
             <div className="inline-flex p-2 rounded-xl bg-indigo-500/10">
               <Megaphone size={16} className="text-indigo-500" />
             </div>
-            <h2 className="font-bold text-gray-900 dark:text-white">Team Announcements</h2>
+            <h2 className="font-bold text-gray-900 dark:text-white">{t('dashboard.announcements', 'Team Announcements')}</h2>
           </div>
           <div className="space-y-2">
             {announcements.slice(0, 4).map((a) => {
@@ -223,10 +229,10 @@ export function PlayerDashboardPage() {
                       {a.isPinned && <Pin size={12} className="text-indigo-500 flex-shrink-0" />}
                       <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{a.title}</p>
                     </div>
-                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0', badge)}>{a.priority}</span>
+                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0', badge)}>{L.priority(a.priority)}</span>
                   </div>
                   {a.content && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{a.content}</p>}
-                  <p className="text-[10px] text-gray-400 mt-1">{a.teamName} · {a.coachName || 'Coach'}</p>
+                  <p className="text-[10px] text-gray-400 mt-1">{a.teamName} · {a.coachName || t('dashboard.coach', 'Coach')}</p>
                 </div>
               );
             })}
@@ -247,7 +253,7 @@ export function PlayerDashboardPage() {
                 <div>
                   <p className="text-sm font-bold text-gray-900 dark:text-white">{recoveryPlan.title}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Week {recoveryPlan.currentWeek} of {recoveryPlan.estimatedWeeks} · {recoveryPlan.injuryType}
+                    {t('dashboard.weekXofY', 'Week {{current}} of {{total}}', { current: recoveryPlan.currentWeek, total: recoveryPlan.estimatedWeeks })} · {recoveryPlan.injuryType}
                   </p>
                 </div>
               </div>
@@ -255,13 +261,13 @@ export function PlayerDashboardPage() {
                 <p className="text-lg font-black text-rose-500">
                   {recoveryPlan.totalExercises > 0 ? Math.round((recoveryPlan.completedExercises / recoveryPlan.totalExercises) * 100) : 0}%
                 </p>
-                <p className="text-[11px] text-gray-500">{recoveryPlan.completedExercises}/{recoveryPlan.totalExercises} exercises</p>
+                <p className="text-[11px] text-gray-500">{recoveryPlan.completedExercises}/{recoveryPlan.totalExercises} {t('dashboard.exercises', 'exercises')}</p>
               </div>
             </div>
             <div className="mt-3 h-1.5 bg-rose-100 dark:bg-rose-900/30 rounded-full overflow-hidden">
               <div className="h-full bg-rose-500 rounded-full" style={{ width: `${recoveryPlan.totalExercises > 0 ? Math.round((recoveryPlan.completedExercises / recoveryPlan.totalExercises) * 100) : 0}%` }} />
             </div>
-            <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2">View recovery program →</p>
+            <p className="text-xs font-semibold text-rose-600 dark:text-rose-400 mt-2">{t('dashboard.viewRecoveryProgram', 'View recovery program')} →</p>
           </button>
         </motion.div>
       )}
@@ -274,7 +280,7 @@ export function PlayerDashboardPage() {
           <div className="inline-flex p-2 rounded-xl bg-indigo-500/10 mb-3">
             <ClipboardList size={16} className="text-indigo-500 dark:text-indigo-400" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Total Assessments</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.totalAssessments', 'Total Assessments')}</p>
           <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{data?.totalAssessments ?? 0}</p>
         </motion.div>
         <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}
@@ -283,7 +289,7 @@ export function PlayerDashboardPage() {
           <div className="inline-flex p-2 rounded-xl bg-green-500/10 mb-3">
             <Activity size={16} className="text-green-500 dark:text-green-400" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Latest Score</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.latestScore', 'Latest Score')}</p>
           <p className={clsx(
             'text-3xl font-black mt-0.5',
             avgScore == null ? 'text-gray-400' : avgScore < 5 ? 'text-red-500' : avgScore < 7 ? 'text-amber-500' : 'text-green-500'
@@ -297,7 +303,7 @@ export function PlayerDashboardPage() {
           <div className="inline-flex p-2 rounded-xl bg-amber-500/10 mb-3">
             <Star size={16} className="text-amber-500" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Best Category</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.bestCategory', 'Best Category')}</p>
           {bestStat ? (
             <>
               <p className="text-xl font-black text-amber-500 mt-0.5">{bestStat.score.toFixed(1)}</p>
@@ -313,7 +319,7 @@ export function PlayerDashboardPage() {
           <div className="inline-flex p-2 rounded-xl bg-red-500/10 mb-3">
             <Target size={16} className="text-red-400" />
           </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Needs Work</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.needsWork', 'Needs Work')}</p>
           {worstStat ? (
             <>
               <p className="text-xl font-black text-red-400 mt-0.5">{worstStat.score.toFixed(1)}</p>
@@ -330,9 +336,9 @@ export function PlayerDashboardPage() {
         <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
-          <h2 className="font-bold text-gray-900 dark:text-white mb-4">My Performance</h2>
+          <h2 className="font-bold text-gray-900 dark:text-white mb-4">{t('nav.myPerformance', 'My Performance')}</h2>
           {radarData.length === 0 ? (
-            <EmptyState icon={<Activity size={32} />} title="No assessment data" description="Your coach will add your stats here" size="sm" />
+            <EmptyState icon={<Activity size={32} />} title={t('dashboard.noAssessmentData', 'No assessment data')} description={t('dashboard.noAssessmentDataDesc', 'Your coach will add your stats here')} size="sm" />
           ) : (
             <RadarChartWrapper data={radarData} height={260} />
           )}
@@ -343,9 +349,9 @@ export function PlayerDashboardPage() {
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-gray-900 dark:text-white">Latest Scores</h2>
+            <h2 className="font-bold text-gray-900 dark:text-white">{t('dashboard.latestScores', 'Latest Scores')}</h2>
             {latestAssessment && (
-              <span className="text-xs text-gray-500">{new Date(latestAssessment.dateRecorded).toLocaleDateString()}</span>
+              <span className="text-xs text-gray-500">{fmt.formatDate(latestAssessment.dateRecorded)}</span>
             )}
           </div>
           {latestAssessment?.statScores?.length ? (
@@ -355,7 +361,7 @@ export function PlayerDashboardPage() {
               ))}
             </div>
           ) : (
-            <EmptyState icon={<ClipboardList size={32} />} title="No scores yet" size="sm" />
+            <EmptyState icon={<ClipboardList size={32} />} title={t('dashboard.noScoresYet', 'No scores yet')} size="sm" />
           )}
         </motion.div>
       </div>
@@ -374,7 +380,7 @@ export function PlayerDashboardPage() {
             <div className="inline-flex p-2 rounded-xl bg-indigo-500/10">
               <CalendarDays size={16} className="text-indigo-500" />
             </div>
-            <h2 className="font-bold text-gray-900 dark:text-white">Upcoming Sessions</h2>
+            <h2 className="font-bold text-gray-900 dark:text-white">{t('dashboard.upcomingSessions', 'Upcoming Sessions')}</h2>
           </div>
           <div className="space-y-2">
             {upcomingSessions.slice(0, 5).map((s) => {
@@ -382,13 +388,13 @@ export function PlayerDashboardPage() {
               return (
                 <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
                   <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex-shrink-0">
-                    <span className="text-[10px] font-semibold uppercase leading-none">{start.toLocaleDateString('en-US', { month: 'short' })}</span>
+                    <span className="text-[10px] font-semibold uppercase leading-none">{fmt.formatDate(start, { month: 'short' })}</span>
                     <span className="text-lg font-black leading-none mt-0.5">{start.getDate()}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{s.title}</p>
                     <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5 flex-wrap">
-                      <span className="inline-flex items-center gap-1"><Clock size={11} /> {start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })} · {s.durationMinutes}m</span>
+                      <span className="inline-flex items-center gap-1"><Clock size={11} /> {fmt.formatTime(start)} · {s.durationMinutes}m</span>
                       {s.location && <span className="inline-flex items-center gap-1"><MapPin size={11} /> {s.location}</span>}
                     </div>
                   </div>
@@ -408,7 +414,7 @@ export function PlayerDashboardPage() {
             <div className="inline-flex p-2 rounded-xl bg-emerald-500/10">
               <Trophy size={16} className="text-emerald-500" />
             </div>
-            <h2 className="font-bold text-gray-900 dark:text-white">My Matches</h2>
+            <h2 className="font-bold text-gray-900 dark:text-white">{t('dashboard.myMatches', 'My Matches')}</h2>
           </div>
           <div className="space-y-2">
             {matchRatings.slice(0, 6).map((r) => {
@@ -421,9 +427,9 @@ export function PlayerDashboardPage() {
                     <span className="text-lg leading-none">{r.rating.toFixed(1)}</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">vs {r.opponentName ?? 'Opponent'}</p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{t('dashboard.vs', 'vs')} {r.opponentName ?? t('dashboard.opponent', 'Opponent')}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {r.matchDate ? new Date(r.matchDate).toLocaleDateString() : ''}
+                      {r.matchDate ? fmt.formatDate(r.matchDate) : ''}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-shrink-0">
@@ -452,21 +458,21 @@ export function PlayerDashboardPage() {
           <div className="inline-flex p-2 rounded-xl bg-green-500/10">
             <MessageCircle size={16} className="text-green-500" />
           </div>
-          <h2 className="font-bold text-gray-900 dark:text-white">Coach Feedback</h2>
+          <h2 className="font-bold text-gray-900 dark:text-white">{t('dashboard.coachFeedback', 'Coach Feedback')}</h2>
         </div>
         {!coachFeedback || coachFeedback.length === 0 ? (
-          <EmptyState icon={<MessageCircle size={32} />} title="No feedback yet"
-            description="Your coach hasn't shared any feedback yet. Keep working hard!" size="sm" />
+          <EmptyState icon={<MessageCircle size={32} />} title={t('dashboard.noFeedbackYet', 'No feedback yet')}
+            description={t('dashboard.noFeedbackDesc', "Your coach hasn't shared any feedback yet. Keep working hard!")} size="sm" />
         ) : (
           <div className="space-y-2">
             {coachFeedback.slice(0, 6).map((n) => (
               <div key={n.id} className="rounded-xl border border-gray-100 dark:border-gray-800 p-3">
                 <div className="flex items-center justify-between gap-2 mb-1">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{n.category}</span>
-                  <span className="text-[11px] text-gray-400">{new Date(n.createdAt).toLocaleDateString()}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">{L.category(n.category)}</span>
+                  <span className="text-[11px] text-gray-400">{fmt.formatDate(n.createdAt)}</span>
                 </div>
                 <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.content}</p>
-                <p className="text-[11px] text-gray-400 mt-1">{n.coachName || 'Coach'}</p>
+                <p className="text-[11px] text-gray-400 mt-1">{n.coachName || t('dashboard.coach', 'Coach')}</p>
               </div>
             ))}
           </div>
@@ -475,13 +481,13 @@ export function PlayerDashboardPage() {
 
       {/* Quick nav */}
       <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
-        <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Quick Access</h2>
+        <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">{t('dashboard.quickAccess', 'Quick Access')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: 'My Stats', desc: 'Full assessment history', icon: TrendingUp, path: '/player-dashboard/stats', color: 'text-indigo-500 bg-indigo-500/10' },
-            { label: 'My Nutrition', desc: 'Meal plans & dietary profile', icon: Salad, path: '/player-dashboard/nutrition', color: 'text-green-500 bg-green-500/10' },
-            { label: 'My Plan', desc: 'Training & improvement', icon: Activity, path: '/player-dashboard/improvement', color: 'text-purple-500 bg-purple-500/10' },
-            ...(data?.player?.teamId ? [{ label: 'My Team', desc: 'Team roster & skill profile', icon: Shield, path: `/player-dashboard/team/${data.player.teamId}`, color: 'text-orange-500 bg-orange-500/10' }] : []),
+            { label: t('nav.myStats', 'My Stats'), desc: t('dashboard.myStatsDesc', 'Full assessment history'), icon: TrendingUp, path: '/player-dashboard/stats', color: 'text-indigo-500 bg-indigo-500/10' },
+            { label: t('nav.myNutrition', 'My Nutrition'), desc: t('dashboard.myNutritionDesc', 'Meal plans & dietary profile'), icon: Salad, path: '/player-dashboard/nutrition', color: 'text-green-500 bg-green-500/10' },
+            { label: t('nav.myPlan', 'My Plan'), desc: t('dashboard.myPlanDesc', 'Training & improvement'), icon: Activity, path: '/player-dashboard/improvement', color: 'text-purple-500 bg-purple-500/10' },
+            ...(data?.player?.teamId ? [{ label: t('dashboard.myTeam', 'My Team'), desc: t('dashboard.myTeamDesc', 'Team roster & skill profile'), icon: Shield, path: `/player-dashboard/team/${data.player.teamId}`, color: 'text-orange-500 bg-orange-500/10' }] : []),
           ].map((item) => (
             <button
               key={item.label}

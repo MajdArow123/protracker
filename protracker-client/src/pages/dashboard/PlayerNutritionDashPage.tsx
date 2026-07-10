@@ -1,5 +1,7 @@
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useMyPlayerId } from '../../hooks/useDashboard';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import {
   usePlayerNutritionProfile,
   usePlayerNutritionGuidance,
@@ -36,6 +38,8 @@ function GuidanceRow({
 }
 
 export function PlayerNutritionDashPage() {
+  const { t } = useTranslation();
+  const fmt = useLocaleFormat();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as Tab | null) ?? 'weekly';
   const setActiveTab = (t: Tab) => setSearchParams({ tab: t }, { replace: true });
@@ -47,13 +51,13 @@ export function PlayerNutritionDashPage() {
   if (loadingId) return <PageSpinner />;
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'weekly', label: 'Weekly Plan' },
-    { id: 'guidance', label: 'Guidance' },
-    { id: 'profile', label: 'Dietary Profile' },
+    { id: 'weekly', label: t('dashboard.weeklyPlan', 'Weekly Plan') },
+    { id: 'guidance', label: t('dashboard.guidance', 'Guidance') },
+    { id: 'profile', label: t('dashboard.dietaryProfile', 'Dietary Profile') },
   ];
 
   return (
-    <PageWrapper title="My Nutrition">
+    <PageWrapper title={t('nav.myNutrition', 'My Nutrition')}>
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-gray-100 dark:bg-gray-800/60 mb-6 w-fit">
         {tabs.map((tab) => (
@@ -78,8 +82,8 @@ export function PlayerNutritionDashPage() {
         !weeklyPlan ? (
           <EmptyState
             icon={<CalendarDays size={32} />}
-            title="No weekly plan yet"
-            description="Your coach will generate a personalized 7-day nutrition plan for you"
+            title={t('dashboard.noWeeklyPlan', 'No weekly plan yet')}
+            description={t('dashboard.noWeeklyPlanDesc', 'Your coach will generate a personalized 7-day nutrition plan for you')}
           />
         ) : (
           <WeeklyNutritionPlanView
@@ -93,12 +97,12 @@ export function PlayerNutritionDashPage() {
       {/* Guidance tab */}
       {activeTab === 'guidance' && (
         loadingGuidance ? <PageSpinner /> :
-        <Card header="Nutrition Guidance">
+        <Card header={t('dashboard.nutritionGuidance', 'Nutrition Guidance')}>
           {!guidance?.length ? (
             <EmptyState
               icon={<Trophy size={32} />}
-              title="No guidance yet"
-              description="Your coach will add nutrition guidance here"
+              title={t('dashboard.noGuidanceYet', 'No guidance yet')}
+              description={t('dashboard.noGuidanceDesc', 'Your coach will add nutrition guidance here')}
             />
           ) : (
             <div className="space-y-6">
@@ -106,16 +110,16 @@ export function PlayerNutritionDashPage() {
                 <div key={g.id} className="border-b border-gray-100 dark:border-gray-800 pb-6 last:border-0 last:pb-0">
                   <div className="flex items-center justify-between mb-4">
                     <p className="text-xs text-gray-400 dark:text-gray-500">
-                      {new Date(g.createdDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      {fmt.formatDate(g.createdDate, { month: 'long', day: 'numeric', year: 'numeric' })}
                     </p>
-                    {g.isAIGenerated && <Badge variant="info">AI Generated</Badge>}
+                    {g.isAIGenerated && <Badge variant="info">{t('dashboard.aiGenerated', 'AI Generated')}</Badge>}
                   </div>
                   <div className="space-y-2">
-                    {g.goal && <GuidanceRow icon={Trophy} iconBg="bg-amber-500/10" iconColor="text-amber-500" label="Goal" value={g.goal} />}
-                    {g.mealSuggestions && <GuidanceRow icon={UtensilsCrossed} iconBg="bg-orange-500/10" iconColor="text-orange-500" label="Meals" value={g.mealSuggestions} />}
-                    {g.hydrationTips && <GuidanceRow icon={Droplets} iconBg="bg-cyan-500/10" iconColor="text-cyan-500" label="Hydration" value={g.hydrationTips} />}
-                    {g.foodsToPrioritize && <GuidanceRow icon={CheckCircle2} iconBg="bg-green-500/10" iconColor="text-green-500" label="Prioritize" value={g.foodsToPrioritize} rowBg="bg-green-500/5" />}
-                    {g.foodsToLimit && <GuidanceRow icon={XCircle} iconBg="bg-red-500/10" iconColor="text-red-500" label="Limit" value={g.foodsToLimit} rowBg="bg-red-500/5" />}
+                    {g.goal && <GuidanceRow icon={Trophy} iconBg="bg-amber-500/10" iconColor="text-amber-500" label={t('dashboard.goal', 'Goal')} value={g.goal} />}
+                    {g.mealSuggestions && <GuidanceRow icon={UtensilsCrossed} iconBg="bg-orange-500/10" iconColor="text-orange-500" label={t('dashboard.meals', 'Meals')} value={g.mealSuggestions} />}
+                    {g.hydrationTips && <GuidanceRow icon={Droplets} iconBg="bg-cyan-500/10" iconColor="text-cyan-500" label={t('dashboard.hydration', 'Hydration')} value={g.hydrationTips} />}
+                    {g.foodsToPrioritize && <GuidanceRow icon={CheckCircle2} iconBg="bg-green-500/10" iconColor="text-green-500" label={t('dashboard.prioritize', 'Prioritize')} value={g.foodsToPrioritize} rowBg="bg-green-500/5" />}
+                    {g.foodsToLimit && <GuidanceRow icon={XCircle} iconBg="bg-red-500/10" iconColor="text-red-500" label={t('dashboard.limit', 'Limit')} value={g.foodsToLimit} rowBg="bg-red-500/5" />}
                   </div>
                 </div>
               ))}
@@ -127,12 +131,12 @@ export function PlayerNutritionDashPage() {
       {/* Dietary Profile tab */}
       {activeTab === 'profile' && (
         loadingProfile ? <PageSpinner /> :
-        <Card header="Dietary Preferences & Restrictions">
+        <Card header={t('dashboard.dietaryPreferences', 'Dietary Preferences & Restrictions')}>
           {!profile?.length ? (
             <EmptyState
               icon={<Salad size={32} />}
-              title="No dietary profile"
-              description="Your coach will set up your dietary profile"
+              title={t('dashboard.noDietaryProfile', 'No dietary profile')}
+              description={t('dashboard.noDietaryProfileDesc', 'Your coach will set up your dietary profile')}
             />
           ) : (
             <div className="space-y-3">

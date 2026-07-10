@@ -10,6 +10,8 @@ import { CATEGORY_BADGE, CATEGORY_LABEL, DIFFICULTY_BADGE } from './drillUtils';
 import { useGenerateDrillRecommendations } from '../../hooks/useAI';
 import { useToast } from '../../context/ToastContext';
 import type { Drill, DrillRecommendations } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface PlayerOption { id: number; name: string; }
 
@@ -21,17 +23,19 @@ interface Props {
   canAssign?: boolean;
 }
 
-const AI_MESSAGES = [
-  'Reviewing the latest assessment…',
-  'Finding the weakest areas…',
-  'Matching drills to weak areas…',
-  'Ranking by sport & position…',
-  'Finalising recommendations…',
-];
-
 export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPlayerId, canAssign }: Props) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const generate = useGenerateDrillRecommendations();
+
+  const AI_MESSAGES = [
+    t('drills.aiMsg1', 'Reviewing the latest assessment…'),
+    t('drills.aiMsg2', 'Finding the weakest areas…'),
+    t('drills.aiMsg3', 'Matching drills to weak areas…'),
+    t('drills.aiMsg4', 'Ranking by sport & position…'),
+    t('drills.aiMsg5', 'Finalising recommendations…'),
+  ];
 
   const [playerId, setPlayerId] = useState<number | ''>(lockedPlayerId ?? '');
   const [result, setResult] = useState<DrillRecommendations | null>(null);
@@ -46,7 +50,7 @@ export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPl
     if (!playerId) return;
     setResult(null);
     try { setResult(await generate.mutateAsync(Number(playerId))); }
-    catch (err) { addToast(err instanceof Error ? err.message : 'Failed to get recommendations', 'error'); }
+    catch (err) { addToast(err instanceof Error ? err.message : t('drills.failedRecommendations', 'Failed to get recommendations'), 'error'); }
   }
 
   const loading = generate.isPending;
@@ -54,14 +58,14 @@ export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPl
 
   return (
     <>
-      <Modal isOpen={isOpen} onClose={onClose} title="AI Drill Recommendations" size="lg">
+      <Modal isOpen={isOpen} onClose={onClose} title={t('drills.aiTitle', 'AI Drill Recommendations')} size="lg">
         <div className="space-y-4">
           {!lockedPlayerId && (
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Athlete</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('tasks.athlete', 'Athlete')}</label>
               <select value={playerId} onChange={(e) => setPlayerId(e.target.value ? Number(e.target.value) : '')} disabled={loading}
                 className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white">
-                <option value="">Select an athlete…</option>
+                <option value="">{t('tasks.selectAthlete', 'Select an athlete…')}</option>
                 {players.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
             </div>
@@ -70,19 +74,19 @@ export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPl
           {!result && !loading && (
             <div className="text-center py-4">
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                AI reviews the athlete's weakest assessment areas and picks the drills that help most.
+                {t('drills.aiIntro', "AI reviews the athlete's weakest assessment areas and picks the drills that help most.")}
               </p>
-              <Button onClick={run} disabled={!playerId}><Sparkles size={16} className="mr-1.5" /> Get Recommendations</Button>
+              <Button onClick={run} disabled={!playerId}><Sparkles size={16} className="mr-1.5" /> {t('drills.getRecommendations', 'Get Recommendations')}</Button>
             </div>
           )}
 
-          {loading && <AILoadingPanel primaryText="Matching drills to weak areas…" messages={AI_MESSAGES} estimatedSeconds={20} />}
+          {loading && <AILoadingPanel primaryText={t('drills.aiMsg3', 'Matching drills to weak areas…')} messages={AI_MESSAGES} estimatedSeconds={20} />}
 
           {result && !loading && (
             <div className="space-y-3">
               {result.weakAreas.length > 0 && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">Based on weak areas:</p>
+                  <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1.5">{t('drills.basedOnWeak', 'Based on weak areas:')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {result.weakAreas.map((w, i) => (
                       <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-300">
@@ -94,7 +98,7 @@ export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPl
               )}
 
               {result.recommendations.length === 0 ? (
-                <EmptyState icon={<Sparkles />} title="No recommendations" description="Try regenerating." size="sm" />
+                <EmptyState icon={<Sparkles />} title={t('drills.noRecs', 'No recommendations')} description={t('tasks.tryRegenerating', 'Try regenerating.')} size="sm" />
               ) : (
                 <div className="space-y-2">
                   {result.recommendations.map((r, i) => (
@@ -103,16 +107,16 @@ export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPl
                         <div className="min-w-0">
                           <p className="font-semibold text-sm text-gray-900 dark:text-white">{r.drill.name}</p>
                           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', DIFFICULTY_BADGE[r.drill.difficulty])}>{r.drill.difficulty}</span>
-                            <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', CATEGORY_BADGE[r.drill.category])}>{CATEGORY_LABEL[r.drill.category]}</span>
-                            {r.targetCategory && <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">Targets {r.targetCategory}</span>}
+                            <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', DIFFICULTY_BADGE[r.drill.difficulty])}>{L.difficulty(r.drill.difficulty)}</span>
+                            <span className={clsx('px-2 py-0.5 rounded-full text-[10px] font-semibold', CATEGORY_BADGE[r.drill.category])}>{L.category(CATEGORY_LABEL[r.drill.category])}</span>
+                            {r.targetCategory && <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">{t('drills.targetsCat', 'Targets {{category}}', { category: r.targetCategory })}</span>}
                           </div>
-                          {r.reasoning && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5"><span className="font-medium text-gray-600 dark:text-gray-300">Why: </span>{r.reasoning}</p>}
+                          {r.reasoning && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5"><span className="font-medium text-gray-600 dark:text-gray-300">{t('drills.whyPrefix', 'Why: ')}</span>{r.reasoning}</p>}
                         </div>
                         {canAssign && (
                           <button onClick={() => setAssigning(r.drill)}
                             className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white hover:bg-indigo-700 flex-shrink-0 cursor-pointer">
-                            <Plus size={13} /> Assign
+                            <Plus size={13} /> {t('drills.assign', 'Assign')}
                           </button>
                         )}
                       </div>
@@ -122,7 +126,7 @@ export function AIDrillRecommendationsModal({ isOpen, onClose, players, lockedPl
               )}
 
               <div className="flex justify-start pt-1">
-                <Button variant="ghost" size="sm" onClick={run}><RefreshCw size={14} className="mr-1" /> Regenerate</Button>
+                <Button variant="ghost" size="sm" onClick={run}><RefreshCw size={14} className="mr-1" /> {t('tasks.regenerate', 'Regenerate')}</Button>
               </div>
             </div>
           )}

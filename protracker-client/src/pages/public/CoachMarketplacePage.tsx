@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Activity, Search, SlidersHorizontal, X, Users, ArrowRight } from 'lucide-react';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useSports } from '../../hooks/useSports';
 import { useAuth } from '../../context/AuthContext';
 import { useCoachMarketplaceInfinite } from '../../hooks/useCoachMarketplace';
@@ -17,6 +19,8 @@ const YEAR_BUCKETS: { label: string; min?: number; max?: number }[] = [
 ];
 
 export function CoachMarketplacePage() {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const { user } = useAuth();
   const { data: sports = [] } = useSports();
   const [params, setParams] = useSearchParams();
@@ -58,30 +62,30 @@ export function CoachMarketplacePage() {
   const filterPanel = (
     <div className="space-y-5">
       <div>
-        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Search</label>
+        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{t('coaches.filterSearch', 'Search')}</label>
         <div className="relative">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Name or specialization"
+            placeholder={t('coaches.searchPlaceholder', 'Name or specialization')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Location</label>
+        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{t('coaches.filterLocation', 'Location')}</label>
         <div className="space-y-2">
-          <input value={city} onChange={e => setCity(e.target.value)} placeholder="City"
+          <input value={city} onChange={e => setCity(e.target.value)} placeholder={t('coaches.cityPlaceholder', 'City')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          <input value={country} onChange={e => setCountry(e.target.value)} placeholder="Country"
+          <input value={country} onChange={e => setCountry(e.target.value)} placeholder={t('coaches.countryPlaceholder', 'Country')}
             className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">Experience</label>
+        <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">{t('coaches.filterExperience', 'Experience')}</label>
         <div className="flex flex-wrap gap-1.5">
           {YEAR_BUCKETS.map((b, i) => (
             <button
@@ -90,7 +94,7 @@ export function CoachMarketplacePage() {
               className={clsx('px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors',
                 i === yearIdx ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200')}
             >
-              {b.label}
+              {i === 0 ? t('coaches.expAny', 'Any') : b.label}
             </button>
           ))}
         </div>
@@ -104,11 +108,11 @@ export function CoachMarketplacePage() {
         >
           <span className={clsx('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', accepting && 'translate-x-5')} />
         </button>
-        <span className="text-sm text-gray-700 dark:text-gray-300">Accepting athletes only</span>
+        <span className="text-sm text-gray-700 dark:text-gray-300">{t('coaches.acceptingOnly', 'Accepting athletes only')}</span>
       </label>
 
       <button onClick={resetFilters} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer">
-        Clear filters
+        {t('coaches.clearFilters', 'Clear filters')}
       </button>
     </div>
   );
@@ -126,7 +130,7 @@ export function CoachMarketplacePage() {
             to={user ? (user.role === 'Coach' ? '/dashboard' : '/') : '/login'}
             className="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
           >
-            {user ? 'Go to app' : 'Sign in'}
+            {user ? t('coaches.goToApp', 'Go to app') : t('coaches.signIn', 'Sign in')}
           </Link>
         </div>
       </div>
@@ -134,15 +138,15 @@ export function CoachMarketplacePage() {
       {/* Hero */}
       <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-700 text-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-          <h1 className="text-3xl sm:text-4xl font-black">Find your perfect sports coach</h1>
+          <h1 className="text-3xl sm:text-4xl font-black">{t('coaches.heroTitle', 'Find your perfect sports coach')}</h1>
           <p className="text-indigo-100 mt-3 max-w-2xl">
-            Browse verified coaches across 5 sports. Find someone who matches your goals and schedule.
+            {t('coaches.heroSubtitle', 'Browse verified coaches across 5 sports. Find someone who matches your goals and schedule.')}
           </p>
           {/* Sport pills */}
           <div className="flex flex-wrap gap-2 mt-6">
-            <SportPill active={sport == null} onClick={() => pickSport(null)}>All Sports</SportPill>
+            <SportPill active={sport == null} onClick={() => pickSport(null)}>{t('coaches.allSports', 'All Sports')}</SportPill>
             {sports.map(s => (
-              <SportPill key={s.id} active={sport === s.id} onClick={() => pickSport(s.id)}>{s.name}</SportPill>
+              <SportPill key={s.id} active={sport === s.id} onClick={() => pickSport(s.id)}>{dyn.sport(s.name)}</SportPill>
             ))}
           </div>
         </div>
@@ -151,9 +155,9 @@ export function CoachMarketplacePage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
         {/* Mobile filter trigger */}
         <div className="flex items-center justify-between mb-4 lg:hidden">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{total} coach{total === 1 ? '' : 'es'}</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{total} {total === 1 ? t('coaches.coachSingular', 'coach') : t('coaches.coachPlural', 'coaches')}</p>
           <button onClick={() => setMobileFilters(true)} className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-semibold cursor-pointer">
-            <SlidersHorizontal size={15} /> Filters
+            <SlidersHorizontal size={15} /> {t('coaches.filters', 'Filters')}
           </button>
         </div>
 
@@ -169,15 +173,21 @@ export function CoachMarketplacePage() {
           <div className="flex-1 min-w-0">
             <div className="hidden lg:flex items-center justify-between mb-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {isLoading ? 'Loading…' : `Showing ${items.length} of ${total} coach${total === 1 ? '' : 'es'}`}
+                {isLoading
+                  ? t('coaches.loading', 'Loading…')
+                  : t('coaches.showingOf', 'Showing {{shown}} of {{total}} {{noun}}', {
+                      shown: items.length,
+                      total,
+                      noun: total === 1 ? t('coaches.coachSingular', 'coach') : t('coaches.coachPlural', 'coaches'),
+                    })}
               </p>
               <select
                 value={sort}
                 onChange={e => setSort(e.target.value as 'default' | 'rated')}
                 className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
               >
-                <option value="default">Recommended</option>
-                <option value="rated">Highest rated</option>
+                <option value="default">{t('coaches.sortRecommended', 'Recommended')}</option>
+                <option value="rated">{t('coaches.sortHighestRated', 'Highest rated')}</option>
               </select>
             </div>
 
@@ -188,10 +198,10 @@ export function CoachMarketplacePage() {
                 <div className="mx-auto w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-3">
                   <Users size={22} className="text-gray-400" />
                 </div>
-                <h3 className="font-bold text-gray-900 dark:text-white">No coaches found</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Try adjusting your filters or check back later.</p>
+                <h3 className="font-bold text-gray-900 dark:text-white">{t('coaches.noCoachesFound', 'No coaches found')}</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{t('coaches.noCoachesHint', 'Try adjusting your filters or check back later.')}</p>
                 <Link to="/login" className="inline-flex items-center gap-1 mt-4 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-                  Are you a coach? Create your profile <ArrowRight size={14} />
+                  {t('coaches.areYouCoach', 'Are you a coach? Create your profile')} <ArrowRight size={14} />
                 </Link>
               </div>
             ) : (
@@ -206,7 +216,7 @@ export function CoachMarketplacePage() {
                       disabled={isFetchingNextPage}
                       className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-semibold cursor-pointer"
                     >
-                      {isFetchingNextPage ? 'Loading…' : 'Load more'}
+                      {isFetchingNextPage ? t('coaches.loading', 'Loading…') : t('coaches.loadMore', 'Load more')}
                     </button>
                   </div>
                 )}
@@ -222,12 +232,12 @@ export function CoachMarketplacePage() {
           <div className="absolute inset-0 bg-black/40" onClick={() => setMobileFilters(false)} />
           <div className="absolute bottom-0 inset-x-0 rounded-t-3xl bg-white dark:bg-gray-900 p-6 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900 dark:text-white">Filters</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">{t('coaches.filters', 'Filters')}</h3>
               <button onClick={() => setMobileFilters(false)} className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"><X size={18} /></button>
             </div>
             {filterPanel}
             <button onClick={() => setMobileFilters(false)} className="w-full mt-5 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-semibold cursor-pointer">
-              Show {total} coach{total === 1 ? '' : 'es'}
+              {t('coaches.showCount', 'Show {{total}} {{noun}}', { total, noun: total === 1 ? t('coaches.coachSingular', 'coach') : t('coaches.coachPlural', 'coaches') })}
             </button>
           </div>
         </div>

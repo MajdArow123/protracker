@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Activity, Share2, Check, Trophy, Target, BookOpen, Award, ArrowRight } from 'lucide-react';
 import { clsx } from 'clsx';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { usePublicProfileView } from '../../hooks/usePublicProfile';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { MOOD_CONFIG } from '../../components/journal/journalUtils';
@@ -19,6 +21,8 @@ const RESULT_STYLE: Record<string, string> = {
 };
 
 export function PublicProfilePage() {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const { slug } = useParams<{ slug: string }>();
   const { data, isLoading, isError } = usePublicProfileView(slug);
   const [copied, setCopied] = useState(false);
@@ -45,10 +49,10 @@ export function PublicProfilePage() {
         <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
           <Activity size={26} className="text-indigo-400" />
         </div>
-        <h1 className="text-xl font-bold text-white">Profile not available</h1>
-        <p className="text-gray-400 mt-1 max-w-sm">This profile is private or doesn't exist.</p>
+        <h1 className="text-xl font-bold text-white">{t('coaches.publicProfileNotAvailable', 'Profile not available')}</h1>
+        <p className="text-gray-400 mt-1 max-w-sm">{t('coaches.profilePrivateOrMissing', "This profile is private or doesn't exist.")}</p>
         <Link to="/" className="mt-6 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">
-          Explore ProTracker <ArrowRight size={15} />
+          {t('coaches.exploreProTracker', 'Explore ProTracker')} <ArrowRight size={15} />
         </Link>
       </div>
     );
@@ -68,7 +72,7 @@ export function PublicProfilePage() {
             <span className="text-base font-bold text-white tracking-tight">ProTracker</span>
           </Link>
           <button onClick={share} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm font-medium cursor-pointer">
-            {copied ? <Check size={15} className="text-green-400" /> : <Share2 size={15} />} {copied ? 'Copied' : 'Share'}
+            {copied ? <Check size={15} className="text-green-400" /> : <Share2 size={15} />} {copied ? t('coaches.copied', 'Copied') : t('coaches.share', 'Share')}
           </button>
         </div>
 
@@ -84,7 +88,7 @@ export function PublicProfilePage() {
           <div className="min-w-0">
             <h1 className="text-2xl sm:text-3xl font-bold text-white">{data.displayName}</h1>
             <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 flex-wrap">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300">{data.sport}</span>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-300">{dyn.sport(data.sport)}</span>
               {data.position && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-white/10 text-gray-300">{data.position}</span>}
             </div>
             {data.bio && <p className="text-sm text-gray-400 mt-3 max-w-lg">{data.bio}</p>}
@@ -95,17 +99,17 @@ export function PublicProfilePage() {
         <div className="grid grid-cols-2 gap-3 mt-8">
           <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center">
             <p className="text-3xl font-bold text-white">{data.assessmentCount}</p>
-            <p className="text-xs text-gray-400 mt-1">Assessments</p>
+            <p className="text-xs text-gray-400 mt-1">{t('coaches.assessments', 'Assessments')}</p>
           </div>
           <div className="rounded-2xl bg-white/5 border border-white/10 p-4 text-center">
             <p className="text-3xl font-bold text-white">{data.latestAvgScore != null ? data.latestAvgScore : '—'}<span className="text-lg text-gray-500">/10</span></p>
-            <p className="text-xs text-gray-400 mt-1">Latest avg score</p>
+            <p className="text-xs text-gray-400 mt-1">{t('coaches.latestAvgScore', 'Latest avg score')}</p>
           </div>
         </div>
 
         {/* Skills radar */}
         {data.showAssessments && radar.length > 0 && (
-          <Section icon={<Award size={16} />} title="Skills">
+          <Section icon={<Award size={16} />} title={t('coaches.skills', 'Skills')}>
             <div className="rounded-2xl bg-white/5 border border-white/10 p-3">
               <RadarChartWrapper data={radar} height={340} />
             </div>
@@ -114,7 +118,7 @@ export function PublicProfilePage() {
 
         {/* Goals */}
         {data.showGoals && data.goals.length > 0 && (
-          <Section icon={<Target size={16} />} title="Goals">
+          <Section icon={<Target size={16} />} title={t('coaches.goals', 'Goals')}>
             <div className="grid sm:grid-cols-2 gap-3">
               {data.goals.map((g, i) => (
                 <div key={i} className="rounded-xl bg-white/5 border border-white/10 p-4">
@@ -122,7 +126,7 @@ export function PublicProfilePage() {
                     <p className="font-semibold text-white text-sm">{g.title}</p>
                     {g.status === 'Achieved' && <Trophy size={15} className="text-green-400 flex-shrink-0" />}
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5">{g.category}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{dyn.category(g.category)}</p>
                   {g.progressPercent != null && (
                     <div className="mt-2.5">
                       <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
@@ -141,7 +145,7 @@ export function PublicProfilePage() {
 
         {/* Journal */}
         {data.showJournal && data.journal.length > 0 && (
-          <Section icon={<BookOpen size={16} />} title="Recent journal">
+          <Section icon={<BookOpen size={16} />} title={t('coaches.recentJournal', 'Recent journal')}>
             <div className="space-y-2.5">
               {data.journal.map((j, i) => {
                 const cfg = MOOD_CONFIG[j.mood as JournalMood];
@@ -167,17 +171,17 @@ export function PublicProfilePage() {
 
         {/* Match history */}
         {data.showMatchHistory && data.matches.length > 0 && (
-          <Section icon={<Trophy size={16} />} title="Match history">
+          <Section icon={<Trophy size={16} />} title={t('coaches.matchHistory', 'Match history')}>
             <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs text-gray-500 border-b border-white/10">
-                      <th className="px-4 py-2.5 font-medium">Date</th>
-                      <th className="px-4 py-2.5 font-medium">Opponent</th>
-                      <th className="px-4 py-2.5 font-medium">Score</th>
-                      <th className="px-4 py-2.5 font-medium">Result</th>
-                      <th className="px-4 py-2.5 font-medium text-right">Rating</th>
+                      <th className="px-4 py-2.5 font-medium">{t('coaches.thDate', 'Date')}</th>
+                      <th className="px-4 py-2.5 font-medium">{t('coaches.thOpponent', 'Opponent')}</th>
+                      <th className="px-4 py-2.5 font-medium">{t('coaches.thScore', 'Score')}</th>
+                      <th className="px-4 py-2.5 font-medium">{t('coaches.thResult', 'Result')}</th>
+                      <th className="px-4 py-2.5 font-medium text-right">{t('coaches.thRating', 'Rating')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -186,7 +190,7 @@ export function PublicProfilePage() {
                         <td className="px-4 py-2.5 text-gray-400 whitespace-nowrap">{new Date(m.matchDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</td>
                         <td className="px-4 py-2.5 text-white">{m.opponentName}</td>
                         <td className="px-4 py-2.5 text-gray-300 whitespace-nowrap">{m.ourScore}–{m.opponentScore}</td>
-                        <td className="px-4 py-2.5"><span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', RESULT_STYLE[m.result])}>{m.result}</span></td>
+                        <td className="px-4 py-2.5"><span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', RESULT_STYLE[m.result])}>{dyn.generic('result', m.result)}</span></td>
                         <td className="px-4 py-2.5 text-right text-white font-medium">{m.rating != null ? m.rating : '—'}</td>
                       </tr>
                     ))}
@@ -199,14 +203,14 @@ export function PublicProfilePage() {
 
         {/* CTA */}
         <div className="mt-12 rounded-2xl bg-gradient-to-br from-indigo-600/30 to-purple-600/20 border border-indigo-500/30 p-6 text-center">
-          <h2 className="text-lg font-bold text-white">Train smarter with ProTracker</h2>
-          <p className="text-sm text-gray-400 mt-1">Track your performance, set goals, and share your progress.</p>
+          <h2 className="text-lg font-bold text-white">{t('coaches.trainSmarter', 'Train smarter with ProTracker')}</h2>
+          <p className="text-sm text-gray-400 mt-1">{t('coaches.trackSetShare', 'Track your performance, set goals, and share your progress.')}</p>
           <Link to="/register" className="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold">
-            Connect on ProTracker <ArrowRight size={15} />
+            {t('coaches.connectOnProTracker', 'Connect on ProTracker')} <ArrowRight size={15} />
           </Link>
         </div>
 
-        <p className="text-center text-xs text-gray-600 mt-8">Powered by ProTracker</p>
+        <p className="text-center text-xs text-gray-600 mt-8">{t('coaches.poweredBy', 'Powered by ProTracker')}</p>
       </div>
     </div>
   );

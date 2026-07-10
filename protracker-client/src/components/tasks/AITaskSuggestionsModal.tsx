@@ -11,6 +11,8 @@ import { useGenerateTaskSuggestions } from '../../hooks/useAI';
 import { useCreateTask } from '../../hooks/useTasks';
 import { useToast } from '../../context/ToastContext';
 import type { TaskSuggestion, TaskSuggestions } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface Props {
   isOpen: boolean;
@@ -20,18 +22,20 @@ interface Props {
   lockedPlayerId?: number;
 }
 
-const AI_MESSAGES = [
-  'Reviewing the latest assessment…',
-  'Finding the weakest areas…',
-  'Designing targeted drills…',
-  'Matching tasks to position…',
-  'Finalising suggestions…',
-];
-
 export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerId }: Props) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const generate = useGenerateTaskSuggestions();
   const createTask = useCreateTask();
+
+  const AI_MESSAGES = [
+    t('tasks.aiMsg1', 'Reviewing the latest assessment…'),
+    t('tasks.aiMsg2', 'Finding the weakest areas…'),
+    t('tasks.aiMsg3', 'Designing targeted drills…'),
+    t('tasks.aiMsg4', 'Matching tasks to position…'),
+    t('tasks.aiMsg5', 'Finalising suggestions…'),
+  ];
 
   const [playerId, setPlayerId] = useState<number | ''>(lockedPlayerId ?? '');
   const [result, setResult] = useState<TaskSuggestions | null>(null);
@@ -59,7 +63,7 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
       const res = await generate.mutateAsync(Number(playerId));
       setResult(res);
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to generate suggestions', 'error');
+      addToast(err instanceof Error ? err.message : t('tasks.failedGenerate', 'Failed to generate suggestions'), 'error');
     }
   }
 
@@ -75,9 +79,9 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
         category: s.category,
       });
       setAssigned(prev => new Set(prev).add(idx));
-      addToast(`Assigned "${s.title}"`, 'success');
+      addToast(t('tasks.assignedToast', 'Assigned "{{title}}"', { title: s.title }), 'success');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to assign task', 'error');
+      addToast(err instanceof Error ? err.message : t('tasks.failedAssign', 'Failed to assign task'), 'error');
     } finally {
       setAssigningIdx(null);
     }
@@ -96,32 +100,32 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
   const allAssigned = result != null && assigned.size === result.suggestions.length;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="AI Task Suggestions" size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('tasks.aiSuggestionsTitle', 'AI Task Suggestions')} size="xl">
       {/* Player picker + generate (hidden once we have results) */}
       {!result && (
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {lockedPlayerId
-              ? 'AI analyses the weakest assessment areas and suggests 5 targeted tasks you can add in one click.'
-              : 'Pick an athlete and let AI analyse their weakest assessment areas, then suggest 5 targeted tasks you can assign in one click.'}
+              ? t('tasks.aiIntroLocked', 'AI analyses the weakest assessment areas and suggests 5 targeted tasks you can add in one click.')
+              : t('tasks.aiIntro', 'Pick an athlete and let AI analyse their weakest assessment areas, then suggest 5 targeted tasks you can assign in one click.')}
           </p>
           {!lockedPlayerId && (
             <div>
-              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">Athlete</label>
+              <label className="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5">{t('tasks.athlete', 'Athlete')}</label>
               <Select
                 value={playerId === '' ? '' : String(playerId)}
                 onChange={e => setPlayerId(e.target.value ? Number(e.target.value) : '')}
-                options={[{ value: '', label: 'Select an athlete…' }, ...players.map(p => ({ value: String(p.id), label: p.name }))]}
+                options={[{ value: '', label: t('tasks.selectAthlete', 'Select an athlete…') }, ...players.map(p => ({ value: String(p.id), label: p.name }))]}
               />
             </div>
           )}
 
           {generate.isPending ? (
             <AILoadingPanel
-              primaryText={`Analysing ${playerName || 'athlete'}…`}
+              primaryText={t('tasks.analysingName', 'Analysing {{name}}…', { name: playerName || t('tasks.athlete', 'Athlete') })}
               messages={AI_MESSAGES}
               estimatedSeconds={20}
-              note="Powered by Claude — usually ~10–20s"
+              note={t('tasks.poweredByClaude', 'Powered by Claude — usually ~10–20s')}
             />
           ) : (
             <button
@@ -134,7 +138,7 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
                   : 'bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed',
               )}
             >
-              <Sparkles size={16} /> Generate Suggestions
+              <Sparkles size={16} /> {t('tasks.generateSuggestions', 'Generate Suggestions')}
             </button>
           )}
         </div>
@@ -149,8 +153,8 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
                 <Sparkles size={16} className="text-violet-500" />
               </div>
               <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-white">Suggestions for {result.playerName}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{result.suggestions.length} tasks · review and assign</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{t('tasks.suggestionsFor', 'Suggestions for {{name}}', { name: result.playerName })}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t('tasks.tasksReviewAssign', '{{count}} tasks · review and assign', { count: result.suggestions.length })}</p>
               </div>
             </div>
             <button
@@ -158,7 +162,7 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
               disabled={generate.isPending}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all cursor-pointer disabled:opacity-60"
             >
-              <RefreshCw size={13} className={generate.isPending ? 'animate-spin' : ''} /> Regenerate
+              <RefreshCw size={13} className={generate.isPending ? 'animate-spin' : ''} /> {t('tasks.regenerate', 'Regenerate')}
             </button>
           </div>
 
@@ -167,7 +171,7 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
             <div className="flex items-start gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/40 p-3">
               <Target size={15} className="text-amber-500 flex-shrink-0 mt-0.5" />
               <div className="min-w-0">
-                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">Targeting weakest areas</p>
+                <p className="text-xs font-semibold text-amber-700 dark:text-amber-400 mb-1">{t('tasks.targetingWeakest', 'Targeting weakest areas')}</p>
                 <div className="flex flex-wrap gap-1.5">
                   {result.weakAreas.map(w => (
                     <span key={w} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">{w}</span>
@@ -178,9 +182,9 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
           )}
 
           {generate.isPending ? (
-            <AILoadingPanel primaryText={`Analysing ${result.playerName}…`} messages={AI_MESSAGES} estimatedSeconds={20} />
+            <AILoadingPanel primaryText={t('tasks.analysingName', 'Analysing {{name}}…', { name: result.playerName })} messages={AI_MESSAGES} estimatedSeconds={20} />
           ) : result.suggestions.length === 0 ? (
-            <EmptyState icon={<AlertTriangle size={28} />} title="No suggestions returned" description="Try regenerating." size="sm" />
+            <EmptyState icon={<AlertTriangle size={28} />} title={t('tasks.noSuggestions', 'No suggestions returned')} description={t('tasks.tryRegenerating', 'Try regenerating.')} size="sm" />
           ) : (
             <div className="space-y-2.5 max-h-[46vh] overflow-y-auto pr-1">
               {result.suggestions.map((s, idx) => {
@@ -200,8 +204,8 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                          <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', PRIORITY_BADGE[s.priority])}>{s.priority}</span>
-                          <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', CATEGORY_BADGE[s.category])}>{s.category}</span>
+                          <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', PRIORITY_BADGE[s.priority])}>{L.priority(s.priority)}</span>
+                          <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', CATEGORY_BADGE[s.category])}>{L.category(s.category)}</span>
                           {s.focusArea && (
                             <span className="text-[10px] font-medium text-gray-400 inline-flex items-center gap-0.5"><Target size={10} /> {s.focusArea}</span>
                           )}
@@ -220,7 +224,7 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
                             : 'bg-indigo-600 text-white hover:bg-indigo-500 cursor-pointer disabled:opacity-60',
                         )}
                       >
-                        {isAssigned ? <><Check size={13} /> Assigned</> : assigningIdx === idx ? 'Assigning…' : <><Sparkles size={13} /> Assign</>}
+                        {isAssigned ? <><Check size={13} /> {t('tasks.assigned', 'Assigned')}</> : assigningIdx === idx ? t('tasks.assigning', 'Assigning…') : <><Sparkles size={13} /> {t('tasks.assign', 'Assign')}</>}
                       </button>
                     </div>
                   </motion.div>
@@ -231,10 +235,10 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
 
           {/* Footer */}
           <div className="flex items-center justify-between gap-3 pt-2 border-t border-gray-100 dark:border-gray-800">
-            <span className="text-xs text-gray-500 dark:text-gray-400">{assigned.size} of {result.suggestions.length} assigned</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t('tasks.assignedOf', '{{assigned}} of {{total}} assigned', { assigned: assigned.size, total: result.suggestions.length })}</span>
             <div className="flex gap-2">
               <button onClick={onClose} className="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all cursor-pointer">
-                {allAssigned ? 'Done' : 'Close'}
+                {allAssigned ? t('common.done', 'Done') : t('common.close', 'Close')}
               </button>
               {!allAssigned && (
                 <button
@@ -242,7 +246,7 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
                   disabled={createTask.isPending}
                   className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-500 transition-all cursor-pointer disabled:opacity-60"
                 >
-                  <Check size={15} /> Assign all
+                  <Check size={15} /> {t('tasks.assignAll', 'Assign all')}
                 </button>
               )}
             </div>

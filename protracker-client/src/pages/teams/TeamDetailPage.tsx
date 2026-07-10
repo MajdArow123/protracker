@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { useTeam, useDeleteTeam } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
@@ -28,6 +29,8 @@ import { useMyCoachPermissions } from '../../hooks/useTeamCoaches';
 import { TeamPhotoBadge } from '../../components/teams/TeamPhotoBadge';
 import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
 import { useTeamMatches } from '../../hooks/useMatches';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
+import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert, ClipboardCheck,
@@ -82,6 +85,9 @@ function AvgScoreRingBadge({ score }: { score: number | null }) {
 }
 
 export function TeamDetailPage() {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
+  const { formatDate } = useLocaleFormat();
   const { id } = useParams<{ id: string }>();
   const teamId = Number(id);
   const navigate = useNavigate();
@@ -111,7 +117,7 @@ export function TeamDetailPage() {
   if (isLoading) return <DetailSkeleton />;
   if (!team) return (
     <div className="flex-1 p-6">
-      <EmptyState icon={<ShieldAlert size={40} />} title="Team not found" description="This team may have been removed." />
+      <EmptyState icon={<ShieldAlert size={40} />} title={t('teams.teamNotFound', 'Team not found')} description={t('teams.teamNotFoundDesc', 'This team may have been removed.')} />
     </div>
   );
 
@@ -140,10 +146,10 @@ export function TeamDetailPage() {
 
   const exportOptions: ExportOption[] = [
     {
-      label: 'Team Roster',
-      description: 'Players with bio & fitness',
+      label: t('teams.exportRoster', 'Team Roster'),
+      description: t('teams.exportRosterDesc', 'Players with bio & fitness'),
       run: () => {
-        if (teamPlayers.length === 0) throw new Error('No players to export.');
+        if (teamPlayers.length === 0) throw new Error(t('teams.noPlayersToExport', 'No players to export.'));
         const rows: CsvRow[] = teamPlayers.map(p => ({
           Name: p.fullName,
           Position: p.positionName ?? '',
@@ -157,10 +163,10 @@ export function TeamDetailPage() {
       },
     },
     {
-      label: 'Player Stats',
-      description: 'Per-player scores by category',
+      label: t('teams.exportPlayerStats', 'Player Stats'),
+      description: t('teams.exportPlayerStatsDesc', 'Per-player scores by category'),
       run: async () => {
-        if (teamPlayers.length === 0) throw new Error('No players to export.');
+        if (teamPlayers.length === 0) throw new Error(t('teams.noPlayersToExport', 'No players to export.'));
         const reports = await Promise.all(
           teamPlayers.map(p => reportsApi.getPlayerReport(p.id) as Promise<PlayerReport>),
         );
@@ -183,11 +189,11 @@ export function TeamDetailPage() {
       },
     },
     {
-      label: 'Match Results',
-      description: 'Fixtures, scores & outcomes',
+      label: t('teams.exportMatchResults', 'Match Results'),
+      description: t('teams.exportMatchResultsDesc', 'Fixtures, scores & outcomes'),
       run: async () => {
         const matches = await matchesApi.getForTeam(teamId);
-        if (matches.length === 0) throw new Error('No matches to export.');
+        if (matches.length === 0) throw new Error(t('teams.noMatchesToExport', 'No matches to export.'));
         const rows: CsvRow[] = matches.map(m => ({
           Date: csvDate(m.matchDate),
           Opponent: m.opponentName,
@@ -203,8 +209,8 @@ export function TeamDetailPage() {
       },
     },
     {
-      label: 'Tasks',
-      description: "This team's assigned tasks",
+      label: t('teams.exportTasks', 'Tasks'),
+      description: t('teams.exportTasksDesc', "This team's assigned tasks"),
       run: async () => {
         const teamPlayerIds = new Set(teamPlayers.map(p => p.id));
         const all = await tasksApi.getForCoach();
@@ -219,17 +225,17 @@ export function TeamDetailPage() {
             Status: t.isCompleted ? 'Completed' : 'Open',
             'Completed Date': csvDate(t.completedAt),
           }));
-        if (rows.length === 0) throw new Error('No tasks to export for this team.');
+        if (rows.length === 0) throw new Error(t('teams.noTasksToExport', 'No tasks to export for this team.'));
         exportCsv(fileFor('Tasks'), rows);
       },
     },
   ];
 
   const statCards = [
-    { label: 'Total Players', value: teamPlayers.length, icon: Users },
-    { label: 'Avg Team Score', value: avgTeamScore != null ? avgTeamScore.toFixed(1) : '—', icon: BarChart3 },
-    { label: 'Active Injuries', value: report?.activeInjuryCount ?? '—', icon: ShieldAlert },
-    { label: 'Last Assessment', value: lastPeriod?.name ?? '—', icon: Calendar },
+    { label: t('teams.totalPlayers', 'Total Players'), value: teamPlayers.length, icon: Users },
+    { label: t('teams.avgTeamScore', 'Avg Team Score'), value: avgTeamScore != null ? avgTeamScore.toFixed(1) : '—', icon: BarChart3 },
+    { label: t('teams.activeInjuries', 'Active Injuries'), value: report?.activeInjuryCount ?? '—', icon: ShieldAlert },
+    { label: t('teams.lastAssessment', 'Last Assessment'), value: lastPeriod?.name ?? '—', icon: Calendar },
   ];
 
   return (
@@ -243,7 +249,7 @@ export function TeamDetailPage() {
               onClick={() => navigate(isCoach ? '/teams' : '/player-dashboard')}
               className="flex items-center gap-1.5 text-white/70 hover:text-white text-sm font-medium transition-colors cursor-pointer"
             >
-              <ArrowLeft size={16} /> {isCoach ? 'Teams' : 'Dashboard'}
+              <ArrowLeft size={16} /> {isCoach ? t('nav.teams', 'Teams') : t('nav.dashboard', 'Dashboard')}
             </button>
             {isCoach && (
               <div className="flex gap-2">
@@ -253,7 +259,7 @@ export function TeamDetailPage() {
                     onClick={() => navigate(`/teams/${id}/bulk-assessment`)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
                   >
-                    <ClipboardCheck size={14} /> Assess Full Team
+                    <ClipboardCheck size={14} /> {t('teams.assessFullTeam', 'Assess Full Team')}
                   </button>
                 )}
                 {canManageTeam && (
@@ -261,7 +267,7 @@ export function TeamDetailPage() {
                     onClick={() => navigate(`/teams/${id}/edit`)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all cursor-pointer border border-white/20"
                   >
-                    <Edit size={14} /> Edit
+                    <Edit size={14} /> {t('common.edit', 'Edit')}
                   </button>
                 )}
                 {canManageTeam && (
@@ -269,7 +275,7 @@ export function TeamDetailPage() {
                     onClick={() => setConfirmDelete(true)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-200 text-sm font-medium transition-all cursor-pointer border border-red-500/30"
                   >
-                    <Trash2 size={14} /> Delete
+                    <Trash2 size={14} /> {t('common.delete', 'Delete')}
                   </button>
                 )}
               </div>
@@ -282,13 +288,13 @@ export function TeamDetailPage() {
             <div>
               <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
               <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{team.sportName}</span>
-                <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{teamPlayers.length} players</span>
+                <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{L.sport(team.sportName)}</span>
+                <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{t('teams.playersCount', '{{count}} players', { count: teamPlayers.length })}</span>
                 {team.foundedYear && (
-                  <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">Est. {team.foundedYear}</span>
+                  <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{t('teams.established', 'Est. {{year}}', { year: team.foundedYear })}</span>
                 )}
                 {teamMatches.length > 0 && (
-                  <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold" title="Win–Draw–Loss record">
+                  <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold" title={t('teams.wdlRecord', 'Win–Draw–Loss record')}>
                     {record.draws > 0
                       ? `${record.wins}W–${record.draws}D–${record.losses}L`
                       : `${record.wins}W–${record.losses}L`}
@@ -296,7 +302,7 @@ export function TeamDetailPage() {
                 )}
                 {report?.activeInjuryCount ? (
                   <span className="px-2.5 py-1 rounded-full bg-red-500/30 border border-red-400/40 text-red-200 text-xs font-semibold flex items-center gap-1">
-                    <ShieldAlert size={11} /> {report.activeInjuryCount} injured
+                    <ShieldAlert size={11} /> {t('teams.injuredCount', '{{count}} injured', { count: report.activeInjuryCount })}
                   </span>
                 ) : null}
               </div>
@@ -326,7 +332,7 @@ export function TeamDetailPage() {
       {/* Section tabs */}
       <div className="px-4 lg:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
-          {([['overview', 'Overview', Users], ['schedule', 'Schedule', Calendar], ['matches', 'Matches', Star], ['seasons', 'Seasons', CalendarRange]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
+          {([['overview', t('teams.tabOverview', 'Overview'), Users], ['schedule', t('teams.tabSchedule', 'Schedule'), Calendar], ['matches', t('teams.tabMatches', 'Matches'), Star], ['seasons', t('teams.tabSeasons', 'Seasons'), CalendarRange]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTeamTab(id)}
@@ -374,13 +380,13 @@ export function TeamDetailPage() {
           {isCoach && canManagePlayers && <TeamInviteSection teamId={teamId} teamName={team.name} />}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-gray-900 dark:text-white">Roster</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">{t('teams.roster', 'Roster')}</h3>
               {isCoach && canManagePlayers && (
                 <button
                   onClick={() => navigate('/players/new')}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer"
                 >
-                  <Plus size={13} /> Add Player
+                  <Plus size={13} /> {t('players.addPlayer', 'Add Player')}
                 </button>
               )}
             </div>
@@ -388,9 +394,9 @@ export function TeamDetailPage() {
             {teamPlayers.length === 0 ? (
               <EmptyState
                 icon={<Users size={32} />}
-                title="No players yet"
-                description={isCoach ? "Add players to this team to get started" : "No players on this team yet"}
-                action={isCoach ? { label: 'Add Player', onClick: () => navigate('/players/new') } : undefined}
+                title={t('players.noPlayers', 'No players yet')}
+                description={isCoach ? t('teams.addPlayersToStart', 'Add players to this team to get started') : t('teams.noPlayersOnTeam', 'No players on this team yet')}
+                action={isCoach ? { label: t('players.addPlayer', 'Add Player'), onClick: () => navigate('/players/new') } : undefined}
                 size="sm"
               />
             ) : (
@@ -420,7 +426,7 @@ export function TeamDetailPage() {
                           {isInjured && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                          {p.positionName ?? 'Player'}
+                          {p.positionName ?? t('players.player', 'Player')}
                           {(p.height != null || p.weight != null) && (
                             <span className="text-gray-400 dark:text-gray-500">
                               {' · '}
@@ -436,7 +442,7 @@ export function TeamDetailPage() {
                           </span>
                         )}
                         {p.fitnessLevel != null && (
-                          <span className="text-[10px] text-gray-400">Fit {p.fitnessLevel}/10</span>
+                          <span className="text-[10px] text-gray-400">{t('players.fitShort', 'Fit')} {p.fitnessLevel}/10</span>
                         )}
                       </div>
                     </div>
@@ -452,14 +458,14 @@ export function TeamDetailPage() {
           {isCoach && <CoachingStaffSection teamId={teamId} />}
           {/* Team radar */}
           <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-1">Team Skill Profile</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">Average across all players</p>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-1">{t('teams.teamSkillProfile', 'Team Skill Profile')}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">{t('teams.avgAcrossPlayers', 'Average across all players')}</p>
             {radarData.length > 0 ? (
               <RadarChartWrapper data={radarData} height={220} />
             ) : (
               <div className="flex flex-col items-center justify-center h-36 text-center">
                 <BarChart3 size={24} className="text-gray-400 mb-2" />
-                <p className="text-sm text-gray-500 dark:text-gray-400">No assessment data yet</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t('players.noAssessmentData', 'No assessment data yet')}</p>
               </div>
             )}
           </div>
@@ -467,7 +473,7 @@ export function TeamDetailPage() {
           {/* Top performers */}
           {topPerformers.length > 0 && (
             <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-              <h3 className="font-bold text-gray-900 dark:text-white mb-3">Top Performers</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('teams.topPerformers', 'Top Performers')}</h3>
               <div className="space-y-2">
                 {topPerformers.map((p, i) => {
                   const MedalIcon = medalIcons[i] ?? Medal;
@@ -484,7 +490,7 @@ export function TeamDetailPage() {
                       <MedalIcon size={16} className={medalColors[i]} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.playerName}</p>
-                        <p className="text-xs text-gray-500">{player?.positionName ?? 'Player'}</p>
+                        <p className="text-xs text-gray-500">{player?.positionName ?? t('players.player', 'Player')}</p>
                       </div>
                       <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(p.averageScore))}>
                         {p.averageScore.toFixed(1)}
@@ -500,7 +506,7 @@ export function TeamDetailPage() {
           {needsAttention.length > 0 && needsAttention[0].averageScore < 7 && (
             <div className="rounded-2xl border border-amber-200 dark:border-amber-900/30 bg-amber-50 dark:bg-amber-900/10 p-5">
               <h3 className="font-bold text-amber-700 dark:text-amber-400 mb-3 flex items-center gap-2">
-                <AlertTriangle size={15} /> Needs Attention
+                <AlertTriangle size={15} /> {t('teams.needsAttention', 'Needs Attention')}
               </h3>
               <div className="space-y-2">
                 {needsAttention.filter(p => p.averageScore < 7).slice(0, 3).map(p => {
@@ -517,7 +523,7 @@ export function TeamDetailPage() {
                       <AlertTriangle size={14} className="text-amber-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.playerName}</p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">{isInjured ? 'Injured · ' : ''}Score {p.averageScore.toFixed(1)}/10</p>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">{isInjured ? t('teams.injuredPrefix', 'Injured · ') : ''}{t('teams.scoreValue', 'Score {{score}}/10', { score: p.averageScore.toFixed(1) })}</p>
                       </div>
                     </div>
                   );
@@ -532,10 +538,10 @@ export function TeamDetailPage() {
       <div className="px-4 lg:px-6 pb-6">
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
           <h3 className="font-bold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
-            <Calendar size={15} className="text-indigo-400" /> Assessment Periods
+            <Calendar size={15} className="text-indigo-400" /> {t('teams.assessmentPeriods', 'Assessment Periods')}
           </h3>
           {sortedPeriods.length === 0 ? (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No assessment periods created yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{t('teams.noAssessmentPeriods', 'No assessment periods created yet.')}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {sortedPeriods.map((p, i) => (
@@ -546,13 +552,13 @@ export function TeamDetailPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(p.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {formatDate(p.startDate, { month: 'short', day: 'numeric' })}
                       {' – '}
-                      {new Date(p.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      {formatDate(p.endDate, { month: 'short', day: 'numeric' })}
                     </p>
                   </div>
                   {i === 0 && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 flex-shrink-0">Latest</span>
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-500 flex-shrink-0">{t('teams.latest', 'Latest')}</span>
                   )}
                 </div>
               ))}
@@ -568,15 +574,15 @@ export function TeamDetailPage() {
         onConfirm={async () => {
           try {
             await deleteTeam.mutateAsync(teamId);
-            showToast('Team deleted', 'success');
+            showToast(t('teams.teamDeleted', 'Team deleted'), 'success');
             navigate('/teams');
           } catch (err) {
-            showToast(err instanceof Error ? err.message : 'Delete failed', 'error');
+            showToast(err instanceof Error ? err.message : t('teams.deleteFailed', 'Delete failed'), 'error');
           } finally { setConfirmDelete(false); }
         }}
-        title="Delete Team"
-        message={`Permanently delete "${team.name}"? This cannot be undone.`}
-        confirmLabel="Delete"
+        title={t('teams.deleteTeam', 'Delete Team')}
+        message={t('teams.deleteTeamMsg', 'Permanently delete "{{name}}"? This cannot be undone.', { name: team.name })}
+        confirmLabel={t('common.delete', 'Delete')}
         isLoading={deleteTeam.isPending}
       />
     </motion.div>

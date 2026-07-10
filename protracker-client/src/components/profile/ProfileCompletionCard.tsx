@@ -1,8 +1,10 @@
 import { clsx } from 'clsx';
+import { useTranslation } from 'react-i18next';
 import { Check, Circle } from 'lucide-react';
 import type { ProfileCompletion } from '../../utils/profileCompletion';
 
 export function ProfileCompletionCard({ completion }: { completion: ProfileCompletion }) {
+  const { t } = useTranslation();
   const { percent, missing } = completion;
   if (percent >= 100) return null; // nothing to nag about
 
@@ -11,7 +13,7 @@ export function ProfileCompletionCard({ completion }: { completion: ProfileCompl
   return (
     <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white">Profile {percent}% complete</h3>
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t('profile.completion.title', 'Profile {{percent}}% complete', { percent })}</h3>
         <span className={clsx(
           'text-xs font-bold px-2 py-0.5 rounded-full',
           percent >= 80 ? 'bg-green-500/10 text-green-500' : percent >= 50 ? 'bg-amber-500/10 text-amber-500' : 'bg-red-500/10 text-red-500',

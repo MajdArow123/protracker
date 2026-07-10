@@ -1,4 +1,6 @@
 import { Menu, Sun, Moon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLocation, Link } from 'react-router-dom';
@@ -6,32 +8,34 @@ import { Badge } from '../ui/Badge';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 
-const pageTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/teams': 'Teams',
-  '/players': 'Players',
-  '/reports': 'Reports',
-  '/profile': 'Profile & Settings',
-  '/player-dashboard': 'My Dashboard',
-  '/player-dashboard/stats': 'My Stats',
-  '/player-dashboard/nutrition': 'My Nutrition',
-  '/player-dashboard/improvement': 'My Plan',
-  '/player-dashboard/profile': 'My Profile',
-  '/nutrition/food-alternatives': 'Food Alternatives',
+// Path → [translation key, English fallback] for exact-match page titles.
+const pageTitles: Record<string, [string, string]> = {
+  '/dashboard': ['nav.dashboard', 'Dashboard'],
+  '/teams': ['nav.teams', 'Teams'],
+  '/players': ['nav.players', 'Players'],
+  '/reports': ['nav.reports', 'Reports'],
+  '/profile': ['nav.profileSettings', 'Profile & Settings'],
+  '/player-dashboard': ['nav.myDashboard', 'My Dashboard'],
+  '/player-dashboard/stats': ['nav.myStats', 'My Stats'],
+  '/player-dashboard/nutrition': ['nav.myNutrition', 'My Nutrition'],
+  '/player-dashboard/improvement': ['nav.myPlan', 'My Plan'],
+  '/player-dashboard/profile': ['nav.myProfile', 'My Profile'],
+  '/nutrition/food-alternatives': ['nav.foodAlternatives', 'Food Alternatives'],
 };
 
-function getTitle(pathname: string): string {
-  if (pageTitles[pathname]) return pageTitles[pathname];
-  if (pathname.startsWith('/players/') && pathname.endsWith('/assessment')) return 'Assessment';
-  if (pathname.startsWith('/players/') && pathname.endsWith('/improvement-plan')) return 'Improvement Plan';
-  if (pathname.startsWith('/players/') && pathname.endsWith('/nutrition')) return 'Nutrition';
-  if (pathname.startsWith('/players/') && pathname.endsWith('/edit')) return 'Edit Player';
-  if (pathname.startsWith('/players/new')) return 'New Player';
-  if (pathname.startsWith('/players/')) return 'Player Profile';
-  if (pathname.startsWith('/teams/') && pathname.endsWith('/edit')) return 'Edit Team';
-  if (pathname.startsWith('/teams/new')) return 'New Team';
-  if (pathname.startsWith('/teams/')) return 'Team';
-  if (pathname.startsWith('/reports/')) return 'Report';
+function getTitle(pathname: string, t: TFunction): string {
+  const exact = pageTitles[pathname];
+  if (exact) return t(exact[0], exact[1]);
+  if (pathname.startsWith('/players/') && pathname.endsWith('/assessment')) return t('nav.assessment', 'Assessment');
+  if (pathname.startsWith('/players/') && pathname.endsWith('/improvement-plan')) return t('nav.improvementPlan', 'Improvement Plan');
+  if (pathname.startsWith('/players/') && pathname.endsWith('/nutrition')) return t('nav.nutrition', 'Nutrition');
+  if (pathname.startsWith('/players/') && pathname.endsWith('/edit')) return t('nav.editPlayer', 'Edit Player');
+  if (pathname.startsWith('/players/new')) return t('nav.newPlayer', 'New Player');
+  if (pathname.startsWith('/players/')) return t('nav.playerProfile', 'Player Profile');
+  if (pathname.startsWith('/teams/') && pathname.endsWith('/edit')) return t('nav.editTeam', 'Edit Team');
+  if (pathname.startsWith('/teams/new')) return t('nav.newTeam', 'New Team');
+  if (pathname.startsWith('/teams/')) return t('nav.team', 'Team');
+  if (pathname.startsWith('/reports/')) return t('nav.report', 'Report');
   return 'ProTracker';
 }
 
@@ -40,17 +44,18 @@ interface Props {
 }
 
 export function Navbar({ onMenuClick }: Props) {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { isDark, toggle } = useTheme();
   const location = useLocation();
-  const title = getTitle(location.pathname);
+  const title = getTitle(location.pathname, t);
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-4 px-4 lg:px-6 h-14 bg-white/95 dark:bg-gray-900/95 border-b border-gray-200 dark:border-gray-800 backdrop-blur-sm">
       <button
         onClick={onMenuClick}
         className="lg:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-1 cursor-pointer"
-        aria-label="Open menu"
+        aria-label={t('common.openMenu', 'Open menu')}
       >
         <Menu size={20} />
       </button>
@@ -64,7 +69,7 @@ export function Navbar({ onMenuClick }: Props) {
         <button
           onClick={toggle}
           className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-          aria-label="Toggle theme"
+          aria-label={t('common.toggleTheme', 'Toggle theme')}
         >
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
@@ -86,7 +91,7 @@ export function Navbar({ onMenuClick }: Props) {
                 variant={user.role === 'Coach' ? 'info' : 'success'}
                 className="mt-0.5 text-[10px]"
               >
-                {user.role === 'SoloAthlete' ? 'Solo Athlete' : user.role}
+                {user.role === 'SoloAthlete' ? t('common.soloAthlete', 'Solo Athlete') : user.role}
               </Badge>
             </div>
           </Link>

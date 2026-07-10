@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { motion, type Variants } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Activity, Mail, Edit2, Loader2, X, TrendingUp, ShieldAlert, Salad, HeartPulse,
   Phone, Users, Hash, Plus, Trash2, ChevronDown,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile';
 import { usePlayerNutritionProfile, useCreateProfileItem, useDeleteProfileItem } from '../../hooks/useNutrition';
 import { useToast } from '../../context/ToastContext';
@@ -65,6 +67,8 @@ function ageFrom(dob: string | null | undefined): number | null {
 }
 
 export function AthleteProfilePage() {
+  const { t } = useTranslation();
+  const dyn = useDynamicLabels();
   const { addToast } = useToast();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data: dashData } = usePlayerDashboard(playerId);
@@ -121,7 +125,7 @@ export function AthleteProfilePage() {
   };
 
   const save = async () => {
-    if (!form.displayName.trim()) { addToast('Name cannot be empty', 'error'); return; }
+    if (!form.displayName.trim()) { addToast(t('profile.toast.nameEmpty', 'Name cannot be empty'), 'error'); return; }
     const effHeight = heightUnit === 'cm' ? parseFloat(heightCm) : parseFloat(ftInToCm(heightFt, heightIn));
     const effWeight = weightUnit === 'kg' ? parseFloat(weightVal) : parseFloat(lbToKg(weightVal));
     try {
@@ -137,10 +141,10 @@ export function AthleteProfilePage() {
         weight: Number.isFinite(effWeight) ? Math.round(effWeight * 10) / 10 : null,
         jerseyNumber: form.jerseyNumber ? parseInt(form.jerseyNumber, 10) : null,
       });
-      addToast('Profile updated', 'success');
+      addToast(t('profile.toast.updated', 'Profile updated'), 'success');
       setEditing(false);
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not save profile', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.toast.saveFailed', 'Could not save profile'), 'error');
     }
   };
 
@@ -149,7 +153,7 @@ export function AthleteProfilePage() {
 
   const addRestriction = async () => {
     if (!playerId) return;
-    if (rCategory === 'Custom' && !rItem.trim()) { addToast('Describe the custom restriction', 'error'); return; }
+    if (rCategory === 'Custom' && !rItem.trim()) { addToast(t('profile.dietary.describeCustom', 'Describe the custom restriction'), 'error'); return; }
     try {
       await createRestriction.mutateAsync({
         preferenceType: rSeverity === 'Hard' ? 'Allergy' : rSeverity === 'Lifestyle' ? 'Lifestyle' : 'SoftPreference',
@@ -157,11 +161,11 @@ export function AthleteProfilePage() {
         specificItem: rItem.trim() || null,
         severity: rSeverity,
       });
-      addToast('Restriction added', 'success');
+      addToast(t('profile.dietary.added', 'Restriction added'), 'success');
       setRItem('');
       setShowAddRestriction(false);
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Could not add restriction', 'error');
+      addToast(err instanceof Error ? err.message : t('profile.dietary.addFailed', 'Could not add restriction'), 'error');
     }
   };
 
@@ -186,10 +190,10 @@ export function AthleteProfilePage() {
                 </h1>
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mt-1.5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-600/15 border border-emerald-500/30 text-emerald-500 text-xs font-semibold">
-                    <Activity size={11} /> {profile.roles.includes('SoloAthlete') ? 'Solo Athlete' : 'Athlete'}
+                    <Activity size={11} /> {profile.roles.includes('SoloAthlete') ? t('profile.role.solo', 'Solo Athlete') : t('profile.role.athlete', 'Athlete')}
                   </span>
                   {profile.sportName && (
-                    <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-semibold">{profile.sportName}</span>
+                    <span className="px-2.5 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-xs font-semibold">{dyn.sport(profile.sportName)}</span>
                   )}
                   {profile.positionName && (
                     <span className="px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-500 text-xs font-semibold">{profile.positionName}</span>
@@ -203,15 +207,15 @@ export function AthleteProfilePage() {
                 {editing ? (
                   <div className="flex gap-2">
                     <button onClick={() => setEditing(false)} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer">
-                      <X size={13} /> Cancel
+                      <X size={13} /> {t('common.cancel', 'Cancel')}
                     </button>
                     <button onClick={save} disabled={updateProfile.isPending} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white text-xs font-bold transition-colors cursor-pointer">
-                      {updateProfile.isPending ? <Loader2 size={13} className="animate-spin" /> : null} Save Changes
+                      {updateProfile.isPending ? <Loader2 size={13} className="animate-spin" /> : null} {t('profile.saveChanges', 'Save Changes')}
                     </button>
                   </div>
                 ) : (
                   <button onClick={startEdit} className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors cursor-pointer">
-                    <Edit2 size={13} /> Edit Profile
+                    <Edit2 size={13} /> {t('profile.editProfile', 'Edit Profile')}
                   </button>
                 )}
               </div>
@@ -221,12 +225,12 @@ export function AthleteProfilePage() {
             <div className="mt-4">
               {editing ? (
                 <textarea value={form.bio} onChange={set('bio')} maxLength={500} rows={2}
-                  placeholder="Write a short bio — your story, ambitions, favorite position…" className={inputCls} />
+                  placeholder={t('profile.bioPlaceholderAthlete', 'Write a short bio — your story, ambitions, favorite position…')} className={inputCls} />
               ) : profile.bio ? (
                 <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">{profile.bio}</p>
               ) : (
                 <button onClick={startEdit} className="text-sm text-gray-400 dark:text-gray-500 italic hover:text-emerald-500 transition-colors cursor-pointer">
-                  + Add a short bio
+                  {t('profile.addShortBio', '+ Add a short bio')}
                 </button>
               )}
             </div>
@@ -242,33 +246,33 @@ export function AthleteProfilePage() {
         <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp} className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Personal info */}
           <div className="lg:col-span-3 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-3">Personal Information</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('profile.personalInfo', 'Personal Information')}</h3>
             {editing ? (
               <div className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Full name</label>
+                    <label className={labelCls}>{t('profile.fullName', 'Full name')}</label>
                     <input value={form.displayName} onChange={set('displayName')} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Phone</label>
-                    <input type="tel" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder="+1 555 123 4567" className={inputCls} />
+                    <label className={labelCls}>{t('profile.phone', 'Phone')}</label>
+                    <input type="tel" value={form.phoneNumber} onChange={set('phoneNumber')} placeholder={t('profile.phonePlaceholder', '+1 555 123 4567')} className={inputCls} />
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className={labelCls}>Date of birth</label>
+                    <label className={labelCls}>{t('profile.dateOfBirth', 'Date of birth')}</label>
                     <input type="date" value={form.dateOfBirth} onChange={set('dateOfBirth')} max={new Date().toISOString().slice(0, 10)} className={inputCls} />
                   </div>
                   <div>
-                    <label className={labelCls}>Jersey number</label>
+                    <label className={labelCls}>{t('profile.jerseyNumber', 'Jersey number')}</label>
                     <input type="number" min={0} max={999} value={form.jerseyNumber} onChange={set('jerseyNumber')} placeholder="7" className={inputCls} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Height</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('profile.height', 'Height')}</label>
                       <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
                         {(['cm', 'ftin'] as const).map(u => (
                           <button key={u} type="button"
@@ -289,14 +293,14 @@ export function AthleteProfilePage() {
                       <input type="number" inputMode="decimal" value={heightCm} onChange={e => setHeightCm(e.target.value)} placeholder="175" className={inputCls} />
                     ) : (
                       <div className="flex gap-2">
-                        <input type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" className={inputCls} aria-label="feet" />
-                        <input type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="9" className={inputCls} aria-label="inches" />
+                        <input type="number" value={heightFt} onChange={e => setHeightFt(e.target.value)} placeholder="5" className={inputCls} aria-label={t('profile.feet', 'feet')} />
+                        <input type="number" value={heightIn} onChange={e => setHeightIn(e.target.value)} placeholder="9" className={inputCls} aria-label={t('profile.inches', 'inches')} />
                       </div>
                     )}
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Weight</label>
+                      <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('profile.weight', 'Weight')}</label>
                       <div className="flex rounded-lg bg-gray-100 dark:bg-gray-800 p-0.5">
                         {(['kg', 'lb'] as const).map(u => (
                           <button key={u} type="button"
@@ -319,21 +323,21 @@ export function AthleteProfilePage() {
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {[
-                  { label: 'Date of birth', value: profile.dateOfBirth ? `${new Date(profile.dateOfBirth).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}` : null, sub: age != null ? `${age} years old` : null },
-                  { label: 'Height', value: formatHeight(profile.height, heightUnit), sub: null },
-                  { label: 'Weight', value: formatWeight(profile.weight, weightUnit), sub: null },
-                  { label: 'Jersey number', value: profile.jerseyNumber != null ? `#${profile.jerseyNumber}` : null, sub: null },
-                  { label: 'Phone', value: profile.phoneNumber, sub: null },
-                  { label: 'Email', value: profile.email, sub: 'read-only' },
+                  { id: 'dob', label: t('profile.dateOfBirth', 'Date of birth'), value: profile.dateOfBirth ? `${new Date(profile.dateOfBirth).toLocaleDateString(dyn.locale, { year: 'numeric', month: 'short', day: 'numeric' })}` : null, sub: age != null ? t('profile.yearsOld', '{{age}} years old', { age }) : null },
+                  { id: 'height', label: t('profile.height', 'Height'), value: formatHeight(profile.height, heightUnit), sub: null },
+                  { id: 'weight', label: t('profile.weight', 'Weight'), value: formatWeight(profile.weight, weightUnit), sub: null },
+                  { id: 'jersey', label: t('profile.jerseyNumber', 'Jersey number'), value: profile.jerseyNumber != null ? `#${profile.jerseyNumber}` : null, sub: null },
+                  { id: 'phone', label: t('profile.phone', 'Phone'), value: profile.phoneNumber, sub: null },
+                  { id: 'email', label: t('profile.email', 'Email'), value: profile.email, sub: t('profile.readOnly', 'read-only') },
                 ].map(f => (
-                  <div key={f.label} className="group relative p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
+                  <div key={f.id} className="group relative p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">{f.label}</p>
                     <p className="text-sm font-bold text-gray-900 dark:text-white mt-0.5 truncate">
-                      {f.value || <span className="text-gray-400 dark:text-gray-600 font-normal">Not set</span>}
+                      {f.value || <span className="text-gray-400 dark:text-gray-600 font-normal">{t('profile.notSet', 'Not set')}</span>}
                     </p>
                     {f.sub && <p className="text-[10px] text-gray-400 mt-0.5">{f.sub}</p>}
-                    {f.label !== 'Email' && (
-                      <button onClick={startEdit} aria-label={`Edit ${f.label}`} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-emerald-500 transition-all cursor-pointer">
+                    {f.id !== 'email' && (
+                      <button onClick={startEdit} aria-label={t('profile.editField', 'Edit {{label}}', { label: f.label })} className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-emerald-500 transition-all cursor-pointer">
                         <Edit2 size={12} />
                       </button>
                     )}
@@ -345,10 +349,10 @@ export function AthleteProfilePage() {
 
           {/* Team & performance (read-only) */}
           <div className="lg:col-span-2 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-            <h3 className="font-bold text-gray-900 dark:text-white mb-3">Team & Performance</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white mb-3">{t('profile.teamPerformance', 'Team & Performance')}</h3>
             <div className="space-y-2.5">
               <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Users size={13} /> Team</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Users size={13} /> {t('profile.team', 'Team')}</span>
                 {profile.teamId ? (
                   <Link to={`/player-dashboard/team/${profile.teamId}`} className="text-sm font-bold text-indigo-500 hover:underline">{profile.teamName}</Link>
                 ) : (
@@ -356,17 +360,17 @@ export function AthleteProfilePage() {
                 )}
               </div>
               <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Hash size={13} /> Position</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Hash size={13} /> {t('profile.position', 'Position')}</span>
                 <span className="text-sm font-bold text-gray-900 dark:text-white">{profile.positionName ?? '—'}</span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Activity size={13} /> Fitness level</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><Activity size={13} /> {t('profile.fitnessLevel', 'Fitness level')}</span>
                 <span className="px-2 py-0.5 rounded-full bg-purple-500/15 text-purple-500 text-xs font-bold">
-                  {fitnessLabel(profile.fitnessLevel)} {profile.fitnessLevel ? `· ${profile.fitnessLevel}/10` : ''}
+                  {t(`profile.fitness.${fitnessLabel(profile.fitnessLevel)}`, fitnessLabel(profile.fitnessLevel))} {profile.fitnessLevel ? `· ${profile.fitnessLevel}/10` : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
-                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><TrendingUp size={13} /> Latest score</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5"><TrendingUp size={13} /> {t('profile.latestScore', 'Latest score')}</span>
                 <span className={clsx(
                   'px-2 py-0.5 rounded-full text-xs font-bold',
                   avgScore == null ? 'bg-gray-500/15 text-gray-400'
@@ -374,10 +378,10 @@ export function AthleteProfilePage() {
                     : avgScore < 7 ? 'bg-amber-500/15 text-amber-500'
                     : 'bg-green-500/15 text-green-500',
                 )}>
-                  {avgScore != null ? `${avgScore.toFixed(1)}/10` : 'No assessments yet'}
+                  {avgScore != null ? `${avgScore.toFixed(1)}/10` : t('profile.noAssessments', 'No assessments yet')}
                 </span>
               </div>
-              <p className="text-[11px] text-gray-400 pt-1">{profile.roles.includes('SoloAthlete') ? 'Fitness level updates as you log assessments.' : 'Position and fitness level are managed by your coach.'}</p>
+              <p className="text-[11px] text-gray-400 pt-1">{profile.roles.includes('SoloAthlete') ? t('profile.fitnessUpdatesSolo', 'Fitness level updates as you log assessments.') : t('profile.fitnessManagedByCoach', 'Position and fitness level are managed by your coach.')}</p>
             </div>
           </div>
         </motion.div>
@@ -388,13 +392,13 @@ export function AthleteProfilePage() {
         >
           <div className="flex items-center justify-between mb-3">
             <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <Salad size={15} className="text-emerald-400" /> Dietary Restrictions
+              <Salad size={15} className="text-emerald-400" /> {t('profile.dietary.title', 'Dietary Restrictions')}
             </h3>
             <button
               onClick={() => setShowAddRestriction(s => !s)}
               className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-500 text-xs font-semibold transition-colors cursor-pointer"
             >
-              <Plus size={13} /> Add Restriction
+              <Plus size={13} /> {t('profile.dietary.addRestriction', 'Add Restriction')}
             </button>
           </div>
 
@@ -403,10 +407,10 @@ export function AthleteProfilePage() {
               {dietaryItems.map(item => (
                 <span key={item.id} className={clsx('flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold', SEVERITY_STYLES[item.severity] ?? 'bg-gray-500/20 text-gray-400')}>
                   {item.severity === 'Hard' && <ShieldAlert size={11} />}
-                  {CATEGORY_LABELS[item.category] ?? item.category}{item.specificItem ? ` (${item.specificItem})` : ''}
+                  {t(`profile.dietary.category.${item.category}`, CATEGORY_LABELS[item.category] ?? item.category)}{item.specificItem ? ` (${item.specificItem})` : ''}
                   <button
-                    onClick={() => deleteRestriction.mutateAsync(item.id).then(() => addToast('Restriction removed', 'success')).catch(() => addToast('Could not remove', 'error'))}
-                    aria-label="Remove restriction"
+                    onClick={() => deleteRestriction.mutateAsync(item.id).then(() => addToast(t('profile.dietary.removed', 'Restriction removed'), 'success')).catch(() => addToast(t('profile.dietary.removeFailed', 'Could not remove'), 'error'))}
+                    aria-label={t('profile.dietary.removeAria', 'Remove restriction')}
                     className="ml-0.5 opacity-60 hover:opacity-100 cursor-pointer"
                   >
                     <Trash2 size={11} />
@@ -415,30 +419,30 @@ export function AthleteProfilePage() {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500 mb-3">No dietary restrictions on file.</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mb-3">{t('profile.dietary.none', 'No dietary restrictions on file.')}</p>
           )}
 
           {showAddRestriction && (
             <div className="rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 mb-3 grid grid-cols-1 sm:grid-cols-4 gap-3">
               <div className="relative">
-                <label className={labelCls}>Category</label>
+                <label className={labelCls}>{t('profile.dietary.category.label', 'Category')}</label>
                 <select value={rCategory} onChange={e => setRCategory(e.target.value)} className={clsx(inputCls, 'appearance-none cursor-pointer')}>
-                  {RESTRICTION_CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c] ?? c}</option>)}
+                  {RESTRICTION_CATEGORIES.map(c => <option key={c} value={c}>{t(`profile.dietary.category.${c}`, CATEGORY_LABELS[c] ?? c)}</option>)}
                 </select>
                 <ChevronDown size={14} className="absolute right-3 bottom-3 text-gray-400 pointer-events-none" />
               </div>
               <div className="relative">
-                <label className={labelCls}>Severity</label>
+                <label className={labelCls}>{t('profile.dietary.severity', 'Severity')}</label>
                 <select value={rSeverity} onChange={e => setRSeverity(e.target.value)} className={clsx(inputCls, 'appearance-none cursor-pointer')}>
-                  <option value="Hard">Hard (allergy)</option>
-                  <option value="Lifestyle">Moderate (lifestyle)</option>
-                  <option value="Soft">Soft (preference)</option>
+                  <option value="Hard">{t('profile.dietary.severityHard', 'Hard (allergy)')}</option>
+                  <option value="Lifestyle">{t('profile.dietary.severityModerate', 'Moderate (lifestyle)')}</option>
+                  <option value="Soft">{t('profile.dietary.severitySoft', 'Soft (preference)')}</option>
                 </select>
                 <ChevronDown size={14} className="absolute right-3 bottom-3 text-gray-400 pointer-events-none" />
               </div>
               <div>
-                <label className={labelCls}>Specific item</label>
-                <input value={rItem} onChange={e => setRItem(e.target.value)} placeholder="e.g. peanuts" className={inputCls} />
+                <label className={labelCls}>{t('profile.dietary.specificItem', 'Specific item')}</label>
+                <input value={rItem} onChange={e => setRItem(e.target.value)} placeholder={t('profile.dietary.specificPlaceholder', 'e.g. peanuts')} className={inputCls} />
               </div>
               <div className="flex items-end">
                 <button
@@ -446,14 +450,14 @@ export function AthleteProfilePage() {
                   disabled={createRestriction.isPending}
                   className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-bold transition-colors cursor-pointer"
                 >
-                  {createRestriction.isPending ? 'Adding…' : 'Add'}
+                  {createRestriction.isPending ? t('profile.dietary.adding', 'Adding…') : t('common.add', 'Add')}
                 </button>
               </div>
             </div>
           )}
 
           <p className="text-[11px] text-gray-400">
-            These restrictions are shared with your coach and used for AI nutrition planning.
+            {t('profile.dietary.sharedNote', 'These restrictions are shared with your coach and used for AI nutrition planning.')}
           </p>
         </motion.div>
 
@@ -462,21 +466,21 @@ export function AthleteProfilePage() {
           className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
         >
           <h3 className="font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
-            <HeartPulse size={15} className="text-rose-400" /> Emergency Contact
+            <HeartPulse size={15} className="text-rose-400" /> {t('profile.emergencyContact', 'Emergency Contact')}
           </h3>
           {editing ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className={labelCls}>Name</label>
-                <input value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder="e.g. Maria Ward" className={inputCls} />
+                <label className={labelCls}>{t('profile.ec.name', 'Name')}</label>
+                <input value={form.emergencyContactName} onChange={set('emergencyContactName')} placeholder={t('profile.ec.namePlaceholderAthlete', 'e.g. Maria Ward')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Phone</label>
-                <input type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder="+1 555 987 6543" className={inputCls} />
+                <label className={labelCls}>{t('profile.ec.phone', 'Phone')}</label>
+                <input type="tel" value={form.emergencyContactPhone} onChange={set('emergencyContactPhone')} placeholder={t('profile.ec.phonePlaceholder', '+1 555 987 6543')} className={inputCls} />
               </div>
               <div>
-                <label className={labelCls}>Relationship</label>
-                <input value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder="e.g. Parent/Guardian" className={inputCls} />
+                <label className={labelCls}>{t('profile.ec.relationship', 'Relationship')}</label>
+                <input value={form.emergencyContactRelationship} onChange={set('emergencyContactRelationship')} placeholder={t('profile.ec.relationshipPlaceholderAthlete', 'e.g. Parent/Guardian')} className={inputCls} />
               </div>
             </div>
           ) : profile.emergencyContactName ? (
@@ -491,9 +495,9 @@ export function AthleteProfilePage() {
               <button onClick={startEdit} className="p-1 text-gray-400 hover:text-emerald-500 transition-colors cursor-pointer"><Edit2 size={13} /></button>
             </div>
           ) : (
-            <button onClick={startEdit} className="text-sm text-emerald-500 hover:underline font-semibold cursor-pointer">+ Add Emergency Contact</button>
+            <button onClick={startEdit} className="text-sm text-emerald-500 hover:underline font-semibold cursor-pointer">{t('profile.ec.add', '+ Add Emergency Contact')}</button>
           )}
-          <p className="text-[11px] text-gray-400 mt-2">Visible to your coach in case something happens at training or a match.</p>
+          <p className="text-[11px] text-gray-400 mt-2">{t('profile.ec.visibleNote', 'Visible to your coach in case something happens at training or a match.')}</p>
         </motion.div>
 
         {/* ── Join a team (solo athletes only) ── */}
@@ -502,14 +506,14 @@ export function AthleteProfilePage() {
             className="rounded-2xl border border-indigo-200 dark:border-indigo-900/40 bg-indigo-50/50 dark:bg-indigo-900/10 p-5">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <h3 className="font-bold text-gray-900 dark:text-white">Currently training solo</h3>
+                <h3 className="font-bold text-gray-900 dark:text-white">{t('profile.solo.trainingSolo', 'Currently training solo')}</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  Want to join a team? Enter a join code from your coach — all your history comes with you.
+                  {t('profile.solo.joinPrompt', 'Want to join a team? Enter a join code from your coach — all your history comes with you.')}
                 </p>
               </div>
               <button onClick={() => setJoinOpen(true)}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-500/20 cursor-pointer">
-                <Users size={15} /> Enter Join Code
+                <Users size={15} /> {t('profile.solo.enterJoinCode', 'Enter Join Code')}
               </button>
             </div>
           </motion.div>

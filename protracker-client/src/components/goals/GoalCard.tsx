@@ -12,6 +12,8 @@ import {
   CATEGORY_BADGE, STATUS_BADGE, PRIORITY_BORDER, progressColor, completionPercent, formatDate, daysUntil,
 } from './goalUtils';
 import type { PersonalGoal } from '../../types';
+import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 interface Props {
   goal: PersonalGoal;
@@ -23,6 +25,8 @@ interface Props {
 }
 
 export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onLogProgress }: Props) {
+  const { t } = useTranslation();
+  const L = useDynamicLabels();
   const { addToast } = useToast();
   const achieve = useAchieveGoal();
   const del = useDeleteGoal();
@@ -37,19 +41,19 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
   async function handleAchieve() {
     try {
       await achieve.mutateAsync(goal.id);
-      addToast('Goal achieved! 🎉', 'success');
+      addToast(t('goals.goalAchievedToast', 'Goal achieved! 🎉'), 'success');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed', 'error');
+      addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error');
     }
   }
 
   async function handleDelete() {
-    if (!confirm(`Delete goal "${goal.title}"?`)) return;
+    if (!confirm(t('goals.deleteConfirm', 'Delete goal "{{title}}"?', { title: goal.title }))) return;
     try {
       await del.mutateAsync(goal.id);
-      addToast('Goal deleted', 'success');
+      addToast(t('goals.goalDeleted', 'Goal deleted'), 'success');
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed', 'error');
+      addToast(err instanceof Error ? err.message : t('common.failed', 'Failed'), 'error');
     }
   }
 
@@ -76,10 +80,10 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
           )}
           <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             <span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', CATEGORY_BADGE[goal.category])}>
-              {goal.category}
+              {L.category(goal.category)}
             </span>
             <span className={clsx('px-2 py-0.5 rounded-full text-[11px] font-semibold', STATUS_BADGE[goal.status])}>
-              {goal.status}
+              {L.status(goal.status)}
             </span>
             {goal.linkedStatCategoryName && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300">
@@ -91,10 +95,10 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
 
         {canManage && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-            <button onClick={() => onEdit(goal)} className="p-1.5 text-gray-400 hover:text-indigo-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title="Edit">
+            <button onClick={() => onEdit(goal)} className="p-1.5 text-gray-400 hover:text-indigo-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title={t('common.edit', 'Edit')}>
               <Pencil size={15} />
             </button>
-            <button onClick={handleDelete} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title="Delete">
+            <button onClick={handleDelete} className="p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer" title={t('common.delete', 'Delete')}>
               <Trash2 size={15} />
             </button>
           </div>
@@ -108,7 +112,7 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
             <span className="text-gray-500 dark:text-gray-400">
               {goal.targetValue != null
                 ? `${goal.currentValue ?? 0} / ${goal.targetValue}${goal.unit ? ` ${goal.unit}` : ''}`
-                : `${goal.milestones.filter(m => m.isAchieved).length} / ${goal.milestones.length} milestones`}
+                : t('goals.milestonesCount', '{{done}} / {{total}} milestones', { done: goal.milestones.filter(m => m.isAchieved).length, total: goal.milestones.length })}
             </span>
             <span className="font-semibold text-gray-700 dark:text-gray-300">{pct}%</span>
           </div>
@@ -124,9 +128,9 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
           <Calendar size={12} />
           {goal.targetDate
             ? isAchieved
-              ? `Achieved ${goal.achievedAt ? formatDate(goal.achievedAt) : ''}`
-              : due != null && due < 0 ? <span className="text-red-500">Overdue · {formatDate(goal.targetDate)}</span> : `Due ${formatDate(goal.targetDate)}`
-            : 'No deadline'}
+              ? t('goals.achievedOn', 'Achieved {{date}}', { date: goal.achievedAt ? formatDate(goal.achievedAt) : '' })
+              : due != null && due < 0 ? <span className="text-red-500">{t('goals.overdueDate', 'Overdue · {{date}}', { date: formatDate(goal.targetDate) })}</span> : t('goals.dueDate', 'Due {{date}}', { date: formatDate(goal.targetDate) })
+            : t('goals.noDeadline', 'No deadline')}
         </span>
       </div>
 
@@ -155,7 +159,7 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
           ))}
           {goal.milestones.length > 3 && (
             <button onClick={() => setShowAllMilestones(v => !v)} className="text-xs text-indigo-500 hover:underline cursor-pointer">
-              {showAllMilestones ? 'Show less' : `See ${goal.milestones.length - 3} more`}
+              {showAllMilestones ? t('common.showLess', 'Show less') : t('goals.seeMore', 'See {{count}} more', { count: goal.milestones.length - 3 })}
             </button>
           )}
         </div>
@@ -174,14 +178,14 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
               onClick={() => onLogProgress(goal)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-indigo-50 text-indigo-600 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 cursor-pointer"
             >
-              <TrendingUp size={14} /> Log Progress
+              <TrendingUp size={14} /> {t('goals.logProgress', 'Log Progress')}
             </button>
             <button
               onClick={handleAchieve}
               disabled={achieve.isPending}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-50 text-green-600 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-300 cursor-pointer"
             >
-              <CheckCircle2 size={14} /> Mark Achieved
+              <CheckCircle2 size={14} /> {t('goals.markAchieved', 'Mark as Achieved')}
             </button>
           </>
         )}
@@ -189,7 +193,7 @@ export function GoalCard({ goal, canManage, showPlayerName, sportId, onEdit, onL
           onClick={() => setShowChart(v => !v)}
           className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer ml-auto"
         >
-          {showChart ? <ChevronUp size={15} /> : <ChevronDown size={15} />} Progress
+          {showChart ? <ChevronUp size={15} /> : <ChevronDown size={15} />} {t('goals.progress', 'Progress')}
         </button>
       </div>
 
