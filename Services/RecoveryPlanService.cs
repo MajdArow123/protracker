@@ -37,27 +37,26 @@ public class RecoveryPlanService : IRecoveryPlanService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
-    private readonly IPushService _push;
+    private readonly INotificationService _notifications;
 
-    public RecoveryPlanService(ApplicationDbContext context, IAccessControlService access, IPushService push)
+    public RecoveryPlanService(ApplicationDbContext context, IAccessControlService access, INotificationService notifications)
     {
         _context = context;
         _access = access;
-        _push = push;
+        _notifications = notifications;
     }
 
-    // Push the athlete a heads-up that a recovery program is ready for them.
+    // Notify the athlete a recovery program is ready for them.
     private async Task NotifyPlayerAsync(int playerId, string title)
     {
         var userId = await _context.Players.Where(p => p.Id == playerId).Select(p => p.UserId).FirstOrDefaultAsync();
         if (!string.IsNullOrEmpty(userId))
-            _push.SendToUser(userId, new PushPayload
-            {
-                Title = "Recovery program ready",
-                Body = title,
-                Url = "/player-dashboard",
-                Tag = $"recovery-{playerId}",
-            });
+            await _notifications.CreateAsync(userId,
+                "Recovery program ready",
+                title,
+                NotificationType.RecoveryPlanReady,
+                actionUrl: "/player-dashboard/recovery",
+                relatedEntityId: playerId, relatedEntityType: "Player");
     }
 
     public async Task<RecoveryPlanDto?> GetForInjuryAsync(ClaimsPrincipal user, int injuryId)

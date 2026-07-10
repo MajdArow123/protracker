@@ -24,15 +24,15 @@ public class CoachConnectionService : ICoachConnectionService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IJoinCodeService _joinCodes;
-    private readonly IPushService _push;
+    private readonly INotificationService _notifications;
 
     public CoachConnectionService(ApplicationDbContext context, IAccessControlService access,
-        IJoinCodeService joinCodes, IPushService push)
+        IJoinCodeService joinCodes, INotificationService notifications)
     {
         _context = context;
         _access = access;
         _joinCodes = joinCodes;
-        _push = push;
+        _notifications = notifications;
     }
 
     public async Task<MyConnectionRequestDto> SendAsync(ClaimsPrincipal user, string slug, SendConnectionRequestDto dto)
@@ -80,13 +80,12 @@ public class CoachConnectionService : ICoachConnectionService
         _context.CoachConnectionRequests.Add(request);
         await _context.SaveChangesAsync();
 
-        _push.SendToUser(profile.CoachUserId, new PushPayload
-        {
-            Title = "New connection request",
-            Body = $"{request.AthleteName} wants to connect with you on ProTracker.",
-            Url = "/coach/connection-requests",
-            Tag = "connection-request",
-        });
+        await _notifications.CreateAsync(profile.CoachUserId,
+            "New connection request",
+            $"{request.AthleteName} wants to connect with you on ProTracker.",
+            NotificationType.ConnectionRequest,
+            actionUrl: "/coach/connection-requests",
+            relatedEntityId: request.Id, relatedEntityType: "CoachConnectionRequest");
 
         return ToMyDto(request, profile.Slug);
     }
@@ -123,14 +122,14 @@ public class CoachConnectionService : ICoachConnectionService
 
         await _context.SaveChangesAsync();
 
-        _push.SendToUser(request.AthleteUserId, new PushPayload
-        {
-            Title = "Connection accepted",
-            Body = request.ResultJoinCode != null
+        await _notifications.CreateAsync(request.AthleteUserId,
+            "Connection accepted",
+            request.ResultJoinCode != null
                 ? $"{request.CoachName} accepted your request. Use code {request.ResultJoinCode} to join."
                 : $"{request.CoachName} accepted your connection request.",
-            Tag = "connection-response",
-        });
+            NotificationType.ConnectionAccepted,
+            actionUrl: "/messages",
+            relatedEntityId: request.Id, relatedEntityType: "CoachConnectionRequest");
 
         return ToDto(request);
     }
@@ -146,12 +145,11 @@ public class CoachConnectionService : ICoachConnectionService
         request.RespondedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
 
-        _push.SendToUser(request.AthleteUserId, new PushPayload
-        {
-            Title = "Connection update",
-            Body = $"{request.CoachName} responded to your connection request.",
-            Tag = "connection-response",
-        });
+        await _notifications.CreateAsync(request.AthleteUserId,
+            "Connection update",
+            $"{request.CoachName} responded to your connection request.",
+            NotificationType.ConnectionDeclined,
+            relatedEntityId: request.Id, relatedEntityType: "CoachConnectionRequest");
 
         return ToDto(request);
     }

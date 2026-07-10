@@ -1531,3 +1531,32 @@ export interface LeagueListQuery {
   type?: LeagueType;
   search?: string;
 }
+
+// ── Notifications (persistent, DB-backed) ────────────────────────────────────
+export type NotificationType =
+  | 'General' | 'NewMessage' | 'NewTask' | 'TaskOverdue' | 'NewAnnouncement'
+  | 'InjuryAlert' | 'SessionReminder' | 'ConnectionRequest' | 'ConnectionAccepted'
+  | 'ConnectionDeclined' | 'AthleteJoined' | 'GoalAchieved' | 'AssessmentDue'
+  | 'RecoveryMilestone' | 'RecoveryPlanReady' | 'ReviewReceived' | 'LeagueMatchScheduled';
+
+export interface AppNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: NotificationType;
+  isRead: boolean;
+  readAt: string | null;
+  actionUrl: string | null;
+  relatedEntityId: number | null;
+  relatedEntityType: string | null;
+  createdAt: string;
+}
+
+export interface NotificationPage {
+  items: AppNotification[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  hasMore: boolean;
+  unreadCount: number;
+}

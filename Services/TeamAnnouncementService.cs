@@ -20,13 +20,13 @@ public class TeamAnnouncementService : ITeamAnnouncementService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
-    private readonly IPushService _push;
+    private readonly INotificationService _notifications;
 
-    public TeamAnnouncementService(ApplicationDbContext context, IAccessControlService access, IPushService push)
+    public TeamAnnouncementService(ApplicationDbContext context, IAccessControlService access, INotificationService notifications)
     {
         _context = context;
         _access = access;
-        _push = push;
+        _notifications = notifications;
     }
 
     public async Task<List<TeamAnnouncementDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
@@ -74,13 +74,12 @@ public class TeamAnnouncementService : ITeamAnnouncementService
             .Where(p => p.TeamId == teamId && p.UserId != null)
             .Select(p => p.UserId!)
             .ToListAsync();
-        _push.SendToUsers(athleteUserIds, new PushPayload
-        {
-            Title = $"📣 {announcement.Team.Name}: {announcement.Title}",
-            Body = announcement.Content.Length > 120 ? announcement.Content[..120] + "…" : announcement.Content,
-            Url = "/player-dashboard",
-            Tag = $"announcement-{announcement.Id}",
-        });
+        await _notifications.CreateManyAsync(athleteUserIds,
+            $"📣 {announcement.Team.Name}: {announcement.Title}",
+            announcement.Content.Length > 120 ? announcement.Content[..120] + "…" : announcement.Content,
+            NotificationType.NewAnnouncement,
+            actionUrl: "/player-dashboard",
+            relatedEntityId: announcement.Id, relatedEntityType: "TeamAnnouncement");
 
         return ToDto(announcement);
     }

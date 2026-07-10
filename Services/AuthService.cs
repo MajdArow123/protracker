@@ -18,7 +18,7 @@ public class AuthService : IAuthService
     private readonly IEmailService _email;
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
-    private readonly IPushService _push;
+    private readonly INotificationService _notifications;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -27,7 +27,7 @@ public class AuthService : IAuthService
         IEmailService email,
         IConfiguration config,
         ILogger<AuthService> logger,
-        IPushService push)
+        INotificationService notifications)
     {
         _userManager = userManager;
         _tokenService = tokenService;
@@ -35,7 +35,7 @@ public class AuthService : IAuthService
         _email = email;
         _config = config;
         _logger = logger;
-        _push = push;
+        _notifications = notifications;
     }
 
     public async Task<(UserInfoDto User, string AccessToken, string RefreshToken)> RegisterAsync(RegisterRequest request)
@@ -172,14 +172,13 @@ public class AuthService : IAuthService
         await _context.SaveChangesAsync();
         await tx.CommitAsync();
 
-        // Fire-and-forget web push to the coach (in-app bell derives from JoinedViaCodeAt).
-        _push.SendToUser(joinCode.Team.CoachId, new PushPayload
-        {
-            Title = "New athlete joined",
-            Body = $"{player.FullName} joined {joinCode.Team.Name}",
-            Url = $"/players/{player.Id}",
-            Tag = $"athlete-joined-{player.Id}",
-        });
+        // Notify the coach (in-app bell also derives from JoinedViaCodeAt).
+        await _notifications.CreateAsync(joinCode.Team.CoachId,
+            "New athlete joined",
+            $"{player.FullName} joined {joinCode.Team.Name}",
+            NotificationType.AthleteJoined,
+            actionUrl: "/players",
+            relatedEntityId: player.Id, relatedEntityType: "Player");
 
         var roles = await _userManager.GetRolesAsync(user);
         var accessToken = _tokenService.CreateAccessToken(user, roles);
@@ -378,13 +377,12 @@ public class AuthService : IAuthService
 
         await tx.CommitAsync();
 
-        _push.SendToUser(joinCode.Team.CoachId, new PushPayload
-        {
-            Title = "New athlete joined",
-            Body = $"{player.FullName} joined {joinCode.Team.Name}",
-            Url = $"/players/{player.Id}",
-            Tag = $"athlete-joined-{player.Id}",
-        });
+        await _notifications.CreateAsync(joinCode.Team.CoachId,
+            "New athlete joined",
+            $"{player.FullName} joined {joinCode.Team.Name}",
+            NotificationType.AthleteJoined,
+            actionUrl: "/players",
+            relatedEntityId: player.Id, relatedEntityType: "Player");
 
         var roles = await _userManager.GetRolesAsync(user);
         var accessToken = _tokenService.CreateAccessToken(user, roles);

@@ -22,11 +22,13 @@ public class CoachReviewService : ICoachReviewService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly INotificationService _notifications;
 
-    public CoachReviewService(ApplicationDbContext context, IAccessControlService access)
+    public CoachReviewService(ApplicationDbContext context, IAccessControlService access, INotificationService notifications)
     {
         _context = context;
         _access = access;
+        _notifications = notifications;
     }
 
     public async Task<CoachReviewsResponseDto> GetForCoachAsync(ClaimsPrincipal? user, string slug)
@@ -105,6 +107,15 @@ public class CoachReviewService : ICoachReviewService
         };
         _context.CoachReviews.Add(review);
         await _context.SaveChangesAsync();
+
+        // Notify the reviewed coach.
+        await _notifications.CreateAsync(review.CoachUserId,
+            "New review",
+            $"{review.ReviewerName} left you a {review.Rating}-star review.",
+            NotificationType.ReviewReceived,
+            actionUrl: "/coach/profile-analytics",
+            relatedEntityId: review.Id, relatedEntityType: "CoachReview");
+
         return ToDto(review, reviewerId);
     }
 

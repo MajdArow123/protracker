@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
-  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake, Medal,
+  ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake, Medal, Bell,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useTeams } from '../../hooks/useTeams';
-import { useNotifications } from '../../hooks/useNotifications';
+import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
 import { useProfile } from '../../hooks/useProfile';
 import { useIsRtl } from '../../hooks/useIsRtl';
@@ -31,6 +31,7 @@ const coachNav: NavItem[] = [
   { to: '/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },
   { to: '/drills', label: 'Drill Library', labelKey: 'nav.drillLibrary', icon: Library },
   { to: '/messages', label: 'Messages', labelKey: 'nav.messages', icon: MessageSquare },
+  { to: '/notifications', label: 'Notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/leagues', label: 'Leagues', labelKey: 'nav.leagues', icon: Trophy },
   { to: '/coach/connection-requests', label: 'Requests', labelKey: 'nav.requests', icon: Handshake },
   { to: '/reports', label: 'Reports', labelKey: 'nav.reports', icon: BarChart3 },
@@ -46,6 +47,7 @@ const athleteNav: NavItem[] = [
   { to: '/player-dashboard/drills', label: 'Drill Library', labelKey: 'nav.drillLibrary', icon: Library },
   { to: '/player-dashboard/tasks', label: 'My Tasks', labelKey: 'nav.myTasks', icon: CheckSquare },
   { to: '/messages', label: 'Messages', labelKey: 'nav.messages', icon: MessageSquare },
+  { to: '/notifications', label: 'Notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/leagues', label: 'Leagues', labelKey: 'nav.leagues', icon: Trophy },
   { to: '/player-dashboard/nutrition', label: 'My Nutrition', labelKey: 'nav.myNutrition', icon: Salad },
   { to: '/player-dashboard/improvement', label: 'My Plan', labelKey: 'nav.myPlan', icon: TrendingUp },
@@ -65,6 +67,7 @@ const soloNav: NavItem[] = [
   { to: '/solo/matches', label: 'Matches', labelKey: 'nav.matches', icon: Trophy },
   { to: '/solo/recovery', label: 'Recovery', labelKey: 'nav.recovery', icon: Heart },
   { to: '/solo/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },
+  { to: '/notifications', label: 'Notifications', labelKey: 'nav.notifications', icon: Bell },
   { to: '/leagues', label: 'Leagues', labelKey: 'nav.leagues', icon: Medal },
 ];
 
@@ -108,10 +111,10 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   const { t } = useTranslation();
   const nav = user?.role === 'Coach' ? coachNav : user?.role === 'Parent' ? parentNav : user?.role === 'SoloAthlete' ? soloNav : athleteNav;
   const profilePath = user?.role === 'Coach' ? '/profile' : user?.role === 'Parent' ? '/parent-dashboard' : user?.role === 'SoloAthlete' ? '/solo/profile' : '/player-dashboard/profile';
-  const { badges } = useNotifications();
+  const { data: unreadNotifs = 0 } = useUnreadNotificationCount();
   const { data: unreadMessages = 0 } = useUnreadMessageCount();
   const { data: profile } = useProfile();
-  const navBadge = (to: string) => to === '/messages' ? unreadMessages : (badges[to] ?? 0);
+  const navBadge = (to: string) => to === '/messages' ? unreadMessages : to === '/notifications' ? unreadNotifs : 0;
 
   const handleLogout = async () => {
     try {

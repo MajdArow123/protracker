@@ -66,6 +66,7 @@ export const ChildOverviewPage = named(() => import('../pages/parent/ChildOvervi
 
 // Shared
 export const MessagesPage = named(() => import('../pages/messages/MessagesPage'), 'MessagesPage');
+export const NotificationsPage = named(() => import('../pages/notifications/NotificationsPage'), 'NotificationsPage');
 // Personal goals (coach / athlete / solo — one shared page, role-aware).
 export const GoalsPage = named(() => import('../pages/goals/GoalsPage'), 'GoalsPage');
 // Progress journal (athlete / solo).

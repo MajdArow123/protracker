@@ -55,6 +55,10 @@ export function ChatRealtimeProvider({ children }: { children: ReactNode }) {
       typingTimers.current[fromUserId] = setTimeout(() => clearTyping(fromUserId), 4000);
     };
     const onStopTyping = (fromUserId: string) => clearTyping(fromUserId);
+    // A live notification arrived — refresh the bell badge + any open feed instantly.
+    const onNotification = () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    };
 
     function clearTyping(userId: string) {
       clearTimeout(typingTimers.current[userId]);
@@ -71,6 +75,7 @@ export function ChatRealtimeProvider({ children }: { children: ReactNode }) {
     conn.on('PresenceChanged', onPresence);
     conn.on('Typing', onTyping);
     conn.on('StopTyping', onStopTyping);
+    conn.on('Notification', onNotification);
     conn.onreconnected(() => setConnected(true));
     conn.onreconnecting(() => setConnected(false));
     conn.onclose(() => setConnected(false));
@@ -84,6 +89,7 @@ export function ChatRealtimeProvider({ children }: { children: ReactNode }) {
       conn.off('PresenceChanged', onPresence);
       conn.off('Typing', onTyping);
       conn.off('StopTyping', onStopTyping);
+      conn.off('Notification', onNotification);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, user?.id]);

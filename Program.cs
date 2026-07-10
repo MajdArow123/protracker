@@ -198,6 +198,7 @@ builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddSingleton<IImageService, ImageService>();
 builder.Services.AddSingleton<IPushService, PushService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
@@ -236,6 +237,14 @@ using (var scope = app.Services.CreateScope())
     await ProTracker.Data.DrillSeeder.SeedAsync(db);
     await ProTracker.Data.FoodItemSeeder.SeedAsync(db);
     await ProTracker.Data.DemoDataSeeder.SeedAsync(scope.ServiceProvider);
+
+    // Prune notifications older than 90 days (best-effort housekeeping).
+    try
+    {
+        var notifications = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        await notifications.DeleteOldAsync();
+    }
+    catch { /* non-fatal */ }
 }
 
 // Global error handling — wraps the entire pipeline so any unhandled exception (from MVC,

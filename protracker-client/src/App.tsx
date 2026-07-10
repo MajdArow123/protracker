@@ -28,6 +28,7 @@ import {
   PlayerDashboardPage, PlayerStatsPage, PlayerNutritionDashPage,
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
   MessagesPage,
+  NotificationsPage,
   ParentInviteAcceptPage, ParentDashboardPage, ChildOverviewPage,
   GoalsPage, JournalPage, AthleteNotesPage, PublicProfilePage, CoachPublicProfilePage,
   CoachMarketplacePage, ConnectionRequestsPage, ProfileAnalyticsPage, DrillLibraryPage,
@@ -73,6 +74,7 @@ function AppRoutes() {
         <Route element={<AppLayout />}>
           {/* Messaging is available to both roles */}
           <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           {/* Leagues are viewable by all roles (coach manages, athlete read-only) */}
           <Route path="/leagues" element={<LeaguesPage />} />
           <Route path="/leagues/:id" element={<LeagueDetailPage />} />

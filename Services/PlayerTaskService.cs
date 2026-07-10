@@ -23,13 +23,13 @@ public class PlayerTaskService : IPlayerTaskService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
-    private readonly IPushService _push;
+    private readonly INotificationService _notifications;
 
-    public PlayerTaskService(ApplicationDbContext context, IAccessControlService access, IPushService push)
+    public PlayerTaskService(ApplicationDbContext context, IAccessControlService access, INotificationService notifications)
     {
         _context = context;
         _access = access;
-        _push = push;
+        _notifications = notifications;
     }
 
     public async Task<List<PlayerTaskDto>> GetForCoachAsync(ClaimsPrincipal user, int? playerId, bool? completed, TaskPriority? priority)
@@ -120,13 +120,12 @@ public class PlayerTaskService : IPlayerTaskService
 
         // Notify the athlete their coach assigned a task (skip self-assigned solo tasks).
         if (!string.IsNullOrEmpty(task.Player.UserId) && task.Player.UserId != userId)
-            _push.SendToUser(task.Player.UserId, new PushPayload
-            {
-                Title = "New task assigned",
-                Body = $"{task.Priority} · {task.Title}",
-                Url = "/player-dashboard/tasks",
-                Tag = $"task-{task.Id}",
-            });
+            await _notifications.CreateAsync(task.Player.UserId,
+                "New task assigned",
+                $"{task.Priority} · {task.Title}",
+                NotificationType.NewTask,
+                actionUrl: "/player-dashboard/tasks",
+                relatedEntityId: task.Id, relatedEntityType: "PlayerTask");
 
         return ToDto(task);
     }

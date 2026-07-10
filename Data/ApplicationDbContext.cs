@@ -87,6 +87,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<TeamJoinCode> TeamJoinCodes => Set<TeamJoinCode>();
     public DbSet<AthleteInvite> AthleteInvites => Set<AthleteInvite>();
     public DbSet<PushSubscription> PushSubscriptions => Set<PushSubscription>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<CoachSubscription> CoachSubscriptions => Set<CoachSubscription>();
     public DbSet<PlayerAssessment> PlayerAssessments => Set<PlayerAssessment>();
     public DbSet<PlayerStatScore> PlayerStatScores => Set<PlayerStatScore>();
@@ -306,6 +307,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<PushSubscription>()
             .HasIndex(s => s.Endpoint)
             .IsUnique();
+
+        // Unread lookups + per-user recency scans.
+        builder.Entity<Notification>()
+            .HasIndex(n => new { n.UserId, n.IsRead });
+        builder.Entity<Notification>()
+            .HasIndex(n => new { n.UserId, n.CreatedAt });
 
         builder.Entity<CoachSubscription>()
             .HasIndex(s => s.CoachId)
