@@ -188,7 +188,10 @@
     "editTeam": "تعديل الفريق",
     "newTeam": "فريق جديد",
     "team": "الفريق",
-    "report": "التقرير"
+    "report": "التقرير",
+    "sectionManagement": "الإدارة",
+    "sectionFamily": "العائلة",
+    "sectionMyProfile": "ملفي الشخصي"
   },
   "auth": {
     "signIn": "تسجيل الدخول",

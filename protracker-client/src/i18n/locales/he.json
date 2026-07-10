@@ -188,7 +188,10 @@
     "editTeam": "ערוך קבוצה",
     "newTeam": "קבוצה חדשה",
     "team": "קבוצה",
-    "report": "דוח"
+    "report": "דוח",
+    "sectionManagement": "ניהול",
+    "sectionFamily": "משפחה",
+    "sectionMyProfile": "הפרופיל שלי"
   },
   "auth": {
     "signIn": "התחבר",

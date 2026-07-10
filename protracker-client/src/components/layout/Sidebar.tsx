@@ -150,7 +150,10 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-600">
-          {user?.role === 'Coach' ? 'Management' : user?.role === 'Parent' ? 'Family' : user?.role === 'SoloAthlete' ? 'Solo Training' : 'My Profile'}
+          {user?.role === 'Coach' ? t('nav.sectionManagement', 'Management')
+            : user?.role === 'Parent' ? t('nav.sectionFamily', 'Family')
+            : user?.role === 'SoloAthlete' ? t('nav.soloTraining', 'Solo Training')
+            : t('nav.sectionMyProfile', 'My Profile')}
         </p>
         {nav.map((item) => (
           <NavLink

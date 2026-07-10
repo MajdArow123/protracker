@@ -188,7 +188,10 @@
     "editTeam": "Edit Team",
     "newTeam": "New Team",
     "team": "Team",
-    "report": "Report"
+    "report": "Report",
+    "sectionManagement": "Management",
+    "sectionFamily": "Family",
+    "sectionMyProfile": "My Profile"
   },
   "auth": {
     "signIn": "Sign In",
