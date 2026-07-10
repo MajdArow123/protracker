@@ -1334,7 +1334,20 @@
       "reminderTitle": "Complete your profile",
       "reminderSubtitle": "{{percent}}% done — a complete profile helps your coach plan for you.",
       "dismissAria": "Dismiss for 7 days",
-      "completeNow": "Complete Now"
+      "completeNow": "Complete Now",
+      "photo": "Add a profile photo",
+      "fullName": "Full name",
+      "phone": "Add your phone number",
+      "bio": "Add your bio",
+      "emergency": "Add emergency contact",
+      "dob": "Add your date of birth",
+      "heightWeight": "Add height & weight",
+      "dietary": "Add dietary preferences",
+      "jersey": "Add your jersey number",
+      "position": "Position set",
+      "coachExperience": "Describe your coaching experience",
+      "certifications": "Add your certifications",
+      "specialization": "Add your specialization"
     },
     "avatar": {
       "invalidType": "Use a JPEG, PNG, or WebP image",

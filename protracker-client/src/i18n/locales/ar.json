@@ -1334,7 +1334,20 @@
       "reminderTitle": "أكمل ملفك الشخصي",
       "reminderSubtitle": "اكتمل {{percent}}% — الملف الكامل يساعد مدربك على التخطيط لك.",
       "dismissAria": "إخفاء لمدة 7 أيام",
-      "completeNow": "أكمل الآن"
+      "completeNow": "أكمل الآن",
+      "photo": "أضف صورة الملف الشخصي",
+      "fullName": "الاسم الكامل",
+      "phone": "أضف رقم هاتفك",
+      "bio": "أضف نبذة عنك",
+      "emergency": "أضف جهة اتصال للطوارئ",
+      "dob": "أضف تاريخ ميلادك",
+      "heightWeight": "أضف الطول والوزن",
+      "dietary": "أضف التفضيلات الغذائية",
+      "jersey": "أضف رقم قميصك",
+      "position": "تحديد المركز",
+      "coachExperience": "صف خبرتك التدريبية",
+      "certifications": "أضف شهاداتك",
+      "specialization": "أضف تخصصك"
     },
     "avatar": {
       "invalidType": "استخدم صورة بصيغة JPEG أو PNG أو WebP",

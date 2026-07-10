@@ -59,7 +59,7 @@ export function AssessmentTemplateBar({ sportId, playerId, statCategories, curre
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 mt-1 w-72 z-20 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl p-1.5">
+          <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-1 w-72 z-20 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl p-1.5">
             <button onClick={() => { setCreateOpen(true); setOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 cursor-pointer">
               <Plus size={15} /> {tr('assessment.saveCurrentAsTemplate', 'Save current as template')}

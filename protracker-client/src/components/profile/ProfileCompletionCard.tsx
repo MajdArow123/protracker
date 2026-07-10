@@ -26,16 +26,16 @@ export function ProfileCompletionCard({ completion }: { completion: ProfileCompl
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
         {missing.map(item => (
-          <div key={item.label} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+          <div key={item.key} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <Circle size={11} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
-            <span className="truncate">{item.label}</span>
+            <span className="truncate">{t(item.key, item.label)}</span>
             <span className="text-indigo-500 font-semibold flex-shrink-0">+{item.points}%</span>
           </div>
         ))}
         {completion.items.filter(i => i.done).slice(0, 2).map(item => (
-          <div key={item.label} className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 line-through">
+          <div key={item.key} className="flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500 line-through">
             <Check size={11} className="text-green-500 flex-shrink-0" />
-            <span className="truncate">{item.label}</span>
+            <span className="truncate">{t(item.key, item.label)}</span>
           </div>
         ))}
       </div>

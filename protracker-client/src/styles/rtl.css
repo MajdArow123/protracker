@@ -1,0 +1,88 @@
+/* ============================================================================
+   RTL (Arabic / Hebrew) layout overrides.
+
+   dir="rtl" on <html> (set by applyLanguageToDocument) already mirrors flexbox
+   main-axis order, CSS grid flow, HTML table column order, logical text
+   alignment, and inputs. This file covers the cases dir alone does NOT handle:
+   directional icons, physical Tailwind text-align utilities, absolutely-anchored
+   overlays, and keeping charts left-to-right.
+
+   Everything is scoped under :root.rtl — the .rtl class is toggled on <html> by
+   applyLanguageToDocument(), so these rules only apply in RTL languages and never
+   affect English/French/Spanish.
+   ============================================================================ */
+
+/* ── Directional icons ──────────────────────────────────────────────────────
+   Mirror lucide arrows / chevrons / corners so "next / back / forward / expand /
+   send / reply" point the correct way in RTL. lucide-react stamps a per-icon
+   class (.lucide-<name>) we can target. Non-directional icons (search, bell,
+   calendar, etc.) are intentionally left untouched. Flipping BOTH the left and
+   right variants is correct: an explicit "back/left" glyph should point right
+   in RTL, and vice-versa. */
+:root.rtl .lucide-chevron-right,
+:root.rtl .lucide-chevron-left,
+:root.rtl .lucide-chevrons-right,
+:root.rtl .lucide-chevrons-left,
+:root.rtl .lucide-arrow-right,
+:root.rtl .lucide-arrow-left,
+:root.rtl .lucide-arrow-up-right,
+:root.rtl .lucide-arrow-up-left,
+:root.rtl .lucide-arrow-down-right,
+:root.rtl .lucide-arrow-down-left,
+:root.rtl .lucide-arrow-big-right,
+:root.rtl .lucide-arrow-big-left,
+:root.rtl .lucide-arrow-left-right,
+:root.rtl .lucide-corner-down-right,
+:root.rtl .lucide-corner-down-left,
+:root.rtl .lucide-corner-up-right,
+:root.rtl .lucide-corner-up-left,
+:root.rtl .lucide-move-right,
+:root.rtl .lucide-move-left,
+:root.rtl .lucide-send,
+:root.rtl .lucide-send-horizontal,
+:root.rtl .lucide-reply,
+:root.rtl .lucide-log-out,
+:root.rtl .lucide-log-in,
+:root.rtl .lucide-external-link {
+  transform: scaleX(-1);
+}
+
+/* ── Explicit text-align utilities must flip ────────────────────────────────
+   Tailwind's text-left / text-right are physical, not logical, so dir="rtl"
+   leaves them pinned. Flip them so "start-aligned" text follows the reading
+   direction. (Block text with no explicit alignment already flows from the
+   start edge via dir and needs nothing.) */
+:root.rtl .text-left { text-align: right; }
+:root.rtl .text-right { text-align: left; }
+
+/* ── Accent borders (priority stripes on cards) ─────────────────────────────
+   Cards mark priority/status with a physical left/right colored border
+   (e.g. border-l-4 + border-red-500). dir="rtl" leaves the stripe pinned to the
+   wrong edge. Flip only the border WIDTH side — the color class sets all four
+   sides, so the stripe moves to the inline-start edge while keeping its colour. */
+:root.rtl .border-l-2 { border-left-width: 0; border-right-width: 2px; }
+:root.rtl .border-l-4 { border-left-width: 0; border-right-width: 4px; }
+:root.rtl .border-r-2 { border-right-width: 0; border-left-width: 2px; }
+:root.rtl .border-r-4 { border-right-width: 0; border-left-width: 4px; }
+
+/* ── Charts stay LTR ────────────────────────────────────────────────────────
+   Recharts renders numeric axes/tooltips/legends assuming LTR; forcing the
+   wrapper LTR keeps numbers and axis ordering readable inside an RTL page. */
+:root.rtl .recharts-wrapper,
+:root.rtl .recharts-surface {
+  direction: ltr;
+}
+
+/* ── Progress / meter fills ─────────────────────────────────────────────────
+   Width-percentage fills that are the first in-flow child of a track already
+   anchor to the inline-start edge (the right, in RTL) and grow leftward — no
+   override needed. Any fill using logical inset (start-0) also flips for free. */
+
+/* ── Toasts / notifications ────────────────────────────────────────────────
+   The toast stack anchors to the inline-end top corner. In RTL that becomes the
+   top-left. The component uses rtl: variants for this; this rule is a safety net
+   in case a toast portal renders outside a dir="rtl" subtree. */
+:root.rtl .toast-stack {
+  right: auto;
+  left: 1rem;
+}

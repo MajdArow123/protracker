@@ -1334,7 +1334,20 @@
       "reminderTitle": "השלם את הפרופיל שלך",
       "reminderSubtitle": "{{percent}}% הושלמו — פרופיל מלא עוזר למאמן שלך לתכנן עבורך.",
       "dismissAria": "התעלם ל-7 ימים",
-      "completeNow": "השלם עכשיו"
+      "completeNow": "השלם עכשיו",
+      "photo": "הוסף תמונת פרופיל",
+      "fullName": "שם מלא",
+      "phone": "הוסף מספר טלפון",
+      "bio": "הוסף תיאור אישי",
+      "emergency": "הוסף איש קשר לחירום",
+      "dob": "הוסף תאריך לידה",
+      "heightWeight": "הוסף גובה ומשקל",
+      "dietary": "הוסף העדפות תזונה",
+      "jersey": "הוסף מספר חולצה",
+      "position": "הגדר עמדה",
+      "coachExperience": "תאר את ניסיון האימון שלך",
+      "certifications": "הוסף הסמכות",
+      "specialization": "הוסף התמחות"
     },
     "avatar": {
       "invalidType": "השתמש בתמונת JPEG, PNG או WebP",

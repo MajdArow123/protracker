@@ -23,7 +23,7 @@ const colors: Record<ToastType, string> = {
 export function ToastContainer() {
   const { toasts, removeToast } = useToast();
   return (
-    <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+    <div className="toast-stack fixed top-4 right-4 rtl:right-auto rtl:left-4 z-[100] flex flex-col gap-2 pointer-events-none">
       <AnimatePresence>
         {toasts.map((toast) => {
           const Icon = icons[toast.type];

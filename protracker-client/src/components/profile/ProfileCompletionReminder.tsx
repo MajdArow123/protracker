@@ -57,11 +57,11 @@ export function ProfileCompletionReminder({ completion }: { completion: ProfileC
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 mb-4">
         {completion.items.slice(0, 8).map(item => (
-          <div key={item.label} className={clsx('flex items-center gap-2 text-xs', item.done ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-600 dark:text-gray-300')}>
+          <div key={item.key} className={clsx('flex items-center gap-2 text-xs', item.done ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-600 dark:text-gray-300')}>
             {item.done
               ? <Check size={12} className="text-green-500 flex-shrink-0" />
               : <Circle size={11} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />}
-            <span className="truncate">{item.label}</span>
+            <span className="truncate">{t(item.key, item.label)}</span>
             {!item.done && <span className="text-indigo-500 font-semibold flex-shrink-0">+{item.points}%</span>}
           </div>
         ))}

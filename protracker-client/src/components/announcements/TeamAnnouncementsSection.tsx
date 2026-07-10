@@ -129,7 +129,7 @@ export function TeamAnnouncementsSection({ teamId, isCoach }: { teamId: number; 
             const st = PRIORITY_STYLES[a.priority];
             return (
               <div key={a.id} className={clsx('group relative rounded-xl border p-4 overflow-hidden', st.border)}>
-                {st.accent && <div className={clsx('absolute left-0 top-0 bottom-0 w-1', st.accent)} />}
+                {st.accent && <div className={clsx('absolute start-0 top-0 bottom-0 w-1', st.accent)} />}
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2 min-w-0">
                     {a.isPinned && <Pin size={13} className="text-indigo-500 flex-shrink-0" />}

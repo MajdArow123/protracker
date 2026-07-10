@@ -12,6 +12,7 @@ import { useTeams } from '../../hooks/useTeams';
 import { useNotifications } from '../../hooks/useNotifications';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
 import { useProfile } from '../../hooks/useProfile';
+import { useIsRtl } from '../../hooks/useIsRtl';
 import { clsx } from 'clsx';
 
 interface NavItem {
@@ -123,7 +124,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="flex flex-col h-full w-64 bg-gray-900 dark:bg-[#0f1117] border-r border-gray-800 dark:border-gray-800/80">
+    <div className="flex flex-col h-full w-64 bg-gray-900 dark:bg-[#0f1117] border-e border-gray-800 dark:border-gray-800/80">
       {/* Logo */}
       <div className="flex items-center justify-between px-5 py-5 border-b border-gray-800">
         <div className="flex items-center gap-2.5">
@@ -241,6 +242,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
 }
 
 export function Sidebar({ isOpen, onClose }: Props) {
+  const rtl = useIsRtl();
   return (
     <>
       <aside className="hidden lg:flex h-screen sticky top-0 flex-shrink-0">
@@ -259,11 +261,11 @@ export function Sidebar({ isOpen, onClose }: Props) {
               onClick={onClose}
             />
             <motion.aside
-              initial={{ x: -264 }}
+              initial={{ x: rtl ? 264 : -264 }}
               animate={{ x: 0 }}
-              exit={{ x: -264 }}
+              exit={{ x: rtl ? 264 : -264 }}
               transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-              className="fixed left-0 top-0 z-50 h-full lg:hidden"
+              className="fixed top-0 z-50 h-full lg:hidden start-0"
             >
               <SidebarContent onClose={onClose} />
             </motion.aside>

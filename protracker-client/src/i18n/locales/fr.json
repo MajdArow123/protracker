@@ -1334,7 +1334,20 @@
       "reminderTitle": "Complétez votre profil",
       "reminderSubtitle": "{{percent}} % terminé — un profil complet aide votre entraîneur à planifier pour vous.",
       "dismissAria": "Ignorer pendant 7 jours",
-      "completeNow": "Compléter maintenant"
+      "completeNow": "Compléter maintenant",
+      "photo": "Ajouter une photo de profil",
+      "fullName": "Nom complet",
+      "phone": "Ajouter votre numéro de téléphone",
+      "bio": "Ajouter votre bio",
+      "emergency": "Ajouter un contact d’urgence",
+      "dob": "Ajouter votre date de naissance",
+      "heightWeight": "Ajouter taille et poids",
+      "dietary": "Ajouter vos préférences alimentaires",
+      "jersey": "Ajouter votre numéro de maillot",
+      "position": "Poste défini",
+      "coachExperience": "Décrivez votre expérience d’entraîneur",
+      "certifications": "Ajouter vos certifications",
+      "specialization": "Ajouter votre spécialisation"
     },
     "avatar": {
       "invalidType": "Utilisez une image JPEG, PNG ou WebP",
