@@ -29,12 +29,15 @@ public class AssessmentService : IAssessmentService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IPersonalGoalService _goals;
+    private readonly ILogger<AssessmentService> _logger;
 
-    public AssessmentService(ApplicationDbContext context, IAccessControlService access, IPersonalGoalService goals)
+    public AssessmentService(ApplicationDbContext context, IAccessControlService access,
+        IPersonalGoalService goals, ILogger<AssessmentService> logger)
     {
         _context = context;
         _access = access;
         _goals = goals;
+        _logger = logger;
     }
 
     public async Task<List<AssessmentPeriodDto>> GetAccessiblePeriodsAsync(ClaimsPrincipal user)
@@ -208,6 +211,11 @@ public class AssessmentService : IAssessmentService
             .ToDictionary(g => g.Key, g => g.Last().Score);
         await _goals.SyncFromAssessmentAsync(dto.PlayerId, categoryScores);
 
+        // Evidence layer: every slider score doubles as subjective evidence for the linked
+        // metric (coach eval for coaches, self-assessment for athletes/solo athletes), so
+        // historical assessments count toward evidence-based scores with no extra work.
+        await CaptureEvidenceFromAssessmentAsync(user, assessment, categoryScores);
+
         assessment.AssessmentPeriod = period;
         return await GetAssessmentByIdAsync(user, assessment.Id);
     }
@@ -265,6 +273,64 @@ public class AssessmentService : IAssessmentService
 
         _context.PlayerAssessments.Remove(assessment);
         await _context.SaveChangesAsync();
+    }
+
+    // Mirrors slider scores into the evidence tables for metrics linked to a stat category.
+    // Best-effort: an evidence failure must never break the (already saved) assessment.
+    private async Task CaptureEvidenceFromAssessmentAsync(ClaimsPrincipal user,
+        PlayerAssessment assessment, Dictionary<int, decimal> categoryScores)
+    {
+        if (categoryScores.Count == 0) return;
+        try
+        {
+            var player = await _context.Players.FirstAsync(p => p.Id == assessment.PlayerId);
+            var categoryIds = categoryScores.Keys.ToList();
+            var metricByCategory = await _context.SportMetricDefinitions
+                .Where(d => d.SportId == player.SportId
+                    && d.SportStatCategoryId != null && categoryIds.Contains(d.SportStatCategoryId.Value))
+                .ToDictionaryAsync(d => d.SportStatCategoryId!.Value, d => d.Id);
+
+            var isAthlete = user.IsInRole("Athlete") || _access.IsSoloAthlete(user);
+            var userId = _access.RequireUserId(user);
+            foreach (var (categoryId, score) in categoryScores)
+            {
+                if (!metricByCategory.TryGetValue(categoryId, out var metricId)) continue;
+                var rating = Math.Clamp(score, 1m, 10m);
+                if (isAthlete)
+                {
+                    _context.SelfAssessmentEntries.Add(new SelfAssessmentEntry
+                    {
+                        PlayerId = assessment.PlayerId,
+                        MetricDefinitionId = metricId,
+                        Rating = rating,
+                        EvalDate = assessment.DateRecorded,
+                        AssessmentId = assessment.Id,
+                    });
+                }
+                else
+                {
+                    _context.CoachEvaluations.Add(new CoachEvaluation
+                    {
+                        PlayerId = assessment.PlayerId,
+                        CoachId = userId,
+                        MetricDefinitionId = metricId,
+                        Rating = rating,
+                        EvalDate = assessment.DateRecorded,
+                        AssessmentId = assessment.Id,
+                    });
+                }
+            }
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Drop any half-tracked evidence rows so later saves in this request don't retry them.
+            foreach (var entry in _context.ChangeTracker.Entries()
+                .Where(e => e.State == EntityState.Added
+                    && e.Entity is CoachEvaluation or SelfAssessmentEntry).ToList())
+                entry.State = EntityState.Detached;
+            _logger.LogWarning(ex, "Evidence capture failed for assessment {AssessmentId}.", assessment.Id);
+        }
     }
 
     // The long-running catch-all period a solo athlete's self-assessments live in.

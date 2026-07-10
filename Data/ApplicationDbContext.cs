@@ -109,6 +109,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<LeagueTeam> LeagueTeams => Set<LeagueTeam>();
     public DbSet<LeagueMatch> LeagueMatches => Set<LeagueMatch>();
     public DbSet<LeagueStanding> LeagueStandings => Set<LeagueStanding>();
+    public DbSet<SportMetricDefinition> SportMetricDefinitions => Set<SportMetricDefinition>();
+    public DbSet<ObjectiveTestResult> ObjectiveTestResults => Set<ObjectiveTestResult>();
+    public DbSet<MatchStatEntry> MatchStatEntries => Set<MatchStatEntry>();
+    public DbSet<CoachEvaluation> CoachEvaluations => Set<CoachEvaluation>();
+    public DbSet<SelfAssessmentEntry> SelfAssessmentEntries => Set<SelfAssessmentEntry>();
+    public DbSet<EvidenceBasedScore> EvidenceBasedScores => Set<EvidenceBasedScore>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -629,6 +635,81 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<DrillFavorite>()
             .HasIndex(f => new { f.DrillId, f.UserId })
             .IsUnique();
+
+        // --- Evidence-based assessments ---
+        // Metric definitions are reference data (like SportStatCategory) — never cascade away.
+        builder.Entity<SportMetricDefinition>()
+            .HasOne(d => d.Sport).WithMany().HasForeignKey(d => d.SportId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<SportMetricDefinition>()
+            .HasOne(d => d.SportStatCategory).WithMany().HasForeignKey(d => d.SportStatCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<SportMetricDefinition>()
+            .HasIndex(d => d.SportId);
+
+        // Evidence rows are player-owned (die with the player); deleting an assessment only
+        // unlinks the evidence recorded alongside it (SetNull) — the measurement stays valid.
+        builder.Entity<ObjectiveTestResult>()
+            .HasOne(t => t.Player).WithMany().HasForeignKey(t => t.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<ObjectiveTestResult>()
+            .HasOne(t => t.MetricDefinition).WithMany().HasForeignKey(t => t.MetricDefinitionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<ObjectiveTestResult>()
+            .HasOne(t => t.Assessment).WithMany().HasForeignKey(t => t.AssessmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<ObjectiveTestResult>()
+            .HasIndex(t => new { t.PlayerId, t.MetricDefinitionId, t.TestedAt });
+
+        builder.Entity<MatchStatEntry>()
+            .HasOne(m => m.Player).WithMany().HasForeignKey(m => m.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<MatchStatEntry>()
+            .HasOne(m => m.Sport).WithMany().HasForeignKey(m => m.SportId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<MatchStatEntry>()
+            .HasOne(m => m.MatchResult).WithMany().HasForeignKey(m => m.MatchResultId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<MatchStatEntry>()
+            .HasIndex(m => new { m.PlayerId, m.StatDate });
+
+        builder.Entity<CoachEvaluation>()
+            .HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<CoachEvaluation>()
+            .HasOne(e => e.MetricDefinition).WithMany().HasForeignKey(e => e.MetricDefinitionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<CoachEvaluation>()
+            .HasOne(e => e.Assessment).WithMany().HasForeignKey(e => e.AssessmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<CoachEvaluation>()
+            .HasIndex(e => new { e.PlayerId, e.MetricDefinitionId, e.EvalDate });
+
+        builder.Entity<SelfAssessmentEntry>()
+            .HasOne(e => e.Player).WithMany().HasForeignKey(e => e.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SelfAssessmentEntry>()
+            .HasOne(e => e.MetricDefinition).WithMany().HasForeignKey(e => e.MetricDefinitionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<SelfAssessmentEntry>()
+            .HasOne(e => e.Assessment).WithMany().HasForeignKey(e => e.AssessmentId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<SelfAssessmentEntry>()
+            .HasIndex(e => new { e.PlayerId, e.MetricDefinitionId, e.EvalDate });
+
+        // Calculated scores: one "current" row per player+metric (AssessmentId null, upserted
+        // by the engine) plus optional per-assessment snapshots (cascade with the assessment).
+        builder.Entity<EvidenceBasedScore>()
+            .HasOne(s => s.Player).WithMany().HasForeignKey(s => s.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<EvidenceBasedScore>()
+            .HasOne(s => s.MetricDefinition).WithMany().HasForeignKey(s => s.MetricDefinitionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<EvidenceBasedScore>()
+            .HasOne(s => s.Assessment).WithMany().HasForeignKey(s => s.AssessmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<EvidenceBasedScore>()
+            .HasIndex(s => new { s.PlayerId, s.MetricDefinitionId });
 
         builder.Entity<RefreshToken>()
             .HasIndex(r => r.UserId);

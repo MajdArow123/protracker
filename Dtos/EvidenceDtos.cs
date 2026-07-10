@@ -1,0 +1,154 @@
+namespace ProTracker.Dtos;
+
+// ─── Metric definitions ──────────────────────────────────────────────────────
+
+public class SportMetricDefinitionDto
+{
+    public int Id { get; set; }
+    public int SportId { get; set; }
+    public string Name { get; set; } = "";
+    public string? ShortName { get; set; }
+    public string Category { get; set; } = "";
+    public string? Description { get; set; }
+    public string? Unit { get; set; }
+    public string InputType { get; set; } = "";
+    public decimal ObjectiveTestWeight { get; set; }
+    public decimal MatchStatWeight { get; set; }
+    public decimal CoachEvalWeight { get; set; }
+    public decimal SelfAssessWeight { get; set; }
+    public bool IsObjectiveRequired { get; set; }
+    public decimal BenchmarkLow { get; set; }
+    public decimal BenchmarkMid { get; set; }
+    public decimal BenchmarkHigh { get; set; }
+    public string? Notes { get; set; }
+    public int? SportStatCategoryId { get; set; }
+    // Whether match stats can contribute to this metric (a mapping rule exists).
+    public bool SupportsMatchStats { get; set; }
+}
+
+// ─── Objective tests ─────────────────────────────────────────────────────────
+
+public class CreateObjectiveTestDto
+{
+    public int PlayerId { get; set; }
+    public int MetricDefinitionId { get; set; }
+    public decimal Value { get; set; }
+    public string? Unit { get; set; }
+    public DateTime? TestedAt { get; set; }
+    public string? Notes { get; set; }
+    public int? AssessmentId { get; set; }
+}
+
+public class ObjectiveTestResultDto
+{
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
+    public int MetricDefinitionId { get; set; }
+    public string MetricName { get; set; } = "";
+    public decimal Value { get; set; }
+    public string Unit { get; set; } = "";
+    public DateTime TestedAt { get; set; }
+    public string TestedBy { get; set; } = "";
+    public string? Notes { get; set; }
+    public int? AssessmentId { get; set; }
+    // The 1-10 score this raw value normalizes to via the metric's benchmarks.
+    public decimal NormalizedScore { get; set; }
+}
+
+// ─── Match stats ─────────────────────────────────────────────────────────────
+
+public class CreateMatchStatDto
+{
+    public int PlayerId { get; set; }
+    public DateTime? StatDate { get; set; }
+    // Flat numeric stats object, keys per sport (see MatchStatEntry).
+    public Dictionary<string, decimal> Stats { get; set; } = new();
+    public int? MatchResultId { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class MatchStatEntryDto
+{
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
+    public int? MatchResultId { get; set; }
+    public DateTime StatDate { get; set; }
+    public int SportId { get; set; }
+    public Dictionary<string, decimal> Stats { get; set; } = new();
+    public string? Notes { get; set; }
+}
+
+// ─── Coach evaluations & self-assessments ────────────────────────────────────
+
+public class CreateCoachEvaluationDto
+{
+    public int PlayerId { get; set; }
+    public int MetricDefinitionId { get; set; }
+    public decimal Rating { get; set; }
+    public DateTime? EvalDate { get; set; }
+    public string? Notes { get; set; }
+    public int? AssessmentId { get; set; }
+}
+
+public class CoachEvaluationDto
+{
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
+    public int MetricDefinitionId { get; set; }
+    public string MetricName { get; set; } = "";
+    public decimal Rating { get; set; }
+    public DateTime EvalDate { get; set; }
+    public string? Notes { get; set; }
+    public int? AssessmentId { get; set; }
+}
+
+public class CreateSelfAssessmentDto
+{
+    public int MetricDefinitionId { get; set; }
+    public decimal Rating { get; set; }
+    public DateTime? EvalDate { get; set; }
+    // JSON of { question, answer, value } entries from the guided questions UI.
+    public string? GuidedAnswers { get; set; }
+    public string? Notes { get; set; }
+    public int? AssessmentId { get; set; }
+}
+
+public class SelfAssessmentEntryDto
+{
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
+    public int MetricDefinitionId { get; set; }
+    public string MetricName { get; set; } = "";
+    public decimal Rating { get; set; }
+    public DateTime EvalDate { get; set; }
+    public string? GuidedAnswers { get; set; }
+    public string? Notes { get; set; }
+}
+
+// ─── Evidence-based scores ───────────────────────────────────────────────────
+
+public class EvidenceBasedScoreDto
+{
+    public int Id { get; set; }
+    public int PlayerId { get; set; }
+    public int MetricDefinitionId { get; set; }
+    public string MetricName { get; set; } = "";
+    public string MetricCategory { get; set; } = "";
+    public int? SportStatCategoryId { get; set; }
+    public int? AssessmentId { get; set; }
+    public decimal FinalScore { get; set; }
+    public string Confidence { get; set; } = "";
+    public string CalculationMethod { get; set; } = "";
+    public decimal? ObjectiveScore { get; set; }
+    public decimal? MatchStatScore { get; set; }
+    public decimal? CoachEvalScore { get; set; }
+    public decimal? SelfAssessScore { get; set; }
+    public decimal ObjectiveWeight { get; set; }
+    public decimal MatchStatWeight { get; set; }
+    public decimal CoachEvalWeight { get; set; }
+    public decimal SelfAssessWeight { get; set; }
+    public List<string> EvidenceSources { get; set; } = new();
+    public string? Explanation { get; set; }
+    public List<string> MissingEvidence { get; set; } = new();
+    public DateTime LastCalculatedAt { get; set; }
+}
