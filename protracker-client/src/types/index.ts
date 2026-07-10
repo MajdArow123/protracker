@@ -1658,3 +1658,19 @@ export interface EvidenceBasedScore {
   missingEvidence: string[];
   lastCalculatedAt: string;
 }
+
+export interface EvidencePriority {
+  metric: string;
+  action: string;
+  reason: string;
+}
+
+export interface EvidenceAnalysis {
+  playerId: number;
+  playerName: string;
+  summary: string;
+  priorities: EvidencePriority[];
+  testBattery: string[];
+  roadmap: string[];
+  generatedAt: string;
+}

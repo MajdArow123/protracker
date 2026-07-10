@@ -54,6 +54,83 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
         await next();
     }
 
+    // ─── Evidence context (Phase G) ──────────────────────────────────────────
+
+    // Real evidence data injected into AI prompts: calculated scores with confidence,
+    // raw measured test values, and match stat trends. Empty sections are omitted so
+    // prompts for players without evidence stay unchanged.
+    private sealed record EvidenceContext(
+        string ScoresText, string TestsText, string MatchTrendText,
+        List<string> LowConfidenceMetrics, bool HasEvidence,
+        List<EvidenceBasedScore> Scores);
+
+    private async Task<EvidenceContext> BuildEvidenceContextAsync(int playerId)
+    {
+        var since = DateTime.UtcNow.AddDays(-EvidenceScoringEngine.EvidenceWindowDays);
+
+        var scores = await _context.EvidenceBasedScores
+            .Include(s => s.MetricDefinition)
+            .Where(s => s.PlayerId == playerId && s.AssessmentId == null)
+            .ToListAsync();
+
+        var tests = await _context.ObjectiveTestResults
+            .Include(t => t.MetricDefinition)
+            .Where(t => t.PlayerId == playerId && t.TestedAt >= since)
+            .OrderByDescending(t => t.TestedAt)
+            .Take(10).ToListAsync();
+
+        var matchEntries = await _context.MatchStatEntries
+            .Where(m => m.PlayerId == playerId && m.StatDate >= since)
+            .OrderByDescending(m => m.StatDate)
+            .Take(8).ToListAsync();
+
+        var scoresText = string.Join("\n", scores
+            .OrderBy(s => s.FinalScore)
+            .Select(s =>
+            {
+                List<string> sources;
+                try { sources = JsonSerializer.Deserialize<List<string>>(s.EvidenceSources) ?? new(); }
+                catch (JsonException) { sources = new(); }
+                return $"- {s.MetricDefinition.Name}: {s.FinalScore}/10 ({s.Confidence} confidence — from {string.Join(", ", sources)})";
+            }));
+
+        var testsText = string.Join("\n", tests.Select(t =>
+            $"- {t.TestedAt:yyyy-MM-dd}: {t.MetricDefinition.Name} test = {t.Value:0.##} {t.Unit}"));
+
+        var matchTrendText = string.Join("\n", matchEntries.Select(m =>
+        {
+            var stats = EvidenceScoringEngine.ParseStatsJson(m.StatsJson);
+            var statText = string.Join(", ", stats.Select(kv => $"{kv.Key}: {kv.Value:0.##}"));
+            return $"- {m.StatDate:yyyy-MM-dd}: {statText}";
+        }));
+
+        var lowConfidence = scores
+            .Where(s => s.Confidence is EvidenceConfidence.Low or EvidenceConfidence.Medium)
+            .Select(s => $"{s.MetricDefinition.Name} ({s.Confidence})")
+            .ToList();
+
+        return new EvidenceContext(scoresText, testsText, matchTrendText, lowConfidence,
+            scores.Count > 0 || tests.Count > 0 || matchEntries.Count > 0, scores);
+    }
+
+    // The evidence sections appended to prompts (empty string when no evidence exists).
+    private static string EvidencePromptBlock(EvidenceContext e)
+    {
+        if (!e.HasEvidence) return "";
+        var sb = new StringBuilder("\n");
+        if (e.ScoresText.Length > 0)
+            sb.Append("Evidence-based scores (weighted from real measurements — more reliable than slider scores):\n")
+              .Append(e.ScoresText).Append("\n\n");
+        if (e.TestsText.Length > 0)
+            sb.Append("Measured test results:\n").Append(e.TestsText).Append("\n\n");
+        if (e.MatchTrendText.Length > 0)
+            sb.Append("Recent match statistics:\n").Append(e.MatchTrendText).Append("\n\n");
+        if (e.LowConfidenceMetrics.Count > 0)
+            sb.Append("Metrics with weak evidence (Low/Medium confidence): ")
+              .Append(string.Join(", ", e.LowConfidenceMetrics)).Append('\n');
+        return sb.ToString();
+    }
+
     // ─── Improvement Plan ────────────────────────────────────────────────────
 
     [HttpPost("improvement-plan/{playerId}")]
@@ -81,7 +158,8 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             ? string.Join("\n", scoreLines)
             : "- No assessment data yet";
 
-        var prompt = BuildImprovementPrompt(player, scoresText);
+        var evidence = await BuildEvidenceContextAsync(playerId);
+        var prompt = BuildImprovementPrompt(player, scoresText, EvidencePromptBlock(evidence));
 
         var raw = await _ai.GenerateTextAsync(prompt);
         _logger.LogInformation("AI improvement plan generated for player {PlayerId}", playerId);
@@ -133,20 +211,33 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             .OrderByDescending(a => a.DateRecorded)
             .FirstOrDefaultAsync();
 
-        // Weakest categories drive the suggestions — bottom 4 by score (all, if fewer).
-        var weakScores = (latestAssessment?.StatScores ?? new List<PlayerStatScore>())
-            .OrderBy(s => s.Score)
-            .Take(4)
-            .ToList();
-        var weakAreas = weakScores
-            .Select(s => $"{s.SportStatCategory.Name}: {s.Score}/10")
-            .ToList();
+        // Weakest areas drive the suggestions. Evidence-based scores (weighted from real
+        // tests/matches) are preferred when the player has enough of them; slider scores
+        // are the fallback so players without evidence keep working exactly as before.
+        var evidence = await BuildEvidenceContextAsync(playerId);
+        List<string> weakAreas;
+        if (evidence.Scores.Count >= 3)
+        {
+            weakAreas = evidence.Scores
+                .OrderBy(s => s.FinalScore)
+                .Take(4)
+                .Select(s => $"{s.MetricDefinition.Name}: {s.FinalScore}/10 ({s.Confidence} confidence)")
+                .ToList();
+        }
+        else
+        {
+            weakAreas = (latestAssessment?.StatScores ?? new List<PlayerStatScore>())
+                .OrderBy(s => s.Score)
+                .Take(4)
+                .Select(s => $"{s.SportStatCategory.Name}: {s.Score}/10")
+                .ToList();
+        }
 
         var weakAreasText = weakAreas.Any()
             ? string.Join("\n", weakAreas.Select(w => $"- {w}"))
             : "- No assessment data yet; suggest well-rounded foundational tasks.";
 
-        var prompt = BuildTaskSuggestionsPrompt(player, weakAreasText);
+        var prompt = BuildTaskSuggestionsPrompt(player, weakAreasText, EvidencePromptBlock(evidence));
         // Prefill guarantees a JSON array continuation; Haiku for speed (coach is waiting).
         const string prefill = "[";
 
@@ -181,7 +272,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
         });
     }
 
-    private static string BuildTaskSuggestionsPrompt(Player p, string weakAreasText)
+    private static string BuildTaskSuggestionsPrompt(Player p, string weakAreasText, string evidenceBlock = "")
     {
         return "You are an elite sports performance coach. Suggest 5 concrete, assignable tasks/drills to help "
             + "this athlete improve their weakest areas. The coach will assign these directly to the athlete.\n\n"
@@ -191,7 +282,12 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + $"Age: {p.Age}\n"
             + $"Fitness level: {p.FitnessLevel}/10\n\n"
             + "Weakest assessment areas (lowest scores first):\n"
-            + weakAreasText + "\n\n"
+            + weakAreasText + "\n"
+            + evidenceBlock + "\n"
+            + (evidenceBlock.Length > 0
+                ? "Where measured values exist, reference them in the task description or rationale "
+                  + "(e.g. \"improve your 30m sprint from 4.0s toward 3.8s\").\n\n"
+                : "")
             + "Return ONLY a JSON array of exactly 5 task objects, no other text. Each object:\n"
             + "{\"title\": string (short, imperative, e.g. \"Weak-foot passing drill\"), "
             + "\"description\": string (1-2 sentences: what to do and how often), "
@@ -921,7 +1017,9 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             ? string.Join(", ", matches.Select(m => $"vs {m.Opponent}: {m.PerformanceRating}/10"))
             : "None";
 
-        var prompt = BuildInsightsPrompt(player, assessmentLines, latestScores, changeLines, injuryList, matchList);
+        var evidence = await BuildEvidenceContextAsync(playerId);
+        var prompt = BuildInsightsPrompt(player, assessmentLines, latestScores, changeLines, injuryList, matchList,
+            EvidencePromptBlock(evidence));
         var raw = await _ai.GenerateTextAsync(prompt);
         _logger.LogInformation("AI performance insights generated for player {PlayerId}", playerId);
 
@@ -935,6 +1033,132 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             _logger.LogError(ex, "Failed to parse AI insights: {Raw}", raw);
             return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
         }
+    }
+
+    // ─── Evidence Analysis (Phase G) ─────────────────────────────────────────
+
+    // AI review of the player's evidence quality: what's missing, which metrics would
+    // benefit most from objective tests, a recommended test battery for the sport/
+    // position, and a confidence-improvement roadmap. Stateless (nothing persisted).
+    [HttpPost("evidence-analysis/{playerId}")]
+    public async Task<ActionResult> GenerateEvidenceAnalysis(int playerId)
+    {
+        await _access.EnsureCanAccessPlayerAsync(User, playerId);
+
+        var player = await _context.Players
+            .Include(p => p.Sport)
+            .Include(p => p.Position)
+            .FirstOrDefaultAsync(p => p.Id == playerId)
+            ?? throw new NotFoundApiException($"Player {playerId} not found.");
+
+        var defs = await _context.SportMetricDefinitions
+            .Where(d => d.SportId == player.SportId)
+            .ToListAsync();
+        var evidence = await BuildEvidenceContextAsync(playerId);
+
+        var scoredIds = evidence.Scores.Select(s => s.MetricDefinitionId).ToHashSet();
+        var noEvidence = defs.Where(d => !scoredIds.Contains(d.Id)).Select(d => d.Name).ToList();
+        var testableMetrics = defs
+            .Where(d => d.InputType != MetricInputType.Rating)
+            .Select(d => $"{d.Name} ({d.Notes ?? d.Unit ?? "measured test"})")
+            .ToList();
+
+        var prompt = BuildEvidenceAnalysisPrompt(player, evidence, noEvidence, testableMetrics);
+        const string prefill = "{";
+
+        EvidenceAnalysisDto? analysis = null;
+        string lastRaw = "";
+        for (var attempt = 1; attempt <= 2 && analysis == null; attempt++)
+        {
+            lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 2000,
+                modelOverride: "claude-haiku-4-5-20251001", assistantPrefill: prefill);
+            try
+            {
+                analysis = ParseEvidenceAnalysis(lastRaw);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Evidence analysis parse failed (attempt {Attempt})", attempt);
+            }
+        }
+
+        if (analysis == null)
+        {
+            _logger.LogError("Failed to parse AI evidence analysis after retries: {Raw}", lastRaw);
+            return BadRequest(new { success = false, message = "AI returned an unexpected format. Please try again." });
+        }
+
+        analysis.PlayerId = playerId;
+        analysis.PlayerName = player.FullName;
+        _logger.LogInformation("AI evidence analysis generated for player {PlayerId}", playerId);
+        return Success(analysis);
+    }
+
+    private static string BuildEvidenceAnalysisPrompt(Player p, EvidenceContext evidence,
+        List<string> noEvidenceMetrics, List<string> testableMetrics)
+    {
+        return "You are a sports science data analyst. Review this athlete's evidence quality and advise the coach "
+            + "what data to collect next so performance scores become measurement-backed instead of estimated.\n\n"
+            + $"Athlete: {p.FullName}\n"
+            + $"Sport: {p.Sport.Name}\n"
+            + $"Position: {p.Position.Name}\n"
+            + $"Age: {p.Age}\n"
+            + (evidence.HasEvidence
+                ? EvidencePromptBlock(evidence)
+                : "\nNo evidence recorded yet — every metric is currently unmeasured.\n")
+            + (noEvidenceMetrics.Count > 0
+                ? $"\nMetrics with NO evidence at all: {string.Join(", ", noEvidenceMetrics)}\n"
+                : "")
+            + "\nMetrics that support objective tests (with how to measure):\n"
+            + string.Join("\n", testableMetrics.Select(m => $"- {m}")) + "\n\n"
+            + "Return ONLY a JSON object, no other text:\n"
+            + "{\"summary\": string (2-3 sentences on overall evidence quality and the biggest gap), "
+            + "\"priorities\": [3-5 of {\"metric\": string (exact metric name), \"action\": string (what to record), "
+            + "\"reason\": string (why this metric benefits most, considering their position)}], "
+            + "\"testBattery\": [4-6 strings — a concrete test session for this sport/position, e.g. \"30m sprint (timing gates)\"], "
+            + "\"roadmap\": [3-5 strings — ordered steps to reach High confidence on the key metrics]}\n\n"
+            + "Prioritise metrics that matter most for their position. "
+            + "I have pre-started the JSON with { — continue from there and close with }.";
+    }
+
+    private static EvidenceAnalysisDto ParseEvidenceAnalysis(string raw)
+    {
+        var root = JsonDocument.Parse(raw).RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+            throw new JsonException("Expected a JSON object for evidence analysis.");
+
+        static List<string> Strings(JsonElement el, string name) =>
+            el.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Array
+                ? v.EnumerateArray().Where(x => x.ValueKind == JsonValueKind.String)
+                    .Select(x => x.GetString() ?? "").Where(s => s.Length > 0).ToList()
+                : new();
+
+        var dto = new EvidenceAnalysisDto
+        {
+            Summary = GetStr(root, "summary")?.Trim() ?? "",
+            TestBattery = Strings(root, "testBattery"),
+            Roadmap = Strings(root, "roadmap"),
+        };
+
+        if (root.TryGetProperty("priorities", out var priorities) && priorities.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var el in priorities.EnumerateArray())
+            {
+                if (el.ValueKind != JsonValueKind.Object) continue;
+                var metric = GetStr(el, "metric")?.Trim() ?? "";
+                if (metric.Length == 0) continue;
+                dto.Priorities.Add(new EvidencePriorityDto
+                {
+                    Metric = metric,
+                    Action = GetStr(el, "action")?.Trim() ?? "",
+                    Reason = GetStr(el, "reason")?.Trim() ?? "",
+                });
+            }
+        }
+
+        if (dto.Summary.Length == 0 && dto.Priorities.Count == 0)
+            throw new JsonException("Evidence analysis had no usable content.");
+        return dto;
     }
 
     // ─── Team Insights ────────────────────────────────────────────────────────
@@ -1001,7 +1225,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
 
     // ─── Prompt builders ─────────────────────────────────────────────────────
 
-    private static string BuildImprovementPrompt(Player p, string scoresText)
+    private static string BuildImprovementPrompt(Player p, string scoresText, string evidenceBlock = "")
     {
         return "You are an elite sports performance coach. Generate a detailed, actionable improvement plan for this athlete.\n\n"
             + $"Athlete: {p.FullName}\n"
@@ -1010,9 +1234,15 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + $"Age: {p.Age}\n"
             + $"Fitness Level: {p.FitnessLevel}/10\n\n"
             + "Latest Assessment Scores:\n"
-            + scoresText + "\n\n"
+            + scoresText + "\n"
+            + evidenceBlock + "\n"
             + $"Athlete Goals: {p.Goals ?? "Not specified"}\n"
             + $"Injury Notes: {p.InjuryNotes ?? "None"}\n\n"
+            + (evidenceBlock.Length > 0
+                ? "IMPORTANT: Reference the actual measured values in your recommendations and set quantified "
+                  + "targets from them (e.g. \"your 30m sprint of 4.0s is good — targeted speed work could reach "
+                  + "3.8s, pushing your Speed score from 7.4 to ~8.2\"). Trust evidence-based scores over slider scores.\n\n"
+                : "")
             + "Generate a structured improvement plan. Return ONLY a JSON object with exactly these fields, no other text:\n"
             + "{\n"
             + "  \"weeklyGoals\": \"specific weekly targets...\",\n"
@@ -1080,7 +1310,8 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
     }
 
     private static string BuildInsightsPrompt(
-        Player p, string assessmentLines, string latestScores, string changeLines, string injuryList, string matchList)
+        Player p, string assessmentLines, string latestScores, string changeLines, string injuryList, string matchList,
+        string evidenceBlock = "")
     {
         return "You are an elite sports analyst. Analyze this athlete's performance data and provide specific insights.\n\n"
             + $"Athlete: {p.FullName}\n"
@@ -1091,16 +1322,20 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + "Latest Scores:\n"
             + (string.IsNullOrWhiteSpace(latestScores) ? "- No scores recorded" : latestScores) + "\n\n"
             + "Score Changes (first vs latest):\n"
-            + changeLines + "\n\n"
+            + changeLines + "\n"
+            + evidenceBlock + "\n"
             + $"Injuries: {injuryList}\n"
             + $"Recent Matches: {matchList}\n\n"
             + "Provide 4-5 specific, data-driven insights about this athlete's performance. Return ONLY a JSON array of strings:\n"
             + "[\"insight 1...\", \"insight 2...\", \"insight 3...\", \"insight 4...\"]\n\n"
             + "Each insight must:\n"
-            + "- Reference actual numbers from the data\n"
+            + "- Reference actual numbers from the data (prefer measured test values and match stats when present)\n"
             + "- Be specific to their sport and position\n"
             + "- Be actionable and constructive\n"
-            + "- Be 1-2 sentences maximum";
+            + "- Be 1-2 sentences maximum"
+            + (evidenceBlock.Contains("weak evidence")
+                ? "\nInclude exactly one insight noting which metrics have weak evidence and what data to collect for more accurate analysis."
+                : "");
     }
 
     private static string BuildTeamInsightsPrompt(Team t, string playerLines, string categoryAvgsText, int injuryCount)

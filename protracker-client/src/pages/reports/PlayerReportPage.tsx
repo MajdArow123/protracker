@@ -24,6 +24,7 @@ import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
 import { usePlayerReport } from '../../hooks/useReports';
 import { useSportMetrics, usePlayerEvidenceScores } from '../../hooks/useEvidence';
 import { EvidenceBreakdownModal } from '../../components/evidence/EvidenceBreakdownModal';
+import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
 import { confidenceBadgeClass, confidenceLabel, isVerified } from '../../components/evidence/evidenceUtils';
 import type { SportMetricDefinition } from '../../types';
 
@@ -353,6 +354,9 @@ export function PlayerReportPage() {
           </button>
         </div>
       }>
+        {!isGenerating && !aiInsights && (
+          <AIDataSourcesNote playerId={playerId} className="mb-3" />
+        )}
         {isGenerating && (
           <AILoadingPanel
             compact

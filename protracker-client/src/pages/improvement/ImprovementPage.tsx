@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
+import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
 import { useToast } from '../../context/ToastContext';
 import { usePlayer } from '../../hooks/usePlayers';
 import { usePlayerImprovementPlans, useCreateImprovementPlan, useUpdateImprovementPlan } from '../../hooks/useImprovement';
@@ -163,6 +164,12 @@ export function ImprovementPage() {
         <div className="max-w-2xl mb-4 flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
           {aiError}
           <button onClick={handleGenerateAI} className="ml-auto text-xs font-semibold underline cursor-pointer">Retry</button>
+        </div>
+      )}
+
+      {!isGenerating && (
+        <div className="max-w-2xl mb-4">
+          <AIDataSourcesNote playerId={playerId} />
         </div>
       )}
 

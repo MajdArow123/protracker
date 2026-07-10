@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, FlaskConical, BarChart2, UserCheck, User, ShieldCheck, Plus } from 'lucide-react';
+import { RefreshCw, FlaskConical, BarChart2, UserCheck, User, ShieldCheck, Plus, Sparkles } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '../ui/Button';
 import { CardListSkeleton } from '../ui/Skeleton';
 import { scoreColor } from '../assessments/ScoreWidgets';
 import { EvidenceBreakdownModal } from './EvidenceBreakdownModal';
+import { EvidenceAnalysisModal } from './EvidenceAnalysisModal';
 import { confidenceBadgeClass, confidenceLabel, overallConfidence } from './evidenceUtils';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useSportMetrics, usePlayerEvidenceScores, useRecalculateEvidence } from '../../hooks/useEvidence';
@@ -22,6 +23,8 @@ interface Props {
   readOnly?: boolean;
   /** Team athletes may not record match stats (coach/solo only on the backend). */
   canEnterMatchStats?: boolean;
+  /** AI endpoints are Coach/Admin/SoloAthlete only — hides the AI quality report otherwise. */
+  canUseAI?: boolean;
 }
 
 const SOURCE_ICONS = [
@@ -33,7 +36,7 @@ const SOURCE_ICONS = [
 
 // The complete evidence picture for one player: overall summary + a card per sport
 // metric with score, confidence and evidence sources. Click-through to the breakdown.
-export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, readOnly, canEnterMatchStats = true }: Props) {
+export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, readOnly, canEnterMatchStats = true, canUseAI = false }: Props) {
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormat();
   const { addToast } = useToast();
@@ -43,6 +46,7 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
   const recalculate = useRecalculateEvidence();
 
   const [selected, setSelected] = useState<SportMetricDefinition | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   const scoreByMetric = useMemo(() => {
     const map = new Map<number, EvidenceBasedScore>();
@@ -101,8 +105,13 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
           <p className="text-xs text-gray-500 dark:text-gray-400">{t('evidence.missingEvidenceCount', 'Needs more evidence')}</p>
           <p className="text-sm font-bold text-amber-600 dark:text-amber-400">{missingCount}</p>
         </div>
-        <div className="ml-auto">
-          <Button size="sm" variant="secondary" onClick={refresh} isLoading={recalculate.isPending}>
+        <div className="ml-auto flex items-center gap-2">
+          {canUseAI && (
+            <Button type="button" size="sm" onClick={() => setShowAnalysis(true)}>
+              <Sparkles size={13} /> {t('evidence.qualityReport', 'AI Quality Report')}
+            </Button>
+          )}
+          <Button type="button" size="sm" variant="secondary" onClick={refresh} isLoading={recalculate.isPending}>
             <RefreshCw size={13} /> {t('evidence.recalculate', 'Recalculate')}
           </Button>
         </div>
@@ -171,6 +180,10 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
           readOnly={readOnly}
           canEnterMatchStats={canEnterMatchStats}
         />
+      )}
+
+      {showAnalysis && (
+        <EvidenceAnalysisModal isOpen={showAnalysis} onClose={() => setShowAnalysis(false)} playerId={playerId} />
       )}
     </div>
   );

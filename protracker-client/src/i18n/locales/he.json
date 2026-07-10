@@ -2872,6 +2872,22 @@
       "winners": "מכות זוכות",
       "unforcedErrors": "טעויות לא מאולצות",
       "gamesWon": "משחקונים שנוצחו"
-    }
+    },
+    "qualityReport": "דוח איכות AI",
+    "analysisTitle": "דוח איכות ראיות",
+    "analysisIntro": "ה-AI סוקר כל מדד, מזהה היכן הציונים מבוססים על הערכות, וממליץ בדיוק אילו בדיקות ונתונים לתעד בהמשך.",
+    "analysisGenerate": "צור דוח",
+    "analysisLoading": "מנתח את איכות הראיות…",
+    "analysisMsg1": "סוקר בדיקות ונתוני משחקים שתועדו",
+    "analysisMsg2": "מאתר את המדדים שהכי זקוקים לנתונים אמיתיים",
+    "analysisMsg3": "בונה מערך בדיקות לעמדה זו",
+    "analysisPriorities": "מה לאסוף בהמשך",
+    "analysisTestBattery": "מפגש בדיקות מומלץ",
+    "analysisRoadmap": "מפת דרכים לביטחון",
+    "aiUsingData": "ה-AI ישתמש ב",
+    "aiSourceAssessments": "{{count}} רשומות הערכה",
+    "aiSourceTests": "{{count}} תוצאות בדיקות אובייקטיביות",
+    "aiSourceMatchStats": "{{count}} רשומות נתוני משחק",
+    "aiSourceSelfAssess": "{{count}} הערכות עצמיות"
   }
 }

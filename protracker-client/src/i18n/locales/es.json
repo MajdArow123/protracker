@@ -2872,6 +2872,22 @@
       "winners": "Golpes ganadores",
       "unforcedErrors": "Errores no forzados",
       "gamesWon": "Juegos ganados"
-    }
+    },
+    "qualityReport": "Informe de calidad IA",
+    "analysisTitle": "Informe de calidad de la evidencia",
+    "analysisIntro": "La IA revisa cada métrica, detecta dónde las puntuaciones dependen de estimaciones y recomienda exactamente qué pruebas y estadísticas registrar a continuación.",
+    "analysisGenerate": "Generar informe",
+    "analysisLoading": "Analizando la calidad de la evidencia…",
+    "analysisMsg1": "Revisando pruebas y estadísticas registradas",
+    "analysisMsg2": "Identificando las métricas que más necesitan datos reales",
+    "analysisMsg3": "Creando una batería de pruebas para esta posición",
+    "analysisPriorities": "Qué recopilar a continuación",
+    "analysisTestBattery": "Sesión de pruebas recomendada",
+    "analysisRoadmap": "Hoja de ruta de confianza",
+    "aiUsingData": "La IA usará",
+    "aiSourceAssessments": "{{count}} evaluaciones",
+    "aiSourceTests": "{{count}} resultados de pruebas objetivas",
+    "aiSourceMatchStats": "{{count}} entradas de estadísticas",
+    "aiSourceSelfAssess": "{{count}} autoevaluaciones"
   }
 }

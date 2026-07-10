@@ -6,6 +6,7 @@ import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
 import { usePlayer } from '../../hooks/usePlayers';
 import { EvidenceDashboardTab } from '../../components/evidence/EvidenceDashboardTab';
+import { useAuth } from '../../context/AuthContext';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { PageSpinner } from '../../components/ui/Spinner';
@@ -41,6 +42,10 @@ export function PlayerStatsPage() {
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data: assessments, isLoading } = usePlayerAssessments(playerId);
   const { data: player } = usePlayer(playerId ?? 0);
+  const { user } = useAuth();
+  // This page doubles as the solo athlete's "My Performance" (/solo/performance) —
+  // solo athletes may enter match stats and use AI; team athletes may not.
+  const isSolo = user?.role === 'SoloAthlete';
   const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -333,7 +338,8 @@ export function PlayerStatsPage() {
             sportId={player.sportId}
             self
             teamId={player.teamId}
-            canEnterMatchStats={false}
+            canEnterMatchStats={isSolo}
+            canUseAI={isSolo}
           />
         </div>
       )}

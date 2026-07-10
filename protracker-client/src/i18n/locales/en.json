@@ -2872,6 +2872,22 @@
       "winners": "Winners",
       "unforcedErrors": "Unforced Errors",
       "gamesWon": "Games Won"
-    }
+    },
+    "qualityReport": "AI Quality Report",
+    "analysisTitle": "Evidence Quality Report",
+    "analysisIntro": "The AI reviews every metric, spots where scores rely on estimates, and recommends exactly which tests and stats to record next.",
+    "analysisGenerate": "Generate Report",
+    "analysisLoading": "Analyzing evidence quality…",
+    "analysisMsg1": "Reviewing recorded tests and match stats",
+    "analysisMsg2": "Finding the metrics that need real data most",
+    "analysisMsg3": "Building a test battery for this position",
+    "analysisPriorities": "What to collect next",
+    "analysisTestBattery": "Recommended test session",
+    "analysisRoadmap": "Confidence roadmap",
+    "aiUsingData": "The AI will use",
+    "aiSourceAssessments": "{{count}} assessment records",
+    "aiSourceTests": "{{count}} objective test results",
+    "aiSourceMatchStats": "{{count}} match stat entries",
+    "aiSourceSelfAssess": "{{count}} self-assessments"
   }
 }

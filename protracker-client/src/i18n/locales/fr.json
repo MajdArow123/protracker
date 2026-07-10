@@ -2872,6 +2872,22 @@
       "winners": "Coups gagnants",
       "unforcedErrors": "Fautes directes",
       "gamesWon": "Jeux gagnés"
-    }
+    },
+    "qualityReport": "Rapport qualité IA",
+    "analysisTitle": "Rapport de qualité des preuves",
+    "analysisIntro": "L'IA passe en revue chaque métrique, repère les scores basés sur des estimations et recommande exactement quels tests et statistiques enregistrer ensuite.",
+    "analysisGenerate": "Générer le rapport",
+    "analysisLoading": "Analyse de la qualité des preuves…",
+    "analysisMsg1": "Examen des tests et statistiques enregistrés",
+    "analysisMsg2": "Identification des métriques qui manquent le plus de données",
+    "analysisMsg3": "Construction d'une batterie de tests pour ce poste",
+    "analysisPriorities": "Quoi collecter ensuite",
+    "analysisTestBattery": "Séance de tests recommandée",
+    "analysisRoadmap": "Feuille de route de confiance",
+    "aiUsingData": "L'IA utilisera",
+    "aiSourceAssessments": "{{count}} évaluations",
+    "aiSourceTests": "{{count}} résultats de tests objectifs",
+    "aiSourceMatchStats": "{{count}} entrées de stats de match",
+    "aiSourceSelfAssess": "{{count}} auto-évaluations"
   }
 }

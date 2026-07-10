@@ -30,3 +30,26 @@ public class TaskSuggestionsDto
     public List<TaskSuggestionDto> Suggestions { get; set; } = new();
     public string GeneratedAt { get; set; } = DateTime.UtcNow.ToString("o");
 }
+
+// ─── Evidence analysis (Phase G) ─────────────────────────────────────────────
+
+// One prioritized data-collection action ("add a 30m sprint test for Speed").
+public class EvidencePriorityDto
+{
+    public string Metric { get; set; } = "";
+    public string Action { get; set; } = "";
+    public string Reason { get; set; } = "";
+}
+
+// AI review of a player's evidence quality: what's missing, which tests to run
+// next, and a confidence-improvement roadmap.
+public class EvidenceAnalysisDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public string Summary { get; set; } = "";
+    public List<EvidencePriorityDto> Priorities { get; set; } = new();
+    public List<string> TestBattery { get; set; } = new();
+    public List<string> Roadmap { get; set; } = new();
+    public string GeneratedAt { get; set; } = DateTime.UtcNow.ToString("o");
+}

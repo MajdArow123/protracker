@@ -2872,6 +2872,22 @@
       "winners": "ضربات رابحة",
       "unforcedErrors": "أخطاء غير مجبرة",
       "gamesWon": "أشواط مكسوبة"
-    }
+    },
+    "qualityReport": "تقرير الجودة بالذكاء الاصطناعي",
+    "analysisTitle": "تقرير جودة الأدلة",
+    "analysisIntro": "يراجع الذكاء الاصطناعي كل مقياس، ويحدد النتائج المعتمدة على التقديرات، ويوصي بالاختبارات والإحصائيات التي يجب تسجيلها بعد ذلك.",
+    "analysisGenerate": "إنشاء التقرير",
+    "analysisLoading": "جارٍ تحليل جودة الأدلة…",
+    "analysisMsg1": "مراجعة الاختبارات والإحصائيات المسجلة",
+    "analysisMsg2": "تحديد المقاييس الأكثر حاجة إلى بيانات حقيقية",
+    "analysisMsg3": "إعداد مجموعة اختبارات لهذا المركز",
+    "analysisPriorities": "ما يجب جمعه بعد ذلك",
+    "analysisTestBattery": "جلسة الاختبارات الموصى بها",
+    "analysisRoadmap": "خارطة طريق الثقة",
+    "aiUsingData": "سيستخدم الذكاء الاصطناعي",
+    "aiSourceAssessments": "{{count}} سجل تقييم",
+    "aiSourceTests": "{{count}} نتيجة اختبار موضوعي",
+    "aiSourceMatchStats": "{{count}} إدخال إحصائيات مباراة",
+    "aiSourceSelfAssess": "{{count}} تقييم ذاتي"
   }
 }

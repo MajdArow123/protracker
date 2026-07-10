@@ -5,6 +5,7 @@ import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
 import { AILoadingPanel } from '../ui/AILoadingPanel';
+import { AIDataSourcesNote } from '../evidence/AIDataSourcesNote';
 import { EmptyState } from '../ui/EmptyState';
 import { PRIORITY_BADGE, CATEGORY_BADGE, PRIORITY_BORDER } from './taskUtils';
 import { useGenerateTaskSuggestions } from '../../hooks/useAI';
@@ -118,6 +119,10 @@ export function AITaskSuggestionsModal({ isOpen, onClose, players, lockedPlayerI
                 options={[{ value: '', label: t('tasks.selectAthlete', 'Select an athlete…') }, ...players.map(p => ({ value: String(p.id), label: p.name }))]}
               />
             </div>
+          )}
+
+          {playerId !== '' && !generate.isPending && (
+            <AIDataSourcesNote playerId={Number(playerId)} />
           )}
 
           {generate.isPending ? (

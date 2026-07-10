@@ -46,3 +46,9 @@ export function useGenerateDrillRecommendations() {
     mutationFn: (playerId: number) => aiApi.generateDrillRecommendations(playerId),
   });
 }
+
+export function useGenerateEvidenceAnalysis() {
+  return useMutation({
+    mutationFn: (playerId: number) => aiApi.generateEvidenceAnalysis(playerId),
+  });
+}

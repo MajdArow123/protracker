@@ -607,7 +607,7 @@ export function PlayerDetailPage() {
           {/* Evidence tab */}
           {tab === 'evidence' && (
             <motion.div key="evidence" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
-              <EvidenceDashboardTab playerId={playerId} sportId={player?.sportId} teamId={player?.teamId} />
+              <EvidenceDashboardTab playerId={playerId} sportId={player?.sportId} teamId={player?.teamId} canUseAI />
             </motion.div>
           )}
 
