@@ -22,6 +22,10 @@ import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
 import { usePlayerReport } from '../../hooks/useReports';
+import { useSportMetrics, usePlayerEvidenceScores } from '../../hooks/useEvidence';
+import { EvidenceBreakdownModal } from '../../components/evidence/EvidenceBreakdownModal';
+import { confidenceBadgeClass, confidenceLabel, isVerified } from '../../components/evidence/evidenceUtils';
+import type { SportMetricDefinition } from '../../types';
 
 const COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
 
@@ -59,6 +63,11 @@ export function PlayerReportPage() {
   const [exporting, setExporting] = useState(false);
   const generateInsights = useGeneratePerformanceInsights();
 
+  // Evidence layer: confidence per metric for the radar + the Evidence Quality section.
+  const { data: evidenceScores = [] } = usePlayerEvidenceScores(playerId);
+  const { data: sportMetrics = [] } = useSportMetrics(report?.player?.sportId);
+  const [breakdownMetric, setBreakdownMetric] = useState<SportMetricDefinition | null>(null);
+
   if (isLoading) return <ReportSkeleton />;
   if (isError) return <PageWrapper><ErrorState thing={tr('reports.theReport', 'the report')} onRetry={() => refetch()} /></PageWrapper>;
   if (!report) return (
@@ -87,11 +96,33 @@ export function PlayerReportPage() {
 
   const latest = assessments[0];
   const previous = assessments[1];
+
+  // Evidence lookups: stat category name → metric definition / evidence confidence.
+  const metricByCategoryId = new Map(sportMetrics.filter(m => m.sportStatCategoryId != null).map(m => [m.sportStatCategoryId!, m]));
+  const evidenceByMetricId = new Map(evidenceScores.map(s => [s.metricDefinitionId, s]));
+  const metricByName = new Map(sportMetrics.map(m => [m.name, m]));
+  function confidenceForCategory(cat: string) {
+    const catId = latest?.statScores?.find(s => s.statCategoryName === cat)?.sportStatCategoryId;
+    const metric = catId != null ? metricByCategoryId.get(catId) : undefined;
+    return metric ? evidenceByMetricId.get(metric.id)?.confidence : undefined;
+  }
+
   const radarData = allCategories.map(cat => ({
     subject: cat,
     value: latest?.statScores?.find(s => s.statCategoryName === cat)?.score ?? 0,
     previousValue: previous?.statScores?.find(s => s.statCategoryName === cat)?.score,
+    confidence: confidenceForCategory(cat),
   }));
+
+  function openBreakdownForCategory(cat: string) {
+    const catId = latest?.statScores?.find(s => s.statCategoryName === cat)?.sportStatCategoryId;
+    const metric = catId != null ? metricByCategoryId.get(catId) : undefined;
+    if (metric) setBreakdownMetric(metric);
+  }
+
+  const verifiedCount = evidenceScores.filter(s => isVerified(s.confidence)).length;
+  const reliable = [...evidenceScores].filter(s => isVerified(s.confidence)).sort((a, b) => b.finalScore - a.finalScore).slice(0, 3);
+  const needsData = [...evidenceScores].filter(s => !isVerified(s.confidence)).slice(0, 3);
 
   const matchBarData = recentMatches.map(m => ({
     name: `${m.opponent} (${formatDate(m.matchDate, { month: 'short', day: 'numeric' })})`,
@@ -437,7 +468,7 @@ export function PlayerReportPage() {
           {!latest ? (
             <EmptyState title={tr('reports.noAssessments', 'No assessments')} description={tr('reports.noDataToDisplay', 'No data to display')} />
           ) : (
-            <RadarChartWrapper data={radarData} showPrevious={!!previous} height={380} />
+            <RadarChartWrapper data={radarData} showPrevious={!!previous} height={380} onPointClick={openBreakdownForCategory} />
           )}
         </Card>
 
@@ -586,6 +617,92 @@ export function PlayerReportPage() {
           </div>
         )}
       </Card>
+
+      {/* Evidence Quality */}
+      {evidenceScores.length > 0 && (
+        <Card header={tr('evidence.qualityTitle', 'Evidence Quality')}>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+            {tr('evidence.coverage', 'Evidence coverage: {{verified}}/{{total}} metrics have High confidence', {
+              verified: verifiedCount, total: evidenceScores.length,
+            })}
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+            {reliable.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide mb-2">
+                  {tr('evidence.mostReliable', 'Most Reliable Metrics')}
+                </h4>
+                <div className="space-y-1.5">
+                  {reliable.map(s => (
+                    <div key={s.id} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-300">{s.metricName}</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{s.finalScore.toFixed(1)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {needsData.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-2">
+                  {tr('evidence.needsMoreData', 'Needs More Data')}
+                </h4>
+                <div className="space-y-1.5">
+                  {needsData.map(s => (
+                    <div key={s.id} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700 dark:text-gray-300">{s.metricName}</span>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${confidenceBadgeClass(s.confidence)}`}>
+                        {confidenceLabel(s.confidence, tr)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-200 dark:border-gray-800">
+                  <th className="py-2 pe-4">{tr('evidence.metric', 'Metric')}</th>
+                  <th className="py-2 pe-4">{tr('evidence.score', 'Score')}</th>
+                  <th className="py-2 pe-4">{tr('evidence.confidence', 'Confidence')}</th>
+                  <th className="py-2">{tr('evidence.sources', 'Sources')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {evidenceScores.map(s => (
+                  <tr
+                    key={s.id}
+                    className="border-b border-gray-100 dark:border-gray-800/60 hover:bg-gray-50 dark:hover:bg-gray-800/40 cursor-pointer"
+                    onClick={() => { const m = metricByName.get(s.metricName); if (m) setBreakdownMetric(m); }}
+                  >
+                    <td className="py-2 pe-4 font-medium text-gray-800 dark:text-gray-200">{s.metricName}</td>
+                    <td className="py-2 pe-4 font-bold text-gray-900 dark:text-white">{s.finalScore.toFixed(1)}</td>
+                    <td className="py-2 pe-4">
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${confidenceBadgeClass(s.confidence)}`}>
+                        {confidenceLabel(s.confidence, tr)}
+                      </span>
+                    </td>
+                    <td className="py-2 text-xs text-gray-500 dark:text-gray-400">{s.evidenceSources.length}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {breakdownMetric && playerId && (
+        <EvidenceBreakdownModal
+          isOpen={!!breakdownMetric}
+          onClose={() => setBreakdownMetric(null)}
+          playerId={playerId}
+          metric={breakdownMetric}
+          score={evidenceByMetricId.get(breakdownMetric.id) ?? null}
+          teamId={player.teamId}
+        />
+      )}
     </PageWrapper>
   );
 }

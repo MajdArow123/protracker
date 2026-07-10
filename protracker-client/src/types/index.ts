@@ -1560,3 +1560,101 @@ export interface NotificationPage {
   hasMore: boolean;
   unreadCount: number;
 }
+
+// ── Evidence-based assessments (Phase G) ─────────────────────────────────────
+export type MetricCategory = 'Physical' | 'Technical' | 'Tactical' | 'Mental' | 'Positional';
+export type MetricInputType = 'Timer' | 'Weight' | 'Distance' | 'Percentage' | 'Count' | 'Rating' | 'Boolean';
+export type EvidenceConfidence = 'Low' | 'Medium' | 'High' | 'VeryHigh';
+
+export interface SportMetricDefinition {
+  id: number;
+  sportId: number;
+  name: string;
+  shortName: string | null;
+  category: MetricCategory;
+  description: string | null;
+  unit: string | null;
+  inputType: MetricInputType;
+  objectiveTestWeight: number;
+  matchStatWeight: number;
+  coachEvalWeight: number;
+  selfAssessWeight: number;
+  isObjectiveRequired: boolean;
+  benchmarkLow: number;
+  benchmarkMid: number;
+  benchmarkHigh: number;
+  notes: string | null;
+  sportStatCategoryId: number | null;
+  supportsMatchStats: boolean;
+}
+
+export interface ObjectiveTestResult {
+  id: number;
+  playerId: number;
+  metricDefinitionId: number;
+  metricName: string;
+  value: number;
+  unit: string;
+  testedAt: string;
+  testedBy: 'Coach' | 'Athlete' | 'ThirdParty';
+  notes: string | null;
+  assessmentId: number | null;
+  normalizedScore: number;
+}
+
+export interface MatchStatEntry {
+  id: number;
+  playerId: number;
+  matchResultId: number | null;
+  statDate: string;
+  sportId: number;
+  stats: Record<string, number>;
+  notes: string | null;
+}
+
+export interface CoachEvaluationEntry {
+  id: number;
+  playerId: number;
+  metricDefinitionId: number;
+  metricName: string;
+  rating: number;
+  evalDate: string;
+  notes: string | null;
+  assessmentId: number | null;
+}
+
+export interface SelfAssessmentEvidence {
+  id: number;
+  playerId: number;
+  metricDefinitionId: number;
+  metricName: string;
+  rating: number;
+  evalDate: string;
+  guidedAnswers: string | null;
+  notes: string | null;
+}
+
+export interface EvidenceBasedScore {
+  id: number;
+  playerId: number;
+  metricDefinitionId: number;
+  metricName: string;
+  metricCategory: MetricCategory;
+  sportStatCategoryId: number | null;
+  assessmentId: number | null;
+  finalScore: number;
+  confidence: EvidenceConfidence;
+  calculationMethod: 'Manual' | 'Calculated' | 'Hybrid';
+  objectiveScore: number | null;
+  matchStatScore: number | null;
+  coachEvalScore: number | null;
+  selfAssessScore: number | null;
+  objectiveWeight: number;
+  matchStatWeight: number;
+  coachEvalWeight: number;
+  selfAssessWeight: number;
+  evidenceSources: string[];
+  explanation: string | null;
+  missingEvidence: string[];
+  lastCalculatedAt: string;
+}

@@ -36,10 +36,12 @@ import { RecoveryPlanModal } from '../../components/recovery/RecoveryPlanModal';
 import { WellbeingTrendCard } from '../../components/wellbeing/WellbeingTrendCard';
 import { CoachJournalTab } from '../../components/journal/CoachJournalTab';
 import { PlayerGoalsTab } from '../../components/goals/PlayerGoalsTab';
+import { EvidenceDashboardTab } from '../../components/evidence/EvidenceDashboardTab';
+import { ShieldCheck } from 'lucide-react';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
-type Tab = 'overview' | 'injuries' | 'matches' | 'training' | 'tasks' | 'goals' | 'wellbeing' | 'journal' | 'notes' | 'parents';
+type Tab = 'overview' | 'evidence' | 'injuries' | 'matches' | 'training' | 'tasks' | 'goals' | 'wellbeing' | 'journal' | 'notes' | 'parents';
 
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
@@ -272,6 +274,7 @@ export function PlayerDetailPage() {
 
   const TABS: { id: Tab; label: string; icon: typeof Activity; count?: number }[] = [
     { id: 'overview', label: t('players.tabOverview', 'Overview'), icon: Activity },
+    { id: 'evidence', label: t('players.tabEvidence', 'Evidence'), icon: ShieldCheck },
     { id: 'injuries', label: t('players.tabInjuries', 'Injuries'), icon: ShieldAlert, count: injuries.length },
     { id: 'matches', label: t('players.tabMatches', 'Matches'), icon: Star, count: matches.length },
     { id: 'training', label: t('players.tabTraining', 'Training'), icon: Dumbbell, count: sessions.length },
@@ -600,6 +603,13 @@ export function PlayerDetailPage() {
               </motion.div>
             );
           })()}
+
+          {/* Evidence tab */}
+          {tab === 'evidence' && (
+            <motion.div key="evidence" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+              <EvidenceDashboardTab playerId={playerId} sportId={player?.sportId} teamId={player?.teamId} />
+            </motion.div>
+          )}
 
           {/* Injuries tab */}
           {tab === 'injuries' && (

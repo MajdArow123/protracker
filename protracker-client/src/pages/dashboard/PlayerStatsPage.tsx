@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useMyPlayerId } from '../../hooks/useDashboard';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
+import { usePlayer } from '../../hooks/usePlayers';
+import { EvidenceDashboardTab } from '../../components/evidence/EvidenceDashboardTab';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { PageSpinner } from '../../components/ui/Spinner';
@@ -38,6 +40,7 @@ export function PlayerStatsPage() {
   const fmt = useLocaleFormat();
   const { data: playerId, isLoading: loadingId } = useMyPlayerId();
   const { data: assessments, isLoading } = usePlayerAssessments(playerId);
+  const { data: player } = usePlayer(playerId ?? 0);
   const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -315,6 +318,23 @@ export function PlayerStatsPage() {
                 })}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Evidence: the athlete's own metric confidence picture. Team athletes can add
+          tests and guided self-evaluations; match stats stay coach-entered. */}
+      {playerId && player?.sportId && (
+        <div className="mt-8">
+          <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-3 uppercase tracking-wide">
+            {t('evidence.myEvidenceTitle', 'My Evidence')}
+          </h3>
+          <EvidenceDashboardTab
+            playerId={playerId}
+            sportId={player.sportId}
+            self
+            teamId={player.teamId}
+            canEnterMatchStats={false}
+          />
         </div>
       )}
     </PageWrapper>

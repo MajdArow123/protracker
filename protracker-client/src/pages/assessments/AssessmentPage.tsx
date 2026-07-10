@@ -21,6 +21,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
 import { ScoreSlider, OverallScoreRing, scoreColor } from '../../components/assessments/ScoreWidgets';
 import { AssessmentTemplateBar } from '../../components/assessments/AssessmentTemplateBar';
+import { EvidencePanel } from '../../components/evidence/EvidencePanel';
+import { useSportMetrics, usePlayerEvidenceScores } from '../../hooks/useEvidence';
 import type { PlayerAssessment, AppliedTemplate } from '../../types';
 
 type Tab = 'new' | 'history';
@@ -49,6 +51,20 @@ export function AssessmentPage() {
   const { data: statCategories = [], isLoading: loadingStats } = useStatCategories(player?.sportId);
   const createAssessment = useCreateAssessment();
   const createPeriod = useCreateAssessmentPeriod();
+
+  // Evidence layer: metric definitions matched to slider categories + current scores.
+  const { data: sportMetrics = [] } = useSportMetrics(player?.sportId);
+  const { data: evidenceScores = [] } = usePlayerEvidenceScores(playerId);
+  const metricByCategory = useMemo(() => {
+    const map = new Map<number, (typeof sportMetrics)[number]>();
+    for (const m of sportMetrics) if (m.sportStatCategoryId != null) map.set(m.sportStatCategoryId, m);
+    return map;
+  }, [sportMetrics]);
+  const evidenceByMetric = useMemo(() => {
+    const map = new Map<number, (typeof evidenceScores)[number]>();
+    for (const s of evidenceScores) map.set(s.metricDefinitionId, s);
+    return map;
+  }, [evidenceScores]);
 
   const [tab, setTab] = useState<Tab>('new');
   const [periodId, setPeriodId] = useState('');
@@ -301,16 +317,28 @@ export function AssessmentPage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">{tr('assessment.noStatCategories', 'No stat categories for this sport.')}</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {statCategories.map(cat => (
-                  <ScoreSlider
-                    key={cat.id}
-                    name={cat.name}
-                    description={cat.description}
-                    value={scores[cat.id] ?? null}
-                    required={requiredCats.has(cat.id)}
-                    onChange={v => setScores(prev => ({ ...prev, [cat.id]: v }))}
-                  />
-                ))}
+                {statCategories.map(cat => {
+                  const metric = metricByCategory.get(cat.id);
+                  return (
+                    <ScoreSlider
+                      key={cat.id}
+                      name={cat.name}
+                      description={cat.description}
+                      value={scores[cat.id] ?? null}
+                      required={requiredCats.has(cat.id)}
+                      onChange={v => setScores(prev => ({ ...prev, [cat.id]: v }))}
+                      footer={metric && (
+                        <EvidencePanel
+                          playerId={playerId}
+                          metric={metric}
+                          score={evidenceByMetric.get(metric.id)}
+                          teamId={player?.teamId}
+                          onApplyScore={v => setScores(prev => ({ ...prev, [cat.id]: v }))}
+                        />
+                      )}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>

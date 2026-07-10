@@ -22,9 +22,11 @@ interface ScoreSliderProps {
   value: number | null;
   onChange: (v: number) => void;
   required?: boolean;
+  /** Extra content rendered inside the card below the slider (e.g. the evidence panel). */
+  footer?: React.ReactNode;
 }
 
-export function ScoreSlider({ name, description, value, onChange, required }: ScoreSliderProps) {
+export function ScoreSlider({ name, description, value, onChange, required, footer }: ScoreSliderProps) {
   const { t } = useTranslation();
   const isSet = value !== null;
   const display = value ?? 5.5;
@@ -66,6 +68,7 @@ export function ScoreSlider({ name, description, value, onChange, required }: Sc
         <span>1 — {t('assessment.poor', 'Poor')}</span>
         <span>10 — {t('assessment.excellent', 'Excellent')}</span>
       </div>
+      {footer}
     </div>
   );
 }
