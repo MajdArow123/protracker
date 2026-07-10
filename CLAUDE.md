@@ -706,6 +706,59 @@ on `<html>` handles flex/grid/text mirroring automatically; only directional ico
 absolute left/right positions need manual attention. New pages should wrap text in `t('key',
 'English fallback')` so untranslated keys still render English.
 
+## Pre-Phase-G critical fixes (COMPLETE, deployed) — 4 fixes
+
+Four fixes done one at a time, each its own commit, `npm run build` + `oxlint` + backend
+`dotnet test` (34/34) clean, browser-verified.
+
+- **Fix 1 — Complete translations for all 5 languages** (commit `f047be6`). Every visible
+  string across all 57 pages + 110 components is now wrapped in `t()` with an English
+  fallback (was only the sidebar/login/landing before). **2595 keys across 31 namespaces**,
+  fully translated into ar/he/fr/es (validated: 0 missing / 0 extra / 0 interpolation drift
+  vs en.json; "ProTracker" stays English). New hooks: **`useLocaleFormat`** (Intl-based
+  `formatDate/formatDateTime/formatTime/formatNumber/formatPercent/formatRelativeTime` bound
+  to the active language) and **`useDynamicLabels`** (`src/i18n/dynamicLabels.ts`) — translates
+  enum values (sport/status/priority/category/difficulty/mood/sessionType) + localized
+  `dayNames()`/`monthNames()`. Dynamic DB values (stat category names, custom drills) stay as
+  data. Known small gaps: PDF export components (`components/pdf/*`) and a few sport-score
+  abbreviations in `utils/matchSport.ts`/`leagueMeta.ts` are still English-sourced.
+- **Fix 2 — RTL layout perfection** (commit `fd8fc47`). Arabic/Hebrew fully mirror, not just
+  text. `src/styles/rtl.css` (scoped under `.rtl`, imported in `main.tsx`): mirror directional
+  lucide icons, flip physical `text-left/right` + accent-border widths (priority stripes move
+  to the inline-start edge keeping colour), keep Recharts LTR, anchor toasts left. `useIsRtl`
+  hook for JS-driven layout (framer-motion drawer offset). Desktop sidebar mirrors via flexbox +
+  `dir=rtl`; mobile drawer opens from the correct edge; dropdowns (bell, template bar) use
+  `rtl:` variants; sidebar border uses logical `border-e`. **Charts kept LTR by design** (numeric
+  axes stay readable). Also fixed a Fix-1 gap: profile-completion checklist labels (from a util)
+  now carry `profile.completion.*` i18n keys. Browser-verified in Hebrew.
+- **Fix 3 — League sport auto-filtering** (commit `5cf4f1b`). Browse tab is scoped to the
+  viewer's own sport (coach → team sport; solo/team athlete → player sport; derived like
+  `DrillLibraryPage`). Pills are replaced with a "Showing {sport} leagues" note; pills remain
+  only for admins / multi-sport coaches. League cards drop the redundant sport badge when scoped
+  (`hideSport`). Create-League auto-fills the sport read-only (selector hidden) like team creation.
+  My Leagues tab unchanged.
+- **Fix 4 — Persistent notification system** (commit `7abcef2`, migration `AddNotifications`).
+  Replaced the localStorage-derived feed with a DB-backed `Notification` model (17-value
+  `NotificationType`; indexed `(UserId,IsRead)` + `(UserId,CreatedAt)`). **`NotificationService`**
+  (scoped): `CreateAsync`/`CreateManyAsync` **persist on an isolated `IServiceScopeFactory` scope
+  so they never touch the caller's transaction, then fire SignalR `"Notification"` + web-push —
+  best-effort, never throws**; plus paged `GetForUserAsync` (+ unread count), MarkRead/MarkAllRead/
+  UnreadCount/Delete, and `DeleteOldAsync` (90-day prune at startup). `NotificationsController`
+  (`/api/notifications`, all roles, own-user scoped): GET `?page&unreadOnly`, GET `unread-count`,
+  PATCH `{id}/read`, PATCH `read-all`, DELETE `{id}`. **Notification creation is wired into the 8
+  existing web-push call sites** (message/task/announcement/connection request+accept+decline/
+  athlete-joined×2/recovery-plan) + review-received — `CreateAsync` does the web-push now, so the
+  raw `IPushService` calls were removed where unused. Frontend: `notificationsApi` + rewritten
+  `useNotifications` (infinite feed, polled unread count, mutations); **NotificationBell rebuilt
+  (no flicker/auto-mark, loading skeleton, last 5, unread bold+border+dot, relative time, click →
+  mark read + navigate, mark-all, view-all)**; new lazy `/notifications` page (all-role: filter
+  pills All/Unread/Messages/Tasks/Injuries/System, hover-delete, load more, empty state);
+  Notifications sidebar item + unread badge; **SignalR `"Notification"` listener in
+  `ChatRealtimeContext` invalidates the feed for real-time updates** (reuses the per-user-group
+  ChatHub — no new hub). `NotificationDto.Type` is the enum **name** (frontend switches on it);
+  notification title/message are backend-generated English (data, not i18n). Note: the old
+  `utils/seenNotifications.ts` remains only for the coach-dashboard injury-card dismissal.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
