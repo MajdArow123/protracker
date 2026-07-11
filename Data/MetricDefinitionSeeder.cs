@@ -16,10 +16,41 @@ public static class MetricDefinitionSeeder
     public static async Task SeedAsync(ApplicationDbContext context)
     {
         if (await context.SportMetricDefinitions.AnyAsync())
+        {
+            await BackfillProtocolsAsync(context);
             return;
+        }
 
-        context.SportMetricDefinitions.AddRange(BuildDefinitions());
+        var definitions = BuildDefinitions();
+        foreach (var def in definitions)
+            ApplyProtocol(def);
+        context.SportMetricDefinitions.AddRange(definitions);
         await context.SaveChangesAsync();
+    }
+
+    // Existing databases seeded before the protocol guides shipped get them filled in
+    // (only where TestSetup is still null, so coach edits are never overwritten).
+    private static async Task BackfillProtocolsAsync(ApplicationDbContext context)
+    {
+        var missing = await context.SportMetricDefinitions
+            .Where(m => m.TestSetup == null && m.InputType != MetricInputType.Rating)
+            .ToListAsync();
+        if (missing.Count == 0) return;
+
+        var changed = false;
+        foreach (var def in missing)
+            changed |= ApplyProtocol(def);
+        if (changed) await context.SaveChangesAsync();
+    }
+
+    private static bool ApplyProtocol(SportMetricDefinition def)
+    {
+        var protocol = TestProtocols.For(def.SportId, def.Name);
+        if (protocol == null) return false;
+        def.TestSetup = protocol.Setup;
+        def.TestProcedure = protocol.Procedure;
+        def.CommonMistakes = protocol.Mistakes;
+        return true;
     }
 
     // Weights default to the spec's 0.4/0.3/0.2/0.1 (objective/match/coach/self); metrics

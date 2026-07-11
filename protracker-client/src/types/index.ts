@@ -1586,6 +1586,10 @@ export interface SportMetricDefinition {
   notes: string | null;
   sportStatCategoryId: number | null;
   supportsMatchStats: boolean;
+  testSetup: string | null;
+  testProcedure: string | null;
+  commonMistakes: string | null;
+  videoUrl: string | null;
 }
 
 export interface ObjectiveTestResult {

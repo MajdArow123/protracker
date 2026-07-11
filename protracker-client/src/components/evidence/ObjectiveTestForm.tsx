@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlaskConical } from 'lucide-react';
+import { FlaskConical, HelpCircle } from 'lucide-react';
+import { TestProtocolModal } from './TestProtocolModal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useToast } from '../../context/ToastContext';
@@ -27,6 +28,7 @@ export function ObjectiveTestForm({ playerId, metric, onSaved }: Props) {
 
   const [value, setValue] = useState('');
   const [testedAt, setTestedAt] = useState(new Date().toISOString().split('T')[0]);
+  const [showProtocol, setShowProtocol] = useState(false);
 
   const lastTest = tests[0]; // API returns newest first
   const unit = metric.unit ?? '';
@@ -58,9 +60,20 @@ export function ObjectiveTestForm({ playerId, metric, onSaved }: Props) {
 
   return (
     <div className="space-y-3">
-      {metric.notes && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">{metric.notes}</p>
-      )}
+      <div className="flex items-start justify-between gap-2">
+        {metric.notes && (
+          <p className="text-xs text-gray-500 dark:text-gray-400">{metric.notes}</p>
+        )}
+        {(metric.testSetup || metric.testProcedure) && (
+          <button
+            type="button"
+            onClick={() => setShowProtocol(true)}
+            className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex-shrink-0 ms-auto"
+          >
+            <HelpCircle size={11} /> {t('evidence.howToMeasure', 'How to measure')}
+          </button>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
@@ -111,6 +124,10 @@ export function ObjectiveTestForm({ playerId, metric, onSaved }: Props) {
       <Button type="button" size="sm" onClick={save} isLoading={addTest.isPending} disabled={!value.trim()}>
         {t('evidence.saveTest', 'Save Test Result')}
       </Button>
+
+      {showProtocol && (
+        <TestProtocolModal isOpen={showProtocol} onClose={() => setShowProtocol(false)} metric={metric} />
+      )}
     </div>
   );
 }

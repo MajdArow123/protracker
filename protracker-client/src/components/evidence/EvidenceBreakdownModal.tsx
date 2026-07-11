@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlaskConical, BarChart2, UserCheck, User, Lightbulb } from 'lucide-react';
+import { FlaskConical, BarChart2, UserCheck, User, Lightbulb, HelpCircle } from 'lucide-react';
+import { TestProtocolModal } from './TestProtocolModal';
 import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { scoreColor } from '../assessments/ScoreWidgets';
@@ -39,6 +40,7 @@ interface TimelineItem {
 export function EvidenceBreakdownModal({ isOpen, onClose, playerId, metric, score, self, teamId, readOnly, canEnterMatchStats = true }: Props) {
   const { t } = useTranslation();
   const { formatDate, formatNumber } = useLocaleFormat();
+  const [showProtocol, setShowProtocol] = useState(false);
 
   const { data: tests = [] } = usePlayerObjectiveTests(playerId, metric.id, isOpen);
   const { data: coachEvals = [] } = usePlayerCoachEvaluations(playerId, isOpen);
@@ -167,6 +169,21 @@ export function EvidenceBreakdownModal({ isOpen, onClose, playerId, metric, scor
               ))}
             </ul>
           </div>
+        )}
+
+        {/* Test protocol guide */}
+        {(metric.testSetup || metric.testProcedure) && (
+          <button
+            type="button"
+            onClick={() => setShowProtocol(true)}
+            className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+          >
+            <HelpCircle size={13} /> {t('evidence.viewProtocol', 'View test protocol')}
+          </button>
+        )}
+
+        {showProtocol && (
+          <TestProtocolModal isOpen={showProtocol} onClose={() => setShowProtocol(false)} metric={metric} />
         )}
 
         {/* Inline evidence entry */}

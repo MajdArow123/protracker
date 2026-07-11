@@ -84,6 +84,19 @@ public class SportMetricDefinition
     // How to run the objective test (shown as a hint in the entry UI).
     public string? Notes { get; set; }
 
+    // ── Test protocol guide (Phase G accuracy round) ─────────────────────────
+    // Equipment needed, space required, setup instructions.
+    public string? TestSetup { get; set; }
+
+    // Step-by-step instructions, one numbered step per line ("1. ...\n2. ...").
+    public string? TestProcedure { get; set; }
+
+    // What to avoid for an accurate, comparable measurement.
+    public string? CommonMistakes { get; set; }
+
+    // Optional demo video link.
+    public string? VideoUrl { get; set; }
+
     // The existing slider stat category this metric corresponds to, when one exists.
     // Slider assessments auto-create CoachEvaluation/SelfAssessmentEntry evidence for
     // metrics linked this way, so every historical assessment already counts as evidence.

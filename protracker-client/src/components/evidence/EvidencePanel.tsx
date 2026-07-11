@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, FlaskConical, BarChart2, MessageSquareText, ShieldCheck } from 'lucide-react';
+import { ChevronDown, FlaskConical, BarChart2, MessageSquareText, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { ObjectiveTestForm } from './ObjectiveTestForm';
 import { MatchStatsForm } from './MatchStatsForm';
@@ -26,11 +26,28 @@ interface Props {
   onApplyScore?: (value: number) => void;
 }
 
+const WELCOME_KEY = 'pt_evidence_welcome_seen';
+
 // Collapsible "Add Evidence" section shown under a slider card (or inside the breakdown
 // modal). Three entry tabs; after any save the fresh calculated score previews inline.
 export function EvidencePanel({ playerId, metric, score, self = false, teamId, canEnterMatchStats = true, onApplyScore }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  // One-time welcome the first time anyone expands an evidence panel.
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  function toggleOpen() {
+    setOpen(o => {
+      const next = !o;
+      if (next && !localStorage.getItem(WELCOME_KEY)) setShowWelcome(true);
+      return next;
+    });
+  }
+
+  function dismissWelcome() {
+    localStorage.setItem(WELCOME_KEY, '1');
+    setShowWelcome(false);
+  }
   // The score returned by the last save wins over the (possibly stale) cached prop.
   const [freshScore, setFreshScore] = useState<EvidenceBasedScore | null>(null);
 
@@ -60,7 +77,7 @@ export function EvidencePanel({ playerId, metric, score, self = false, teamId, c
     <div className="border-t border-gray-100 dark:border-gray-800 mt-1">
       <button
         type="button"
-        onClick={() => setOpen(o => !o)}
+        onClick={toggleOpen}
         className="w-full flex items-center gap-2 px-1 py-2 text-xs cursor-pointer group"
       >
         <ShieldCheck size={13} className={verified ? 'text-emerald-500' : 'text-gray-400'} />
@@ -87,6 +104,20 @@ export function EvidencePanel({ playerId, metric, score, self = false, teamId, c
             className="overflow-hidden"
           >
             <div className="pb-3 space-y-3">
+              {showWelcome && (
+                <div className="rounded-xl bg-indigo-50 dark:bg-indigo-900/15 border border-indigo-200 dark:border-indigo-900/40 p-2.5 flex items-start gap-2">
+                  <Sparkles size={13} className="text-indigo-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-[11px] text-indigo-800 dark:text-indigo-300 leading-snug flex-1">
+                    {t('evidence.welcomeTip',
+                      'Evidence-based scoring uses real test data to calculate accurate scores. Follow the test protocols ("How to measure") for consistent, comparable results.')}
+                  </p>
+                  <button type="button" onClick={dismissWelcome}
+                    className="p-0.5 rounded text-indigo-400 hover:text-indigo-600 cursor-pointer flex-shrink-0"
+                    aria-label={t('common.dismiss', 'Dismiss')}>
+                    <X size={12} />
+                  </button>
+                </div>
+              )}
               <div className="flex gap-1 flex-wrap">
                 {tabs.map(tb => (
                   <button

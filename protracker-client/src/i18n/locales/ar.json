@@ -2972,6 +2972,16 @@
     "colHigh": "نخبة",
     "profileSaved": "تم حفظ ملف المعايير",
     "profileNameRequired": "اسم الملف مطلوب",
-    "invalidBenchmark": "معيار غير صالح لـ {{metric}}"
+    "invalidBenchmark": "معيار غير صالح لـ {{metric}}",
+    "howToMeasure": "كيفية القياس",
+    "viewProtocol": "عرض بروتوكول الاختبار",
+    "protocolTitle": "كيفية قياس {{metric}}",
+    "protocolSetup": "المعدات والتجهيز",
+    "protocolProcedure": "الإجراءات",
+    "protocolMistakes": "أخطاء شائعة يجب تجنبها",
+    "protocolVideo": "مشاهدة فيديو توضيحي",
+    "protocolGotIt": "فهمت!",
+    "welcomeTip": "يعتمد التقييم المبني على الأدلة على بيانات اختبار حقيقية لحساب نتائج دقيقة. اتبع بروتوكولات الاختبار («كيفية القياس») لنتائج متسقة وقابلة للمقارنة.",
+    "downloadChecklist": "قائمة يوم الاختبارات"
   }
 }

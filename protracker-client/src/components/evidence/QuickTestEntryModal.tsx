@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlaskConical } from 'lucide-react';
+import { FlaskConical, HelpCircle } from 'lucide-react';
 import { clsx } from 'clsx';
+import { TestProtocolModal } from './TestProtocolModal';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -34,6 +35,7 @@ export function QuickTestEntryModal({ isOpen, onClose, playerId, playerName, spo
 
   const [metricId, setMetricId] = useState<number | null>(null);
   const [value, setValue] = useState('');
+  const [showProtocol, setShowProtocol] = useState(false);
   const activeId = metricId ?? testable[0]?.id ?? null;
   const metric = testable.find(m => m.id === activeId);
 
@@ -79,7 +81,15 @@ export function QuickTestEntryModal({ isOpen, onClose, playerId, playerName, spo
 
         {metric && (
           <>
-            {metric.notes && <p className="text-xs text-gray-500 dark:text-gray-400">{metric.notes}</p>}
+            <div className="flex items-start justify-between gap-2">
+              {metric.notes && <p className="text-xs text-gray-500 dark:text-gray-400">{metric.notes}</p>}
+              {(metric.testSetup || metric.testProcedure) && (
+                <button type="button" onClick={() => setShowProtocol(true)}
+                  className="flex items-center gap-1 text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer flex-shrink-0 ms-auto">
+                  <HelpCircle size={11} /> {t('evidence.howToMeasure', 'How to measure')}
+                </button>
+              )}
+            </div>
             <div>
               <Input
                 label={metric.unit
@@ -108,6 +118,10 @@ export function QuickTestEntryModal({ isOpen, onClose, playerId, playerName, spo
           isLoading={addTest.isPending} disabled={!value.trim()}>
           <FlaskConical size={15} /> {t('evidence.saveTest', 'Save Test Result')}
         </Button>
+
+        {showProtocol && metric && (
+          <TestProtocolModal isOpen={showProtocol} onClose={() => setShowProtocol(false)} metric={metric} />
+        )}
       </div>
     </Modal>
   );

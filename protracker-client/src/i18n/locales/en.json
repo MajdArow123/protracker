@@ -2972,6 +2972,16 @@
     "colHigh": "Elite",
     "profileSaved": "Benchmark profile saved",
     "profileNameRequired": "Profile name is required",
-    "invalidBenchmark": "Invalid benchmark for {{metric}}"
+    "invalidBenchmark": "Invalid benchmark for {{metric}}",
+    "howToMeasure": "How to measure",
+    "viewProtocol": "View test protocol",
+    "protocolTitle": "How to measure {{metric}}",
+    "protocolSetup": "Equipment & setup",
+    "protocolProcedure": "Procedure",
+    "protocolMistakes": "Common mistakes to avoid",
+    "protocolVideo": "Watch demo video",
+    "protocolGotIt": "Got it!",
+    "welcomeTip": "Evidence-based scoring uses real test data to calculate accurate scores. Follow the test protocols (\"How to measure\") for consistent, comparable results.",
+    "downloadChecklist": "Test Day Checklist"
   }
 }

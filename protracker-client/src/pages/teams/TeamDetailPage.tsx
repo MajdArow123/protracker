@@ -376,7 +376,7 @@ export function TeamDetailPage() {
 
       {teamTab === 'evidence' && (
         <div className="p-4 lg:p-6">
-          <TeamEvidenceTab teamId={teamId} sportId={team.sportId} />
+          <TeamEvidenceTab teamId={teamId} sportId={team.sportId} teamName={team.name} />
         </div>
       )}
 

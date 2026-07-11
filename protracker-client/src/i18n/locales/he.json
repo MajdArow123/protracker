@@ -2972,6 +2972,16 @@
     "colHigh": "עילית",
     "profileSaved": "פרופיל הייחוס נשמר",
     "profileNameRequired": "שם הפרופיל נדרש",
-    "invalidBenchmark": "מדד ייחוס לא תקין עבור {{metric}}"
+    "invalidBenchmark": "מדד ייחוס לא תקין עבור {{metric}}",
+    "howToMeasure": "איך למדוד",
+    "viewProtocol": "צפה בפרוטוקול הבדיקה",
+    "protocolTitle": "איך למדוד {{metric}}",
+    "protocolSetup": "ציוד והכנה",
+    "protocolProcedure": "מהלך הבדיקה",
+    "protocolMistakes": "טעויות נפוצות שיש להימנע מהן",
+    "protocolVideo": "צפה בסרטון הדגמה",
+    "protocolGotIt": "הבנתי!",
+    "welcomeTip": "ציון מבוסס ראיות משתמש בנתוני בדיקות אמיתיים לחישוב ציונים מדויקים. עקוב אחר הפרוטוקולים (\"איך למדוד\") לתוצאות עקביות וברות השוואה.",
+    "downloadChecklist": "דף יום בדיקות"
   }
 }

@@ -2972,6 +2972,16 @@
     "colHigh": "Élite",
     "profileSaved": "Profil de référence enregistré",
     "profileNameRequired": "Le nom du profil est requis",
-    "invalidBenchmark": "Référence invalide pour {{metric}}"
+    "invalidBenchmark": "Référence invalide pour {{metric}}",
+    "howToMeasure": "Comment mesurer",
+    "viewProtocol": "Voir le protocole de test",
+    "protocolTitle": "Comment mesurer {{metric}}",
+    "protocolSetup": "Matériel et installation",
+    "protocolProcedure": "Procédure",
+    "protocolMistakes": "Erreurs courantes à éviter",
+    "protocolVideo": "Voir la vidéo de démonstration",
+    "protocolGotIt": "Compris !",
+    "welcomeTip": "La notation basée sur les preuves utilise de vraies données de test pour des scores précis. Suivez les protocoles (« Comment mesurer ») pour des résultats cohérents et comparables.",
+    "downloadChecklist": "Fiche de journée de tests"
   }
 }

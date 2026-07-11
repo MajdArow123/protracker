@@ -2972,6 +2972,16 @@
     "colHigh": "Élite",
     "profileSaved": "Perfil de referencia guardado",
     "profileNameRequired": "El nombre del perfil es obligatorio",
-    "invalidBenchmark": "Referencia no válida para {{metric}}"
+    "invalidBenchmark": "Referencia no válida para {{metric}}",
+    "howToMeasure": "Cómo medir",
+    "viewProtocol": "Ver protocolo de prueba",
+    "protocolTitle": "Cómo medir {{metric}}",
+    "protocolSetup": "Equipamiento y preparación",
+    "protocolProcedure": "Procedimiento",
+    "protocolMistakes": "Errores comunes a evitar",
+    "protocolVideo": "Ver vídeo de demostración",
+    "protocolGotIt": "¡Entendido!",
+    "welcomeTip": "La puntuación basada en evidencia usa datos de pruebas reales para calcular puntuaciones precisas. Sigue los protocolos («Cómo medir») para resultados consistentes y comparables.",
+    "downloadChecklist": "Hoja del día de pruebas"
   }
 }

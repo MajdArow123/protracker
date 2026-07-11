@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { FlaskConical, BarChart2, ShieldCheck, CalendarPlus, AlertTriangle } from 'lucide-react';
+import { FlaskConical, BarChart2, ShieldCheck, CalendarPlus, AlertTriangle, Download } from 'lucide-react';
 import { clsx } from 'clsx';
 import { Button } from '../ui/Button';
 import { CardListSkeleton } from '../ui/Skeleton';
@@ -10,21 +10,64 @@ import { confidenceBadgeClass, confidenceLabel } from './evidenceUtils';
 import { TestDayModal } from './TestDayModal';
 import { BenchmarkProfileCard } from './BenchmarkProfileCard';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
-import { useTeamEvidenceStatus } from '../../hooks/useEvidence';
+import { useTeamEvidenceStatus, useSportMetrics } from '../../hooks/useEvidence';
+import { useToast } from '../../context/ToastContext';
 
 interface Props {
   teamId: number;
   sportId?: number | null;
+  teamName?: string;
 }
 
 // Team-wide evidence coverage: which players' scores are measurement-backed and who
 // needs a test day. Rows click through to the player's Evidence tab.
-export function TeamEvidenceTab({ teamId, sportId }: Props) {
+export function TeamEvidenceTab({ teamId, sportId, teamName }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { addToast } = useToast();
   const { formatDate } = useLocaleFormat();
   const { data: status, isLoading } = useTeamEvidenceStatus(teamId);
+  const { data: metrics = [] } = useSportMetrics(sportId);
   const [testDayOpen, setTestDayOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  // Field-ready PDF: the sport's key tests (objective-required first, max 5 for the
+  // grid width) + a blank result row per player.
+  async function downloadChecklist() {
+    if (!status) return;
+    setDownloading(true);
+    try {
+      const [{ downloadPdf }, { TestDayChecklistPDF }] = await Promise.all([
+        import('../../utils/exportPdf'),
+        import('../../components/pdf/TestDayChecklistPDF'),
+      ]);
+      const tests = metrics
+        .filter(m => m.inputType !== 'Rating')
+        .sort((a, b) => Number(b.isObjectiveRequired) - Number(a.isObjectiveRequired))
+        .slice(0, 5)
+        .map(m => ({
+          name: m.name,
+          unit: m.unit ?? '',
+          setup: m.testSetup,
+          procedure: m.testProcedure,
+          mistakes: m.commonMistakes,
+        }));
+      const date = new Date().toISOString().slice(0, 10);
+      await downloadPdf(
+        <TestDayChecklistPDF
+          teamName={teamName ?? ''}
+          date={date}
+          tests={tests}
+          players={status.players.map(p => p.playerName)}
+        />,
+        `Test-Day-Checklist-${date}.pdf`,
+      );
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : t('common.error', 'Failed'), 'error');
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   if (isLoading) return <CardListSkeleton count={4} cols="grid-cols-1" />;
   if (!status || status.players.length === 0) {
@@ -67,10 +110,15 @@ export function TeamEvidenceTab({ teamId, sportId }: Props) {
               </p>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             {sportId != null && (
               <Button type="button" size="sm" onClick={() => setTestDayOpen(true)}>
                 <FlaskConical size={13} /> {t('evidence.testDayTitle', 'Test Day')}
+              </Button>
+            )}
+            {sportId != null && (
+              <Button type="button" size="sm" variant="secondary" onClick={downloadChecklist} isLoading={downloading}>
+                <Download size={13} /> {t('evidence.downloadChecklist', 'Test Day Checklist')}
               </Button>
             )}
             <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/teams/${teamId}/bulk-assessment`)}>

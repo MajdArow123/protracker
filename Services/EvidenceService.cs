@@ -462,6 +462,10 @@ public class EvidenceService : IEvidenceService
         Notes = d.Notes,
         SportStatCategoryId = d.SportStatCategoryId,
         SupportsMatchStats = EvidenceScoringEngine.HasMatchStatRule(d.SportId, d.Name),
+        TestSetup = d.TestSetup,
+        TestProcedure = d.TestProcedure,
+        CommonMistakes = d.CommonMistakes,
+        VideoUrl = d.VideoUrl,
     };
 
     private static ObjectiveTestResultDto ToTestDto(ObjectiveTestResult t, SportMetricDefinition def,

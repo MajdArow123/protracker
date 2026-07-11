@@ -24,6 +24,11 @@ public class SportMetricDefinitionDto
     public int? SportStatCategoryId { get; set; }
     // Whether match stats can contribute to this metric (a mapping rule exists).
     public bool SupportsMatchStats { get; set; }
+    // Test protocol guide.
+    public string? TestSetup { get; set; }
+    public string? TestProcedure { get; set; }
+    public string? CommonMistakes { get; set; }
+    public string? VideoUrl { get; set; }
 }
 
 // ─── Objective tests ─────────────────────────────────────────────────────────
