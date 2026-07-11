@@ -105,6 +105,8 @@ export function LoginPage() {
   };
 
   const inputCls = 'w-full pl-10 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-sm';
+  // Visible labels (placeholder-only labeling disappears the moment autofill runs).
+  const labelCls = 'block text-xs font-semibold text-gray-400 mb-1.5';
 
   return (
     <div className="min-h-screen flex bg-[#070a12]">
@@ -259,17 +261,23 @@ export function LoginPage() {
                   onSubmit={handleSignIn}
                   className="space-y-4"
                 >
-                  <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={tr('auth.emailAddress', 'Email address')} autoComplete="email" required className={inputCls} />
+                  <div>
+                    <label htmlFor="signin-email" className={labelCls}>{tr('auth.emailAddress', 'Email address')}</label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input id="signin-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@club.com" autoComplete="email" required className={inputCls} />
+                    </div>
                   </div>
 
-                  <div className="relative">
-                    <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder={tr('auth.password', 'Password')} autoComplete="current-password" required className={clsx(inputCls, 'pr-10')} />
-                    <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
-                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                    </button>
+                  <div>
+                    <label htmlFor="signin-password" className={labelCls}>{tr('auth.password', 'Password')}</label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input id="signin-password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" required className={clsx(inputCls, 'pr-10')} />
+                      <button type="button" onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="flex justify-end -mt-1">
@@ -302,20 +310,27 @@ export function LoginPage() {
                   onSubmit={handleRegister}
                   className="space-y-3"
                 >
-                  <div className="relative">
-                    <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Display name" autoComplete="name" required className={inputCls} />
-                  </div>
-
-                  <div className="relative">
-                    <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="Email address" autoComplete="email" required className={inputCls} />
+                  <div>
+                    <label htmlFor="reg-name" className={labelCls}>{tr('auth.displayName', 'Display name')}</label>
+                    <div className="relative">
+                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input id="reg-name" type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Alex Morgan" autoComplete="name" required className={inputCls} />
+                    </div>
                   </div>
 
                   <div>
+                    <label htmlFor="reg-email" className={labelCls}>{tr('auth.emailAddress', 'Email address')}</label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input id="reg-email" type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="you@club.com" autoComplete="email" required className={inputCls} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="reg-password" className={labelCls}>{tr('auth.password', 'Password')}</label>
                     <div className="relative">
                       <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                      <input type={showRegPassword ? 'text' : 'password'} value={regPassword} onChange={e => setRegPassword(e.target.value)} placeholder="Password" autoComplete="new-password" required className={clsx(inputCls, 'pr-10')} />
+                      <input id="reg-password" type={showRegPassword ? 'text' : 'password'} value={regPassword} onChange={e => setRegPassword(e.target.value)} autoComplete="new-password" required className={clsx(inputCls, 'pr-10')} />
                       <button type="button" onClick={() => setShowRegPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors cursor-pointer">
                         {showRegPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
@@ -323,10 +338,13 @@ export function LoginPage() {
                     <PasswordStrength password={regPassword} />
                   </div>
 
-                  <div className="relative">
-                    <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
-                    <input type="password" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} placeholder="Confirm password" autoComplete="new-password" required className={clsx(inputCls, regConfirm && (regConfirm === regPassword ? 'border-green-500/50' : 'border-red-500/50'))} />
-                    {regConfirm && regConfirm === regPassword && <CheckCircle size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400" />}
+                  <div>
+                    <label htmlFor="reg-confirm" className={labelCls}>{tr('auth.confirmPassword', 'Confirm password')}</label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" />
+                      <input id="reg-confirm" type="password" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} autoComplete="new-password" required className={clsx(inputCls, regConfirm && (regConfirm === regPassword ? 'border-green-500/50' : 'border-red-500/50'))} />
+                      {regConfirm && regConfirm === regPassword && <CheckCircle size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400" />}
+                    </div>
                   </div>
 
                   {/* Role selector */}
