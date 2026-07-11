@@ -1695,3 +1695,13 @@ export interface TeamEvidenceStatus {
   playersWithoutMatchStats: number;
   playersWithoutEvidence: number;
 }
+
+export interface EvidenceReminder {
+  type: 'NoRecentTest' | 'LowConfidence';
+  playerId: number | null;
+  playerName: string | null;
+  teamId: number | null;
+  teamName: string | null;
+  daysSinceTest: number | null;
+  count: number | null;
+}

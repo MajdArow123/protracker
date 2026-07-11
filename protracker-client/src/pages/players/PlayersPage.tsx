@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Users, Plus, Search, AlertTriangle } from 'lucide-react';
+import { Users, Plus, Search, AlertTriangle, FlaskConical } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
 import { useActiveInjuries } from '../../hooks/useInjuries';
@@ -13,6 +13,7 @@ import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
+import { QuickTestEntryModal } from '../../components/evidence/QuickTestEntryModal';
 import { clsx } from 'clsx';
 
 const SPORT_EMOJIS: Record<number, string> = {
@@ -41,6 +42,7 @@ export function PlayersPage() {
   const { data: activeInjuries = [] } = useActiveInjuries();
   const [search, setSearch] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
+  const [quickTest, setQuickTest] = useState<{ id: number; name: string; sportId: number } | null>(null);
 
   const injuredIds = new Set(activeInjuries.map(i => i.playerId));
 
@@ -106,13 +108,16 @@ export function PlayersPage() {
           {filtered.map(player => {
             const emoji = SPORT_EMOJIS[player.sportId] ?? '🏅';
             return (
-              <motion.button
+              <motion.div
                 key={player.id}
                 variants={staggerItem}
                 whileHover={{ scale: 1.01, y: -2 }}
                 whileTap={{ scale: 0.99 }}
                 transition={{ duration: 0.15 }}
+                role="button"
+                tabIndex={0}
                 onClick={() => navigate(`/players/${player.id}`)}
+                onKeyDown={e => { if (e.key === 'Enter') navigate(`/players/${player.id}`); }}
                 className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-500/40 hover:shadow-md hover:shadow-indigo-500/5 transition-colors cursor-pointer text-left group"
               >
                 <div className="w-11 h-11 rounded-xl bg-indigo-600/15 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-black flex-shrink-0 group-hover:bg-indigo-600/25 transition-colors">
@@ -139,10 +144,30 @@ export function PlayersPage() {
                   )}
                   <PlayerStatusBadge status={player.status} hideActive />
                 </div>
-              </motion.button>
+                {/* Quick test entry (44px touch target for mobile) */}
+                <button
+                  type="button"
+                  onClick={e => { e.stopPropagation(); setQuickTest({ id: player.id, name: player.fullName, sportId: player.sportId }); }}
+                  className="p-2.5 -me-1 rounded-xl text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer flex-shrink-0"
+                  title={t('evidence.logTest', 'Log Test')}
+                  aria-label={t('evidence.logTest', 'Log Test')}
+                >
+                  <FlaskConical size={17} />
+                </button>
+              </motion.div>
             );
           })}
         </motion.div>
+      )}
+
+      {quickTest && (
+        <QuickTestEntryModal
+          isOpen={!!quickTest}
+          onClose={() => setQuickTest(null)}
+          playerId={quickTest.id}
+          playerName={quickTest.name}
+          sportId={quickTest.sportId}
+        />
       )}
     </PageWrapper>
   );

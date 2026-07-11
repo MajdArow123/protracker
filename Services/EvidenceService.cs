@@ -32,6 +32,8 @@ public interface IEvidenceService
     Task<EvidenceBasedScoreDto?> RecalculateMetricAsync(ClaimsPrincipal user, int playerId, int metricDefinitionId);
 
     Task<TeamEvidenceStatusDto> GetTeamEvidenceStatusAsync(ClaimsPrincipal user, int teamId);
+
+    Task<List<EvidenceReminderDto>> GetRemindersAsync(ClaimsPrincipal user);
 }
 
 public class EvidenceService : IEvidenceService
@@ -333,6 +335,77 @@ public class EvidenceService : IEvidenceService
             PlayersWithoutMatchStats = rows.Count(r => r.MatchStatCount == 0),
             PlayersWithoutEvidence = rows.Count(r => r.ScoredMetrics == 0),
         };
+    }
+
+    // ─── Evidence reminders ──────────────────────────────────────────────────
+
+    // Coach-dashboard nudges: tracked players (those with evidence scores) whose objective
+    // tests are stale or missing, plus one aggregate item for players whose scores are
+    // mostly Low-confidence estimates.
+    public async Task<List<EvidenceReminderDto>> GetRemindersAsync(ClaimsPrincipal user)
+    {
+        var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
+        if (teamIds.Count == 0) return new();
+
+        var players = await _context.Players
+            .Include(p => p.Team)
+            .Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value))
+            .ToListAsync();
+        var playerIds = players.Select(p => p.Id).ToList();
+
+        var scores = await _context.EvidenceBasedScores
+            .Where(s => playerIds.Contains(s.PlayerId) && s.AssessmentId == null)
+            .Select(s => new { s.PlayerId, s.Confidence })
+            .ToListAsync();
+        var lastTests = await _context.ObjectiveTestResults
+            .Where(t => playerIds.Contains(t.PlayerId))
+            .GroupBy(t => t.PlayerId)
+            .Select(g => new { PlayerId = g.Key, Last = g.Max(t => t.TestedAt) })
+            .ToDictionaryAsync(x => x.PlayerId, x => x.Last);
+
+        var scoredPlayerIds = scores.Select(s => s.PlayerId).ToHashSet();
+        var now = DateTime.UtcNow;
+        var reminders = new List<EvidenceReminderDto>();
+
+        // Stale/missing tests — only for players already being tracked with evidence.
+        var stale = players
+            .Where(p => scoredPlayerIds.Contains(p.Id))
+            .Select(p =>
+            {
+                lastTests.TryGetValue(p.Id, out var last);
+                var days = last == default ? (int?)null : (int)(now - last).TotalDays;
+                return (Player: p, Days: days);
+            })
+            .Where(x => x.Days == null || x.Days >= 30)
+            .OrderByDescending(x => x.Days ?? int.MaxValue)
+            .Take(5);
+
+        foreach (var (p, days) in stale)
+        {
+            reminders.Add(new EvidenceReminderDto
+            {
+                Type = "NoRecentTest",
+                PlayerId = p.Id,
+                PlayerName = p.FullName,
+                TeamId = p.TeamId,
+                TeamName = p.Team?.Name,
+                DaysSinceTest = days,
+            });
+        }
+
+        var lowConfidencePlayers = scores
+            .GroupBy(s => s.PlayerId)
+            .Count(g => g.Count(s => s.Confidence == EvidenceConfidence.Low) >= 2);
+        if (lowConfidencePlayers > 0)
+        {
+            reminders.Add(new EvidenceReminderDto
+            {
+                Type = "LowConfidence",
+                Count = lowConfidencePlayers,
+            });
+        }
+
+        return reminders;
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

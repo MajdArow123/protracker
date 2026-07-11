@@ -94,7 +94,8 @@
     "toggleTheme": "החלף ערכת נושא",
     "position": "עמדה",
     "sport": "ענף ספורט",
-    "soloAthlete": "ספורטאי עצמאי"
+    "soloAthlete": "ספורטאי עצמאי",
+    "skip": "דלג"
   },
   "ui": {
     "allCaughtUp": "אתה מעודכן בכל!",
@@ -2914,6 +2915,30 @@
     "verifiedCount": "{{count}} מאומתים",
     "noEvidenceShort": "אין נתונים",
     "verifiedMetricsLabel": "מדדים מאומתים",
-    "testHistory": "היסטוריית בדיקות"
+    "testHistory": "היסטוריית בדיקות",
+    "logTest": "תעד בדיקה",
+    "quickTestTitle": "תעד בדיקה — {{name}}",
+    "addPlayerStats": "הוסף נתוני שחקנים",
+    "addStatsPromptTitle": "להוסיף נתוני שחקנים?",
+    "addStatsPromptMsg": "האם לתעד נתוני שחקנים למשחק זה? הם מזינים את הציונים מבוססי הראיות.",
+    "addStats": "הוסף נתונים",
+    "quickStatsTitle": "נתוני שחקן ({{current}}/{{total}})",
+    "quickStatsDone": "נתונים נשמרו עבור {{count}} שחקנים",
+    "quickStatsFinish": "סיים",
+    "saveAndNext": "שמור והבא",
+    "saveAndFinish": "שמור וסיים",
+    "testDayTitle": "יום בדיקות",
+    "testDayIntro": "בחר את הבדיקה שביצעת, ואז הזן את התוצאה של כל שחקן בבת אחת.",
+    "testDaySaveAll": "שמור {{count}} תוצאות",
+    "testDaySaved": "נשמרו {{count}} תוצאות בדיקה",
+    "invalidValueFor": "ערך לא תקין עבור {{name}}",
+    "remindersTitle": "תזכורות ראיות",
+    "reminderFrequency": "תדירות תזכורות",
+    "freqDaily": "יומי",
+    "freqWeekly": "שבועי",
+    "freqOff": "כבוי",
+    "reminderStaleTest": "{{name}} לא עבר בדיקה אובייקטיבית כבר {{days}} ימים",
+    "reminderNeverTested": "{{name}} עדיין לא עבר בדיקה אובייקטיבית",
+    "reminderLowConfidence": "ל־{{count}} שחקנים ציונים בביטחון נמוך — הוסף בדיקות אובייקטיביות לשיפור הדיוק"
   }
 }

@@ -94,7 +94,8 @@
     "toggleTheme": "Changer de thème",
     "position": "Poste",
     "sport": "Sport",
-    "soloAthlete": "Athlète solo"
+    "soloAthlete": "Athlète solo",
+    "skip": "Passer"
   },
   "ui": {
     "allCaughtUp": "Vous êtes à jour !",
@@ -2914,6 +2915,30 @@
     "verifiedCount": "{{count}} vérifiées",
     "noEvidenceShort": "Aucune donnée",
     "verifiedMetricsLabel": "métriques vérifiées",
-    "testHistory": "Historique des tests"
+    "testHistory": "Historique des tests",
+    "logTest": "Enregistrer un test",
+    "quickTestTitle": "Enregistrer un test — {{name}}",
+    "addPlayerStats": "Ajouter des stats joueurs",
+    "addStatsPromptTitle": "Ajouter des stats joueurs ?",
+    "addStatsPromptMsg": "Voulez-vous enregistrer les statistiques des joueurs pour ce match ? Elles alimentent les scores basés sur des preuves.",
+    "addStats": "Ajouter les stats",
+    "quickStatsTitle": "Stats joueur ({{current}}/{{total}})",
+    "quickStatsDone": "Stats enregistrées pour {{count}} joueurs",
+    "quickStatsFinish": "Terminer",
+    "saveAndNext": "Enregistrer & suivant",
+    "saveAndFinish": "Enregistrer & terminer",
+    "testDayTitle": "Journée de tests",
+    "testDayIntro": "Choisissez le test effectué, puis saisissez le résultat de chaque joueur d'un coup.",
+    "testDaySaveAll": "Enregistrer {{count}} résultats",
+    "testDaySaved": "{{count}} résultats de tests enregistrés",
+    "invalidValueFor": "Valeur invalide pour {{name}}",
+    "remindersTitle": "Rappels de preuves",
+    "reminderFrequency": "Fréquence des rappels",
+    "freqDaily": "Quotidien",
+    "freqWeekly": "Hebdomadaire",
+    "freqOff": "Désactivé",
+    "reminderStaleTest": "{{name}} n'a pas passé de test objectif depuis {{days}} jours",
+    "reminderNeverTested": "{{name}} n'a encore passé aucun test objectif",
+    "reminderLowConfidence": "{{count}} joueurs ont des scores à faible confiance — ajoutez des tests objectifs pour plus de précision"
   }
 }

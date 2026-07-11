@@ -93,4 +93,10 @@ public class EvidenceController : ApiControllerBase
     [Authorize(Roles = "Coach,Admin")]
     public async Task<ActionResult> GetTeamEvidenceStatus(int teamId)
         => Success(await _service.GetTeamEvidenceStatusAsync(User, teamId));
+
+    // Coach dashboard: stale-test + low-confidence reminder items.
+    [HttpGet("evidence-reminders")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetReminders()
+        => Success(await _service.GetRemindersAsync(User));
 }

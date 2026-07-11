@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Star, Trophy } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Star, Trophy, BarChart2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -13,6 +13,7 @@ import { useTeamMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, useSave
 import type { MatchResult, MatchOutcome, PlayerMatchRating } from '../../types';
 import type { RatingInput } from '../../api/matchesApi';
 import { statFieldsForSport, scoreLabelsForSport, setDetailConfig, scoreUnit, parseStatJson } from '../../utils/matchSport';
+import { MatchStatsQuickEntryModal } from '../evidence/MatchStatsQuickEntryModal';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
@@ -237,7 +238,7 @@ function RateMatchModal({ match, sportName, players, isOpen, onClose }: {
 }
 
 // ── Section ──────────────────────────────────────────────────────────────────
-export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { teamId: number; sportName?: string; players: PlayerOption[]; isCoach: boolean; }) {
+export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoach }: { teamId: number; sportName?: string; sportId?: number; players: PlayerOption[]; isCoach: boolean; }) {
   const { t: tr } = useTranslation();
   const L = useDynamicLabels();
   const { formatDate } = useLocaleFormat();
@@ -252,6 +253,11 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
   const [rateMatch, setRateMatch] = useState<MatchResult | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MatchResult | null>(null);
+  // Evidence quick entry: per-player stats for a match. justRated remembers a freshly
+  // created match so closing the ratings modal can offer the stats step next.
+  const [statsMatch, setStatsMatch] = useState<MatchResult | null>(null);
+  const [statsPrompt, setStatsPrompt] = useState<MatchResult | null>(null);
+  const [justCreatedId, setJustCreatedId] = useState<number | null>(null);
 
   const rateMatchLive = rateMatch ? matches.find(m => m.id === rateMatch.id) ?? rateMatch : null;
 
@@ -302,6 +308,12 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
                     {isCoach && (
                       <>
                         <button onClick={() => setRateMatch(m)} className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">{tr('matches.ratePlayers', 'Rate Players')}</button>
+                        {sportId != null && (
+                          <button onClick={() => setStatsMatch(m)} title={tr('evidence.addPlayerStats', 'Add player stats')} aria-label={tr('evidence.addPlayerStats', 'Add player stats')}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all cursor-pointer">
+                            <BarChart2 size={14} />
+                          </button>
+                        )}
                         <button onClick={() => { setEditMatch(m); setLogOpen(true); }} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Pencil size={14} /></button>
                         <button onClick={() => setDeleteTarget(m)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"><Trash2 size={14} /></button>
                       </>
@@ -355,8 +367,34 @@ export function TeamMatchesSection({ teamId, sportName, players, isCoach }: { te
         <>
           <LogMatchModal teamId={teamId} sportName={sportName} match={editMatch} isOpen={logOpen}
             onClose={() => { setLogOpen(false); setEditMatch(null); }}
-            onCreated={(m) => { setLogOpen(false); setRateMatch(m); }} />
-          <RateMatchModal match={rateMatchLive} sportName={sportName} players={players} isOpen={!!rateMatch} onClose={() => setRateMatch(null)} />
+            onCreated={(m) => { setLogOpen(false); setJustCreatedId(m.id); setRateMatch(m); }} />
+          <RateMatchModal match={rateMatchLive} sportName={sportName} players={players} isOpen={!!rateMatch}
+            onClose={() => {
+              // For a freshly logged match, offer the evidence stats step next.
+              if (sportId != null && rateMatch && rateMatch.id === justCreatedId) setStatsPrompt(rateMatch);
+              setJustCreatedId(null);
+              setRateMatch(null);
+            }} />
+
+          {/* Evidence: per-player match stats quick entry */}
+          <ConfirmModal
+            isOpen={!!statsPrompt}
+            onClose={() => setStatsPrompt(null)}
+            onConfirm={() => { setStatsMatch(statsPrompt); setStatsPrompt(null); }}
+            title={tr('evidence.addStatsPromptTitle', 'Add Player Stats?')}
+            message={tr('evidence.addStatsPromptMsg', 'Would you like to record player statistics for this match? They feed evidence-based scores.')}
+            confirmLabel={tr('evidence.addStats', 'Add Stats')}
+          />
+          {statsMatch && sportId != null && (
+            <MatchStatsQuickEntryModal
+              isOpen={!!statsMatch}
+              onClose={() => setStatsMatch(null)}
+              sportId={sportId}
+              matchResultId={statsMatch.id}
+              matchDate={statsMatch.matchDate}
+              players={players}
+            />
+          )}
           <ConfirmModal isOpen={!!deleteTarget} onClose={() => setDeleteTarget(null)}
             onConfirm={async () => { if (!deleteTarget) return; try { await deleteMatch.mutateAsync(deleteTarget.id); addToast(tr('matches.matchDeleted', 'Match deleted'), 'success'); } catch (err) { addToast(err instanceof Error ? err.message : tr('matches.deleteFailed', 'Delete failed'), 'error'); } finally { setDeleteTarget(null); } }}
             title={tr('matches.deleteMatchTitle', 'Delete Match')} message={tr('matches.deleteMatchMsg', 'Delete the match vs {{opponent}}?', { opponent: deleteTarget?.opponentName })} confirmLabel={tr('common.delete', 'Delete')} isLoading={deleteMatch.isPending} />

@@ -94,7 +94,8 @@
     "toggleTheme": "Toggle theme",
     "position": "Position",
     "sport": "Sport",
-    "soloAthlete": "Solo Athlete"
+    "soloAthlete": "Solo Athlete",
+    "skip": "Skip"
   },
   "ui": {
     "allCaughtUp": "You're all caught up!",
@@ -2914,6 +2915,30 @@
     "verifiedCount": "{{count}} verified",
     "noEvidenceShort": "No data",
     "verifiedMetricsLabel": "verified metrics",
-    "testHistory": "Test History"
+    "testHistory": "Test History",
+    "logTest": "Log Test",
+    "quickTestTitle": "Log Test — {{name}}",
+    "addPlayerStats": "Add player stats",
+    "addStatsPromptTitle": "Add Player Stats?",
+    "addStatsPromptMsg": "Would you like to record player statistics for this match? They feed evidence-based scores.",
+    "addStats": "Add Stats",
+    "quickStatsTitle": "Player Stats ({{current}}/{{total}})",
+    "quickStatsDone": "Stats saved for {{count}} players",
+    "quickStatsFinish": "Finish",
+    "saveAndNext": "Save & Next",
+    "saveAndFinish": "Save & Finish",
+    "testDayTitle": "Test Day",
+    "testDayIntro": "Pick the test you ran, then enter every player's result in one go.",
+    "testDaySaveAll": "Save {{count}} results",
+    "testDaySaved": "Saved {{count}} test results",
+    "invalidValueFor": "Invalid value for {{name}}",
+    "remindersTitle": "Evidence Reminders",
+    "reminderFrequency": "Reminder frequency",
+    "freqDaily": "Daily",
+    "freqWeekly": "Weekly",
+    "freqOff": "Off",
+    "reminderStaleTest": "{{name}} hasn't had an objective test in {{days}} days",
+    "reminderNeverTested": "{{name}} hasn't had an objective test yet",
+    "reminderLowConfidence": "{{count}} players have Low confidence scores — add objective tests to improve accuracy"
   }
 }

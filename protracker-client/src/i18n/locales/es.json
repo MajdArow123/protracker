@@ -94,7 +94,8 @@
     "toggleTheme": "Cambiar tema",
     "position": "Posición",
     "sport": "Deporte",
-    "soloAthlete": "Atleta individual"
+    "soloAthlete": "Atleta individual",
+    "skip": "Omitir"
   },
   "ui": {
     "allCaughtUp": "¡Estás al día!",
@@ -2914,6 +2915,30 @@
     "verifiedCount": "{{count}} verificadas",
     "noEvidenceShort": "Sin datos",
     "verifiedMetricsLabel": "métricas verificadas",
-    "testHistory": "Historial de pruebas"
+    "testHistory": "Historial de pruebas",
+    "logTest": "Registrar prueba",
+    "quickTestTitle": "Registrar prueba — {{name}}",
+    "addPlayerStats": "Añadir estadísticas de jugadores",
+    "addStatsPromptTitle": "¿Añadir estadísticas de jugadores?",
+    "addStatsPromptMsg": "¿Quieres registrar las estadísticas de los jugadores de este partido? Alimentan las puntuaciones basadas en evidencia.",
+    "addStats": "Añadir estadísticas",
+    "quickStatsTitle": "Estadísticas ({{current}}/{{total}})",
+    "quickStatsDone": "Estadísticas guardadas para {{count}} jugadores",
+    "quickStatsFinish": "Terminar",
+    "saveAndNext": "Guardar y siguiente",
+    "saveAndFinish": "Guardar y terminar",
+    "testDayTitle": "Día de pruebas",
+    "testDayIntro": "Elige la prueba realizada y registra el resultado de cada jugador de una vez.",
+    "testDaySaveAll": "Guardar {{count}} resultados",
+    "testDaySaved": "{{count}} resultados de pruebas guardados",
+    "invalidValueFor": "Valor no válido para {{name}}",
+    "remindersTitle": "Recordatorios de evidencia",
+    "reminderFrequency": "Frecuencia de recordatorios",
+    "freqDaily": "Diario",
+    "freqWeekly": "Semanal",
+    "freqOff": "Desactivado",
+    "reminderStaleTest": "{{name}} no tiene una prueba objetiva desde hace {{days}} días",
+    "reminderNeverTested": "{{name}} aún no tiene ninguna prueba objetiva",
+    "reminderLowConfidence": "{{count}} jugadores tienen puntuaciones de baja confianza — añade pruebas objetivas para mejorar la precisión"
   }
 }

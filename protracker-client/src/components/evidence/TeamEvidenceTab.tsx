@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { FlaskConical, BarChart2, ShieldCheck, CalendarPlus, AlertTriangle } from 'lucide-react';
@@ -6,20 +7,23 @@ import { Button } from '../ui/Button';
 import { CardListSkeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { confidenceBadgeClass, confidenceLabel } from './evidenceUtils';
+import { TestDayModal } from './TestDayModal';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useTeamEvidenceStatus } from '../../hooks/useEvidence';
 
 interface Props {
   teamId: number;
+  sportId?: number | null;
 }
 
 // Team-wide evidence coverage: which players' scores are measurement-backed and who
 // needs a test day. Rows click through to the player's Evidence tab.
-export function TeamEvidenceTab({ teamId }: Props) {
+export function TeamEvidenceTab({ teamId, sportId }: Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { formatDate } = useLocaleFormat();
   const { data: status, isLoading } = useTeamEvidenceStatus(teamId);
+  const [testDayOpen, setTestDayOpen] = useState(false);
 
   if (isLoading) return <CardListSkeleton count={4} cols="grid-cols-1" />;
   if (!status || status.players.length === 0) {
@@ -59,9 +63,16 @@ export function TeamEvidenceTab({ teamId }: Props) {
               </p>
             )}
           </div>
-          <Button type="button" size="sm" onClick={() => navigate(`/teams/${teamId}/bulk-assessment`)}>
-            <CalendarPlus size={13} /> {t('evidence.scheduleAssessmentDay', 'Run an Assessment Day')}
-          </Button>
+          <div className="flex items-center gap-2">
+            {sportId != null && (
+              <Button type="button" size="sm" onClick={() => setTestDayOpen(true)}>
+                <FlaskConical size={13} /> {t('evidence.testDayTitle', 'Test Day')}
+              </Button>
+            )}
+            <Button type="button" size="sm" variant="secondary" onClick={() => navigate(`/teams/${teamId}/bulk-assessment`)}>
+              <CalendarPlus size={13} /> {t('evidence.scheduleAssessmentDay', 'Run an Assessment Day')}
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -119,6 +130,15 @@ export function TeamEvidenceTab({ teamId }: Props) {
           );
         })}
       </div>
+
+      {testDayOpen && sportId != null && (
+        <TestDayModal
+          isOpen={testDayOpen}
+          onClose={() => setTestDayOpen(false)}
+          sportId={sportId}
+          players={status.players.map(p => ({ id: p.playerId, name: p.playerName }))}
+        />
+      )}
     </div>
   );
 }

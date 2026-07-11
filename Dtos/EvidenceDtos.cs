@@ -179,3 +179,21 @@ public class TeamEvidenceStatusDto
     public int PlayersWithoutMatchStats { get; set; }
     public int PlayersWithoutEvidence { get; set; }
 }
+
+// ─── Evidence reminders (Phase G Section 5) ──────────────────────────────────
+
+// One reminder item; the frontend composes the localized message.
+// Type: NoRecentTest (per player, stale/missing objective tests) or
+// LowConfidence (aggregate: players whose scores are mostly estimates).
+public class EvidenceReminderDto
+{
+    public string Type { get; set; } = "";
+    public int? PlayerId { get; set; }
+    public string? PlayerName { get; set; }
+    public string? TeamName { get; set; }
+    public int? TeamId { get; set; }
+    // NoRecentTest: days since the last test (null = never tested).
+    public int? DaysSinceTest { get; set; }
+    // LowConfidence: how many players are affected.
+    public int? Count { get; set; }
+}

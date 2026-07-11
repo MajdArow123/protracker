@@ -94,7 +94,8 @@
     "toggleTheme": "تبديل المظهر",
     "position": "المركز",
     "sport": "الرياضة",
-    "soloAthlete": "رياضي مستقل"
+    "soloAthlete": "رياضي مستقل",
+    "skip": "تخطي"
   },
   "ui": {
     "allCaughtUp": "أنت على اطلاع بكل شيء!",
@@ -2914,6 +2915,30 @@
     "verifiedCount": "{{count}} موثّق",
     "noEvidenceShort": "لا بيانات",
     "verifiedMetricsLabel": "مقاييس موثّقة",
-    "testHistory": "سجل الاختبارات"
+    "testHistory": "سجل الاختبارات",
+    "logTest": "تسجيل اختبار",
+    "quickTestTitle": "تسجيل اختبار — {{name}}",
+    "addPlayerStats": "إضافة إحصائيات اللاعبين",
+    "addStatsPromptTitle": "إضافة إحصائيات اللاعبين؟",
+    "addStatsPromptMsg": "هل تريد تسجيل إحصائيات اللاعبين لهذه المباراة؟ فهي تدعم النتائج المبنية على الأدلة.",
+    "addStats": "إضافة الإحصائيات",
+    "quickStatsTitle": "إحصائيات اللاعب ({{current}}/{{total}})",
+    "quickStatsDone": "تم حفظ إحصائيات {{count}} لاعبًا",
+    "quickStatsFinish": "إنهاء",
+    "saveAndNext": "حفظ والتالي",
+    "saveAndFinish": "حفظ وإنهاء",
+    "testDayTitle": "يوم الاختبارات",
+    "testDayIntro": "اختر الاختبار الذي أجريته، ثم أدخل نتيجة كل لاعب دفعة واحدة.",
+    "testDaySaveAll": "حفظ {{count}} نتيجة",
+    "testDaySaved": "تم حفظ {{count}} نتيجة اختبار",
+    "invalidValueFor": "قيمة غير صالحة لـ {{name}}",
+    "remindersTitle": "تذكيرات الأدلة",
+    "reminderFrequency": "تكرار التذكيرات",
+    "freqDaily": "يوميًا",
+    "freqWeekly": "أسبوعيًا",
+    "freqOff": "إيقاف",
+    "reminderStaleTest": "{{name}} لم يخضع لاختبار موضوعي منذ {{days}} يومًا",
+    "reminderNeverTested": "{{name}} لم يخضع لأي اختبار موضوعي بعد",
+    "reminderLowConfidence": "{{count}} لاعبين لديهم نتائج منخفضة الثقة — أضف اختبارات موضوعية لتحسين الدقة"
   }
 }

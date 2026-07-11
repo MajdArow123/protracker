@@ -138,3 +138,12 @@ export function useTeamEvidenceStatus(teamId: number | null | undefined, enabled
     staleTime: 60_000,
   });
 }
+
+export function useEvidenceReminders(enabled = true) {
+  return useQuery({
+    queryKey: ['evidence', 'reminders'],
+    queryFn: () => evidenceApi.getReminders(),
+    enabled,
+    staleTime: 5 * 60_000,
+  });
+}

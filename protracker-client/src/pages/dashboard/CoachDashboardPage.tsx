@@ -11,6 +11,7 @@ import { useActiveInjuries } from '../../hooks/useInjuries';
 import { useCoachTasks } from '../../hooks/useTasks';
 import { isSeen, markSeen, injuryKey, useSeenVersion } from '../../utils/seenNotifications';
 import { TeamWellbeingCard } from '../../components/wellbeing/TeamWellbeingCard';
+import { EvidenceRemindersCard } from '../../components/evidence/EvidenceRemindersCard';
 import { TeamGoalsCard } from '../../components/goals/TeamGoalsCard';
 import { ProfileAnalyticsCard } from '../../components/coaches/ProfileAnalyticsCard';
 import { PageWrapper } from '../../components/layout/PageWrapper';
@@ -355,6 +356,11 @@ export function CoachDashboardPage() {
           </div>
         </motion.div>
       )}
+
+      {/* Evidence reminders (stale tests / low-confidence scores) */}
+      <motion.div custom={9.8} initial="hidden" animate="show" variants={fadeUp}>
+        <EvidenceRemindersCard />
+      </motion.div>
 
       {/* Team Wellbeing */}
       <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
