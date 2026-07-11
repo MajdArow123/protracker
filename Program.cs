@@ -207,6 +207,7 @@ builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanServi
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IEvidenceScoringEngine, EvidenceScoringEngine>();
 builder.Services.AddScoped<IEvidenceService, EvidenceService>();
+builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 
 // AI service — reads API key from env var first, then appsettings
 var anthropicKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
@@ -237,6 +238,7 @@ using (var scope = app.Services.CreateScope())
 
     await ProTracker.Data.RecoveryTemplateSeeder.SeedAsync(db);
     await ProTracker.Data.MetricDefinitionSeeder.SeedAsync(db);
+    await ProTracker.Data.BenchmarkProfileSeeder.SeedAsync(db);
     await ProTracker.Data.DrillSeeder.SeedAsync(db);
     await ProTracker.Data.FoodItemSeeder.SeedAsync(db);
     await ProTracker.Data.DemoDataSeeder.SeedAsync(scope.ServiceProvider);

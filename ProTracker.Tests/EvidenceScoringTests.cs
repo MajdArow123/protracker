@@ -358,6 +358,62 @@ public class EvidenceApiTests : IClassFixture<ProTrackerWebApplicationFactory>
     }
 
     [Fact]
+    public async Task BenchmarkProfile_CalibratesScores_ByCompetitionLevel()
+    {
+        var client = await TestAuth.LoginAsync(_factory, TestAuth.BasketballCoachEmail, TestAuth.SeedPassword);
+
+        // Resolve a basketball player id from the coach's own roster (seed ids drift).
+        var players = await client.GetFromJsonAsync<TestApiResponse<List<PlayerShape>>>("/api/players");
+        var playerId = players!.Data!.First(p => p.FullName.Contains("Marcus")).Id;
+
+        // Basketball Speed defaults: 3.8 / 3.4 / 3.0 seconds — 3.4 = mid anchor → 5.0.
+        var metrics = await client.GetFromJsonAsync<TestApiResponse<List<MetricShape>>>("/api/sport-metrics/2");
+        var speed = metrics!.Data!.First(m => m.Name == "Speed");
+
+        var testResponse = await client.PostAsJsonAsync("/api/objective-tests", new
+        {
+            playerId,
+            metricDefinitionId = speed.Id,
+            value = 3.4,
+        });
+        var test = await testResponse.Content.ReadFromJsonAsync<TestApiResponse<ObjectiveTestShape>>();
+        Assert.Equal(5.0m, test!.Data!.NormalizedScore);
+
+        // Five seeded system profiles for the sport.
+        var profiles = await client.GetFromJsonAsync<TestApiResponse<List<BenchmarkProfileShape>>>(
+            "/api/benchmark-profiles?sportId=2");
+        Assert.Equal(5, profiles!.Data!.Count(p => p.IsDefault));
+        var pro = profiles.Data!.First(p => p.Name == "Professional");
+        Assert.NotEmpty(pro.Values);
+
+        // Calibrate the team to Professional: the same 3.4s now scores well below 5.
+        var setResponse = await client.PutAsJsonAsync($"/api/teams/{TestAuth.BasketballTeamId}/benchmark-profile",
+            new { benchmarkProfileId = pro.Id });
+        Assert.Equal(HttpStatusCode.OK, setResponse.StatusCode);
+
+        var calc = await client.PostAsync($"/api/evidence-scores/calculate/{playerId}/{speed.Id}", null);
+        var score = (await calc.Content.ReadFromJsonAsync<TestApiResponse<ScoreShape>>())!.Data!;
+        Assert.True(score.FinalScore < 5.0m,
+            $"Professional calibration should lower the score (got {score.FinalScore}).");
+
+        // Wrong-sport profile is rejected; athletes can't set team profiles.
+        var soccerProfiles = await client.GetFromJsonAsync<TestApiResponse<List<BenchmarkProfileShape>>>(
+            "/api/benchmark-profiles?sportId=1");
+        var wrongSport = await client.PutAsJsonAsync($"/api/teams/{TestAuth.BasketballTeamId}/benchmark-profile",
+            new { benchmarkProfileId = soccerProfiles!.Data![0].Id });
+        Assert.Equal(HttpStatusCode.BadRequest, wrongSport.StatusCode);
+
+        var athlete = await TestAuth.LoginAsync(_factory, TestAuth.MarcusBellAthleteEmail, TestAuth.SeedPassword);
+        var forbidden = await athlete.PutAsJsonAsync($"/api/teams/{TestAuth.BasketballTeamId}/benchmark-profile",
+            new { benchmarkProfileId = pro.Id });
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+
+        // Reset so other tests see default calibration.
+        await client.PutAsJsonAsync($"/api/teams/{TestAuth.BasketballTeamId}/benchmark-profile",
+            new { benchmarkProfileId = (int?)null });
+    }
+
+    [Fact]
     public async Task ObjectiveTest_WrongSportMetric_ReturnsBadRequest()
     {
         var client = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
@@ -424,5 +480,26 @@ public class EvidenceApiTests : IClassFixture<ProTrackerWebApplicationFactory>
         public int? MatchResultId { get; set; }
         public bool IsAutoImported { get; set; }
         public Dictionary<string, decimal> Stats { get; set; } = new();
+    }
+
+    public class PlayerShape
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = "";
+    }
+
+    public class BenchmarkProfileShape
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = "";
+        public bool IsDefault { get; set; }
+        public List<BenchmarkValueShape> Values { get; set; } = new();
+    }
+
+    public class BenchmarkValueShape
+    {
+        public int MetricDefinitionId { get; set; }
+        public decimal BenchmarkLow { get; set; }
+        public decimal BenchmarkHigh { get; set; }
     }
 }

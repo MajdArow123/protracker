@@ -21,6 +21,10 @@ public interface IEvidenceScoringEngine
 
     // Human-readable list of evidence still missing for a metric (to raise confidence).
     Task<List<string>> GetMissingEvidenceAsync(int playerId, int metricDefinitionId);
+
+    // Benchmark calibration: the player's team profile anchors per metric id
+    // (empty = metric-definition defaults apply).
+    Task<Dictionary<int, (decimal Low, decimal Mid, decimal High)>> GetBenchmarkOverridesAsync(int playerId);
 }
 
 public class EvidenceScoringEngine : IEvidenceScoringEngine
@@ -61,10 +65,16 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         return Math.Clamp(Math.Round(score, 1), 1m, 10m);
     }
 
-    public static decimal NormalizeObjectiveValue(decimal value, SportMetricDefinition def) =>
-        def.InputType == MetricInputType.Rating
-            ? Math.Clamp(Math.Round(value, 1), 1m, 10m)
-            : NormalizeObjectiveValue(value, def.BenchmarkLow, def.BenchmarkMid, def.BenchmarkHigh);
+    // When a benchmark-profile override exists for the metric (age/level calibration),
+    // its anchors replace the definition defaults.
+    public static decimal NormalizeObjectiveValue(decimal value, SportMetricDefinition def,
+        (decimal Low, decimal Mid, decimal High)? benchmarkOverride = null)
+    {
+        if (def.InputType == MetricInputType.Rating)
+            return Math.Clamp(Math.Round(value, 1), 1m, 10m);
+        var (low, mid, high) = benchmarkOverride ?? (def.BenchmarkLow, def.BenchmarkMid, def.BenchmarkHigh);
+        return NormalizeObjectiveValue(value, low, mid, high);
+    }
 
     // Redistributes the definition's source weights across the sources that actually
     // have data, so missing evidence is skipped rather than penalized. Sums to 1
@@ -218,7 +228,8 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
             ?? throw new NotFoundApiException($"Metric definition {metricDefinitionId} was not found.");
 
         var bundle = await LoadEvidenceAsync(playerId, metricDefinitionId);
-        var score = Compute(playerId, def, bundle, assessmentId);
+        var overrides = await GetBenchmarkOverridesAsync(playerId);
+        var score = Compute(playerId, def, bundle, assessmentId, BenchmarkFor(overrides, def.Id));
         if (score == null) return null;
 
         await UpsertAsync(score);
@@ -236,10 +247,11 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
             .ToListAsync();
 
         var bundle = await LoadEvidenceAsync(playerId, metricDefinitionId: null);
+        var overrides = await GetBenchmarkOverridesAsync(playerId);
         var results = new List<EvidenceBasedScore>();
         foreach (var def in defs)
         {
-            var score = Compute(playerId, def, bundle, assessmentId: null);
+            var score = Compute(playerId, def, bundle, assessmentId: null, BenchmarkFor(overrides, def.Id));
             if (score == null) continue;
             await UpsertAsync(score);
             results.Add(score);
@@ -247,6 +259,25 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         await _context.SaveChangesAsync();
         return results;
     }
+
+    // The team's benchmark-profile anchors per metric (empty for team-less players).
+    public async Task<Dictionary<int, (decimal Low, decimal Mid, decimal High)>> GetBenchmarkOverridesAsync(int playerId)
+    {
+        var profileId = await _context.Players
+            .Where(p => p.Id == playerId)
+            .Select(p => p.Team != null ? p.Team.BenchmarkProfileId : null)
+            .FirstOrDefaultAsync();
+        if (profileId == null) return new();
+
+        return await _context.BenchmarkValues
+            .Where(v => v.BenchmarkProfileId == profileId)
+            .ToDictionaryAsync(v => v.MetricDefinitionId,
+                v => (v.BenchmarkLow, v.BenchmarkMid, v.BenchmarkHigh));
+    }
+
+    private static (decimal, decimal, decimal)? BenchmarkFor(
+        Dictionary<int, (decimal Low, decimal Mid, decimal High)> overrides, int metricId) =>
+        overrides.TryGetValue(metricId, out var o) ? o : null;
 
     public async Task<List<string>> GetMissingEvidenceAsync(int playerId, int metricDefinitionId)
     {
@@ -298,7 +329,8 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         return (hasObj, hasMatch, hasCoach, hasSelf);
     }
 
-    private static EvidenceBasedScore? Compute(int playerId, SportMetricDefinition def, EvidenceBundle bundle, int? assessmentId)
+    private static EvidenceBasedScore? Compute(int playerId, SportMetricDefinition def, EvidenceBundle bundle,
+        int? assessmentId, (decimal Low, decimal Mid, decimal High)? benchmarkOverride = null)
     {
         // Most recent value wins for point-in-time sources; match stats average over the window.
         var latestTest = bundle.Tests
@@ -314,7 +346,7 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         var matchEntries = bundle.MatchStats.Select(m => m.Stats).ToList();
         var matchScore = ScoreFromMatchStats(def.SportId, def.Name, matchEntries);
 
-        decimal? objScore = latestTest == null ? null : NormalizeObjectiveValue(latestTest.Value, def);
+        decimal? objScore = latestTest == null ? null : NormalizeObjectiveValue(latestTest.Value, def, benchmarkOverride);
         decimal? coachScore = latestCoach == null ? null : Math.Clamp(Math.Round(latestCoach.Rating, 1), 1m, 10m);
         decimal? selfScore = latestSelf == null ? null : Math.Clamp(Math.Round(latestSelf.Rating, 1), 1m, 10m);
 

@@ -87,7 +87,8 @@ public class EvidenceService : IEvidenceService
         _context.ObjectiveTestResults.Add(test);
         await _context.SaveChangesAsync();
 
-        return ToTestDto(test, def);
+        var overrides = await _engine.GetBenchmarkOverridesAsync(dto.PlayerId);
+        return ToTestDto(test, def, Override(overrides, def.Id));
     }
 
     public async Task<List<ObjectiveTestResultDto>> GetObjectiveTestsAsync(ClaimsPrincipal user, int playerId, int? metricDefinitionId = null)
@@ -100,8 +101,13 @@ public class EvidenceService : IEvidenceService
             query = query.Where(t => t.MetricDefinitionId == metricId);
 
         var tests = await query.OrderByDescending(t => t.TestedAt).ToListAsync();
-        return tests.Select(t => ToTestDto(t, t.MetricDefinition)).ToList();
+        var overrides = await _engine.GetBenchmarkOverridesAsync(playerId);
+        return tests.Select(t => ToTestDto(t, t.MetricDefinition, Override(overrides, t.MetricDefinitionId))).ToList();
     }
+
+    private static (decimal, decimal, decimal)? Override(
+        Dictionary<int, (decimal Low, decimal Mid, decimal High)> overrides, int metricId) =>
+        overrides.TryGetValue(metricId, out var o) ? o : null;
 
     // ─── Match stats ─────────────────────────────────────────────────────────
 
@@ -458,7 +464,8 @@ public class EvidenceService : IEvidenceService
         SupportsMatchStats = EvidenceScoringEngine.HasMatchStatRule(d.SportId, d.Name),
     };
 
-    private static ObjectiveTestResultDto ToTestDto(ObjectiveTestResult t, SportMetricDefinition def) => new()
+    private static ObjectiveTestResultDto ToTestDto(ObjectiveTestResult t, SportMetricDefinition def,
+        (decimal, decimal, decimal)? benchmarkOverride = null) => new()
     {
         Id = t.Id,
         PlayerId = t.PlayerId,
@@ -470,7 +477,7 @@ public class EvidenceService : IEvidenceService
         TestedBy = t.TestedBy.ToString(),
         Notes = t.Notes,
         AssessmentId = t.AssessmentId,
-        NormalizedScore = EvidenceScoringEngine.NormalizeObjectiveValue(t.Value, def),
+        NormalizedScore = EvidenceScoringEngine.NormalizeObjectiveValue(t.Value, def, benchmarkOverride),
     };
 
     private static MatchStatEntryDto ToMatchStatDto(MatchStatEntry m) => new()

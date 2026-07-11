@@ -8,6 +8,7 @@ import { CardListSkeleton } from '../ui/Skeleton';
 import { EmptyState } from '../ui/EmptyState';
 import { confidenceBadgeClass, confidenceLabel } from './evidenceUtils';
 import { TestDayModal } from './TestDayModal';
+import { BenchmarkProfileCard } from './BenchmarkProfileCard';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useTeamEvidenceStatus } from '../../hooks/useEvidence';
 
@@ -49,6 +50,9 @@ export function TeamEvidenceTab({ teamId, sportId }: Props) {
 
   return (
     <div className="space-y-4 max-w-4xl">
+      {/* Benchmark calibration (age/level) for this team's scores */}
+      <BenchmarkProfileCard teamId={teamId} sportId={sportId} />
+
       {/* Callouts + test-day prompt */}
       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
         <div className="flex flex-wrap items-start justify-between gap-3">

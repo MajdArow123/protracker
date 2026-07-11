@@ -23,6 +23,11 @@ public class Team
     public int? FoundedYear { get; set; }
     public string? Description { get; set; }
 
+    // Which benchmark calibration this team's evidence scores use (age group /
+    // competition level). Null = the sport's metric-definition defaults.
+    public int? BenchmarkProfileId { get; set; }
+    public BenchmarkProfile? BenchmarkProfile { get; set; }
+
     public List<Player> Players { get; set; } = new();
     public List<CoachTeamScope> CoachScopes { get; set; } = new();
     public List<AssessmentPeriod> AssessmentPeriods { get; set; } = new();

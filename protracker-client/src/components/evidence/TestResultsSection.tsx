@@ -9,6 +9,7 @@ import { Card } from '../ui/Card';
 import { scoreColor } from '../assessments/ScoreWidgets';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { usePlayerObjectiveTests, useSportMetrics } from '../../hooks/useEvidence';
+import { usePlayerBenchmarks } from '../../hooks/useBenchmarks';
 import type { ObjectiveTestResult, SportMetricDefinition } from '../../types';
 
 interface Props {
@@ -50,6 +51,7 @@ export function TestResultsSection({ playerId, sportId }: Props) {
   const { formatDate, formatNumber } = useLocaleFormat();
   const { data: tests = [] } = usePlayerObjectiveTests(playerId);
   const { data: metrics = [] } = useSportMetrics(sportId);
+  const { data: benchmarks } = usePlayerBenchmarks(playerId);
 
   const metricById = useMemo(() => new Map(metrics.map(m => [m.id, m])), [metrics]);
   const testedMetricIds = useMemo(
@@ -66,6 +68,11 @@ export function TestResultsSection({ playerId, sportId }: Props) {
     [tests, activeId]);
 
   if (tests.length === 0) return null;
+
+  // Team benchmark calibration overrides the definition anchors for hints + chart lines.
+  const calibrated = metric ? benchmarks?.values?.[metric.id] : undefined;
+  const benchmarkMid = calibrated?.benchmarkMid ?? metric?.benchmarkMid ?? 0;
+  const benchmarkHigh = calibrated?.benchmarkHigh ?? metric?.benchmarkHigh ?? 0;
 
   const best = metric ? personalBest(metricTests, metric) : null;
   const chartData = metricTests.map(x => ({
@@ -114,9 +121,12 @@ export function TestResultsSection({ playerId, sportId }: Props) {
             )}
             <span>
               {t('evidence.benchmarkCompare', 'Elite: {{high}} {{unit}} · Average: {{mid}} {{unit}}', {
-                high: formatNumber(metric.benchmarkHigh), mid: formatNumber(metric.benchmarkMid),
+                high: formatNumber(benchmarkHigh), mid: formatNumber(benchmarkMid),
                 unit: metric.unit ?? '',
               })}
+              {benchmarks?.profileName && (
+                <span className="text-indigo-400"> · {benchmarks.profileName}</span>
+              )}
             </span>
           </div>
 
@@ -132,9 +142,9 @@ export function TestResultsSection({ playerId, sportId }: Props) {
                   reversed={isLowerBetter(metric)}
                 />
                 <Tooltip content={<ChartTooltip unit={metric.unit ?? ''} />} />
-                <ReferenceLine y={metric.benchmarkHigh} stroke="#10b981" strokeDasharray="4 4"
+                <ReferenceLine y={benchmarkHigh} stroke="#10b981" strokeDasharray="4 4"
                   label={{ value: t('evidence.eliteLabel', 'Elite'), fontSize: 9, fill: '#10b981', position: 'insideTopRight' }} />
-                <ReferenceLine y={metric.benchmarkMid} stroke="#f59e0b" strokeDasharray="4 4"
+                <ReferenceLine y={benchmarkMid} stroke="#f59e0b" strokeDasharray="4 4"
                   label={{ value: t('evidence.averageLabel', 'Average'), fontSize: 9, fill: '#f59e0b', position: 'insideTopRight' }} />
                 <Line
                   type="monotone"

@@ -1706,3 +1706,42 @@ export interface EvidenceReminder {
   daysSinceTest: number | null;
   count: number | null;
 }
+
+// ── Benchmark calibration (Phase G accuracy round) ───────────────────────────
+export type CompetitionLevel = 'Recreational' | 'Amateur' | 'SemiPro' | 'Professional';
+
+export interface BenchmarkValue {
+  metricDefinitionId: number;
+  metricName: string;
+  unit: string | null;
+  inputType: string;
+  benchmarkLow: number;
+  benchmarkMid: number;
+  benchmarkHigh: number;
+  notes: string | null;
+}
+
+export interface BenchmarkProfile {
+  id: number;
+  sportId: number;
+  name: string;
+  ageGroupMin: number | null;
+  ageGroupMax: number | null;
+  competitionLevel: CompetitionLevel;
+  isDefault: boolean;
+  isMine: boolean;
+  values: BenchmarkValue[];
+}
+
+export interface TeamBenchmarkProfile {
+  teamId: number;
+  benchmarkProfileId: number | null;
+  profileName: string | null;
+}
+
+export interface PlayerBenchmarks {
+  playerId: number;
+  benchmarkProfileId: number | null;
+  profileName: string | null;
+  values: Record<number, BenchmarkValue>;
+}

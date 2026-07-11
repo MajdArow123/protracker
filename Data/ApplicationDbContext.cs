@@ -110,6 +110,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<LeagueMatch> LeagueMatches => Set<LeagueMatch>();
     public DbSet<LeagueStanding> LeagueStandings => Set<LeagueStanding>();
     public DbSet<SportMetricDefinition> SportMetricDefinitions => Set<SportMetricDefinition>();
+    public DbSet<BenchmarkProfile> BenchmarkProfiles => Set<BenchmarkProfile>();
+    public DbSet<BenchmarkValue> BenchmarkValues => Set<BenchmarkValue>();
     public DbSet<ObjectiveTestResult> ObjectiveTestResults => Set<ObjectiveTestResult>();
     public DbSet<MatchStatEntry> MatchStatEntries => Set<MatchStatEntry>();
     public DbSet<CoachEvaluation> CoachEvaluations => Set<CoachEvaluation>();
@@ -635,6 +637,27 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<DrillFavorite>()
             .HasIndex(f => new { f.DrillId, f.UserId })
             .IsUnique();
+
+        // --- Benchmark calibration (age/level profiles) ---
+        builder.Entity<BenchmarkProfile>()
+            .HasOne(p => p.Sport).WithMany().HasForeignKey(p => p.SportId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<BenchmarkProfile>()
+            .HasIndex(p => new { p.SportId, p.CoachId });
+        builder.Entity<BenchmarkValue>()
+            .HasOne(v => v.BenchmarkProfile).WithMany(p => p.Values)
+            .HasForeignKey(v => v.BenchmarkProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<BenchmarkValue>()
+            .HasOne(v => v.MetricDefinition).WithMany().HasForeignKey(v => v.MetricDefinitionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<BenchmarkValue>()
+            .HasIndex(v => new { v.BenchmarkProfileId, v.MetricDefinitionId })
+            .IsUnique();
+        // Deleting a profile just un-calibrates teams using it (back to defaults).
+        builder.Entity<Team>()
+            .HasOne(t => t.BenchmarkProfile).WithMany().HasForeignKey(t => t.BenchmarkProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // --- Evidence-based assessments ---
         // Metric definitions are reference data (like SportStatCategory) — never cascade away.

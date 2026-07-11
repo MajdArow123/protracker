@@ -15,6 +15,8 @@ import { EditableAvatar } from '../../components/profile/ProfileAvatar';
 import { ProfileCompletionCard } from '../../components/profile/ProfileCompletionCard';
 import { AccountSettingsSection } from '../../components/profile/AccountSettingsSection';
 import { CoachPublicProfileSection } from '../../components/profile/CoachPublicProfileSection';
+import { BenchmarkProfilesSection } from '../../components/evidence/BenchmarkProfilesSection';
+import { useTeams } from '../../hooks/useTeams';
 import { computeProfileCompletion } from '../../utils/profileCompletion';
 
 const fadeUp: Variants = {
@@ -324,6 +326,11 @@ export function CoachProfilePage() {
           <CoachPublicProfileSection />
         </motion.div>
 
+        {/* ── Benchmark calibration profiles ── */}
+        <motion.div custom={5.7} initial="hidden" animate="show" variants={fadeUp}>
+          <BenchmarkProfilesSectionWrapper />
+        </motion.div>
+
         {/* ── Account settings ── */}
         <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>
           <AccountSettingsSection isCoach />
@@ -331,4 +338,12 @@ export function CoachProfilePage() {
       </div>
     </PageWrapper>
   );
+}
+
+// The coach's benchmark section needs a sport — derived from their first team.
+function BenchmarkProfilesSectionWrapper() {
+  const { data: teams = [] } = useTeams();
+  const sportId = teams[0]?.sportId ?? null;
+  if (!sportId) return null;
+  return <BenchmarkProfilesSection sportId={sportId} />;
 }

@@ -12,6 +12,7 @@ import { MatchStatsSection } from './MatchStatsSection';
 import { confidenceBadgeClass, confidenceLabel, overallConfidence } from './evidenceUtils';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useSportMetrics, usePlayerEvidenceScores, useRecalculateEvidence } from '../../hooks/useEvidence';
+import { usePlayerBenchmarks } from '../../hooks/useBenchmarks';
 import { useToast } from '../../context/ToastContext';
 import type { SportMetricDefinition, EvidenceBasedScore } from '../../types';
 
@@ -45,6 +46,7 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
 
   const { data: metrics = [], isLoading: loadingMetrics } = useSportMetrics(sportId);
   const { data: scores = [], isLoading: loadingScores } = usePlayerEvidenceScores(playerId);
+  const { data: benchmarks } = usePlayerBenchmarks(playerId);
   const recalculate = useRecalculateEvidence();
 
   const [selected, setSelected] = useState<SportMetricDefinition | null>(null);
@@ -78,6 +80,14 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
     <div className="space-y-4">
       {/* Summary header */}
       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+        {benchmarks?.profileName && (
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 w-full sm:w-auto sm:order-last"
+            title={t('evidence.calibratedFor', 'Scores calibrated for {{profile}}', { profile: benchmarks.profileName })}
+          >
+            {t('evidence.benchmarkBadge', '{{profile}} benchmarks', { profile: benchmarks.profileName })}
+          </span>
+        )}
         <div className="flex items-center gap-2.5">
           <ShieldCheck size={20} className="text-indigo-500" />
           <div>

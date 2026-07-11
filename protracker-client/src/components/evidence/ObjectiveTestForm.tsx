@@ -6,6 +6,7 @@ import { Input } from '../ui/Input';
 import { useToast } from '../../context/ToastContext';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useAddObjectiveTest, usePlayerObjectiveTests } from '../../hooks/useEvidence';
+import { usePlayerBenchmarks } from '../../hooks/useBenchmarks';
 import type { SportMetricDefinition, EvidenceBasedScore } from '../../types';
 
 interface Props {
@@ -22,12 +23,17 @@ export function ObjectiveTestForm({ playerId, metric, onSaved }: Props) {
   const { addToast } = useToast();
   const addTest = useAddObjectiveTest();
   const { data: tests = [] } = usePlayerObjectiveTests(playerId, metric.id);
+  const { data: benchmarks } = usePlayerBenchmarks(playerId);
 
   const [value, setValue] = useState('');
   const [testedAt, setTestedAt] = useState(new Date().toISOString().split('T')[0]);
 
   const lastTest = tests[0]; // API returns newest first
   const unit = metric.unit ?? '';
+  // Team benchmark-profile calibration overrides the definition anchors in the hint.
+  const calibrated = benchmarks?.values?.[metric.id];
+  const benchmarkMid = calibrated?.benchmarkMid ?? metric.benchmarkMid;
+  const benchmarkHigh = calibrated?.benchmarkHigh ?? metric.benchmarkHigh;
 
   async function save() {
     const parsed = Number(value);
@@ -67,14 +73,17 @@ export function ObjectiveTestForm({ playerId, metric, onSaved }: Props) {
             min={0}
             value={value}
             onChange={e => setValue(e.target.value)}
-            placeholder={formatNumber(metric.benchmarkMid)}
+            placeholder={formatNumber(benchmarkMid)}
           />
           <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">
             {t('evidence.benchmarkHint', 'Elite: {{high}}{{unit}} · Average: {{mid}}{{unit}}', {
-              high: formatNumber(metric.benchmarkHigh),
-              mid: formatNumber(metric.benchmarkMid),
+              high: formatNumber(benchmarkHigh),
+              mid: formatNumber(benchmarkMid),
               unit: unit ? ` ${unit}` : '',
             })}
+            {benchmarks?.profileName && (
+              <span className="text-indigo-400"> · {benchmarks.profileName}</span>
+            )}
           </p>
         </div>
         <Input
