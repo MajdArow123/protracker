@@ -19,7 +19,7 @@ export function PageWrapper({ children, title, actions }: Props) {
       {(title || actions) && (
         <div className="flex items-center justify-between">
           {title && (
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white">
               {title}
             </h2>
           )}

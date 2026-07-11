@@ -83,6 +83,12 @@ html.dark {
   50% { transform: translateY(-10px); }
 }
 
+/* Chart tooltip entrance (referenced as animate-[fadeIn_120ms_ease-out]). */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Skeleton shimmer — a highlight band that sweeps left→right across placeholders. */
 @keyframes shimmer {
   100% { transform: translateX(100%); }

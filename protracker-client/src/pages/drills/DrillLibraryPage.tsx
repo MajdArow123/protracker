@@ -22,6 +22,8 @@ import { useTeams } from '../../hooks/useTeams';
 import { useAuth } from '../../context/AuthContext';
 import type { Drill, DrillCategory, DrillDifficulty } from '../../types';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem } from '../../utils/animations';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 const PAGE_SIZE = 12;
@@ -197,11 +199,19 @@ export function DrillLibraryPage() {
       ) : (
         <>
           <p className="text-xs text-gray-400 mb-3">{filtered.length === 1 ? tr('drills.drillCountOne', '{{count}} drill', { count: filtered.length }) : tr('drills.drillCountOther', '{{count}} drills', { count: filtered.length })}</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <motion.div
+            key={`${tab}-${page}`}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          >
             {pageItems.map(d => (
-              <DrillCard key={d.id} drill={d} canAssign={canManage} onOpen={setDetail} onAssign={setAssigning} />
+              <motion.div key={d.id} variants={staggerItem}>
+                <DrillCard drill={d} canAssign={canManage} onOpen={setDetail} onAssign={setAssigning} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-6">
               <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 disabled:opacity-40 cursor-pointer disabled:cursor-default"><ChevronLeft size={16} /></button>

@@ -30,10 +30,12 @@ export function ToastContainer() {
           return (
             <motion.div
               key={toast.id}
-              initial={{ x: 64, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: 64, opacity: 0 }}
-              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-72 max-w-sm ${colors[toast.type]}`}
+              layout
+              initial={{ x: 72, opacity: 0, scale: 0.95 }}
+              animate={{ x: 0, opacity: 1, scale: 1 }}
+              exit={{ x: 72, opacity: 0, scale: 0.95 }}
+              transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+              className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md min-w-72 max-w-sm ${colors[toast.type]}`}
             >
               <Icon size={18} className="flex-shrink-0" />
               <p className="text-sm font-medium flex-1">{toast.message}</p>

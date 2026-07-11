@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Bell, Check } from 'lucide-react';
 import { clsx } from 'clsx';
 import {
@@ -16,6 +17,7 @@ export function NotificationBell() {
   const { formatRelativeTime } = useLocaleFormat();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const reducedMotion = useReducedMotion();
 
   const { data: unread = 0 } = useUnreadNotificationCount();
   // Only fetch the list while the dropdown is open (keeps it fresh, avoids idle polling).
@@ -47,16 +49,38 @@ export function NotificationBell() {
         className="relative p-2 rounded-xl text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800 transition-colors cursor-pointer"
         aria-label={t('nav.notifications', 'Notifications')}
       >
-        <Bell size={18} />
-        {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 rtl:right-auto rtl:-left-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
-            {unread > 9 ? '9+' : unread}
-          </span>
-        )}
+        {/* Ring wiggle whenever the unread count changes (skipped for reduced motion) */}
+        <motion.span
+          key={unread}
+          className="block"
+          animate={unread > 0 && !reducedMotion ? { rotate: [0, -14, 12, -8, 6, 0] } : { rotate: 0 }}
+          transition={{ duration: 0.55, ease: 'easeInOut' }}
+        >
+          <Bell size={18} />
+        </motion.span>
+        <AnimatePresence>
+          {unread > 0 && (
+            <motion.span
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 24 }}
+              className="absolute -top-0.5 -right-0.5 rtl:right-auto rtl:-left-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold"
+            >
+              {unread > 9 ? '9+' : unread}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </button>
 
+      <AnimatePresence>
       {open && (
-        <div className="absolute right-0 rtl:right-auto rtl:left-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl z-50 overflow-hidden">
+        <motion.div
+          initial={{ opacity: 0, y: -6, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -6, scale: 0.98 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          className="absolute right-0 rtl:right-auto rtl:left-0 origin-top-right rtl:origin-top-left mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
             <p className="text-sm font-bold text-gray-900 dark:text-white">{t('nav.notifications', 'Notifications')}</p>
             {unread > 0 && (
@@ -122,8 +146,9 @@ export function NotificationBell() {
           >
             {t('notifications.viewAll', 'View all notifications')}
           </button>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }

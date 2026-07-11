@@ -179,7 +179,7 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
                   />
                 )}
                 <div className="relative z-10 flex items-center gap-3">
-                  <item.icon size={17} />
+                  <item.icon size={17} className="transition-transform duration-150 group-hover:scale-110" />
                   {t(item.labelKey, item.label)}
                 </div>
                 <div className="relative z-10 flex items-center gap-1.5">

@@ -25,7 +25,7 @@ export function TooltipContent({ title, rows, chips }: Props) {
   const { t } = useTranslation();
   if (rows.length === 0) return null;
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-xl min-w-[150px] animate-[fadeIn_120ms_ease-out]">
+    <div className="bg-slate-900 border border-slate-700 rounded-lg p-3 shadow-xl min-w-[150px] animate-[fadeIn_120ms_ease-out]">
       {title && (
         <p className="text-xs font-semibold text-gray-400 mb-2 pb-1.5 border-b border-gray-800">{title}</p>
       )}

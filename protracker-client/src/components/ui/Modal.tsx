@@ -38,7 +38,7 @@ export function Modal({
   // Bottom-sheet on mobile (slide up, rounded top only); centered scale/fade on desktop.
   const panelMotion = isMobile
     ? { initial: { y: '100%' }, animate: { y: 0 }, exit: { y: '100%' } }
-    : { initial: { scale: 0.95, opacity: 0 }, animate: { scale: 1, opacity: 1 }, exit: { scale: 0.95, opacity: 0 } };
+    : { initial: { scale: 0.96, opacity: 0, y: 12 }, animate: { scale: 1, opacity: 1, y: 0 }, exit: { scale: 0.96, opacity: 0, y: 12 } };
 
   return createPortal(
     <AnimatePresence>
