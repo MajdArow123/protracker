@@ -41,7 +41,7 @@ export function RadarChartWrapper({ data, height = 420, showPrevious, onPointCli
   return (
     <div>
       <ResponsiveContainer width="100%" height={h}>
-        <RadarChart data={data} margin={{ top: 14, right: 28, bottom: 14, left: 28 }}>
+        <RadarChart data={data} margin={{ top: 18, right: 34, bottom: 18, left: 34 }}>
           <defs>
             <linearGradient id="radarGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#6366f1" stopOpacity={0.32} />
@@ -56,27 +56,37 @@ export function RadarChartWrapper({ data, height = 420, showPrevious, onPointCli
               const subject: string = props.payload?.value ?? '';
               const score = valueBySubject.get(subject);
               const short = isMobile && subject.length > 9 ? `${subject.slice(0, 8)}…` : subject;
+              // Long multi-word labels ("Match Performance") used to clip at the
+              // chart edge — wrap them onto two lines instead.
+              const words = subject.split(' ');
+              const twoLine = !isMobile && words.length > 1 && subject.length > 12;
+              const line1 = twoLine ? words.slice(0, -1).join(' ') : short;
+              const line2 = twoLine ? words[words.length - 1] : null;
               return (
                 <text
                   x={props.x} y={props.y}
                   textAnchor={props.textAnchor}
                   style={{ fontSize: isMobile ? 10 : 11, fontWeight: 500 }}
                 >
-                  <tspan fill="#9ca3af">{short}</tspan>
-                  {score !== undefined && !isMobile && (
-                    <tspan fill="#e5e7eb" fontWeight={700}> {score.toFixed(1)}</tspan>
+                  <tspan fill="#9ca3af">{line1}</tspan>
+                  {line2 ? (
+                    <tspan x={props.x} dy={12}>
+                      <tspan fill="#9ca3af">{line2}</tspan>
+                      {score !== undefined && <tspan fill="#e5e7eb" fontWeight={700}> {score.toFixed(1)}</tspan>}
+                    </tspan>
+                  ) : (
+                    score !== undefined && !isMobile && (
+                      <tspan fill="#e5e7eb" fontWeight={700}> {score.toFixed(1)}</tspan>
+                    )
                   )}
                 </text>
               );
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             }) as any}
           />
-          <PolarRadiusAxis
-            angle={30}
-            domain={[0, 10]}
-            tick={{ fontSize: 9, fill: '#6b7280' }}
-            tickCount={6}
-          />
+          {/* Numeric ring ticks removed: the diagonal 0-10 numbers ran straight
+              across the polygon as noise — per-vertex scores + tooltip carry the values. */}
+          <PolarRadiusAxis angle={30} domain={[0, 10]} tick={false} axisLine={false} />
           <Tooltip
             content={({ active, payload }) => {
               if (!active || !payload?.length) return null;
