@@ -65,7 +65,9 @@ export function PlayerReportPage() {
   const { addToast } = useToast();
   const playerId = id ? parseInt(id) : undefined;
   const { data: report, isLoading, isError, refetch } = usePlayerReport(playerId);
-  const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
+  // undefined = user hasn't touched the focus chips yet (the chart then defaults
+  // to the weakest stat — 8 simultaneous lines is unreadable); null = "Show all".
+  const [focusPick, setFocusPick] = useState<string | null | undefined>(undefined);
   const [expandedRow, setExpandedRow] = useState<number | null>(null);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -106,6 +108,12 @@ export function PlayerReportPage() {
 
   const latest = assessments[0];
   const previous = assessments[1];
+
+  // Default trend-chart focus: the current weakest stat from the latest assessment.
+  const weakestCategory = latest?.statScores?.length
+    ? [...latest.statScores].sort((a, b) => a.score - b.score)[0].statCategoryName
+    : null;
+  const focusedCategory = focusPick === undefined ? weakestCategory : focusPick;
 
   // Evidence lookups: stat category name → metric definition / evidence confidence.
   const metricByCategoryId = new Map(sportMetrics.filter(m => m.sportStatCategoryId != null).map(m => [m.sportStatCategoryId!, m]));
@@ -429,7 +437,7 @@ export function PlayerReportPage() {
                 return (
                   <button
                     key={cat}
-                    onClick={() => setFocusedCategory(prev => prev === cat ? null : cat)}
+                    onClick={() => setFocusPick(focusedCategory === cat ? null : cat)}
                     className={`inline-flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border font-medium transition-all cursor-pointer ${
                       isFocused
                         ? 'border-transparent text-white shadow-sm'
@@ -449,7 +457,7 @@ export function PlayerReportPage() {
               })}
               {focusedCategory && (
                 <button
-                  onClick={() => setFocusedCategory(null)}
+                  onClick={() => setFocusPick(null)}
                   className="text-xs px-3 py-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 hover:border-gray-400 transition-colors cursor-pointer"
                 >
                   {tr('reports.showAll', 'Show all')}

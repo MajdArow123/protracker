@@ -36,10 +36,12 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
   const isMobile = useIsMobile();
   const h = isMobile ? Math.min(height, 250) : height;
   const hasConfidence = !!confidenceByKey && Object.keys(confidenceByKey).length > 0;
+  // Room for the focused series' end-of-line value label so it never clips.
+  const rightMargin = focusedKey ? (isMobile ? 30 : 44) : (isMobile ? 12 : 24);
 
   return (
     <ResponsiveContainer width="100%" height={h}>
-      <ComposedChart data={data} margin={{ top: 12, right: isMobile ? 12 : 24, left: leftMargin, bottom: 4 }}>
+      <ComposedChart data={data} margin={{ top: 12, right: rightMargin, left: leftMargin, bottom: 4 }}>
         <defs>
           {series.map(s => (
             <linearGradient key={s.key} id={`lg-${s.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -162,9 +164,11 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
               y={val as number}
               r={0}
               label={{
-                value: `${s.name} ${Number(val).toFixed(1)}`,
+                // Value only — the focused chip above the chart already names the
+                // series, and the full name used to clip at the chart edge.
+                value: Number(val).toFixed(1),
                 position: 'right',
-                style: { fontSize: 10, fontWeight: 700, fill: s.color },
+                style: { fontSize: 11, fontWeight: 700, fill: s.color },
               }}
             />
           );

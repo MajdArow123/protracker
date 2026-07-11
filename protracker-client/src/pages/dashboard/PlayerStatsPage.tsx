@@ -45,7 +45,8 @@ export function PlayerStatsPage() {
   // This page doubles as the solo athlete's "My Performance" (/solo/performance) —
   // solo athletes may enter match stats and use AI; team athletes may not.
   const isSolo = user?.role === 'SoloAthlete';
-  const [focusedCategory, setFocusedCategory] = useState<string | null>(null);
+  // undefined = untouched (chart defaults to the weakest stat); null = "Show all".
+  const [focusPick, setFocusPick] = useState<string | null | undefined>(undefined);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Sort oldest → newest for chart and trend calculations
@@ -69,6 +70,9 @@ export function PlayerStatsPage() {
     const worst = worstScore ? { name: worstScore.statCategoryName, score: worstScore.score } : null;
     return { best, worst };
   }, [sorted]);
+
+  // Default trend-chart focus: the current weakest stat.
+  const focusedCategory = focusPick === undefined ? (summary?.worst?.name ?? null) : focusPick;
 
   if (loadingId || isLoading) return <PageSpinner />;
 
@@ -163,7 +167,7 @@ export function PlayerStatsPage() {
                 return (
                   <button
                     key={cat}
-                    onClick={() => setFocusedCategory((prev) => (prev === cat ? null : cat))}
+                    onClick={() => setFocusPick(focusedCategory === cat ? null : cat)}
                     className={clsx(
                       'px-3 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer',
                       isFocused
@@ -184,7 +188,7 @@ export function PlayerStatsPage() {
               })}
               {focusedCategory && (
                 <button
-                  onClick={() => setFocusedCategory(null)}
+                  onClick={() => setFocusPick(null)}
                   className="px-3 py-1 rounded-full text-xs font-semibold border border-dashed border-gray-400 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-500 transition-all cursor-pointer"
                 >
                   {t('dashboard.showAll', 'Show all')}
