@@ -1,10 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { useQueries } from '@tanstack/react-query';
 import { Users, Plus, Search, AlertTriangle, FlaskConical } from 'lucide-react';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
 import { useActiveInjuries } from '../../hooks/useInjuries';
+import { evidenceApi } from '../../api/evidenceApi';
+import { confidenceLabel } from '../../components/evidence/evidenceUtils';
+import { CONFIDENCE_COLORS } from '../../components/charts/chartColors';
+import { PlayerAvatar } from '../../components/players/PlayerAvatar';
+import type { EvidenceConfidence } from '../../types';
 import { motion } from 'framer-motion';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { staggerContainer, staggerItem } from '../../utils/animations';
@@ -24,10 +30,6 @@ const SPORT_EMOJIS: Record<number, string> = {
   5: '🎾',
 };
 
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-}
-
 function scoreColor(score: number) {
   if (score > 7) return 'bg-green-500/20 text-green-400 border border-green-500/30';
   if (score >= 5) return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
@@ -45,6 +47,25 @@ export function PlayersPage() {
   const [quickTest, setQuickTest] = useState<{ id: number; name: string; sportId: number } | null>(null);
 
   const injuredIds = new Set(activeInjuries.map(i => i.playerId));
+
+  // Evidence confidence per player (one status request per team) → dot on the score badge.
+  const evidenceQueries = useQueries({
+    queries: teams.map(team => ({
+      queryKey: ['teamEvidenceStatus', team.id],
+      queryFn: () => evidenceApi.getTeamEvidenceStatus(team.id),
+      staleTime: 60_000,
+    })),
+  });
+  const confidenceByPlayer = useMemo(() => {
+    const map = new Map<number, EvidenceConfidence>();
+    for (const q of evidenceQueries) {
+      for (const p of q.data?.players ?? []) {
+        if (p.overallConfidence) map.set(p.playerId, p.overallConfidence);
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [evidenceQueries.map(q => q.dataUpdatedAt).join(',')]);
 
   if (isLoading) return <PageWrapper title={t('players.title', 'Players')}><CardListSkeleton count={6} /></PageWrapper>;
   if (isError) return <PageWrapper title={t('players.title', 'Players')}><ErrorState thing="players" onRetry={() => refetch()} /></PageWrapper>;
@@ -120,9 +141,7 @@ export function PlayersPage() {
                 onKeyDown={e => { if (e.key === 'Enter') navigate(`/players/${player.id}`); }}
                 className="flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-500/40 hover:shadow-md hover:shadow-indigo-500/5 transition-colors cursor-pointer text-left group"
               >
-                <div className="w-11 h-11 rounded-xl bg-indigo-600/15 border border-indigo-500/20 flex items-center justify-center text-indigo-400 text-sm font-black flex-shrink-0 group-hover:bg-indigo-600/25 transition-colors">
-                  {getInitials(player.fullName)}
-                </div>
+                <PlayerAvatar name={player.fullName} imageUrl={player.profileImageUrl} sportId={player.sportId} size={46} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
                     <p className="font-semibold text-gray-900 dark:text-white text-sm truncate">
@@ -137,11 +156,21 @@ export function PlayersPage() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{player.positionName ?? t('players.player', 'Player')} · {player.teamName ?? '—'}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                  {player.fitnessLevel != null && (
-                    <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(player.fitnessLevel))}>
-                      {t('players.fitShort', 'Fit')} {player.fitnessLevel}/10
-                    </span>
-                  )}
+                  {player.fitnessLevel != null && (() => {
+                    const conf = confidenceByPlayer.get(player.id);
+                    return (
+                      <span className={clsx('inline-flex items-center gap-1.5 text-xs font-bold px-2 py-0.5 rounded-full', scoreColor(player.fitnessLevel))}>
+                        {conf && (
+                          <span
+                            className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                            style={{ background: CONFIDENCE_COLORS[conf] }}
+                            title={t('evidence.confidenceTooltip', 'Evidence confidence: {{level}}', { level: confidenceLabel(conf, t) })}
+                          />
+                        )}
+                        {t('players.fitShort', 'Fit')} {player.fitnessLevel}/10
+                      </span>
+                    );
+                  })()}
                   <PlayerStatusBadge status={player.status} hideActive />
                 </div>
                 {/* Quick test entry (44px touch target for mobile) */}

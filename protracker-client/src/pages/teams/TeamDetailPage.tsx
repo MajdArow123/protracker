@@ -32,6 +32,7 @@ import { useTeamMatches } from '../../hooks/useMatches';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { TeamEvidenceTab } from '../../components/evidence/TeamEvidenceTab';
+import { PlayerAvatar } from '../../components/players/PlayerAvatar';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert, ClipboardCheck,
@@ -49,10 +50,6 @@ const SPORT_HEADER_COLORS: Record<string, string> = {
   'Beach Volleyball': 'from-yellow-500 via-amber-500 to-orange-500',
   Tennis: 'from-purple-600 via-violet-600 to-purple-700',
 };
-
-function getInitials(name: string) {
-  return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-}
 
 function scoreColor(score: number) {
   if (score > 7) return 'bg-green-500/20 text-green-400 border border-green-500/30';
@@ -426,9 +423,7 @@ export function TeamDetailPage() {
                         isCoach ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer' : 'cursor-default'
                       )}
                     >
-                      <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-sm font-black flex-shrink-0">
-                        {getInitials(p.fullName)}
-                      </div>
+                      <PlayerAvatar name={p.fullName} imageUrl={p.profileImageUrl} sportId={p.sportId} size={42} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
                           <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">

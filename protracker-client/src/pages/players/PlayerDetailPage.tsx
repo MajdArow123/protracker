@@ -37,6 +37,10 @@ import { WellbeingTrendCard } from '../../components/wellbeing/WellbeingTrendCar
 import { CoachJournalTab } from '../../components/journal/CoachJournalTab';
 import { PlayerGoalsTab } from '../../components/goals/PlayerGoalsTab';
 import { EvidenceDashboardTab } from '../../components/evidence/EvidenceDashboardTab';
+import { usePlayerEvidenceScores } from '../../hooks/useEvidence';
+import { overallConfidence, confidenceLabel } from '../../components/evidence/evidenceUtils';
+import { CONFIDENCE_COLORS } from '../../components/charts/chartColors';
+import { sportGradient, sportNameById } from '../../utils/sportColors';
 import { ShieldCheck } from 'lucide-react';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
@@ -65,14 +69,6 @@ const ATTENDANCE_STYLES: Record<string, string> = {
   Absent: 'bg-red-500/20 text-red-400 border border-red-500/30',
   Late: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
   Excused: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-};
-
-const SPORT_HEADER_COLORS: Record<string, string> = {
-  Football: 'from-green-600 to-emerald-700',
-  Basketball: 'from-orange-500 to-amber-600',
-  Volleyball: 'from-blue-600 to-indigo-700',
-  'Beach Volleyball': 'from-yellow-500 to-amber-600',
-  Tennis: 'from-purple-600 to-violet-700',
 };
 
 function getInitials(name: string) {
@@ -139,6 +135,7 @@ export function PlayerDetailPage() {
   const { data: matches = [] } = useMatchPerformance(playerId);
   const { data: sessions = [] } = useTrainingSessions(playerId);
   const { data: assessments = [] } = usePlayerAssessments(playerId);
+  const { data: evidenceScores = [] } = usePlayerEvidenceScores(playerId);
   const { data: playerTasks = [] } = useCoachTasks({ playerId });
   const deleteTask = useDeleteTask();
   const heightUnit = getStoredHeightUnit();
@@ -268,9 +265,10 @@ export function PlayerDetailPage() {
     </div>
   );
 
-  const sportName = player.teamName ? '' : '';
-  const headerGrad = SPORT_HEADER_COLORS[sportName] ?? 'from-indigo-600 to-violet-700';
+  const headerGrad = sportGradient(sportNameById(player.sportId));
   const fitnessLabel = player.fitnessLevel ? getFitnessLabel(player.fitnessLevel, t) : null;
+  const evidenceConf = overallConfidence(evidenceScores);
+  const verifiedCount = evidenceScores.filter(s => s.confidence === 'High' || s.confidence === 'VeryHigh').length;
 
   const TABS: { id: Tab; label: string; icon: typeof Activity; count?: number }[] = [
     { id: 'overview', label: t('players.tabOverview', 'Overview'), icon: Activity },
@@ -325,9 +323,17 @@ export function PlayerDetailPage() {
           {/* Player info */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
             <div className="relative flex-shrink-0">
-              <div className="w-20 h-20 rounded-2xl bg-white/20 border-2 border-white/30 flex items-center justify-center text-white text-2xl font-black shadow-xl">
-                {getInitials(player.fullName)}
-              </div>
+              {player.profileImageUrl ? (
+                <img
+                  src={player.profileImageUrl}
+                  alt={player.fullName}
+                  className="w-20 h-20 rounded-2xl object-cover border-2 border-white/40 ring-4 ring-white/10 shadow-xl"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-white/20 border-2 border-white/30 ring-4 ring-white/10 flex items-center justify-center text-white text-2xl font-black shadow-xl">
+                  {getInitials(player.fullName)}
+                </div>
+              )}
               {/* Large jersey badge */}
               {player.jerseyNumber != null && (
                 <div className="absolute -bottom-2 -right-2 min-w-[30px] h-[30px] px-1.5 rounded-xl bg-white text-indigo-700 border-2 border-indigo-200 flex items-center justify-center text-sm font-black shadow-lg">
@@ -347,6 +353,16 @@ export function PlayerDetailPage() {
                 )}
                 {fitnessLabel && (
                   <span className="px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold">{fitnessLabel}</span>
+                )}
+                {evidenceConf && (
+                  <button
+                    onClick={() => setTab('evidence')}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/20 border border-white/30 text-white text-xs font-semibold hover:bg-white/30 transition-colors cursor-pointer"
+                    title={t('evidence.verifiedOfTotal', '{{verified}} of {{total}} metrics verified', { verified: verifiedCount, total: evidenceScores.length })}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: CONFIDENCE_COLORS[evidenceConf] }} />
+                    {t('evidence.evidenceBadge', 'Evidence: {{level}}', { level: confidenceLabel(evidenceConf, t) })}
+                  </button>
                 )}
               </div>
               {/* Quick stats */}
@@ -501,19 +517,42 @@ export function PlayerDetailPage() {
                         </button>
                       </div>
                       <div className="space-y-2">
-                        {assessments.slice(0, 3).map(a => {
-                          const avg = a.statScores?.length ? (a.statScores.reduce((s, x) => s + x.score, 0) / a.statScores.length) : null;
+                        {assessments.slice(0, 3).map((a, i) => {
+                          const avgOf = (x?: typeof a) => x?.statScores?.length
+                            ? x.statScores.reduce((s, sc) => s + sc.score, 0) / x.statScores.length
+                            : null;
+                          const avg = avgOf(a);
+                          const prevAvg = avgOf(assessments[i + 1]); // list is newest-first
+                          const delta = avg != null && prevAvg != null ? avg - prevAvg : null;
+                          const trend = delta == null ? 'none' : delta > 0.05 ? 'up' : delta < -0.05 ? 'down' : 'flat';
                           return (
-                            <div key={a.id} className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900 dark:text-white">{a.assessmentPeriodName}</p>
+                            <div
+                              key={a.id}
+                              className={clsx(
+                                'flex items-center justify-between gap-3 py-2 ps-3 rounded-lg border-s-[3px]',
+                                trend === 'up' ? 'border-green-500' : trend === 'down' ? 'border-red-500' : 'border-gray-300 dark:border-gray-700',
+                              )}
+                            >
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{a.assessmentPeriodName}</p>
                                 <p className="text-xs text-gray-500">{formatDate(a.dateRecorded)}</p>
                               </div>
-                              {avg !== null && (
-                                <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', avg > 7 ? 'bg-green-500/20 text-green-400' : avg >= 5 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400')}>
-                                  {avg.toFixed(1)}/10
-                                </span>
-                              )}
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                {delta != null && trend !== 'flat' && (
+                                  <span className={clsx(
+                                    'inline-flex items-center gap-0.5 text-[11px] font-bold',
+                                    trend === 'up' ? 'text-green-500' : 'text-red-500',
+                                  )}>
+                                    {trend === 'up' ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+                                    {delta > 0 ? '+' : ''}{delta.toFixed(1)}
+                                  </span>
+                                )}
+                                {avg !== null && (
+                                  <span className={clsx('text-xs font-bold px-2 py-0.5 rounded-full', avg > 7 ? 'bg-green-500/20 text-green-400' : avg >= 5 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400')}>
+                                    {avg.toFixed(1)}/10
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           );
                         })}

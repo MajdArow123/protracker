@@ -44,3 +44,17 @@ export function sportDot(name?: string | null): string {
 export function sportBadge(name?: string | null): string {
   return (name && SPORT_BADGES[name]) || 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300';
 }
+
+// Seeded sport IDs are stable (1–5, same order everywhere SPORT_EMOJIS is used).
+// Lets pages that only have a sportId (e.g. Player) reuse the name-keyed maps.
+export const SPORT_ID_NAMES: Record<number, string> = {
+  1: 'Football / Soccer',
+  2: 'Basketball',
+  3: 'Volleyball',
+  4: 'Beach Volleyball',
+  5: 'Tennis',
+};
+
+export function sportNameById(id?: number | null): string | null {
+  return (id != null && SPORT_ID_NAMES[id]) || null;
+}
