@@ -23,10 +23,13 @@ import { usePlayerNutritionProfile } from '../../hooks/useNutrition';
 import { computeProfileCompletion } from '../../utils/profileCompletion';
 import { useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
+import { CountUp } from '../../components/ui/CountUp';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
+import { Sparkline } from '../../components/charts/Sparkline';
+import { StatCard } from '../../components/dashboard/StatCard';
 import { useAuth } from '../../context/AuthContext';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
@@ -129,6 +132,12 @@ export function PlayerDashboardPage() {
     ? latestScores.reduce((worst, s) => (s.score < worst.score ? s : worst))
     : null;
 
+  // Per-assessment average scores, oldest → newest, for the stat-card sparkline.
+  const scoreTrend = [...(data?.recentAssessments ?? [])]
+    .sort((a, b) => new Date(a.dateRecorded).getTime() - new Date(b.dateRecorded).getTime())
+    .map(a => (a.statScores.length ? a.statScores.reduce((sum, s) => sum + s.score, 0) / a.statScores.length : 0))
+    .filter(v => v > 0);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -168,6 +177,7 @@ export function PlayerDashboardPage() {
       <motion.div custom={0} initial="hidden" animate="show" variants={fadeUp}>
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-700 p-6 text-white">
           <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-1/3 w-32 h-32 bg-purple-400/10 rounded-full translate-y-1/2 blur-xl" />
           <div className="relative z-10 flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-indigo-200 text-sm mb-2">
@@ -274,60 +284,69 @@ export function PlayerDashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
-        >
-          <div className="inline-flex p-2 rounded-xl bg-indigo-500/10 mb-3">
-            <ClipboardList size={16} className="text-indigo-500 dark:text-indigo-400" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.totalAssessments', 'Total Assessments')}</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{data?.totalAssessments ?? 0}</p>
+        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.totalAssessments', 'Total Assessments')}
+            value={data?.totalAssessments ?? 0}
+            icon={ClipboardList}
+            gradient="from-indigo-500 to-blue-600"
+          />
         </motion.div>
-        <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
-        >
-          <div className="inline-flex p-2 rounded-xl bg-green-500/10 mb-3">
-            <Activity size={16} className="text-green-500 dark:text-green-400" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.latestScore', 'Latest Score')}</p>
-          <p className={clsx(
-            'text-3xl font-black mt-0.5',
-            avgScore == null ? 'text-gray-400' : avgScore < 5 ? 'text-red-500' : avgScore < 7 ? 'text-amber-500' : 'text-green-500'
-          )}>
-            {avgScore != null ? avgScore.toFixed(1) : '—'}
-          </p>
+        <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.latestScore', 'Latest Score')}
+            icon={Activity}
+            gradient="from-emerald-500 to-green-600"
+            valueNode={
+              avgScore != null ? (
+                <CountUp
+                  value={avgScore}
+                  decimals={1}
+                  className={clsx(
+                    'text-3xl font-black mt-0.5 block tabular-nums',
+                    avgScore < 5 ? 'text-red-500' : avgScore < 7 ? 'text-amber-500' : 'text-green-500',
+                  )}
+                />
+              ) : (
+                <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
+              )
+            }
+            footer={scoreTrend.length >= 2 ? <Sparkline values={scoreTrend} width={72} height={26} className="mb-1" /> : undefined}
+          />
         </motion.div>
-        <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
-        >
-          <div className="inline-flex p-2 rounded-xl bg-amber-500/10 mb-3">
-            <Star size={16} className="text-amber-500" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.bestCategory', 'Best Category')}</p>
-          {bestStat ? (
-            <>
-              <p className="text-xl font-black text-amber-500 mt-0.5">{bestStat.score.toFixed(1)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{bestStat.statCategoryName}</p>
-            </>
-          ) : (
-            <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
-          )}
+        <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.bestCategory', 'Best Category')}
+            icon={Star}
+            gradient="from-amber-500 to-orange-600"
+            valueNode={
+              bestStat ? (
+                <div className="min-w-0">
+                  <p className="text-xl font-black text-amber-500 mt-0.5 tabular-nums">{bestStat.score.toFixed(1)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{bestStat.statCategoryName}</p>
+                </div>
+              ) : (
+                <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
+              )
+            }
+          />
         </motion.div>
-        <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5"
-        >
-          <div className="inline-flex p-2 rounded-xl bg-red-500/10 mb-3">
-            <Target size={16} className="text-red-400" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.needsWork', 'Needs Work')}</p>
-          {worstStat ? (
-            <>
-              <p className="text-xl font-black text-red-400 mt-0.5">{worstStat.score.toFixed(1)}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{worstStat.statCategoryName}</p>
-            </>
-          ) : (
-            <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
-          )}
+        <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.needsWork', 'Needs Work')}
+            icon={Target}
+            gradient="from-red-500 to-rose-600"
+            valueNode={
+              worstStat ? (
+                <div className="min-w-0">
+                  <p className="text-xl font-black text-red-400 mt-0.5 tabular-nums">{worstStat.score.toFixed(1)}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">{worstStat.statCategoryName}</p>
+                </div>
+              ) : (
+                <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
+              )
+            }
+          />
         </motion.div>
       </div>
 
@@ -484,24 +503,29 @@ export function PlayerDashboardPage() {
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">{t('dashboard.quickAccess', 'Quick Access')}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {[
-            { label: t('nav.myStats', 'My Stats'), desc: t('dashboard.myStatsDesc', 'Full assessment history'), icon: TrendingUp, path: '/player-dashboard/stats', color: 'text-indigo-500 bg-indigo-500/10' },
-            { label: t('nav.myNutrition', 'My Nutrition'), desc: t('dashboard.myNutritionDesc', 'Meal plans & dietary profile'), icon: Salad, path: '/player-dashboard/nutrition', color: 'text-green-500 bg-green-500/10' },
-            { label: t('nav.myPlan', 'My Plan'), desc: t('dashboard.myPlanDesc', 'Training & improvement'), icon: Activity, path: '/player-dashboard/improvement', color: 'text-purple-500 bg-purple-500/10' },
-            ...(data?.player?.teamId ? [{ label: t('dashboard.myTeam', 'My Team'), desc: t('dashboard.myTeamDesc', 'Team roster & skill profile'), icon: Shield, path: `/player-dashboard/team/${data.player.teamId}`, color: 'text-orange-500 bg-orange-500/10' }] : []),
+            { label: t('nav.myStats', 'My Stats'), desc: t('dashboard.myStatsDesc', 'Full assessment history'), icon: TrendingUp, path: '/player-dashboard/stats', gradient: 'from-indigo-500 to-blue-600', shadow: 'hover:shadow-indigo-500/25' },
+            { label: t('nav.myNutrition', 'My Nutrition'), desc: t('dashboard.myNutritionDesc', 'Meal plans & dietary profile'), icon: Salad, path: '/player-dashboard/nutrition', gradient: 'from-emerald-500 to-green-600', shadow: 'hover:shadow-emerald-500/25' },
+            { label: t('nav.myPlan', 'My Plan'), desc: t('dashboard.myPlanDesc', 'Training & improvement'), icon: Activity, path: '/player-dashboard/improvement', gradient: 'from-purple-500 to-violet-600', shadow: 'hover:shadow-purple-500/25' },
+            ...(data?.player?.teamId ? [{ label: t('dashboard.myTeam', 'My Team'), desc: t('dashboard.myTeamDesc', 'Team roster & skill profile'), icon: Shield, path: `/player-dashboard/team/${data.player.teamId}`, gradient: 'from-orange-500 to-amber-600', shadow: 'hover:shadow-orange-500/25' }] : []),
           ].map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="group flex items-center gap-3 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md transition-all cursor-pointer text-left"
+              className={clsx(
+                'relative overflow-hidden group flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer text-left',
+                item.gradient,
+                item.shadow,
+              )}
             >
-              <div className={clsx('p-2.5 rounded-xl flex-shrink-0', item.color)}>
+              <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/10 pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="p-2.5 rounded-xl bg-white/15 flex-shrink-0">
                 <item.icon size={18} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-gray-900 dark:text-white">{item.label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{item.desc}</p>
+              <div className="flex-1 min-w-0 relative">
+                <p className="text-sm font-bold">{item.label}</p>
+                <p className="text-xs text-white/75">{item.desc}</p>
               </div>
-              <ChevronRight size={16} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors flex-shrink-0" />
+              <ChevronRight size={16} className="text-white/70 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" />
             </button>
           ))}
         </div>

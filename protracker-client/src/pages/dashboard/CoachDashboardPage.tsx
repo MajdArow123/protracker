@@ -6,6 +6,7 @@ import {
   Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X, CalendarRange, Star, Library,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
+import { useTeamReport } from '../../hooks/useReports';
 import { useActiveSeasons } from '../../hooks/useSeasons';
 import { useActiveInjuries } from '../../hooks/useInjuries';
 import { useCoachTasks } from '../../hooks/useTasks';
@@ -17,8 +18,9 @@ import { ProfileAnalyticsCard } from '../../components/coaches/ProfileAnalyticsC
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { CountUp } from '../../components/ui/CountUp';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { StatCard } from '../../components/dashboard/StatCard';
+import { MiniRadar } from '../../components/charts/MiniRadar';
 import { useAuth } from '../../context/AuthContext';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
@@ -68,6 +70,32 @@ function getSportGradient(sportName: string) {
   return SPORT_GRADIENTS[sportName] ?? DEFAULT_GRADIENT;
 }
 
+// Per-team avg score + skill-shape thumbnail (same per-card report fan-out as TeamsPage).
+function TeamMiniStats({ teamId }: { teamId: number }) {
+  const { t } = useTranslation();
+  const { data: report } = useTeamReport(teamId);
+  const categoryScores = Object.values(report?.averageScoreByCategory ?? {});
+  const avg = categoryScores.length
+    ? categoryScores.reduce((a, b) => a + b, 0) / categoryScores.length
+    : null;
+  if (avg == null) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-3 mb-4">
+      <div>
+        <p className="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('teams.avgScore', 'Avg Score')}</p>
+        <p className={clsx(
+          'text-xl font-black tabular-nums',
+          avg > 7 ? 'text-green-500' : avg >= 5 ? 'text-amber-500' : 'text-red-500',
+        )}>
+          {avg.toFixed(1)}
+        </p>
+      </div>
+      <MiniRadar values={categoryScores} size={64} className="text-gray-500 flex-shrink-0" />
+    </div>
+  );
+}
+
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
   show: (i: any) => ({
@@ -108,32 +136,24 @@ export function CoachDashboardPage() {
       value: data?.totalPlayers ?? 0,
       icon: Users,
       gradient: 'from-blue-500 to-indigo-600',
-      bg: 'bg-blue-500/10 dark:bg-blue-500/10',
-      text: 'text-blue-600 dark:text-blue-400',
     },
     {
       title: t('dashboard.teamsManaged', 'Teams Managed'),
       value: data?.totalTeams ?? 0,
       icon: Shield,
       gradient: 'from-purple-500 to-violet-600',
-      bg: 'bg-purple-500/10',
-      text: 'text-purple-600 dark:text-purple-400',
     },
     {
       title: t('dashboard.overdueTasks', 'Overdue Tasks'),
       value: overdueTasks.length,
       icon: ClipboardList,
       gradient: 'from-amber-500 to-orange-600',
-      bg: 'bg-amber-500/10',
-      text: 'text-amber-600 dark:text-amber-400',
     },
     {
       title: t('dashboard.activeInjuries', 'Active Injuries'),
       value: activeInjuries.length,
       icon: ShieldAlert,
       gradient: 'from-red-500 to-rose-600',
-      bg: 'bg-red-500/10',
-      text: 'text-red-600 dark:text-red-400',
     },
   ];
 
@@ -178,19 +198,8 @@ export function CoachDashboardPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => (
-          <motion.div
-            key={card.title}
-            custom={i + 1}
-            initial="hidden"
-            animate="show"
-            variants={fadeUp}
-            className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 group hover:border-gray-300 dark:hover:border-gray-700 transition-all"
-          >
-            <div className={clsx('inline-flex p-2.5 rounded-xl mb-3', card.bg)}>
-              <card.icon size={18} className={card.text} />
-            </div>
-            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{card.title}</p>
-            <CountUp value={card.value} className="text-2xl font-black text-gray-900 dark:text-white mt-0.5 block" />
+          <motion.div key={card.title} custom={i + 1} initial="hidden" animate="show" variants={fadeUp}>
+            <StatCard title={card.title} value={card.value} icon={card.icon} gradient={card.gradient} />
           </motion.div>
         ))}
       </div>
@@ -271,9 +280,10 @@ export function CoachDashboardPage() {
                     </span>
                   </div>
                   <h3 className="font-bold text-gray-900 dark:text-white text-base mb-1">{team.name}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
                     {team.playerCount ?? 0} {(team.playerCount ?? 0) === 1 ? t('dashboard.player', 'player') : t('dashboard.players', 'players')}
                   </p>
+                  <TeamMiniStats teamId={team.id} />
                   <div className="flex gap-2">
                     <button
                       onClick={(e) => { e.stopPropagation(); navigate(`/teams/${team.id}`); }}
@@ -382,19 +392,24 @@ export function CoachDashboardPage() {
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-4">{t('dashboard.quickActions', 'Quick Actions')}</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: t('dashboard.viewPlayers', 'View Players'), icon: Users, path: '/players', color: 'text-blue-500' },
-            { label: t('nav.drillLibrary', 'Drill Library'), icon: Library, path: '/drills', color: 'text-teal-500' },
-            { label: t('nav.reports', 'Reports'), icon: TrendingUp, path: '/reports', color: 'text-purple-500' },
-            { label: t('dashboard.foodAlternatives', 'Food Alternatives'), icon: ClipboardList, path: '/nutrition/food-alternatives', color: 'text-green-500' },
-            { label: t('dashboard.myProfile', 'My Profile'), icon: Shield, path: '/profile', color: 'text-indigo-500' },
+            { label: t('dashboard.viewPlayers', 'View Players'), icon: Users, path: '/players', gradient: 'from-blue-500 to-indigo-600', shadow: 'hover:shadow-blue-500/25' },
+            { label: t('nav.drillLibrary', 'Drill Library'), icon: Library, path: '/drills', gradient: 'from-teal-500 to-cyan-600', shadow: 'hover:shadow-teal-500/25' },
+            { label: t('nav.reports', 'Reports'), icon: TrendingUp, path: '/reports', gradient: 'from-purple-500 to-violet-600', shadow: 'hover:shadow-purple-500/25' },
+            { label: t('dashboard.foodAlternatives', 'Food Alternatives'), icon: ClipboardList, path: '/nutrition/food-alternatives', gradient: 'from-emerald-500 to-green-600', shadow: 'hover:shadow-emerald-500/25' },
+            { label: t('dashboard.myProfile', 'My Profile'), icon: Shield, path: '/profile', gradient: 'from-indigo-500 to-purple-600', shadow: 'hover:shadow-indigo-500/25' },
           ].map((action) => (
             <button
               key={action.label}
               onClick={() => navigate(action.path)}
-              className="flex flex-col items-center gap-2 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md transition-all cursor-pointer group"
+              className={clsx(
+                'relative overflow-hidden flex flex-col items-center gap-2 p-4 rounded-2xl bg-gradient-to-br text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer group',
+                action.gradient,
+                action.shadow,
+              )}
             >
-              <action.icon size={20} className={clsx(action.color, 'group-hover:scale-110 transition-transform')} />
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400">{action.label}</span>
+              <div className="absolute -top-4 -right-4 w-16 h-16 rounded-full bg-white/10 pointer-events-none group-hover:scale-125 transition-transform" />
+              <action.icon size={20} className="group-hover:scale-110 transition-transform drop-shadow" />
+              <span className="text-xs font-semibold text-center leading-tight">{action.label}</span>
             </button>
           ))}
         </div>

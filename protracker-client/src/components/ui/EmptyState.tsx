@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import { clsx } from 'clsx';
 
 interface Props {
@@ -10,6 +10,7 @@ interface Props {
 }
 
 export function EmptyState({ icon, title, description, action, size = 'md' }: Props) {
+  const glowId = useId();
   return (
     <div className={clsx(
       'flex flex-col items-center justify-center text-center',
@@ -18,8 +19,34 @@ export function EmptyState({ icon, title, description, action, size = 'md' }: Pr
       size === 'lg' && 'py-20',
     )}>
       {icon && (
-        <div className="text-gray-300 dark:text-gray-700 mb-4 opacity-60">
-          {icon}
+        <div className="relative flex items-center justify-center mb-4">
+          {/* Decorative backdrop: soft gradient disc + dashed orbit ring */}
+          <svg
+            width={size === 'sm' ? 88 : 108}
+            height={size === 'sm' ? 88 : 108}
+            viewBox="0 0 108 108"
+            className="absolute"
+            aria-hidden="true"
+          >
+            <defs>
+              <radialGradient id={`empty-glow-${glowId}`} cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#6366f1" stopOpacity={0.12} />
+                <stop offset="100%" stopColor="#6366f1" stopOpacity={0} />
+              </radialGradient>
+            </defs>
+            <circle cx="54" cy="54" r="52" fill={`url(#empty-glow-${glowId})`} />
+            <circle
+              cx="54" cy="54" r="42"
+              fill="none" stroke="currentColor" strokeWidth="1.5"
+              strokeDasharray="3 7" strokeLinecap="round"
+              className="text-gray-300 dark:text-gray-700"
+            />
+            <circle cx="54" cy="12" r="2.5" className="fill-indigo-400/60" />
+            <circle cx="90" cy="72" r="2" className="fill-indigo-300/50 dark:fill-indigo-600/50" />
+          </svg>
+          <div className="relative text-gray-300 dark:text-gray-600">
+            {icon}
+          </div>
         </div>
       )}
       <h3 className={clsx(

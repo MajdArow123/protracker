@@ -16,6 +16,9 @@ import { useMyWellbeing } from '../../hooks/useWellbeing';
 import { WellbeingCheckinWidget } from '../../components/wellbeing/WellbeingCheckinWidget';
 import { ConnectCoachModal } from '../../components/solo/ConnectCoachModal';
 import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
+import { Sparkline } from '../../components/charts/Sparkline';
+import { StatCard } from '../../components/dashboard/StatCard';
+import { CountUp } from '../../components/ui/CountUp';
 import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
@@ -158,11 +161,11 @@ export function SoloDashboardPage() {
     }));
 
   const quickActions = [
-    { label: t('dashboard.logAssessment', 'Log Assessment'), desc: t('dashboard.logAssessmentDesc', 'Track your performance today'), icon: ClipboardList, path: '/solo/assessment', color: 'text-indigo-500 bg-indigo-500/10' },
-    { label: t('dashboard.generateNutritionPlan', 'Generate Nutrition Plan'), desc: t('dashboard.generateNutritionPlanDesc', 'Get an AI meal plan for this week'), icon: Salad, path: '/solo/nutrition', color: 'text-green-500 bg-green-500/10' },
-    { label: t('dashboard.logTrainingSession', 'Log Training Session'), desc: t('dashboard.logTrainingSessionDesc', "Record today's training"), icon: Dumbbell, path: '/solo/training', color: 'text-purple-500 bg-purple-500/10' },
-    { label: t('dashboard.logMatch', 'Log Match'), desc: t('dashboard.logMatchDesc', 'Record a match result'), icon: Trophy, path: '/solo/matches', color: 'text-amber-500 bg-amber-500/10' },
-    { label: t('dashboard.browseDrills', 'Browse Drills'), desc: t('dashboard.browseDrillsDesc', 'Find drills to work on'), icon: Library, path: '/solo/drills', color: 'text-teal-500 bg-teal-500/10' },
+    { label: t('dashboard.logAssessment', 'Log Assessment'), desc: t('dashboard.logAssessmentDesc', 'Track your performance today'), icon: ClipboardList, path: '/solo/assessment', gradient: 'from-indigo-500 to-blue-600', shadow: 'hover:shadow-indigo-500/25' },
+    { label: t('dashboard.generateNutritionPlan', 'Generate Nutrition Plan'), desc: t('dashboard.generateNutritionPlanDesc', 'Get an AI meal plan for this week'), icon: Salad, path: '/solo/nutrition', gradient: 'from-emerald-500 to-green-600', shadow: 'hover:shadow-emerald-500/25' },
+    { label: t('dashboard.logTrainingSession', 'Log Training Session'), desc: t('dashboard.logTrainingSessionDesc', "Record today's training"), icon: Dumbbell, path: '/solo/training', gradient: 'from-purple-500 to-violet-600', shadow: 'hover:shadow-purple-500/25' },
+    { label: t('dashboard.logMatch', 'Log Match'), desc: t('dashboard.logMatchDesc', 'Record a match result'), icon: Trophy, path: '/solo/matches', gradient: 'from-amber-500 to-orange-600', shadow: 'hover:shadow-amber-500/25' },
+    { label: t('dashboard.browseDrills', 'Browse Drills'), desc: t('dashboard.browseDrillsDesc', 'Find drills to work on'), icon: Library, path: '/solo/drills', gradient: 'from-teal-500 to-cyan-600', shadow: 'hover:shadow-teal-500/25' },
   ];
 
   const startEditGoals = () => {
@@ -239,43 +242,54 @@ export function SoloDashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <div className="inline-flex p-2 rounded-xl bg-green-500/10 mb-3">
-            <Activity size={16} className="text-green-500" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.latestScore', 'Latest Score')}</p>
-          <p className={clsx(
-            'text-3xl font-black mt-0.5',
-            avgScore == null ? 'text-gray-400' : avgScore < 5 ? 'text-red-500' : avgScore < 7 ? 'text-amber-500' : 'text-green-500'
-          )}>
-            {avgScore != null ? avgScore.toFixed(1) : '—'}
-          </p>
-          {avgScore == null && <p className="text-[11px] text-gray-400 mt-0.5">{t('dashboard.noAssessmentsYet', 'No assessments yet')}</p>}
+        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.latestScore', 'Latest Score')}
+            icon={Activity}
+            gradient="from-emerald-500 to-green-600"
+            valueNode={
+              avgScore != null ? (
+                <CountUp
+                  value={avgScore}
+                  decimals={1}
+                  className={clsx(
+                    'text-3xl font-black mt-0.5 block tabular-nums',
+                    avgScore < 5 ? 'text-red-500' : avgScore < 7 ? 'text-amber-500' : 'text-green-500',
+                  )}
+                />
+              ) : (
+                <div>
+                  <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">{t('dashboard.noAssessmentsYet', 'No assessments yet')}</p>
+                </div>
+              )
+            }
+            footer={progressData.length >= 2 ? <Sparkline values={progressData.map(p => p.score)} width={72} height={26} className="mb-1" /> : undefined}
+          />
         </motion.div>
-        <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <div className="inline-flex p-2 rounded-xl bg-indigo-500/10 mb-3">
-            <ClipboardList size={16} className="text-indigo-500" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.assessmentsThisMonth', 'Assessments This Month')}</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{assessmentsThisMonth}</p>
+        <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.assessmentsThisMonth', 'Assessments This Month')}
+            value={assessmentsThisMonth}
+            icon={ClipboardList}
+            gradient="from-indigo-500 to-blue-600"
+          />
         </motion.div>
-        <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <div className="inline-flex p-2 rounded-xl bg-emerald-500/10 mb-3">
-            <CheckSquare size={16} className="text-emerald-500" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.tasksDoneThisWeek', 'Tasks Done This Week')}</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{tasksDoneThisWeek}</p>
+        <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.tasksDoneThisWeek', 'Tasks Done This Week')}
+            value={tasksDoneThisWeek}
+            icon={CheckSquare}
+            gradient="from-emerald-500 to-teal-600"
+          />
         </motion.div>
-        <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}
-          className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5">
-          <div className="inline-flex p-2 rounded-xl bg-purple-500/10 mb-3">
-            <Dumbbell size={16} className="text-purple-500" />
-          </div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">{t('dashboard.sessionsThisMonth', 'Sessions This Month')}</p>
-          <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5">{sessionsThisMonth}</p>
+        <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
+          <StatCard
+            title={t('dashboard.sessionsThisMonth', 'Sessions This Month')}
+            value={sessionsThisMonth}
+            icon={Dumbbell}
+            gradient="from-purple-500 to-violet-600"
+          />
         </motion.div>
       </div>
 
@@ -287,16 +301,21 @@ export function SoloDashboardPage() {
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className="group flex items-center gap-4 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-md transition-all cursor-pointer text-left"
+              className={clsx(
+                'relative overflow-hidden group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer text-left',
+                item.gradient,
+                item.shadow,
+              )}
             >
-              <div className={clsx('p-3 rounded-xl flex-shrink-0', item.color)}>
+              <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none group-hover:scale-125 transition-transform" />
+              <div className="p-3 rounded-xl bg-white/15 flex-shrink-0">
                 <item.icon size={22} />
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-gray-900 dark:text-white">{item.label}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.desc}</p>
+              <div className="flex-1 min-w-0 relative">
+                <p className="text-sm font-bold">{item.label}</p>
+                <p className="text-xs text-white/75 mt-0.5">{item.desc}</p>
               </div>
-              <ChevronRight size={16} className="text-gray-400 group-hover:text-indigo-500 transition-colors flex-shrink-0" />
+              <ChevronRight size={16} className="text-white/70 group-hover:text-white group-hover:translate-x-0.5 transition-all flex-shrink-0" />
             </button>
           ))}
         </div>
