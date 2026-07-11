@@ -5,9 +5,12 @@ import { motion } from 'framer-motion';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
-  ArrowLeft, Trophy, Zap, Sparkles, Lightbulb,
+  ArrowLeft, Trophy, Zap, Sparkles,
   Users, ShieldAlert, BarChart3, Download,
 } from 'lucide-react';
+import { AIInsightsList } from '../../components/reports/AIInsightsList';
+import { StatCard } from '../../components/dashboard/StatCard';
+import { CountUp } from '../../components/ui/CountUp';
 import { useGenerateTeamInsights } from '../../hooks/useAI';
 import { useBilling } from '../../hooks/useBilling';
 import { useToast } from '../../context/ToastContext';
@@ -132,6 +135,7 @@ export function TeamReportPage() {
       {/* Sport-gradient hero */}
       <div className={clsx('relative overflow-hidden bg-gradient-to-br', headerGrad)}>
         <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/3 blur-2xl" />
         <div className="relative z-10 p-4 lg:p-6">
           <div className="flex items-center justify-between gap-3 mb-6">
             <button
@@ -163,45 +167,45 @@ export function TeamReportPage() {
       </div>
 
       <div className="p-4 lg:p-6 space-y-6">
-        {/* Metric cards */}
+        {/* Metric cards — glass morphism, matching the dashboards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Users size={14} className="text-indigo-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.players', 'Players')}</p>
-            </div>
-            <p className="text-2xl font-black text-gray-900 dark:text-white">{playerCount}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 size={14} className="text-emerald-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.currentAvgScore', 'Current Avg Score')}</p>
-            </div>
-            {teamAvg !== null ? (
-              <p className="text-2xl font-black" style={{
-                color: teamAvg > 7 ? '#10b981' : teamAvg >= 5 ? '#f59e0b' : '#ef4444'
-              }}>{teamAvg}</p>
-            ) : <p className="text-2xl font-black text-gray-400">—</p>}
-          </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Zap size={14} className="text-violet-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.assessed', 'Assessed')}</p>
-            </div>
-            <p className="text-2xl font-black text-gray-900 dark:text-white">{assessed}/{playerCount}</p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy size={14} className="text-amber-500" />
-              <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{t('reports.bestCategory', 'Best Category')}</p>
-            </div>
-            {bestCategory ? (
-              <>
-                <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{bestCategory.subject}</p>
+          <StatCard
+            title={t('reports.players', 'Players')}
+            value={playerCount}
+            icon={Users}
+            gradient="from-indigo-500 to-blue-600"
+          />
+          <StatCard
+            title={t('reports.currentAvgScore', 'Current Avg Score')}
+            icon={BarChart3}
+            gradient="from-emerald-500 to-green-600"
+            valueNode={teamAvg !== null ? (
+              <span style={{ color: teamAvg > 7 ? '#10b981' : teamAvg >= 5 ? '#f59e0b' : '#ef4444' }}>
+                <CountUp value={teamAvg} decimals={1} className="text-3xl font-black mt-0.5 block tabular-nums" />
+              </span>
+            ) : <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>}
+          />
+          <StatCard
+            title={t('reports.assessed', 'Assessed')}
+            icon={Zap}
+            gradient="from-violet-500 to-purple-600"
+            valueNode={
+              <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5 tabular-nums">
+                {assessed}<span className="text-sm font-bold text-gray-400">/{playerCount}</span>
+              </p>
+            }
+          />
+          <StatCard
+            title={t('reports.bestCategory', 'Best Category')}
+            icon={Trophy}
+            gradient="from-amber-500 to-orange-600"
+            valueNode={bestCategory ? (
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5">{bestCategory.subject}</p>
                 <p className="text-xs text-amber-500 font-semibold">{bestCategory.value}/10</p>
-              </>
-            ) : <p className="text-2xl font-black text-gray-400">—</p>}
-          </div>
+              </div>
+            ) : <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>}
+          />
         </div>
 
         {/* Team performance bar chart */}
@@ -365,22 +369,7 @@ export function TeamReportPage() {
               {t('reports.aiTeamHint', 'Click "Generate Team Insights" to get strategic analysis from Claude.')}
             </p>
           )}
-          {aiInsights && !isGenerating && (
-            <ul className="space-y-3">
-              {aiInsights.map((insight, i) => (
-                <motion.li
-                  key={i}
-                  initial={{ opacity: 0, x: -12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: i * 0.08 }}
-                  className="flex items-start gap-3 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30"
-                >
-                  <Lightbulb size={15} className="text-violet-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-800 dark:text-gray-200">{insight}</span>
-                </motion.li>
-              ))}
-            </ul>
-          )}
+          {aiInsights && !isGenerating && <AIInsightsList insights={aiInsights} />}
         </Card>
 
         {/* Active injuries */}

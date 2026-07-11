@@ -1,12 +1,11 @@
 import { useState, Fragment } from 'react';
-import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   ArrowLeft, Printer, Download, TrendingUp, TrendingDown, Minus,
-  AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb, Trophy,
+  AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Trophy,
   ShieldCheck, FlaskConical,
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
@@ -15,6 +14,7 @@ import { useToast } from '../../context/ToastContext';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
+import { CountUp } from '../../components/ui/CountUp';
 import { Button } from '../../components/ui/Button';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ReportSkeleton } from '../../components/ui/Skeleton';
@@ -29,6 +29,10 @@ import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
 import { categoryColor } from '../../components/charts/chartColors';
 import { ConfidenceChart } from '../../components/charts/ConfidenceChart';
 import { confidenceBadgeClass, confidenceLabel, isVerified } from '../../components/evidence/evidenceUtils';
+import { AIInsightsList } from '../../components/reports/AIInsightsList';
+import { PlayerAvatar } from '../../components/players/PlayerAvatar';
+import { StatCard } from '../../components/dashboard/StatCard';
+import { sportGradient, sportNameById } from '../../utils/sportColors';
 import type { SportMetricDefinition } from '../../types';
 
 // Series colors come from the shared CVD-validated chart palette (chartColors.ts),
@@ -244,88 +248,85 @@ export function PlayerReportPage() {
         </div>
       }
     >
-      {/* Player hero header */}
-      <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 flex items-center gap-4 flex-wrap">
-        <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-xl flex-shrink-0">
-          {player.fullName.charAt(0)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <h2 className="text-xl font-black text-gray-900 dark:text-white">{player.fullName}</h2>
-          <div className="flex flex-wrap gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {player.positionName && <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">{player.positionName}</span>}
-            {player.teamName && <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs font-medium text-gray-600 dark:text-gray-300">{player.teamName}</span>}
-            {player.sportName && <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-xs font-medium text-indigo-700 dark:text-indigo-300">{labels.sport(player.sportName)}</span>}
+      {/* Player hero header — sport gradient, matching the team report */}
+      <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${sportGradient(player.sportName ?? sportNameById(player.sportId))} p-5`}>
+        <div className="absolute inset-0 bg-black/20" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
+        <div className="relative z-10 flex items-center gap-4 flex-wrap">
+          <PlayerAvatar name={player.fullName} imageUrl={player.profileImageUrl} sportId={player.sportId} size={56} className="ring-4 ring-white/15 rounded-full" />
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-black text-white">{player.fullName}</h2>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {player.positionName && <span className="px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-xs font-medium text-white">{player.positionName}</span>}
+              {player.teamName && <span className="px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-xs font-medium text-white">{player.teamName}</span>}
+              {player.sportName && <span className="px-2 py-0.5 rounded-full bg-white/20 border border-white/30 text-xs font-medium text-white">{labels.sport(player.sportName)}</span>}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          {player.fitnessLevel != null && (
-            <span className="px-3 py-1.5 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
-              {tr('reports.fitnessLevel', 'Fitness {{level}}/10', { level: player.fitnessLevel })}
-            </span>
-          )}
-          <Link to={`/players/${player.id}/nutrition`} className="text-sm text-indigo-500 hover:underline font-medium">
-            {tr('reports.viewNutrition', 'View Nutrition →')}
-          </Link>
+          <div className="flex items-center gap-3 flex-wrap">
+            {player.fitnessLevel != null && (
+              <span className="px-3 py-1.5 rounded-xl bg-white/15 border border-white/25 text-white text-sm font-bold">
+                {tr('reports.fitnessLevel', 'Fitness {{level}}/10', { level: player.fitnessLevel })}
+              </span>
+            )}
+            <Link to={`/players/${player.id}/nutrition`} className="text-sm text-white/90 hover:text-white hover:underline font-medium">
+              {tr('reports.viewNutrition', 'View Nutrition →')}
+            </Link>
+          </div>
         </div>
       </div>
 
-      {/* Metric cards */}
+      {/* Metric cards — glass morphism, matching the dashboards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Activity size={14} className="text-indigo-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.count', 'Assessments')}</p>
-          </div>
-          <p className="text-2xl font-black text-gray-900 dark:text-white">{assessments.length}</p>
-        </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-950/20 dark:to-gray-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp size={14} className="text-emerald-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('reports.currentAvgScore', 'Current Avg Score')}</p>
-          </div>
-          {latestAvg !== null ? (
-            <p className="text-2xl font-black" style={{
-              color: latestAvg > 7 ? '#10b981' : latestAvg >= 5 ? '#f59e0b' : '#ef4444'
-            }}>{latestAvg.toFixed(1)}</p>
-          ) : <p className="text-2xl font-black text-gray-400">—</p>}
-        </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-amber-50 to-white dark:from-amber-950/20 dark:to-gray-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Trophy size={14} className="text-amber-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('reports.bestCategory', 'Best Category')}</p>
-          </div>
-          {bestCategory ? (
-            <>
-              <p className="text-sm font-bold text-gray-900 dark:text-white truncate">{bestCategory.statCategoryName}</p>
+        <StatCard
+          title={tr('assessment.count', 'Assessments')}
+          value={assessments.length}
+          icon={Activity}
+          gradient="from-indigo-500 to-blue-600"
+        />
+        <StatCard
+          title={tr('reports.currentAvgScore', 'Current Avg Score')}
+          icon={TrendingUp}
+          gradient="from-emerald-500 to-green-600"
+          valueNode={latestAvg !== null ? (
+            <span style={{ color: latestAvg > 7 ? '#10b981' : latestAvg >= 5 ? '#f59e0b' : '#ef4444' }}>
+              <CountUp value={latestAvg} decimals={1} className="text-3xl font-black mt-0.5 block tabular-nums" />
+            </span>
+          ) : <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>}
+        />
+        <StatCard
+          title={tr('reports.bestCategory', 'Best Category')}
+          icon={Trophy}
+          gradient="from-amber-500 to-orange-600"
+          valueNode={bestCategory ? (
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white truncate mt-0.5">{bestCategory.statCategoryName}</p>
               <p className="text-xs text-amber-500 font-semibold">{bestCategory.score}/10</p>
-            </>
-          ) : <p className="text-2xl font-black text-gray-400">—</p>}
-        </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-950/20 dark:to-gray-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            {overallTrend !== null && overallTrend >= 0 ? <TrendingUp size={14} className="text-green-500" /> : <TrendingDown size={14} className="text-red-500" />}
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('assessment.improvement', 'Improvement')}</p>
-          </div>
-          {overallTrend !== null ? (
-            <p className={`text-2xl font-black ${overallTrend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+            </div>
+          ) : <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>}
+        />
+        <StatCard
+          title={tr('assessment.improvement', 'Improvement')}
+          icon={overallTrend !== null && overallTrend < 0 ? TrendingDown : TrendingUp}
+          gradient={overallTrend !== null && overallTrend < 0 ? 'from-red-500 to-rose-600' : 'from-violet-500 to-purple-600'}
+          valueNode={overallTrend !== null ? (
+            <p className={`text-3xl font-black mt-0.5 tabular-nums ${overallTrend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {overallTrend > 0 ? '+' : ''}{overallTrend.toFixed(0)}%
             </p>
-          ) : <p className="text-2xl font-black text-gray-400">—</p>}
-        </div>
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/20 dark:to-gray-900 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <ShieldCheck size={14} className="text-teal-500" />
-            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('evidence.qualityTitle', 'Evidence Quality')}</p>
-          </div>
-          {evidenceScores.length > 0 ? (
-            <>
-              <p className="text-2xl font-black text-gray-900 dark:text-white">
+          ) : <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>}
+        />
+        <StatCard
+          title={tr('evidence.qualityTitle', 'Evidence Quality')}
+          icon={ShieldCheck}
+          gradient="from-teal-500 to-cyan-600"
+          valueNode={evidenceScores.length > 0 ? (
+            <div>
+              <p className="text-3xl font-black text-gray-900 dark:text-white mt-0.5 tabular-nums">
                 {verifiedCount}<span className="text-sm font-bold text-gray-400">/{evidenceScores.length}</span>
               </p>
               <p className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold">{tr('evidence.verifiedMetricsLabel', 'verified metrics')}</p>
-            </>
-          ) : <p className="text-2xl font-black text-gray-400">—</p>}
-        </div>
+            </div>
+          ) : <p className="text-3xl font-black text-gray-400 mt-0.5">—</p>}
+        />
       </div>
 
       {/* Active injury warning */}
@@ -400,22 +401,7 @@ export function PlayerReportPage() {
             {tr('reports.aiPlayerHint', 'Click "Generate AI Insights" to get data-driven analysis from Claude.')}
           </p>
         )}
-        {aiInsights && !isGenerating && (
-          <ul className="space-y-3">
-            {aiInsights.map((insight, i) => (
-              <motion.li
-                key={i}
-                initial={{ opacity: 0, x: -12 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: i * 0.08 }}
-                className="flex items-start gap-3 p-3 rounded-xl bg-violet-50 dark:bg-violet-900/10 border border-violet-100 dark:border-violet-900/30"
-              >
-                <Lightbulb size={15} className="text-violet-500 mt-0.5 flex-shrink-0" />
-                <span className="text-sm text-gray-800 dark:text-gray-200">{insight}</span>
-              </motion.li>
-            ))}
-          </ul>
-        )}
+        {aiInsights && !isGenerating && <AIInsightsList insights={aiInsights} />}
       </Card>
 
       {/* Performance over time */}

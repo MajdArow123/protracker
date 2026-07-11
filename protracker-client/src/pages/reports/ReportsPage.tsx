@@ -8,6 +8,9 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { useTeams } from '../../hooks/useTeams';
 import { usePlayers } from '../../hooks/usePlayers';
+import { PlayerAvatar } from '../../components/players/PlayerAvatar';
+import { sportBadge, sportDot } from '../../utils/sportColors';
+import { clsx } from 'clsx';
 
 export function ReportsPage() {
   const navigate = useNavigate();
@@ -41,9 +44,14 @@ export function ReportsPage() {
               <Card key={team.id} hover onClick={() => navigate(`/reports/team/${team.id}`)}>
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{team.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{team.sportName}</p>
-                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                    <p className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                      <span className={clsx('w-2 h-2 rounded-full flex-shrink-0', sportDot(team.sportName))} />
+                      {team.name}
+                    </p>
+                    <span className={clsx('inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1.5', sportBadge(team.sportName))}>
+                      {team.sportName}
+                    </span>
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1.5">
                       {t('reports.playersCount', '{{count}} players', { count: team.playerCount ?? 0 })}
                     </p>
                   </div>
@@ -88,9 +96,7 @@ export function ReportsPage() {
                       <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">{player.teamName}</p>
                     )}
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-semibold text-sm">
-                    {player.fullName.charAt(0)}
-                  </div>
+                  <PlayerAvatar name={player.fullName} imageUrl={player.profileImageUrl} sportId={player.sportId} size={38} />
                 </div>
                 <div className="mt-4">
                   <Button
