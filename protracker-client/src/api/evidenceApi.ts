@@ -2,6 +2,7 @@ import api from './axiosInstance';
 import type {
   SportMetricDefinition, ObjectiveTestResult, MatchStatEntry,
   CoachEvaluationEntry, SelfAssessmentEvidence, EvidenceBasedScore,
+  TeamEvidenceStatus,
 } from '../types';
 
 export interface CreateObjectiveTestInput {
@@ -70,4 +71,7 @@ export const evidenceApi = {
     api.post<EvidenceBasedScore[]>(`/api/evidence-scores/calculate/${playerId}`).then(r => r.data),
   recalculateMetric: (playerId: number, metricId: number) =>
     api.post<EvidenceBasedScore | null>(`/api/evidence-scores/calculate/${playerId}/${metricId}`).then(r => r.data),
+
+  getTeamEvidenceStatus: (teamId: number) =>
+    api.get<TeamEvidenceStatus>(`/api/teams/${teamId}/evidence-status`).then(r => r.data),
 };

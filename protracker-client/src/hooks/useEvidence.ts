@@ -129,3 +129,12 @@ export function useRecalculateEvidence() {
     },
   });
 }
+
+export function useTeamEvidenceStatus(teamId: number | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['evidence', 'teamStatus', teamId],
+    queryFn: () => evidenceApi.getTeamEvidenceStatus(teamId!),
+    enabled: !!teamId && enabled,
+    staleTime: 60_000,
+  });
+}

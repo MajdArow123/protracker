@@ -152,3 +152,30 @@ public class EvidenceBasedScoreDto
     public List<string> MissingEvidence { get; set; } = new();
     public DateTime LastCalculatedAt { get; set; }
 }
+
+// ─── Team evidence status (Phase G Section 4) ────────────────────────────────
+
+public class PlayerEvidenceStatusDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public int? JerseyNumber { get; set; }
+    public int ScoredMetrics { get; set; }
+    public int VerifiedMetrics { get; set; }
+    // Most common confidence across the player's scores; null with no evidence.
+    public string? OverallConfidence { get; set; }
+    public DateTime? LastTestAt { get; set; }
+    public int TestCount { get; set; }
+    public int MatchStatCount { get; set; }
+}
+
+public class TeamEvidenceStatusDto
+{
+    public int TeamId { get; set; }
+    public int TotalMetrics { get; set; }
+    public List<PlayerEvidenceStatusDto> Players { get; set; } = new();
+    // Players with no objective test in the last 30 days.
+    public int PlayersNeedingTests { get; set; }
+    public int PlayersWithoutMatchStats { get; set; }
+    public int PlayersWithoutEvidence { get; set; }
+}

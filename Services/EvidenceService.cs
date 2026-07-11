@@ -30,6 +30,8 @@ public interface IEvidenceService
     Task<List<EvidenceBasedScoreDto>> GetEvidenceScoresAsync(ClaimsPrincipal user, int playerId);
     Task<List<EvidenceBasedScoreDto>> RecalculateAllAsync(ClaimsPrincipal user, int playerId);
     Task<EvidenceBasedScoreDto?> RecalculateMetricAsync(ClaimsPrincipal user, int playerId, int metricDefinitionId);
+
+    Task<TeamEvidenceStatusDto> GetTeamEvidenceStatusAsync(ClaimsPrincipal user, int teamId);
 }
 
 public class EvidenceService : IEvidenceService
@@ -258,6 +260,79 @@ public class EvidenceService : IEvidenceService
         score.MetricDefinition = await _context.SportMetricDefinitions
             .FirstAsync(d => d.Id == metricDefinitionId);
         return ToScoreDto(score);
+    }
+
+    // ─── Team evidence status ────────────────────────────────────────────────
+
+    // Which players have real evidence behind their scores and which need a test day —
+    // powers the team-detail "Evidence" tab.
+    public async Task<TeamEvidenceStatusDto> GetTeamEvidenceStatusAsync(ClaimsPrincipal user, int teamId)
+    {
+        await _access.EnsureCanAccessTeamAsync(user, teamId);
+
+        var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId)
+            ?? throw new NotFoundApiException($"Team {teamId} was not found.");
+
+        var players = await _context.Players
+            .Where(p => p.TeamId == teamId)
+            .OrderBy(p => p.FullName)
+            .ToListAsync();
+        var playerIds = players.Select(p => p.Id).ToList();
+
+        var totalMetrics = await _context.SportMetricDefinitions
+            .CountAsync(d => d.SportId == team.SportId);
+
+        var scores = await _context.EvidenceBasedScores
+            .Where(s => playerIds.Contains(s.PlayerId) && s.AssessmentId == null)
+            .ToListAsync();
+        var tests = await _context.ObjectiveTestResults
+            .Where(t => playerIds.Contains(t.PlayerId))
+            .GroupBy(t => t.PlayerId)
+            .Select(g => new { PlayerId = g.Key, Count = g.Count(), Last = g.Max(t => t.TestedAt) })
+            .ToListAsync();
+        var matchStats = await _context.MatchStatEntries
+            .Where(m => playerIds.Contains(m.PlayerId))
+            .GroupBy(m => m.PlayerId)
+            .Select(g => new { PlayerId = g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var scoresByPlayer = scores.GroupBy(s => s.PlayerId).ToDictionary(g => g.Key, g => g.ToList());
+        var testsByPlayer = tests.ToDictionary(x => x.PlayerId);
+        var matchByPlayer = matchStats.ToDictionary(x => x.PlayerId, x => x.Count);
+        var recentCutoff = DateTime.UtcNow.AddDays(-30);
+
+        var rows = players.Select(p =>
+        {
+            var playerScores = scoresByPlayer.GetValueOrDefault(p.Id) ?? new List<EvidenceBasedScore>();
+            var confidence = playerScores.Count == 0
+                ? (EvidenceConfidence?)null
+                : playerScores.GroupBy(s => s.Confidence)
+                    .OrderByDescending(g => g.Count()).ThenByDescending(g => g.Key)
+                    .First().Key;
+            testsByPlayer.TryGetValue(p.Id, out var t);
+            return new PlayerEvidenceStatusDto
+            {
+                PlayerId = p.Id,
+                PlayerName = p.FullName,
+                JerseyNumber = p.JerseyNumber,
+                ScoredMetrics = playerScores.Count,
+                VerifiedMetrics = playerScores.Count(s => s.Confidence is EvidenceConfidence.High or EvidenceConfidence.VeryHigh),
+                OverallConfidence = confidence?.ToString(),
+                LastTestAt = t?.Last,
+                TestCount = t?.Count ?? 0,
+                MatchStatCount = matchByPlayer.GetValueOrDefault(p.Id),
+            };
+        }).ToList();
+
+        return new TeamEvidenceStatusDto
+        {
+            TeamId = teamId,
+            TotalMetrics = totalMetrics,
+            Players = rows,
+            PlayersNeedingTests = rows.Count(r => r.LastTestAt == null || r.LastTestAt < recentCutoff),
+            PlayersWithoutMatchStats = rows.Count(r => r.MatchStatCount == 0),
+            PlayersWithoutEvidence = rows.Count(r => r.ScoredMetrics == 0),
+        };
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

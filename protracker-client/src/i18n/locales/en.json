@@ -2738,7 +2738,8 @@
     "wdlRecord": "Win–Draw–Loss record",
     "youParen": "(you)",
     "yourFullName": "Your full name",
-    "yourPassword": "Your password"
+    "yourPassword": "Your password",
+    "tabEvidence": "Evidence"
   },
   "evidence": {
     "addEvidence": "Add evidence",
@@ -2888,6 +2889,31 @@
     "aiSourceAssessments": "{{count}} assessment records",
     "aiSourceTests": "{{count}} objective test results",
     "aiSourceMatchStats": "{{count}} match stat entries",
-    "aiSourceSelfAssess": "{{count}} self-assessments"
+    "aiSourceSelfAssess": "{{count}} self-assessments",
+    "testResultsTitle": "Test Results",
+    "personalBest": "Personal best: {{value}} {{unit}}",
+    "benchmarkCompare": "Elite: {{high}} {{unit}} · Average: {{mid}} {{unit}}",
+    "eliteLabel": "Elite",
+    "averageLabel": "Average",
+    "needTwoTests": "Record a second {{metric}} test to see the progress trend.",
+    "matchStatsTitle": "Match Statistics",
+    "matchCount": "{{count}} matches",
+    "avg": "avg",
+    "needTwoMatches": "Record stats from a second match to see the trend.",
+    "bestPerformance": "Best: {{value}}{{pct}} ({{label}}) on {{date}}",
+    "teamNoPlayers": "No players yet",
+    "teamNoPlayersDesc": "Add players to the roster to track evidence coverage.",
+    "teamNeedTests": "{{count}} players have no objective test in the last 30 days",
+    "teamNoMatchStats": "{{count}} players have no match stats recorded",
+    "teamNoEvidence": "{{count}} players have no evidence at all",
+    "teamAllCovered": "Every player has recent evidence — great coverage!",
+    "scheduleAssessmentDay": "Run an Assessment Day",
+    "lastTestShort": "Last test {{date}}",
+    "neverTested": "Never tested",
+    "metricsCovered": "{{scored}}/{{total}} metrics",
+    "verifiedCount": "{{count}} verified",
+    "noEvidenceShort": "No data",
+    "verifiedMetricsLabel": "verified metrics",
+    "testHistory": "Test History"
   }
 }

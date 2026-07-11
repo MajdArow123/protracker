@@ -2738,7 +2738,8 @@
     "wdlRecord": "Balance de victorias, empates y derrotas",
     "youParen": "(tú)",
     "yourFullName": "Tu nombre completo",
-    "yourPassword": "Tu contraseña"
+    "yourPassword": "Tu contraseña",
+    "tabEvidence": "Evidencia"
   },
   "evidence": {
     "addEvidence": "Añadir evidencia",
@@ -2888,6 +2889,31 @@
     "aiSourceAssessments": "{{count}} evaluaciones",
     "aiSourceTests": "{{count}} resultados de pruebas objetivas",
     "aiSourceMatchStats": "{{count}} entradas de estadísticas",
-    "aiSourceSelfAssess": "{{count}} autoevaluaciones"
+    "aiSourceSelfAssess": "{{count}} autoevaluaciones",
+    "testResultsTitle": "Resultados de pruebas",
+    "personalBest": "Mejor marca: {{value}} {{unit}}",
+    "benchmarkCompare": "Élite: {{high}} {{unit}} · Promedio: {{mid}} {{unit}}",
+    "eliteLabel": "Élite",
+    "averageLabel": "Promedio",
+    "needTwoTests": "Registra una segunda prueba de {{metric}} para ver la tendencia.",
+    "matchStatsTitle": "Estadísticas de partido",
+    "matchCount": "{{count}} partidos",
+    "avg": "prom.",
+    "needTwoMatches": "Registra estadísticas de un segundo partido para ver la tendencia.",
+    "bestPerformance": "Mejor: {{value}}{{pct}} ({{label}}) el {{date}}",
+    "teamNoPlayers": "Sin jugadores aún",
+    "teamNoPlayersDesc": "Añade jugadores a la plantilla para seguir la cobertura de evidencia.",
+    "teamNeedTests": "{{count}} jugadores sin prueba objetiva en los últimos 30 días",
+    "teamNoMatchStats": "{{count}} jugadores sin estadísticas de partido",
+    "teamNoEvidence": "{{count}} jugadores sin ninguna evidencia",
+    "teamAllCovered": "Todos los jugadores tienen evidencia reciente — ¡gran cobertura!",
+    "scheduleAssessmentDay": "Organizar un día de evaluación",
+    "lastTestShort": "Última prueba {{date}}",
+    "neverTested": "Nunca probado",
+    "metricsCovered": "{{scored}}/{{total}} métricas",
+    "verifiedCount": "{{count}} verificadas",
+    "noEvidenceShort": "Sin datos",
+    "verifiedMetricsLabel": "métricas verificadas",
+    "testHistory": "Historial de pruebas"
   }
 }

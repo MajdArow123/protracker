@@ -31,13 +31,14 @@ import { PlayerStatusBadge } from '../../components/players/PlayerStatusBadge';
 import { useTeamMatches } from '../../hooks/useMatches';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
+import { TeamEvidenceTab } from '../../components/evidence/TeamEvidenceTab';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert, ClipboardCheck,
-  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange,
+  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange, ShieldCheck,
 } from 'lucide-react';
 
-type TeamTab = 'overview' | 'schedule' | 'matches' | 'seasons';
+type TeamTab = 'overview' | 'schedule' | 'matches' | 'seasons' | 'evidence';
 
 const SPORT_HEADER_COLORS: Record<string, string> = {
   Football: 'from-green-600 via-emerald-600 to-green-700',
@@ -332,7 +333,13 @@ export function TeamDetailPage() {
       {/* Section tabs */}
       <div className="px-4 lg:px-6 pt-4">
         <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
-          {([['overview', t('teams.tabOverview', 'Overview'), Users], ['schedule', t('teams.tabSchedule', 'Schedule'), Calendar], ['matches', t('teams.tabMatches', 'Matches'), Star], ['seasons', t('teams.tabSeasons', 'Seasons'), CalendarRange]] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
+          {([
+            ['overview', t('teams.tabOverview', 'Overview'), Users],
+            ['schedule', t('teams.tabSchedule', 'Schedule'), Calendar],
+            ['matches', t('teams.tabMatches', 'Matches'), Star],
+            ['seasons', t('teams.tabSeasons', 'Seasons'), CalendarRange],
+            ...(isCoach ? [['evidence', t('teams.tabEvidence', 'Evidence'), ShieldCheck] as [TeamTab, string, typeof Users]] : []),
+          ] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
             <button
               key={id}
               onClick={() => setTeamTab(id)}
@@ -364,6 +371,12 @@ export function TeamDetailPage() {
       {teamTab === 'seasons' && (
         <div className="p-4 lg:p-6">
           <TeamSeasonsSection teamId={teamId} isCoach={isCoach} />
+        </div>
+      )}
+
+      {teamTab === 'evidence' && (
+        <div className="p-4 lg:p-6">
+          <TeamEvidenceTab teamId={teamId} />
         </div>
       )}
 

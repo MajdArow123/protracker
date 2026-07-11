@@ -2738,7 +2738,8 @@
     "wdlRecord": "سجل الفوز والتعادل والخسارة",
     "youParen": "(أنت)",
     "yourFullName": "اسمك الكامل",
-    "yourPassword": "كلمة مرورك"
+    "yourPassword": "كلمة مرورك",
+    "tabEvidence": "الأدلة"
   },
   "evidence": {
     "addEvidence": "إضافة دليل",
@@ -2888,6 +2889,31 @@
     "aiSourceAssessments": "{{count}} سجل تقييم",
     "aiSourceTests": "{{count}} نتيجة اختبار موضوعي",
     "aiSourceMatchStats": "{{count}} إدخال إحصائيات مباراة",
-    "aiSourceSelfAssess": "{{count}} تقييم ذاتي"
+    "aiSourceSelfAssess": "{{count}} تقييم ذاتي",
+    "testResultsTitle": "نتائج الاختبارات",
+    "personalBest": "أفضل رقم شخصي: {{value}} {{unit}}",
+    "benchmarkCompare": "النخبة: {{high}} {{unit}} · المتوسط: {{mid}} {{unit}}",
+    "eliteLabel": "النخبة",
+    "averageLabel": "المتوسط",
+    "needTwoTests": "سجّل اختبار {{metric}} ثانيًا لرؤية اتجاه التقدم.",
+    "matchStatsTitle": "إحصائيات المباريات",
+    "matchCount": "{{count}} مباراة",
+    "avg": "متوسط",
+    "needTwoMatches": "سجّل إحصائيات مباراة ثانية لرؤية الاتجاه.",
+    "bestPerformance": "الأفضل: {{value}}{{pct}} ({{label}}) في {{date}}",
+    "teamNoPlayers": "لا يوجد لاعبون بعد",
+    "teamNoPlayersDesc": "أضف لاعبين إلى التشكيلة لتتبع تغطية الأدلة.",
+    "teamNeedTests": "{{count}} لاعبًا بدون اختبار موضوعي في آخر 30 يومًا",
+    "teamNoMatchStats": "{{count}} لاعبًا بدون إحصائيات مباريات",
+    "teamNoEvidence": "{{count}} لاعبًا بدون أي أدلة",
+    "teamAllCovered": "كل لاعب لديه أدلة حديثة — تغطية ممتازة!",
+    "scheduleAssessmentDay": "تنظيم يوم تقييم",
+    "lastTestShort": "آخر اختبار {{date}}",
+    "neverTested": "لم يُختبر أبدًا",
+    "metricsCovered": "{{scored}}/{{total}} مقياس",
+    "verifiedCount": "{{count}} موثّق",
+    "noEvidenceShort": "لا بيانات",
+    "verifiedMetricsLabel": "مقاييس موثّقة",
+    "testHistory": "سجل الاختبارات"
   }
 }

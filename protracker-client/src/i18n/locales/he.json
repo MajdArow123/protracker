@@ -2738,7 +2738,8 @@
     "wdlRecord": "מאזן ניצחון–תיקו–הפסד",
     "youParen": "(אתה)",
     "yourFullName": "השם המלא שלך",
-    "yourPassword": "הסיסמה שלך"
+    "yourPassword": "הסיסמה שלך",
+    "tabEvidence": "ראיות"
   },
   "evidence": {
     "addEvidence": "הוסף ראיה",
@@ -2888,6 +2889,31 @@
     "aiSourceAssessments": "{{count}} רשומות הערכה",
     "aiSourceTests": "{{count}} תוצאות בדיקות אובייקטיביות",
     "aiSourceMatchStats": "{{count}} רשומות נתוני משחק",
-    "aiSourceSelfAssess": "{{count}} הערכות עצמיות"
+    "aiSourceSelfAssess": "{{count}} הערכות עצמיות",
+    "testResultsTitle": "תוצאות בדיקות",
+    "personalBest": "שיא אישי: {{value}} {{unit}}",
+    "benchmarkCompare": "עילית: {{high}} {{unit}} · ממוצע: {{mid}} {{unit}}",
+    "eliteLabel": "עילית",
+    "averageLabel": "ממוצע",
+    "needTwoTests": "תעד בדיקת {{metric}} שנייה כדי לראות את מגמת ההתקדמות.",
+    "matchStatsTitle": "נתוני משחקים",
+    "matchCount": "{{count}} משחקים",
+    "avg": "ממוצע",
+    "needTwoMatches": "תעד נתונים ממשחק שני כדי לראות את המגמה.",
+    "bestPerformance": "הטוב ביותר: {{value}}{{pct}} ({{label}}) בתאריך {{date}}",
+    "teamNoPlayers": "אין שחקנים עדיין",
+    "teamNoPlayersDesc": "הוסף שחקנים לסגל כדי לעקוב אחר כיסוי הראיות.",
+    "teamNeedTests": "{{count}} שחקנים ללא בדיקה אובייקטיבית ב־30 הימים האחרונים",
+    "teamNoMatchStats": "{{count}} שחקנים ללא נתוני משחקים",
+    "teamNoEvidence": "{{count}} שחקנים ללא ראיות כלל",
+    "teamAllCovered": "לכל שחקן יש ראיות עדכניות — כיסוי מצוין!",
+    "scheduleAssessmentDay": "קיים יום הערכה",
+    "lastTestShort": "בדיקה אחרונה {{date}}",
+    "neverTested": "מעולם לא נבדק",
+    "metricsCovered": "{{scored}}/{{total}} מדדים",
+    "verifiedCount": "{{count}} מאומתים",
+    "noEvidenceShort": "אין נתונים",
+    "verifiedMetricsLabel": "מדדים מאומתים",
+    "testHistory": "היסטוריית בדיקות"
   }
 }

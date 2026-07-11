@@ -2738,7 +2738,8 @@
     "wdlRecord": "Bilan victoires–nuls–défaites",
     "youParen": "(vous)",
     "yourFullName": "Votre nom complet",
-    "yourPassword": "Votre mot de passe"
+    "yourPassword": "Votre mot de passe",
+    "tabEvidence": "Preuves"
   },
   "evidence": {
     "addEvidence": "Ajouter une preuve",
@@ -2888,6 +2889,31 @@
     "aiSourceAssessments": "{{count}} évaluations",
     "aiSourceTests": "{{count}} résultats de tests objectifs",
     "aiSourceMatchStats": "{{count}} entrées de stats de match",
-    "aiSourceSelfAssess": "{{count}} auto-évaluations"
+    "aiSourceSelfAssess": "{{count}} auto-évaluations",
+    "testResultsTitle": "Résultats de tests",
+    "personalBest": "Record personnel : {{value}} {{unit}}",
+    "benchmarkCompare": "Élite : {{high}} {{unit}} · Moyenne : {{mid}} {{unit}}",
+    "eliteLabel": "Élite",
+    "averageLabel": "Moyenne",
+    "needTwoTests": "Enregistrez un second test {{metric}} pour voir la tendance.",
+    "matchStatsTitle": "Statistiques de match",
+    "matchCount": "{{count}} matchs",
+    "avg": "moy.",
+    "needTwoMatches": "Enregistrez les stats d'un second match pour voir la tendance.",
+    "bestPerformance": "Meilleur : {{value}}{{pct}} ({{label}}) le {{date}}",
+    "teamNoPlayers": "Aucun joueur",
+    "teamNoPlayersDesc": "Ajoutez des joueurs à l'effectif pour suivre la couverture des preuves.",
+    "teamNeedTests": "{{count}} joueurs sans test objectif depuis 30 jours",
+    "teamNoMatchStats": "{{count}} joueurs sans statistiques de match",
+    "teamNoEvidence": "{{count}} joueurs sans aucune preuve",
+    "teamAllCovered": "Chaque joueur a des preuves récentes — excellente couverture !",
+    "scheduleAssessmentDay": "Organiser une journée d'évaluation",
+    "lastTestShort": "Dernier test {{date}}",
+    "neverTested": "Jamais testé",
+    "metricsCovered": "{{scored}}/{{total}} métriques",
+    "verifiedCount": "{{count}} vérifiées",
+    "noEvidenceShort": "Aucune donnée",
+    "verifiedMetricsLabel": "métriques vérifiées",
+    "testHistory": "Historique des tests"
   }
 }

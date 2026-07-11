@@ -87,4 +87,10 @@ public class EvidenceController : ApiControllerBase
     [HttpPost("evidence-scores/calculate/{playerId}/{metricId}")]
     public async Task<ActionResult> RecalculateMetric(int playerId, int metricId)
         => Success(await _service.RecalculateMetricAsync(User, playerId, metricId));
+
+    // Coach: the whole roster's evidence coverage (who needs a test day / match stats).
+    [HttpGet("teams/{teamId}/evidence-status")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetTeamEvidenceStatus(int teamId)
+        => Success(await _service.GetTeamEvidenceStatusAsync(User, teamId));
 }

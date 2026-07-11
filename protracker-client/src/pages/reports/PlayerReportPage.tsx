@@ -7,6 +7,7 @@ import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   ArrowLeft, Printer, Download, TrendingUp, TrendingDown, Minus,
   AlertTriangle, Activity, ChevronDown, ChevronRight, Sparkles, Lightbulb, Trophy,
+  ShieldCheck, FlaskConical,
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
 import { useBilling } from '../../hooks/useBilling';
@@ -22,7 +23,7 @@ import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
 import { usePlayerReport } from '../../hooks/useReports';
-import { useSportMetrics, usePlayerEvidenceScores } from '../../hooks/useEvidence';
+import { useSportMetrics, usePlayerEvidenceScores, usePlayerObjectiveTests } from '../../hooks/useEvidence';
 import { EvidenceBreakdownModal } from '../../components/evidence/EvidenceBreakdownModal';
 import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
 import { confidenceBadgeClass, confidenceLabel, isVerified } from '../../components/evidence/evidenceUtils';
@@ -67,6 +68,7 @@ export function PlayerReportPage() {
   // Evidence layer: confidence per metric for the radar + the Evidence Quality section.
   const { data: evidenceScores = [] } = usePlayerEvidenceScores(playerId);
   const { data: sportMetrics = [] } = useSportMetrics(report?.player?.sportId);
+  const { data: objectiveTests = [] } = usePlayerObjectiveTests(playerId);
   const [breakdownMetric, setBreakdownMetric] = useState<SportMetricDefinition | null>(null);
 
   if (isLoading) return <ReportSkeleton />;
@@ -265,7 +267,7 @@ export function PlayerReportPage() {
       </div>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/20 dark:to-gray-900 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Activity size={14} className="text-indigo-500" />
@@ -305,6 +307,20 @@ export function PlayerReportPage() {
             <p className={`text-2xl font-black ${overallTrend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
               {overallTrend > 0 ? '+' : ''}{overallTrend.toFixed(0)}%
             </p>
+          ) : <p className="text-2xl font-black text-gray-400">—</p>}
+        </div>
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-gradient-to-br from-teal-50 to-white dark:from-teal-950/20 dark:to-gray-900 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <ShieldCheck size={14} className="text-teal-500" />
+            <p className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">{tr('evidence.qualityTitle', 'Evidence Quality')}</p>
+          </div>
+          {evidenceScores.length > 0 ? (
+            <>
+              <p className="text-2xl font-black text-gray-900 dark:text-white">
+                {verifiedCount}<span className="text-sm font-bold text-gray-400">/{evidenceScores.length}</span>
+              </p>
+              <p className="text-[11px] text-teal-600 dark:text-teal-400 font-semibold">{tr('evidence.verifiedMetricsLabel', 'verified metrics')}</p>
+            </>
           ) : <p className="text-2xl font-black text-gray-400">—</p>}
         </div>
       </div>
@@ -694,6 +710,27 @@ export function PlayerReportPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Test history timeline */}
+          {objectiveTests.length > 0 && (
+            <div className="mt-5 pt-4 border-t border-gray-100 dark:border-gray-800">
+              <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                <FlaskConical size={12} /> {tr('evidence.testHistory', 'Test History')}
+              </h4>
+              <div className="space-y-1.5">
+                {objectiveTests.slice(0, 6).map(x => (
+                  <div key={x.id} className="flex items-center gap-3 text-xs">
+                    <span className="text-gray-400 w-16 flex-shrink-0">{formatDate(x.testedAt, { month: 'short', day: 'numeric' })}</span>
+                    <span className="text-gray-700 dark:text-gray-300 font-medium">{x.metricName}</span>
+                    <span className="text-gray-500">{x.value} {x.unit}</span>
+                    <span className="font-bold ms-auto" style={{ color: x.normalizedScore > 7 ? '#10b981' : x.normalizedScore >= 5 ? '#f59e0b' : '#ef4444' }}>
+                      {x.normalizedScore.toFixed(1)}/10
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       )}
 

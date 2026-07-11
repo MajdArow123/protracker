@@ -7,6 +7,8 @@ import { CardListSkeleton } from '../ui/Skeleton';
 import { scoreColor } from '../assessments/ScoreWidgets';
 import { EvidenceBreakdownModal } from './EvidenceBreakdownModal';
 import { EvidenceAnalysisModal } from './EvidenceAnalysisModal';
+import { TestResultsSection } from './TestResultsSection';
+import { MatchStatsSection } from './MatchStatsSection';
 import { confidenceBadgeClass, confidenceLabel, overallConfidence } from './evidenceUtils';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useSportMetrics, usePlayerEvidenceScores, useRecalculateEvidence } from '../../hooks/useEvidence';
@@ -167,6 +169,10 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
           );
         })}
       </div>
+
+      {/* Trends: test history + aggregated match stats (render only when data exists) */}
+      <TestResultsSection playerId={playerId} sportId={sportId} />
+      <MatchStatsSection playerId={playerId} sportId={sportId} />
 
       {selected && (
         <EvidenceBreakdownModal

@@ -1674,3 +1674,24 @@ export interface EvidenceAnalysis {
   roadmap: string[];
   generatedAt: string;
 }
+
+export interface PlayerEvidenceStatus {
+  playerId: number;
+  playerName: string;
+  jerseyNumber: number | null;
+  scoredMetrics: number;
+  verifiedMetrics: number;
+  overallConfidence: EvidenceConfidence | null;
+  lastTestAt: string | null;
+  testCount: number;
+  matchStatCount: number;
+}
+
+export interface TeamEvidenceStatus {
+  teamId: number;
+  totalMetrics: number;
+  players: PlayerEvidenceStatus[];
+  playersNeedingTests: number;
+  playersWithoutMatchStats: number;
+  playersWithoutEvidence: number;
+}
