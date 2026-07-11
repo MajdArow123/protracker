@@ -30,6 +30,10 @@ interface Props {
 
 const isVerified = (c?: EvidenceConfidence) => c === 'High' || c === 'VeryHigh';
 
+// SVG ids can't contain spaces — `url(#lg-Match Performance)` silently fails and
+// the area fill falls back to black. Sanitize series keys for gradient ids.
+const gradientId = (key: string) => `lg-${key.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+
 export function LineChartWrapper({ data, series, height = 300, focusedKey = null, yAxisLabel, confidenceByKey }: Props) {
   const fewPoints = data.length <= 4;
   const leftMargin = yAxisLabel ? 16 : -10;
@@ -44,7 +48,7 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
       <ComposedChart data={data} margin={{ top: 12, right: rightMargin, left: leftMargin, bottom: 4 }}>
         <defs>
           {series.map(s => (
-            <linearGradient key={s.key} id={`lg-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient key={s.key} id={gradientId(s.key)} x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%"  stopColor={s.color} stopOpacity={0.3} />
               <stop offset="95%" stopColor={s.color} stopOpacity={0} />
             </linearGradient>
@@ -111,7 +115,7 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
               type="monotone"
               dataKey={s.key}
               stroke="none"
-              fill={`url(#lg-${s.key})`}
+              fill={`url(#${gradientId(s.key)})`}
               fillOpacity={1}
               connectNulls
               isAnimationActive
