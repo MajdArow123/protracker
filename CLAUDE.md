@@ -759,6 +759,109 @@ Four fixes done one at a time, each its own commit, `npm run build` + `oxlint` +
   notification title/message are backend-generated English (data, not i18n). Note: the old
   `utils/seenNotifications.ts` remains only for the coach-dashboard injury-card dismissal.
 
+## Phase G — Evidence-Based Assessment System (COMPLETE, deployed) — 5 sections
+
+Transforms scoring from coach guesses to measurement-backed data: slider assessments
+keep working unchanged; evidence (objective tests, match stats, coach evaluations,
+self-assessments) is an **optional additive layer** that raises confidence and makes AI
+insights reference real numbers. 5 commits (`4a993f4`…`d360724`), each curl- +
+browser-verified. Multi-sport (54 metric definitions across all 5 sports).
+
+- **Section 1 — Data model & scoring engine** (commit `4a993f4`, migration
+  `AddEvidenceBasedAssessments`). Six models: `SportMetricDefinition` (reference data —
+  per-sport metrics with `MetricCategory`, `MetricInputType` Timer/Weight/Distance/
+  Percentage/Count/Rating/Boolean, 4 source weights, `IsObjectiveRequired`, 3 benchmark
+  anchors, **nullable `SportStatCategoryId` linking to the slider category** — the key
+  to non-breaking integration), `ObjectiveTestResult`, `MatchStatEntry` (flat numeric
+  `StatsJson`, keys per sport), `CoachEvaluation`, `SelfAssessmentEntry`,
+  `EvidenceBasedScore` (per-source scores + actual weights + `EvidenceSources` JSON +
+  generated `Explanation`; one "current" row per player+metric upserted, AssessmentId
+  snapshots separate). `MetricDefinitionSeeder` seeds **54 metrics** (11 soccer, 11
+  basketball, 10 volleyball, 10 beach, 12 tennis) — idempotent insert-when-empty, wired
+  before `DrillSeeder`. **`EvidenceScoringEngine`**: 3-anchor normalization (BenchmarkLow→3,
+  Mid→5, High→10, linear, clamped 1-10, works in both directions — sprint seconds have
+  Low>High), proportional weight redistribution over present sources, confidence ladder
+  (VeryHigh=all 4; High=objective+coach or 3 sources; Medium=2; Low=1 or
+  IsObjectiveRequired-without-objective), 90-day evidence window
+  (`EvidenceWindowDays`), plain-English explanations, and a **code-level per-sport
+  match-stat mapping table** (`MatchStatRules`, e.g. soccer passAccuracy→Passing,
+  basketball turnovers inverted→Decision Making; `HasMatchStatRule` drives the DTO's
+  `SupportsMatchStats`). Pure math is public statics (unit-tested without DB).
+  `EvidenceController` (`[Route("api")]`): GET `sport-metrics/{sportId}`; POST/GET
+  objective-tests (Coach/Admin/SoloAthlete/Athlete via `EnsurePlayerPermissionAsync`
+  CanAssessPlayers), match-stats (**Coach/Admin/SoloAthlete only** — team athletes
+  can't), coach-evaluations (**Coach/Admin only** — a solo athlete's subjective input is
+  always a self-assessment so confidence stays honest), self-assessments/evidence
+  (Athlete/SoloAthlete, always own player); GET/POST evidence-scores + calculate
+  endpoints. **Slider assessments auto-capture evidence** in
+  `AssessmentService.CreateAssessmentAsync` → `CaptureEvidenceFromAssessmentAsync`
+  (coach saves → CoachEvaluation rows, athlete/solo saves → SelfAssessmentEntry, per
+  linked stat category; best-effort try/catch with change-tracker detach so it can never
+  break the assessment). 39 new tests (73 total).
+- **Section 2 — Evidence collection UI** (commit `3c99d12`). `components/evidence/`:
+  `EvidencePanel` (collapsible per-slider footer via a new `footer` slot on
+  `ScoreSlider`; tabs Objective Tests / Match Stats / Guided Questions — tabs hidden
+  when inapplicable; `self` mode renames guided tab "Self Evaluation" and posts
+  self-assessments; `canEnterMatchStats` gates the match tab for team athletes),
+  `ObjectiveTestForm` (benchmark hints, last-test recall), `MatchStatsForm`
+  (`matchStatFields.ts` — per-sport field grids whose keys MUST match the backend
+  mapping; optional link to a team match), `GuidedQuestionsForm` (`guidedQuestions.ts` —
+  3 questions per metric category, 4-option pills → averaged 1-10 rating),
+  `ScorePreviewCard` (live preview + confidence + per-source ✓/✗ + **"Apply X to the
+  slider"** rounding to 0.5 steps), `EvidenceBreakdownModal` (weighted source bars,
+  explanation, merged evidence timeline, missing list, inline entry),
+  `EvidenceDashboardTab` (summary strip + metric card grid + Recalculate) — used on the
+  coach player-detail **Evidence tab**, athlete **My Stats "My Evidence"** (self mode)
+  and solo (via /solo/performance, role-detected). `RadarChartWrapper` gained per-point
+  `confidence` (colored dots, dashed line unless all points verified, tooltip + click
+  handler); player report gained the Evidence Quality section (coverage line,
+  most-reliable / needs-data, clickable table). **Evidence-form buttons must be
+  `type="button"`** — the shared `Button` defaults to submit and the panel lives inside
+  the assessment `<form>` (this bug was caught in browser verification). 130 i18n keys.
+- **Section 3 — AI integration** (commit `b752fee`). `AIController` gained
+  `BuildEvidenceContextAsync` (scores w/ confidence + sources, raw test values, per-match
+  stat lines, low-confidence list) + `EvidencePromptBlock` — injected into
+  improvement-plan, performance-insights and task-suggestions prompts with instructions
+  to reference measured values and set quantified targets; **prompts are unchanged when a
+  player has no evidence**. Task suggestions rank weak areas by evidence scores (with
+  confidence) when ≥3 exist, else slider fallback. New `POST
+  /api/ai/evidence-analysis/{playerId}` (Haiku, `{` prefill, one retry) →
+  `EvidenceAnalysisDto` (summary, collect-next priorities, position-specific test
+  battery, roadmap). Frontend: `AIDataSourcesNote` ("The AI will use: ✓ 3 assessments…")
+  on report AI card / improvement page / task-suggestions modal; `EvidenceAnalysisModal`
+  + "AI Quality Report" button on the Evidence tab (canUseAI: coach + solo only — AI
+  endpoints reject team athletes).
+- **Section 4 — Reporting & trends** (commit `510bcd6`). `TestResultsSection` (per-test
+  progress chart with Elite/Average `ReferenceLine`s, **reversed Y axis for
+  lower-is-better tests**, personal-best gold dot, results timeline) + `MatchStatsSection`
+  (clickable season-average tiles, per-stat trend, best-match callout — lower-is-better
+  for errors/turnovers) rendered under the Evidence dashboard grid for all roles. New
+  `GET /api/teams/{id}/evidence-status` (Coach/Admin) → per-player coverage/confidence/
+  test counts + team callout counts, powering a coach-only **team-detail "Evidence" tab**
+  (`TeamEvidenceTab`: "N players have no objective test in the last 30 days" etc., "Run
+  an Assessment Day" CTA, player rows → player page). Report hero gained a 5th "Evidence
+  Quality" card (verified/total) + Test History timeline.
+- **Section 5 — Mobile UX & quick entry** (commit `d360724`). `QuickTestEntryModal`
+  (flask icon on every player card — cards became keyboard-accessible divs so the nested
+  button is valid; objective-required tests sorted first). `MatchStatsQuickEntryModal`:
+  after logging a match, closing the ratings modal for a **just-created** match triggers
+  an "Add Player Stats?" prompt → per-player stepper (Skip / Save & Next, entries link
+  `MatchResultId`); also a per-row BarChart2 button. `TestDayModal` on the team Evidence
+  tab (pick test → whole-squad list → save all; sequential posts + one recalc sweep per
+  player). `GET /api/evidence-reminders` (Coach/Admin): stale/missing tests **only for
+  players who already have evidence scores** (new teams aren't spammed) + one aggregate
+  item for players with ≥2 Low-confidence scores → `EvidenceRemindersCard` on the coach
+  dashboard (dismiss + Daily/Weekly/Off frequency in localStorage:
+  `pt_evidence_reminder_freq`/`pt_evidence_reminder_dismissed`).
+
+Phase G gotchas: **evidence sources & confidence are role-honest** — don't let solo
+athletes write CoachEvaluations or team athletes write match stats. The frontend
+`matchStatFields.ts` keys and the backend `MatchStatRules` table must stay in sync.
+Metric benchmark tweaks in `MetricDefinitionSeeder` don't propagate to existing DBs
+(insert-when-empty). `useEvidence` mutations recalculate immediately and return the
+fresh score for live previews (setQueryData pattern). Evidence i18n lives in the
+`evidence` namespace (~200 keys, all 5 locales).
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -864,7 +967,28 @@ Four fixes done one at a time, each its own commit, `npm run build` + `oxlint` +
 
 ## Current status
 
-**Phase F — League/Tournament Mode + Multi-language complete (latest).** All 4 sections
+**Phase G — Evidence-Based Assessment System complete (latest).** All 5 sections above
+(data model + scoring engine, evidence collection UI, AI integration, reporting & trends,
+mobile UX & quick entry) are implemented, pushed to `main` as 5 commits (migration
+`AddEvidenceBasedAssessments` auto-applied on Railway; `MetricDefinitionSeeder` seeds 54
+metrics on boot), 73/73 backend tests passing (39 new), `npm run build` + `oxlint` clean
+throughout. Verified locally section by section — curl: normalization anchors both
+directions, weight redistribution (0.4/0.2 → 0.667/0.333), confidence ladder incl.
+IsObjectiveRequired override, one match-stat entry fanning into 4 metrics, full 11-metric
+recalc in 72ms, slider assessment auto-creating coach evaluations, athlete 403 on
+coach-evals / 201 on own self-assessment, team evidence-status counts, reminders
+empty→populated after backdating; real-AI: evidence analysis (goalkeeper-specific test
+battery), task suggestions ranking evidence weak areas with confidence labels, insights
+citing measured values (10.5km, 78% pass accuracy, 4.0s sprint) + weak-evidence insight.
+Browser-verified as coach + athlete: evidence panel under sliders (test → 8.0 Low →
+guided questions → 7.9 High 67/33 → Apply to slider), Evidence tab + breakdown modal,
+radar confidence dots + dashed line, report Evidence Quality + hero card, team Evidence
+tab callouts, Test Day (3 results saved, callouts refreshed live), quick test from player
+card, post-match "Add Player Stats?" stepper, dashboard Evidence Reminders card with
+frequency select. All local test data cleaned up. **Production verification run after
+deploy (see that session's report).**
+
+**Phase F — League/Tournament Mode + Multi-language complete.** All 4 sections
 above (league data model, league UI, i18n infrastructure, language switcher + RTL) are
 implemented, pushed to `main` as 4 commits (migration `AddLeagueTournament` auto-applied
 on Railway), 34/34 backend tests passing, `npm run build` + `oxlint` clean. Verified
@@ -877,8 +1001,7 @@ organizer crown; i18n — sidebar/login/landing translated, language switcher (5
 in navbar + landing, switching to Hebrew/Arabic flips the whole app to RTL instantly
 (sidebar on the right, mirrored back-arrows, RTL fonts) with no reload, English restores
 LTR cleanly, ProTracker stays English. **Production verification run after deploy (see
-below).** All local test data cleaned up. **This is the final phase — the app is
-feature-complete.**
+below).** All local test data cleaned up.
 
 **Phase E — Coach Discovery Marketplace complete.** All 5 sections above
 (coach public profile, marketplace page, connection requests, reviews & ratings,
