@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,30 +7,45 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { isPushSupported, currentPermission, enablePush } from '../push/pushManager';
 
-// One-time, dismissible prompt to enable browser notifications after signing in. If permission
-// was already granted, it silently refreshes the push subscription instead of prompting.
+// One-time, dismissible prompt to enable browser notifications. Deliberately NOT shown
+// right after login (permission-before-value is a goodwill drain): it waits for the
+// user's first in-app navigation, and if it's shown but ignored across another
+// navigation it counts that as "not now" instead of following them page to page.
 export function PushPrompt() {
   const { t: tr } = useTranslation();
   const { user } = useAuth();
   const { addToast } = useToast();
+  const location = useLocation();
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
+  // Route changes since mount; the first effect run (mount) counts as 0.
+  const navCount = useRef(-1);
 
   const promptedKey = user ? `pt_push_prompted_${user.id}` : '';
 
   useEffect(() => {
+    navCount.current += 1;
     if (!user || !isPushSupported()) return;
     const perm = currentPermission();
     if (perm === 'granted') {
       // Keep the server's subscription fresh across logins/devices.
-      enablePush();
+      if (navCount.current === 0) enablePush();
       return;
     }
-    if (perm === 'default' && !localStorage.getItem(promptedKey)) {
-      const t = setTimeout(() => setShow(true), 1500); // let the dashboard settle first
+    if (perm !== 'default' || (promptedKey && localStorage.getItem(promptedKey))) return;
+
+    if (show) {
+      // Shown but ignored through a navigation — treat as a soft "not now".
+      if (!busy) dismiss();
+      return;
+    }
+    if (navCount.current >= 1) {
+      // Engaged (navigated at least once past the landing view) — safe to ask.
+      const t = setTimeout(() => setShow(true), 2000);
       return () => clearTimeout(t);
     }
-  }, [user, promptedKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, promptedKey, location.pathname]);
 
   function dismiss() {
     if (promptedKey) localStorage.setItem(promptedKey, '1');
