@@ -7,6 +7,7 @@ import {
   Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
   Target, Heart, CheckCircle, Circle, CheckSquare, MessageSquare,
   CalendarDays, HeartPulse, Code2, Globe, Shield, User, UsersRound, Search,
+  ClipboardList, FlaskConical, ShieldCheck, Check,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { CountUp } from '../components/ui/CountUp';
@@ -93,6 +94,7 @@ const TECH_STACK = [
 
 const NAV_LINKS = [
   { id: 'features', label: 'Features', labelKey: 'landing.nav.features' },
+  { id: 'pricing', label: 'Pricing', labelKey: 'landing.nav.pricing' },
   { id: 'about', label: 'About', labelKey: 'landing.nav.about' },
   { id: 'contact', label: 'Contact', labelKey: 'landing.nav.contact' },
 ];
@@ -213,10 +215,18 @@ export function LandingPage() {
 
       {/* Hero */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-gray-900 to-indigo-950/50" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl" />
+        {/* Animated background gradient (slow pan, disabled for reduced motion) */}
+        <div className="absolute inset-0 animate-gradient-pan bg-gradient-to-br from-gray-950 via-indigo-950/70 to-purple-950/50" />
+        <motion.div
+          className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl"
+          animate={{ x: [0, 40, 0], y: [0, -30, 0] }}
+          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-purple-600/10 rounded-full blur-3xl"
+          animate={{ x: [0, -35, 0], y: [0, 25, 0] }}
+          transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+        />
 
         {/* Floating icons */}
         <div className="absolute top-32 left-16 animate-float opacity-20">
@@ -252,7 +262,7 @@ export function LandingPage() {
           >
             {t('landing.hero.titleLine1', 'Track. Analyze.')}
             <br />
-            <span className="gradient-text">{t('landing.hero.titleLine2', 'Dominate.')}</span>
+            <span className="gradient-text-animated">{t('landing.hero.titleLine2', 'Dominate.')}</span>
           </motion.h1>
 
           <motion.p
@@ -354,6 +364,64 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* How it works */}
+      <section className="py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="text-center mb-16">
+            <h2 className="text-4xl font-black tracking-tight mb-4">
+              {t('landing.how.titleA', 'How it')} <span className="gradient-text">{t('landing.how.titleB', 'works')}</span>
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              {t('landing.how.subtitle', 'From first login to data-driven training in three steps.')}
+            </p>
+          </motion.div>
+
+          <div className="relative grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-6">
+            {/* Connector line (desktop) */}
+            <div className="hidden md:block absolute top-7 left-[16.66%] right-[16.66%] h-px bg-gradient-to-r from-indigo-500/40 via-purple-500/40 to-pink-500/40" />
+            {[
+              {
+                icon: UsersRound,
+                gradient: 'from-indigo-500 to-blue-600',
+                title: t('landing.how.step1Title', 'Set up in minutes'),
+                desc: t('landing.how.step1Desc', 'Create your team as a coach, join with a code from your coach, or start a solo profile. Sport-specific positions and stats are ready out of the box.'),
+              },
+              {
+                icon: ClipboardList,
+                gradient: 'from-purple-500 to-violet-600',
+                title: t('landing.how.step2Title', 'Assess & collect evidence'),
+                desc: t('landing.how.step2Desc', 'Score athletes on gradient sliders, then back scores with objective tests, match stats, and guided evaluations for measurement-based accuracy.'),
+              },
+              {
+                icon: Brain,
+                gradient: 'from-pink-500 to-rose-600',
+                title: t('landing.how.step3Title', 'Train smarter with AI'),
+                desc: t('landing.how.step3Desc', 'Generate improvement plans, weekly nutrition, recovery programs and task suggestions that reference real measured values.'),
+              },
+            ].map((step, i) => (
+              <motion.div
+                key={step.title}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className="relative text-center md:px-4"
+              >
+                <div className={`relative z-10 inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br ${step.gradient} shadow-lg mb-5`}>
+                  <step.icon size={24} className="text-white" />
+                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gray-950 border border-gray-700 text-[11px] font-black text-white flex items-center justify-center">
+                    {i + 1}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">{step.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
       <section id="features" className="py-24 scroll-mt-20">
         <div className="max-w-6xl mx-auto px-6">
@@ -403,8 +471,83 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Evidence-based scoring — the differentiator */}
+      <section className="py-24 bg-gray-900/30">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold mb-4">
+                <ShieldCheck size={13} /> {t('landing.evidence.badge', 'Evidence-Based Assessment')}
+              </div>
+              <h2 className="text-4xl font-black tracking-tight mb-5">
+                {t('landing.evidence.titleA', 'Scores you can')} <span className="gradient-text">{t('landing.evidence.titleB', 'actually trust')}</span>
+              </h2>
+              <p className="text-gray-400 leading-relaxed mb-6">
+                {t('landing.evidence.description', "Most platforms stop at coach gut-feel. ProTracker backs every rating with real measurements — sprint times, match statistics, structured evaluations — and tells you how confident each score is.")}
+              </p>
+              <ul className="space-y-3">
+                {[
+                  { icon: FlaskConical, text: t('landing.evidence.point1', '54 sport-specific objective tests with elite & average benchmarks') },
+                  { icon: BarChart3, text: t('landing.evidence.point2', 'Match stats flow into skill scores automatically when you rate a game') },
+                  { icon: ShieldCheck, text: t('landing.evidence.point3', 'Confidence levels on every metric — see exactly which scores are verified') },
+                ].map(pt => (
+                  <li key={pt.text} className="flex items-start gap-3 text-sm text-gray-300">
+                    <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex-shrink-0">
+                      <pt.icon size={14} />
+                    </span>
+                    <span className="pt-1">{pt.text}</span>
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+
+            {/* Mock metric card — mirrors the real Evidence tab UI */}
+            <motion.div
+              initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} custom={1}
+              className="rounded-3xl bg-gray-900/70 border border-gray-800 p-6 shadow-2xl shadow-black/40"
+            >
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">
+                {t('landing.evidence.cardTitle', 'Evidence summary — Speed')}
+              </p>
+              <div className="flex items-end justify-between mb-3">
+                <span className="text-5xl font-black text-white tabular-nums">8.2<span className="text-lg text-gray-500">/10</span></span>
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/30 text-blue-300">
+                  {t('landing.evidence.confidenceHigh', 'High confidence')}
+                </span>
+              </div>
+              <div className="h-2 bg-gray-800 rounded-full overflow-hidden mb-6">
+                <motion.div
+                  initial={{ width: 0 }}
+                  whileInView={{ width: '82%' }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 1, ease: 'easeOut', delay: 0.3 }}
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                />
+              </div>
+              <div className="space-y-3">
+                {[
+                  { label: t('landing.evidence.srcTests', 'Objective tests'), value: '30m sprint — 4.0s', weight: '40%', on: true },
+                  { label: t('landing.evidence.srcMatch', 'Match stats'), value: '9.2 km covered', weight: '30%', on: true },
+                  { label: t('landing.evidence.srcCoach', 'Coach evaluation'), value: '8.0 / 10', weight: '20%', on: true },
+                  { label: t('landing.evidence.srcSelf', 'Self-assessment'), value: t('landing.evidence.missing', 'missing'), weight: '10%', on: false },
+                ].map(src => (
+                  <div key={src.label} className="flex items-center gap-3 text-sm">
+                    {src.on
+                      ? <Check size={14} className="text-emerald-400 flex-shrink-0" />
+                      : <Circle size={13} className="text-gray-600 flex-shrink-0" />}
+                    <span className={src.on ? 'text-gray-300' : 'text-gray-600'}>{src.label}</span>
+                    <span className={clsx('ms-auto font-mono text-xs', src.on ? 'text-gray-400' : 'text-gray-600')}>{src.value}</span>
+                    <span className="text-[10px] font-bold text-gray-600 w-8 text-end">{src.weight}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
       {/* Sports */}
-      <section className="py-20 bg-gray-900/30">
+      <section className="py-20">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div
             initial="hidden"
@@ -536,8 +679,119 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Pricing */}
+      <section id="pricing" className="py-24 bg-gray-900/30 scroll-mt-20">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="text-center mb-14">
+            <h2 className="text-4xl font-black tracking-tight mb-4">
+              {t('landing.pricing.titleA', 'Simple, honest')} <span className="gradient-text">{t('landing.pricing.titleB', 'pricing')}</span>
+            </h2>
+            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+              {t('landing.pricing.subtitle', 'Free for athletes, forever. Coaches upgrade when their program grows.')}
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+            {[
+              {
+                name: t('landing.pricing.freeName', 'Free'),
+                price: '$0',
+                period: '',
+                desc: t('landing.pricing.freeDesc', 'Everything you need to start coaching.'),
+                features: [
+                  t('landing.pricing.free1', '1 team, up to 5 players'),
+                  t('landing.pricing.free2', 'Assessments & performance charts'),
+                  t('landing.pricing.free3', 'Injury, task & match tracking'),
+                  t('landing.pricing.free4', 'Evidence-based scoring'),
+                ],
+                cta: t('landing.pricing.freeCta', 'Start Free'),
+                highlight: false,
+              },
+              {
+                name: t('landing.pricing.proName', 'Pro'),
+                price: '$19',
+                period: t('landing.pricing.perMonth', '/month'),
+                desc: t('landing.pricing.proDesc', 'For coaches building serious programs.'),
+                features: [
+                  t('landing.pricing.pro1', 'Unlimited teams & players'),
+                  t('landing.pricing.pro2', 'AI insights, nutrition & recovery plans'),
+                  t('landing.pricing.pro3', 'AI task & goal suggestions'),
+                  t('landing.pricing.pro4', 'PDF report export'),
+                ],
+                cta: t('landing.pricing.proCta', 'Go Pro'),
+                highlight: true,
+              },
+              {
+                name: t('landing.pricing.teamName', 'Team'),
+                price: '$49',
+                period: t('landing.pricing.perMonth', '/month'),
+                desc: t('landing.pricing.teamDesc', 'For clubs and academies.'),
+                features: [
+                  t('landing.pricing.team1', 'Everything in Pro'),
+                  t('landing.pricing.team2', 'Parent portal access'),
+                  t('landing.pricing.team3', 'Assistant coach roles'),
+                  t('landing.pricing.team4', 'Priority support'),
+                ],
+                cta: t('landing.pricing.teamCta', 'Choose Team'),
+                highlight: false,
+              },
+            ].map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                custom={i}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                className={clsx(
+                  'relative flex flex-col rounded-3xl p-8 border transition-all',
+                  plan.highlight
+                    ? 'bg-gradient-to-b from-indigo-600/20 to-purple-600/10 border-indigo-500/50 shadow-2xl shadow-indigo-500/10 md:-my-3 md:py-11'
+                    : 'bg-gray-900/50 border-gray-800 hover:border-gray-700',
+                )}
+              >
+                {plan.highlight && (
+                  <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-[11px] font-bold shadow-lg">
+                    {t('landing.pricing.popular', 'Most popular')}
+                  </span>
+                )}
+                <h3 className="text-lg font-bold text-white">{plan.name}</h3>
+                <div className="flex items-baseline gap-1 mt-2 mb-1">
+                  <span className="text-5xl font-black text-white tabular-nums">{plan.price}</span>
+                  {plan.period && <span className="text-sm text-gray-500">{plan.period}</span>}
+                </div>
+                <p className="text-sm text-gray-400 mb-6">{plan.desc}</p>
+                <ul className="space-y-2.5 flex-1">
+                  {plan.features.map(f => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm text-gray-300">
+                      <Check size={15} className={clsx('flex-shrink-0 mt-0.5', plan.highlight ? 'text-indigo-400' : 'text-emerald-400')} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  onClick={() => navigate('/login?tab=register')}
+                  className={clsx(
+                    'mt-8 w-full py-3 rounded-xl font-bold text-sm transition-all cursor-pointer',
+                    plan.highlight
+                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl'
+                      : 'bg-white/5 hover:bg-white/10 border border-white/10 text-white',
+                  )}
+                >
+                  {plan.cta}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+
+          <p className="text-center text-sm text-gray-500 mt-10">
+            {t('landing.pricing.athletesFree', 'Team athletes and solo athletes always train free — plans apply to coach accounts only.')}
+          </p>
+        </div>
+      </section>
+
       {/* Contact */}
-      <section id="contact" className="py-24 bg-gray-900/30 scroll-mt-20">
+      <section id="contact" className="py-24 scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="text-center mb-14">
             <h2 className="text-4xl font-black tracking-tight mb-4">Get in <span className="gradient-text">Touch</span></h2>
@@ -661,23 +915,64 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800 py-12">
+      <footer className="border-t border-gray-800 pt-14 pb-8">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center">
-                <Activity size={15} className="text-white" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
+            {/* Brand */}
+            <div className="col-span-2 md:col-span-1">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                  <Activity size={17} className="text-white" />
+                </div>
+                <span className="text-lg font-bold text-white">ProTracker</span>
               </div>
-              <span className="font-bold text-white">ProTracker</span>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                {t('landing.footer.tagline', 'Evidence-based sports performance for coaches, teams and solo athletes.')}
+              </p>
             </div>
-            <div className="flex items-center gap-6 text-sm text-gray-500">
-              {NAV_LINKS.map((l) => (
-                <button key={l.id} onClick={() => scrollToSection(l.id)} className="hover:text-white transition-colors cursor-pointer">{l.label}</button>
-              ))}
+
+            {/* Product */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">{t('landing.footer.product', 'Product')}</p>
+              <ul className="space-y-2.5 text-sm text-gray-400">
+                <li><button onClick={() => scrollToSection('features')} className="hover:text-white transition-colors cursor-pointer">{t('landing.nav.features', 'Features')}</button></li>
+                <li><button onClick={() => scrollToSection('pricing')} className="hover:text-white transition-colors cursor-pointer">{t('landing.nav.pricing', 'Pricing')}</button></li>
+                <li><button onClick={() => navigate('/coaches')} className="hover:text-white transition-colors cursor-pointer">{t('landing.nav.findACoach', 'Find a Coach')}</button></li>
+                <li><button onClick={() => scrollToSection('about')} className="hover:text-white transition-colors cursor-pointer">{t('landing.nav.about', 'About')}</button></li>
+              </ul>
             </div>
+
+            {/* Get started */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">{t('landing.footer.getStarted', 'Get Started')}</p>
+              <ul className="space-y-2.5 text-sm text-gray-400">
+                <li><button onClick={() => navigate('/login?tab=register')} className="hover:text-white transition-colors cursor-pointer">{t('landing.roles.coach', "I'm a Coach")}</button></li>
+                <li><button onClick={() => navigate('/register')} className="hover:text-white transition-colors cursor-pointer">{t('landing.roles.teamAthlete', "I'm on a Team")}</button></li>
+                <li><button onClick={() => navigate('/register/solo')} className="hover:text-white transition-colors cursor-pointer">{t('landing.roles.soloAthlete', 'I Train Solo')}</button></li>
+                <li><button onClick={() => navigate('/login')} className="hover:text-white transition-colors cursor-pointer">{t('landing.hero.signIn', 'Sign In')}</button></li>
+              </ul>
+            </div>
+
+            {/* Resources */}
+            <div>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">{t('landing.footer.resources', 'Resources')}</p>
+              <ul className="space-y-2.5 text-sm text-gray-400">
+                <li>
+                  <a href="https://github.com/MajdArow123/protracker" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                    {t('landing.footer.sourceCode', 'Source Code')}
+                  </a>
+                </li>
+                <li><button onClick={() => scrollToSection('contact')} className="hover:text-white transition-colors cursor-pointer">{t('landing.nav.contact', 'Contact')}</button></li>
+                <li><button onClick={() => navigate('/login')} className="hover:text-white transition-colors cursor-pointer">{t('landing.footer.liveDemo', 'Live Demo')}</button></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-gray-800/70">
             <div className="text-sm text-gray-600">
-              Built with Claude AI · © 2026 ProTracker
+              {t('landing.footer.copyright', 'Built with Claude AI · © 2026 ProTracker')}
             </div>
+            <LanguageSwitcher variant="dark" />
           </div>
         </div>
       </footer>

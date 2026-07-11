@@ -73,6 +73,27 @@ html.dark {
   background-clip: text;
 }
 
+/* Slowly panning gradient (landing hero background + animated gradient text). */
+@keyframes gradient-pan {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.animate-gradient-pan {
+  background-size: 200% 200%;
+  animation: gradient-pan 14s ease-in-out infinite;
+}
+.gradient-text-animated {
+  background: linear-gradient(120deg, #6366f1, #a78bfa, #ec4899, #6366f1);
+  background-size: 250% 250%;
+  animation: gradient-pan 8s ease-in-out infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-pan, .gradient-text-animated { animation: none; }
+}
+
 .glass {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
