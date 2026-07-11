@@ -2939,6 +2939,7 @@
     "freqOff": "Desactivado",
     "reminderStaleTest": "{{name}} no tiene una prueba objetiva desde hace {{days}} días",
     "reminderNeverTested": "{{name}} aún no tiene ninguna prueba objetiva",
-    "reminderLowConfidence": "{{count}} jugadores tienen puntuaciones de baja confianza — añade pruebas objetivas para mejorar la precisión"
+    "reminderLowConfidence": "{{count}} jugadores tienen puntuaciones de baja confianza — añade pruebas objetivas para mejorar la precisión",
+    "autoImportedFrom": "Importado automáticamente de {{count}} partidos valorados"
   }
 }

@@ -2939,6 +2939,7 @@
     "freqOff": "Désactivé",
     "reminderStaleTest": "{{name}} n'a pas passé de test objectif depuis {{days}} jours",
     "reminderNeverTested": "{{name}} n'a encore passé aucun test objectif",
-    "reminderLowConfidence": "{{count}} joueurs ont des scores à faible confiance — ajoutez des tests objectifs pour plus de précision"
+    "reminderLowConfidence": "{{count}} joueurs ont des scores à faible confiance — ajoutez des tests objectifs pour plus de précision",
+    "autoImportedFrom": "Importé automatiquement de {{count}} matchs notés"
   }
 }

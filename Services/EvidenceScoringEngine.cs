@@ -148,7 +148,7 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         [(2, "Conditioning")] = new(s => Get(s, "minutesPlayed"), 10, 24, 36),
         // Volleyball (3)
         [(3, "Serve")] = new(s => Ratio(s, "aces", "serves") * 100, 2, 8, 18),
-        [(3, "Attack")] = new(s => Get(s, "killPercentage"), 20, 35, 55),
+        [(3, "Attack")] = new(s => Get(s, "killPercentage") ?? Ratio(s, "kills", "attempts") * 100, 20, 35, 55),
         [(3, "Blocking")] = new(s => Get(s, "blocks"), 0.5m, 2, 5),
         [(3, "Defensive Coverage")] = new(s => Get(s, "digs"), 2, 8, 15),
         [(3, "Setting")] = new(s => Get(s, "assists"), 2, 10, 25),

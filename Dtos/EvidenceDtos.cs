@@ -76,6 +76,7 @@ public class MatchStatEntryDto
     public int SportId { get; set; }
     public Dictionary<string, decimal> Stats { get; set; } = new();
     public string? Notes { get; set; }
+    public bool IsAutoImported { get; set; }
 }
 
 // ─── Coach evaluations & self-assessments ────────────────────────────────────

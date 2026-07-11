@@ -2939,6 +2939,7 @@
     "freqOff": "Off",
     "reminderStaleTest": "{{name}} hasn't had an objective test in {{days}} days",
     "reminderNeverTested": "{{name}} hasn't had an objective test yet",
-    "reminderLowConfidence": "{{count}} players have Low confidence scores — add objective tests to improve accuracy"
+    "reminderLowConfidence": "{{count}} players have Low confidence scores — add objective tests to improve accuracy",
+    "autoImportedFrom": "Auto-imported from {{count}} rated matches"
   }
 }

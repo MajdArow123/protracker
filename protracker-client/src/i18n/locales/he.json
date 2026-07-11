@@ -2939,6 +2939,7 @@
     "freqOff": "כבוי",
     "reminderStaleTest": "{{name}} לא עבר בדיקה אובייקטיבית כבר {{days}} ימים",
     "reminderNeverTested": "{{name}} עדיין לא עבר בדיקה אובייקטיבית",
-    "reminderLowConfidence": "ל־{{count}} שחקנים ציונים בביטחון נמוך — הוסף בדיקות אובייקטיביות לשיפור הדיוק"
+    "reminderLowConfidence": "ל־{{count}} שחקנים ציונים בביטחון נמוך — הוסף בדיקות אובייקטיביות לשיפור הדיוק",
+    "autoImportedFrom": "יובא אוטומטית מ־{{count}} משחקים מדורגים"
   }
 }

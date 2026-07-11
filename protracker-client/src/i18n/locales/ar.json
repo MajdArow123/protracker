@@ -2939,6 +2939,7 @@
     "freqOff": "إيقاف",
     "reminderStaleTest": "{{name}} لم يخضع لاختبار موضوعي منذ {{days}} يومًا",
     "reminderNeverTested": "{{name}} لم يخضع لأي اختبار موضوعي بعد",
-    "reminderLowConfidence": "{{count}} لاعبين لديهم نتائج منخفضة الثقة — أضف اختبارات موضوعية لتحسين الدقة"
+    "reminderLowConfidence": "{{count}} لاعبين لديهم نتائج منخفضة الثقة — أضف اختبارات موضوعية لتحسين الدقة",
+    "autoImportedFrom": "مستورد تلقائيًا من {{count}} مباراة مقيّمة"
   }
 }

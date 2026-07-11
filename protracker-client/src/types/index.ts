@@ -1610,6 +1610,7 @@ export interface MatchStatEntry {
   sportId: number;
   stats: Record<string, number>;
   notes: string | null;
+  isAutoImported: boolean;
 }
 
 export interface CoachEvaluationEntry {

@@ -20,10 +20,19 @@ export function sportKey(sportName?: string | null): SportKey {
 }
 
 // Player stat fields per sport (the union stored as JSON in statJson).
+// Keys are aligned with the evidence system's match-stat mapping (backend
+// MatchStatRules / frontend matchStatFields.ts) so rated matches auto-import
+// straight into evidence-based scores.
 const STAT_FIELDS: Record<SportKey, MatchStatField[]> = {
   soccer: [
     { key: 'goals', label: 'G', full: 'Goals' },
     { key: 'assists', label: 'A', full: 'Assists' },
+    { key: 'shots', label: 'Sh', full: 'Shots' },
+    { key: 'shotsOnTarget', label: 'SoT', full: 'Shots on Target' },
+    { key: 'passes', label: 'Pass', full: 'Passes' },
+    { key: 'passAccuracy', label: 'Pass%', full: 'Pass Accuracy (%)' },
+    { key: 'tackles', label: 'Tkl', full: 'Tackles' },
+    { key: 'distanceKm', label: 'Km', full: 'Distance (km)' },
     { key: 'yellowCards', label: '🟨', full: 'Yellow' },
     { key: 'redCards', label: '🟥', full: 'Red' },
     { key: 'minutesPlayed', label: 'Min', full: 'Minutes' },
@@ -32,25 +41,46 @@ const STAT_FIELDS: Record<SportKey, MatchStatField[]> = {
     { key: 'points', label: 'Pts', full: 'Points' },
     { key: 'rebounds', label: 'Reb', full: 'Rebounds' },
     { key: 'assists', label: 'Ast', full: 'Assists' },
+    { key: 'steals', label: 'Stl', full: 'Steals' },
+    { key: 'blocks', label: 'Blk', full: 'Blocks' },
+    { key: 'turnovers', label: 'TO', full: 'Turnovers' },
+    { key: 'fgPercentage', label: 'FG%', full: 'FG %' },
+    { key: 'threePercentage', label: '3P%', full: '3P %' },
+    { key: 'ftPercentage', label: 'FT%', full: 'FT %' },
     { key: 'minutesPlayed', label: 'Min', full: 'Minutes' },
   ],
   volleyball: [
     { key: 'points', label: 'Pts', full: 'Points' },
     { key: 'kills', label: 'Kills', full: 'Kills' },
-    { key: 'blocks', label: 'Blk', full: 'Blocks' },
+    { key: 'errors', label: 'Err', full: 'Errors' },
+    { key: 'attempts', label: 'Att', full: 'Attempts' },
+    { key: 'serves', label: 'Srv', full: 'Serves' },
     { key: 'aces', label: 'Aces', full: 'Aces' },
+    { key: 'serviceErrors', label: 'SrvErr', full: 'Service Errors' },
+    { key: 'digs', label: 'Digs', full: 'Digs' },
+    { key: 'blocks', label: 'Blk', full: 'Blocks' },
+    { key: 'assists', label: 'Ast', full: 'Assists' },
     { key: 'minutesPlayed', label: 'Min', full: 'Minutes' },
   ],
   beach: [
-    { key: 'points', label: 'Pts', full: 'Points' },
     { key: 'kills', label: 'Kills', full: 'Kills' },
-    { key: 'blocks', label: 'Blk', full: 'Blocks' },
+    { key: 'errors', label: 'Err', full: 'Errors' },
+    { key: 'attempts', label: 'Att', full: 'Attempts' },
+    { key: 'serves', label: 'Srv', full: 'Serves' },
     { key: 'aces', label: 'Aces', full: 'Aces' },
+    { key: 'serviceErrors', label: 'SrvErr', full: 'Service Errors' },
+    { key: 'digs', label: 'Digs', full: 'Digs' },
+    { key: 'blocks', label: 'Blk', full: 'Blocks' },
+    { key: 'assists', label: 'Ast', full: 'Assists' },
+    { key: 'minutesPlayed', label: 'Min', full: 'Minutes' },
   ],
   tennis: [
-    { key: 'gamesWon', label: 'Games', full: 'Games Won' },
     { key: 'aces', label: 'Aces', full: 'Aces' },
     { key: 'doubleFaults', label: 'DF', full: 'Double Faults' },
+    { key: 'firstServeIn', label: '1st%', full: 'First Serve (%)' },
+    { key: 'winners', label: 'Win', full: 'Winners' },
+    { key: 'unforcedErrors', label: 'UE', full: 'Unforced Errors' },
+    { key: 'gamesWon', label: 'Games', full: 'Games Won' },
     { key: 'minutesPlayed', label: 'Min', full: 'Minutes' },
   ],
 };

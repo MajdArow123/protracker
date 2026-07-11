@@ -33,5 +33,10 @@ public class MatchStatEntry
 
     public string? Notes { get; set; }
 
+    // True when this entry was synced automatically from a logged match's player ratings
+    // (MatchService.SaveRatingsAsync). Auto entries follow the ratings set (re-saving
+    // ratings updates/removes them); manual entries are never touched by the sync.
+    public bool IsAutoImported { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

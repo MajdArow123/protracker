@@ -302,6 +302,62 @@ public class EvidenceApiTests : IClassFixture<ProTrackerWebApplicationFactory>
     }
 
     [Fact]
+    public async Task SavingMatchRatings_AutoImportsEvidenceMatchStats()
+    {
+        var client = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+
+        // Log a match, then rate a player with sport-specific stats.
+        var matchResponse = await client.PostAsJsonAsync($"/api/teams/{TestAuth.SoccerTeamId}/matches", new
+        {
+            opponentName = "AutoImport FC",
+            matchDate = DateTime.UtcNow.Date,
+            homeScore = 2,
+            awayScore = 1,
+            isHome = true,
+        });
+        Assert.Equal(HttpStatusCode.Created, matchResponse.StatusCode);
+        var match = await matchResponse.Content.ReadFromJsonAsync<TestApiResponse<MatchShape>>();
+        var matchId = match!.Data!.Id;
+
+        var ratingsResponse = await client.PostAsJsonAsync($"/api/matches/{matchId}/ratings", new
+        {
+            ratings = new[]
+            {
+                new { playerId = TestAuth.LiamCarterPlayerId, rating = 7.5,
+                      statJson = """{"goals":1,"passes":40,"passAccuracy":82,"minutesPlayed":90}""" },
+                // All-zero stats (unused sub): must NOT be imported.
+                new { playerId = TestAuth.NoahBennettPlayerId, rating = 6.0,
+                      statJson = """{"goals":0,"passes":0,"passAccuracy":0,"minutesPlayed":90}""" },
+            }
+        });
+        Assert.Equal(HttpStatusCode.OK, ratingsResponse.StatusCode);
+
+        // Rated player got an auto-imported evidence entry with the stats + rating.
+        var entries = await client.GetFromJsonAsync<TestApiResponse<List<MatchStatShape>>>(
+            $"/api/players/{TestAuth.LiamCarterPlayerId}/match-stats");
+        var imported = entries!.Data!.FirstOrDefault(e => e.MatchResultId == matchId);
+        Assert.NotNull(imported);
+        Assert.True(imported!.IsAutoImported);
+        Assert.Equal(82, imported.Stats["passAccuracy"]);
+        Assert.Equal(7.5m, imported.Stats["rating"]);
+
+        // The empty-stats player was skipped.
+        var noahEntries = await client.GetFromJsonAsync<TestApiResponse<List<MatchStatShape>>>(
+            $"/api/players/{TestAuth.NoahBennettPlayerId}/match-stats");
+        Assert.DoesNotContain(noahEntries!.Data!, e => e.MatchResultId == matchId);
+
+        // Re-saving ratings without the player removes the auto entry (replace semantics).
+        var clearResponse = await client.PostAsJsonAsync($"/api/matches/{matchId}/ratings", new
+        {
+            ratings = Array.Empty<object>(),
+        });
+        Assert.Equal(HttpStatusCode.OK, clearResponse.StatusCode);
+        var after = await client.GetFromJsonAsync<TestApiResponse<List<MatchStatShape>>>(
+            $"/api/players/{TestAuth.LiamCarterPlayerId}/match-stats");
+        Assert.DoesNotContain(after!.Data!, e => e.MatchResultId == matchId);
+    }
+
+    [Fact]
     public async Task ObjectiveTest_WrongSportMetric_ReturnsBadRequest()
     {
         var client = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
@@ -355,5 +411,18 @@ public class EvidenceApiTests : IClassFixture<ProTrackerWebApplicationFactory>
     public class SelfAssessShape
     {
         public int PlayerId { get; set; }
+    }
+
+    public class MatchShape
+    {
+        public int Id { get; set; }
+    }
+
+    public class MatchStatShape
+    {
+        public int Id { get; set; }
+        public int? MatchResultId { get; set; }
+        public bool IsAutoImported { get; set; }
+        public Dictionary<string, decimal> Stats { get; set; } = new();
     }
 }

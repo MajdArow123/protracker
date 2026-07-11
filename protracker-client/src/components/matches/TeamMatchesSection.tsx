@@ -253,11 +253,9 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
   const [rateMatch, setRateMatch] = useState<MatchResult | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MatchResult | null>(null);
-  // Evidence quick entry: per-player stats for a match. justRated remembers a freshly
-  // created match so closing the ratings modal can offer the stats step next.
+  // Evidence quick entry: manual per-player stats for a match (rated matches already
+  // auto-import their stats into the evidence system).
   const [statsMatch, setStatsMatch] = useState<MatchResult | null>(null);
-  const [statsPrompt, setStatsPrompt] = useState<MatchResult | null>(null);
-  const [justCreatedId, setJustCreatedId] = useState<number | null>(null);
 
   const rateMatchLive = rateMatch ? matches.find(m => m.id === rateMatch.id) ?? rateMatch : null;
 
@@ -367,24 +365,10 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
         <>
           <LogMatchModal teamId={teamId} sportName={sportName} match={editMatch} isOpen={logOpen}
             onClose={() => { setLogOpen(false); setEditMatch(null); }}
-            onCreated={(m) => { setLogOpen(false); setJustCreatedId(m.id); setRateMatch(m); }} />
-          <RateMatchModal match={rateMatchLive} sportName={sportName} players={players} isOpen={!!rateMatch}
-            onClose={() => {
-              // For a freshly logged match, offer the evidence stats step next.
-              if (sportId != null && rateMatch && rateMatch.id === justCreatedId) setStatsPrompt(rateMatch);
-              setJustCreatedId(null);
-              setRateMatch(null);
-            }} />
+            onCreated={(m) => { setLogOpen(false); setRateMatch(m); }} />
+          <RateMatchModal match={rateMatchLive} sportName={sportName} players={players} isOpen={!!rateMatch} onClose={() => setRateMatch(null)} />
 
-          {/* Evidence: per-player match stats quick entry */}
-          <ConfirmModal
-            isOpen={!!statsPrompt}
-            onClose={() => setStatsPrompt(null)}
-            onConfirm={() => { setStatsMatch(statsPrompt); setStatsPrompt(null); }}
-            title={tr('evidence.addStatsPromptTitle', 'Add Player Stats?')}
-            message={tr('evidence.addStatsPromptMsg', 'Would you like to record player statistics for this match? They feed evidence-based scores.')}
-            confirmLabel={tr('evidence.addStats', 'Add Stats')}
-          />
+          {/* Evidence: manual per-player match stats (for matches without ratings) */}
           {statsMatch && sportId != null && (
             <MatchStatsQuickEntryModal
               isOpen={!!statsMatch}

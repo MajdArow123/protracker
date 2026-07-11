@@ -45,6 +45,10 @@ export function useSaveMatchRatings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ratings }: { id: number; ratings: RatingInput[] }) => matchesApi.saveRatings(id, ratings),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['matches'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['matches'] });
+      // Ratings auto-import into the evidence system — refresh those views too.
+      qc.invalidateQueries({ queryKey: ['evidence'] });
+    },
   });
 }

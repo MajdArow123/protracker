@@ -482,6 +482,7 @@ public class EvidenceService : IEvidenceService
         SportId = m.SportId,
         Stats = EvidenceScoringEngine.ParseStatsJson(m.StatsJson),
         Notes = m.Notes,
+        IsAutoImported = m.IsAutoImported,
     };
 
     private static CoachEvaluationDto ToCoachEvalDto(CoachEvaluation e, SportMetricDefinition def) => new()

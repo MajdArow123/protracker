@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Common;
 using ProTracker.Data;
@@ -24,11 +25,16 @@ public class MatchService : IMatchService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly IEvidenceScoringEngine _evidence;
+    private readonly ILogger<MatchService> _logger;
 
-    public MatchService(ApplicationDbContext context, IAccessControlService access)
+    public MatchService(ApplicationDbContext context, IAccessControlService access,
+        IEvidenceScoringEngine evidence, ILogger<MatchService> logger)
     {
         _context = context;
         _access = access;
+        _evidence = evidence;
+        _logger = logger;
     }
 
     public async Task<List<MatchResultDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
@@ -187,11 +193,111 @@ public class MatchService : IMatchService
         }
         await _context.SaveChangesAsync();
 
+        // Evidence layer: mirror these ratings into MatchStatEntry rows so logged match
+        // stats feed evidence-based scores with no extra work. Best-effort — a sync
+        // failure must never break the ratings save.
+        try
+        {
+            await SyncEvidenceMatchStatsAsync(match, dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Evidence match-stat sync failed for match {MatchId}.", matchId);
+        }
+
         var reloaded = await _context.MatchResults
             .Include(m => m.Team)
             .Include(m => m.Ratings).ThenInclude(r => r.Player)
             .FirstAsync(m => m.Id == matchId);
         return ToDto(reloaded);
+    }
+
+    // Percentage-type stats where a 0 almost certainly means "not entered" rather than a
+    // real measurement (a 0% pass accuracy would poison the evidence average with a 1.0).
+    private static readonly HashSet<string> PercentKeys = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "passAccuracy", "fgPercentage", "threePercentage", "ftPercentage",
+        "killPercentage", "firstServeIn", "firstServeWon", "secondServeWon",
+    };
+
+    // Upserts one auto-imported MatchStatEntry per rated player (keyed by match+player)
+    // and removes auto entries for players no longer rated. Manual entries (quick-entry
+    // modal) are never touched. Recalculates evidence scores for every affected player.
+    private async Task SyncEvidenceMatchStatsAsync(MatchResult match, SaveMatchRatingsDto dto)
+    {
+        var sportId = match.TeamId != null
+            ? await _context.Teams.Where(t => t.Id == match.TeamId).Select(t => t.SportId).FirstAsync()
+            : await _context.Players.Where(p => p.Id == match.PlayerId).Select(p => p.SportId).FirstAsync();
+
+        var existingAuto = await _context.MatchStatEntries
+            .Where(e => e.MatchResultId == match.Id && e.IsAutoImported)
+            .ToListAsync();
+        var manualPlayerIds = (await _context.MatchStatEntries
+            .Where(e => e.MatchResultId == match.Id && !e.IsAutoImported)
+            .Select(e => e.PlayerId)
+            .ToListAsync()).ToHashSet();
+
+        var affected = new HashSet<int>();
+        var keptPlayerIds = new HashSet<int>();
+
+        foreach (var r in dto.Ratings)
+        {
+            // A manual entry for this match+player wins — don't clobber the coach's data.
+            if (manualPlayerIds.Contains(r.PlayerId)) continue;
+
+            var stats = EvidenceScoringEngine.ParseStatsJson(r.StatJson ?? "{}");
+            // Legacy soccer columns still arrive on the DTO for old clients — merge them in.
+            if (!stats.ContainsKey("goals") && r.Goals != 0) stats["goals"] = r.Goals;
+            if (!stats.ContainsKey("assists") && r.Assists != 0) stats["assists"] = r.Assists;
+            if (!stats.ContainsKey("minutesPlayed") && r.MinutesPlayed != 0) stats["minutesPlayed"] = r.MinutesPlayed;
+
+            // Zero percentages are unfilled form fields, not measurements.
+            foreach (var key in stats.Keys.Where(k => PercentKeys.Contains(k) && stats[k] == 0).ToList())
+                stats.Remove(key);
+
+            // Skip players with no real stats (all zeros besides minutes): the rating form
+            // defaults every field to 0, and importing an empty row would poison averages.
+            var hasRealStats = stats.Any(kv =>
+                kv.Value != 0 && !kv.Key.Equals("minutesPlayed", StringComparison.OrdinalIgnoreCase));
+            if (!hasRealStats) continue;
+
+            stats["rating"] = r.Rating; // overall performance, stored for completeness
+
+            keptPlayerIds.Add(r.PlayerId);
+            var json = JsonSerializer.Serialize(stats);
+            var entry = existingAuto.FirstOrDefault(e => e.PlayerId == r.PlayerId);
+            if (entry == null)
+            {
+                _context.MatchStatEntries.Add(new MatchStatEntry
+                {
+                    PlayerId = r.PlayerId,
+                    MatchResultId = match.Id,
+                    StatDate = match.MatchDate,
+                    SportId = sportId,
+                    StatsJson = json,
+                    IsAutoImported = true,
+                });
+                affected.Add(r.PlayerId);
+            }
+            else if (entry.StatsJson != json || entry.StatDate != match.MatchDate)
+            {
+                entry.StatsJson = json;
+                entry.StatDate = match.MatchDate;
+                affected.Add(r.PlayerId);
+            }
+        }
+
+        // Ratings are replaced wholesale — auto entries for de-rated players go too.
+        foreach (var stale in existingAuto.Where(e => !keptPlayerIds.Contains(e.PlayerId)))
+        {
+            _context.MatchStatEntries.Remove(stale);
+            affected.Add(stale.PlayerId);
+        }
+
+        await _context.SaveChangesAsync();
+
+        foreach (var playerId in affected)
+            await _evidence.RecalculateAllAsync(playerId);
     }
 
     public async Task<List<PlayerMatchRatingDto>> GetPlayerRatingsAsync(ClaimsPrincipal user, int playerId)
