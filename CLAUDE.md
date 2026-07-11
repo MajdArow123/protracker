@@ -919,6 +919,70 @@ browser-verified, done before the Final Design Sprint.
   GetConfidenceLevel signature changed to
   `(hasObjective, objectiveIsRecent, hasMatch, hasCoach, hasSelf, objectiveRequired, objectiveTestable)`.
 
+## Final Design Sprint (COMPLETE, deployed) — 7 sections
+
+Visual/UX overhaul across the whole app ("look as good as it works"), 7 commits
+(`46564cd`…`f6dde23`), each browser-verified desktop + 400px mobile, `npm run build` +
+`oxlint` clean. Rules held throughout: framer-motion `ease` is always a string; all new
+strings wrapped in `t()`; new landing strings translated into all 5 locales.
+
+- **S1 — Chart system overhaul.** `src/components/charts/` is the chart system:
+  `chartColors.ts` (the color source of truth — **CVD-validated 8-color categorical
+  palette** `#3b82f6 #059669 #8b5cf6 #d97706 #ef4444 #0891b2 #ea580c #db2777`; the spec's
+  original palette FAILED colorblind validation (lime↔orange ΔE 7 deutan) and was
+  substituted — don't "restore" it; also METRIC_COLORS stable per-metric hues,
+  SCORE_BANDS, CONFIDENCE_COLORS {Low gray/Medium amber/High blue/VeryHigh green},
+  CHART_GRID/AXIS_TICK), `TooltipContent` (shared tooltip — **bg-slate-900** per spec),
+  `ConfidenceChart` (confidence-over-time area chart; client-side re-derivation of the
+  backend confidence rules in `chartUtils.buildConfidenceTimeline` — keep in sync with
+  EvidenceScoringEngine), `ScoreRing` (gradient animated ring; `OverallScoreRing` in
+  ScoreWidgets delegates to it), `Sparkline` + `MiniRadar` (pure SVG minis). Line charts:
+  dashed segments for Low/Medium-confidence series (`confidenceByKey`), gradient fill
+  under the focused line only. Bars: score-band gradients + band-colored value labels.
+  Radar: per-point confidence dots, score axis labels, dashed until all verified.
+  Evidence confidence colors were realigned (High=blue, VeryHigh=green) in evidenceUtils.
+- **S2 — Dashboard redesign.** Shared glass `StatCard`
+  (`components/dashboard/StatCard.tsx`: backdrop-blur, gradient glow blob, gradient icon
+  chip, CountUp) on all three dashboards; Sparkline on athlete/solo Latest Score (real
+  assessment history); MiniRadar on coach team cards (useTeamReport per-card fan-out);
+  quick actions became gradient cards; `EmptyState` gained a decorative SVG (radial glow
+  + dashed orbit ring).
+- **S3 — Player profile & cards.** `PlayerAvatar` (sport-gradient ring + photo/initials)
+  on players list, team roster, reports index. Players-list fitness badges carry
+  evidence-confidence dots fed by one `evidence-status` request per team via
+  `useQueries`. Player-detail hero: **fixed a dead sport-gradient lookup** (was always
+  indigo), now real sport gradient + photo + clickable "Evidence: {level}" badge →
+  Evidence tab. Recent Assessments = trend timeline (green/red accent border + ±delta
+  chip vs previous).
+- **S4 — Reports redesign.** Player report hero = sport-gradient banner (**report DTO
+  sportName is null — falls back via `sportNameById(sportId)`**); metric rows on both
+  reports use glass StatCards + CountUp; shared `AIInsightsList`
+  (`components/reports/AIInsightsList.tsx`) renders AI insights as violet-gradient cards
+  (used by player + team AI analysis); reports index got sport dots/badges + avatars.
+- **S5 — Micro-interactions.** Bell wiggle on unread-count change (reduced-motion aware)
+  + spring badge + animated dropdown; springy layout-animated toasts; modal rise
+  entrance; sidebar icon hover nudge; drill-grid stagger; **added the missing `fadeIn`
+  keyframe** TooltipContent referenced; PageWrapper titles unified to `font-black
+  tracking-tight`.
+- **S6 — Mobile final pass.** **`viewport-fit=cover` added to index.html** — the bottom
+  nav's safe-area padding was silently 0 before this. BottomNav animated active
+  indicator (layoutId). Dashboard card rows are **snap carousels on phones**
+  (`flex sm:grid` + `snap-x` + `min-w-[~80%]` + `.scrollbar-none` utility). Evidence
+  panel tabs = dropdown on mobile. `size="xl"` modals go full-screen (100dvh) on phones.
+  Line charts: mobile margins/minTickGap.
+- **S7 — Landing final design.** Animated hero (panning gradient bg via
+  `.animate-gradient-pan`, drifting blobs, `.gradient-text-animated` headline — all
+  no-op under reduced motion). New sections: How-it-works (3 numbered steps),
+  Evidence-based-scoring showcase (mock Evidence Summary card mirroring the real UI),
+  **Pricing with the real billing plans** (Free $0 / Pro $19 / Team $49 from
+  `PlanLimits` — keep in sync if plans change), 4-column footer. ~55 new i18n keys
+  added to **all 5 locales** (structure re-validated 0/0).
+
+Design-sprint gotchas: run the dataviz palette validator before changing chart colors;
+`StatCard`/`PlayerAvatar`/`AIInsightsList`/`Sparkline`/`MiniRadar` are the shared
+primitives — extend them rather than hand-rolling card/avatar markup; carousels rely on
+the `.scrollbar-none` utility in index.css.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -1024,7 +1088,12 @@ browser-verified, done before the Final Design Sprint.
 
 ## Current status
 
-**Phase G accuracy round complete (latest).** All 4 improvements above (auto-import
+**Final Design Sprint complete (latest).** All 7 sections above shipped as 7 commits,
+each verified in-browser (desktop + 400px mobile) with build/lint clean; new landing
+strings translated into all 5 locales. Production verification after deploy (see that
+session's report).
+
+**Phase G accuracy round complete.** All 4 improvements above (auto-import
 match stats, benchmark calibration, test protocol guides, recent-objective-test
 confidence gate) implemented as 4 commits (migrations `AddMatchStatAutoImport`,
 `AddBenchmarkProfiles`, `AddTestProtocols`, `AddConfidenceTracking` auto-applied on
