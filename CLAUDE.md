@@ -860,7 +860,64 @@ athletes write CoachEvaluations or team athletes write match stats. The frontend
 Metric benchmark tweaks in `MetricDefinitionSeeder` don't propagate to existing DBs
 (insert-when-empty). `useEvidence` mutations recalculate immediately and return the
 fresh score for live previews (setQueryData pattern). Evidence i18n lives in the
-`evidence` namespace (~200 keys, all 5 locales).
+`evidence` namespace (~290 keys, all 5 locales).
+
+## Phase G accuracy round (COMPLETE, deployed) — 4 improvements
+
+Four accuracy improvements to the evidence system, each its own commit, curl- +
+browser-verified, done before the Final Design Sprint.
+
+- **1 — Auto-import match stats** (commit `686f73d`, migration `AddMatchStatAutoImport`
+  adds `MatchStatEntry.IsAutoImported`). `MatchService.SaveRatingsAsync` mirrors every
+  rated player into an auto-imported `MatchStatEntry` and recalculates their evidence
+  scores (best-effort try/catch). **No new PlayerMatchRating columns** — `StatJson`
+  already carries arbitrary sport stats; instead the rating form's `STAT_FIELDS` in
+  `utils/matchSport.ts` were expanded to the full evidence-aligned sets per sport.
+  Accuracy guards: zero-valued percentage stats are stripped (0% = unfilled form field,
+  would normalize to 1.0), all-zero rows skipped (unused subs), manual entries for the
+  same match+player never clobbered, de-rated players' auto entries removed (replace
+  semantics). Volleyball Attack rule falls back to kills/attempts. Evidence Match Stats
+  tab shows "Auto-imported from X rated matches" and hides imported matches from the
+  link dropdown; the Section-5 post-rating stats prompt was REMOVED (would double-enter).
+- **2 — Benchmark calibration** (commit `dabf849`, migration `AddBenchmarkProfiles`).
+  `BenchmarkProfile` + `BenchmarkValue`; `Team.BenchmarkProfileId` (SetNull on delete).
+  `BenchmarkProfileSeeder` seeds 5 system profiles per sport (Youth U12-U14 / Junior /
+  Amateur Adult = definition defaults / Semi-Pro / Professional) via type-aware
+  multipliers (timers shrink with level, quantities grow, percentages capped 99);
+  soccer 30m sprint anchors are spec-pinned per level. `BenchmarkService` +
+  `BenchmarkProfilesController` (`/api/benchmark-profiles`, team assignment at
+  `/api/teams/{id}/benchmark-profile`, per-player resolution at
+  `/api/players/{id}/benchmark-profile`). Engine's `NormalizeObjectiveValue` gained a
+  benchmark-override param; `GetBenchmarkOverridesAsync(playerId)` resolves the team
+  profile (solo/team-less = defaults). UI: `BenchmarkProfileCard` on the team Evidence
+  tab (selector recalculates all scored players; live sample line), `BenchmarkProfilesSection`
+  ("My Benchmarks") on the coach profile with a custom-profile editor (Low/Mid/Elite grid,
+  based-on copy), calibration badge + calibrated hints/chart lines. **Verified: the same
+  4.1s sprint = 7.0 Amateur / 3.0 Professional / 10.0 Youth.**
+- **3 — Test protocol guides** (commit `e10c82e`, migration `AddTestProtocols`).
+  `SportMetricDefinition` gained TestSetup/TestProcedure/CommonMistakes/VideoUrl;
+  `Data/TestProtocols.cs` holds protocols for all 33 testable metrics. **Seeder
+  backfills existing DBs idempotently** (fills only null TestSetup). `TestProtocolModal`
+  (equipment / numbered steps / amber mistakes box / video / "Got it!") via
+  "How to measure" links in the test form, quick-test and Test Day modals + "View test
+  protocol" in the breakdown. One-time welcome tip on first evidence-panel expansion
+  (`pt_evidence_welcome_seen`). "Test Day Checklist" button on the team Evidence tab →
+  printable PDF (dynamic @react-pdf import): blank result grid (players × top-5 tests)
+  + protocol summaries.
+- **4 — High confidence requires a recent objective test** (commit `cf4537b`, migration
+  `AddConfidenceTracking` adds `EvidenceBasedScore.LastObjectiveTestAt`). New rules
+  (`ObjectiveFreshDays = 60`): VeryHigh = all 4 sources + test ≤60d; High = recent test
+  + ≥1 other source; Medium = any 2 sources (incl. expired-test combos); Low = 1 source
+  or no test on IsObjectiveRequired metrics. **Rating-only metrics (InputType Rating,
+  e.g. Leadership) still reach High with 2 subjective sources** — objective testing is
+  impossible there by design. Tests aged 60-90d still contribute to the score but cap
+  confidence, with a spec-worded explanation. DTO exposes isObjectiveTestable /
+  isObjectiveTestExpired / daysSinceObjectiveTest / nextObjectiveTestDue (derived at
+  read time from LastObjectiveTestAt). Frontend: `TestFreshnessBanner` (amber expired /
+  blue never-tested) in preview + breakdown, "Why Medium?" tooltips on all confidence
+  badges (`confidenceExplanation`), reminders card gained the ExpiredTests aggregate.
+  GetConfidenceLevel signature changed to
+  `(hasObjective, objectiveIsRecent, hasMatch, hasCoach, hasSelf, objectiveRequired, objectiveTestable)`.
 
 ## Architecture decisions & gotchas (read before touching related code)
 
@@ -967,7 +1024,19 @@ fresh score for live previews (setQueryData pattern). Evidence i18n lives in the
 
 ## Current status
 
-**Phase G — Evidence-Based Assessment System complete (latest).** All 5 sections above
+**Phase G accuracy round complete (latest).** All 4 improvements above (auto-import
+match stats, benchmark calibration, test protocol guides, recent-objective-test
+confidence gate) implemented as 4 commits (migrations `AddMatchStatAutoImport`,
+`AddBenchmarkProfiles`, `AddTestProtocols`, `AddConfidenceTracking` auto-applied on
+Railway; `BenchmarkProfileSeeder` + protocol backfill run on boot), 80/80 backend
+tests, `npm run build` + `oxlint` clean. Verified locally: rating a match auto-creates
+evidence entries + instant recalc (Passing 85%→8.8), the 4.1s-sprint calibration triple
+(7.0/3.0/10.0), protocol backfill across all 5 sports, checklist PDF (11KB
+application/pdf blob), expired-test cap (70d test + coach eval → Medium w/ amber banner
++ ExpiredTests reminder; fresh test → High restored). **Production verification run
+after deploy (see that session's report).**
+
+**Phase G — Evidence-Based Assessment System complete.** All 5 sections above
 (data model + scoring engine, evidence collection UI, AI integration, reporting & trends,
 mobile UX & quick entry) are implemented, pushed to `main` as 5 commits (migration
 `AddEvidenceBasedAssessments` auto-applied on Railway; `MetricDefinitionSeeder` seeds 54
