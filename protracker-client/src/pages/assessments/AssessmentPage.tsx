@@ -249,7 +249,10 @@ export function AssessmentPage() {
       </div>
 
       {tab === 'new' && (
-        <form onSubmit={submitAssessment} className="max-w-3xl space-y-4">
+        // max-w-5xl (was 3xl): the form left ~45% of a desktop viewport as dead
+        // space; the setup cards pair up side-by-side at lg.
+        <form onSubmit={submitAssessment} className="max-w-5xl space-y-4">
+          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
           <Card header={tr('assessment.period', 'Assessment Period')}>
             {loadingPeriods ? (
               <Spinner />
@@ -298,6 +301,7 @@ export function AssessmentPage() {
               </div>
             </div>
           </Card>
+          </div>
 
           {/* Live overall score ring */}
           {!loadingStats && statCategories.length > 0 && (
@@ -355,7 +359,7 @@ export function AssessmentPage() {
       )}
 
       {tab === 'history' && (
-        <div className="max-w-3xl space-y-4">
+        <div className="max-w-5xl space-y-4">
           {summary && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
