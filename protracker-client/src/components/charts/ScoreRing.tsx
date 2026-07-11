@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import { clsx } from 'clsx';
 import { clampScore } from './chartUtils';
+import { scoreTone, type ScoreTone } from './chartColors';
 
 interface Props {
   /** 0-10 score (or a 0-100 percentage with max=100). */
@@ -16,11 +17,15 @@ interface Props {
   className?: string;
 }
 
-// Gradient stops per score band (red < 5 ≤ amber ≤ 7 < green on the 0-10 scale).
+// Gradient stops per canonical score band (chartColors.scoreTone: red < 5 ≤ amber < 7 ≤ green).
+const RING_STOPS: Record<ScoreTone, [string, string]> = {
+  red: ['#ef4444', '#f97316'],
+  amber: ['#f59e0b', '#fbbf24'],
+  green: ['#10b981', '#34d399'],
+};
+
 function ringStops(ratio: number): [string, string] {
-  if (ratio < 0.5) return ['#ef4444', '#f97316'];
-  if (ratio <= 0.7) return ['#f59e0b', '#fbbf24'];
-  return ['#10b981', '#34d399'];
+  return RING_STOPS[scoreTone(ratio * 10)];
 }
 
 // SVG progress ring with a gradient arc, animated fill on mount, big score inside

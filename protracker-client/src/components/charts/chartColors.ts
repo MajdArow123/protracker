@@ -78,7 +78,25 @@ export function categoryColor(name: string, index = 0): string {
   return METRIC_COLORS[name] ?? CATEGORICAL[index % CATEGORICAL.length];
 }
 
-// Score bands (bars, badges): red < 5.0 ≤ amber < 7.0 ≤ blue < 8.5 ≤ green.
+// Canonical 0-10 score banding: red < 5.0 ≤ amber < 7.0 ≤ green.
+// SINGLE source of truth for every score badge/bar/ring in the app — never
+// hand-roll thresholds per page (that's how 7.0 ended up amber on one page
+// and green on another).
+export type ScoreTone = 'red' | 'amber' | 'green';
+
+export function scoreTone(value: number): ScoreTone {
+  if (value < 5) return 'red';
+  if (value < 7) return 'amber';
+  return 'green';
+}
+
+// Solid hex per tone, for inline styles (text/bars).
+export const SCORE_TONE_HEX: Record<ScoreTone, string> = {
+  red: '#ef4444',
+  amber: '#f59e0b',
+  green: '#10b981',
+};
+
 export interface ScoreBand {
   id: string;
   from: string;
@@ -89,15 +107,17 @@ export interface ScoreBand {
 export const SCORE_BANDS: ScoreBand[] = [
   { id: 'score-red', from: '#ef4444', to: '#fca5a5', solid: '#ef4444' },
   { id: 'score-amber', from: '#f59e0b', to: '#fcd34d', solid: '#f59e0b' },
-  { id: 'score-blue', from: '#3b82f6', to: '#93c5fd', solid: '#3b82f6' },
   { id: 'score-green', from: '#10b981', to: '#6ee7b7', solid: '#10b981' },
 ];
 
+const BAND_BY_TONE: Record<ScoreTone, ScoreBand> = {
+  red: SCORE_BANDS[0],
+  amber: SCORE_BANDS[1],
+  green: SCORE_BANDS[2],
+};
+
 export function scoreBand(value: number): ScoreBand {
-  if (value < 5) return SCORE_BANDS[0];
-  if (value < 7) return SCORE_BANDS[1];
-  if (value < 8.5) return SCORE_BANDS[2];
-  return SCORE_BANDS[3];
+  return BAND_BY_TONE[scoreTone(value)];
 }
 
 // Confidence status colors (status palette — reserved, never used for series):

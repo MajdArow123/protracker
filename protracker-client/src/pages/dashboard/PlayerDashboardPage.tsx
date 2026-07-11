@@ -39,6 +39,7 @@ import {
   Megaphone, Pin, MessageCircle,
 } from 'lucide-react';
 import { clsx } from 'clsx';
+import { scoreTone } from '../../components/charts/chartColors';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
@@ -48,24 +49,27 @@ const fadeUp: Variants = {
   }),
 };
 
+const SCORE_BAR_CLS = {
+  red: { bar: 'bg-red-500', text: 'text-red-500' },
+  amber: { bar: 'bg-amber-500', text: 'text-amber-500' },
+  green: { bar: 'bg-green-500', text: 'text-green-500' },
+} as const;
+
 function ScoreBar({ label, score }: { label: string; score: number }) {
   const pct = (score / 10) * 100;
-  const color = score < 5 ? 'bg-red-500' : score < 7 ? 'bg-amber-500' : 'bg-green-500';
+  const tone = SCORE_BAR_CLS[scoreTone(score)];
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs font-medium text-gray-600 dark:text-gray-400 truncate">{label}</span>
-        <span className={clsx(
-          'text-xs font-bold ml-2',
-          score < 5 ? 'text-red-500' : score < 7 ? 'text-amber-500' : 'text-green-500'
-        )}>{score.toFixed(1)}</span>
+        <span className={clsx('text-xs font-bold ml-2', tone.text)}>{score.toFixed(1)}</span>
       </div>
       <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${pct}%` }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className={clsx('h-full rounded-full', color)}
+          className={clsx('h-full rounded-full', tone.bar)}
         />
       </div>
     </div>

@@ -8,7 +8,7 @@ import { useTeams } from '../../hooks/useTeams';
 import { useActiveInjuries } from '../../hooks/useInjuries';
 import { evidenceApi } from '../../api/evidenceApi';
 import { confidenceLabel } from '../../components/evidence/evidenceUtils';
-import { CONFIDENCE_COLORS } from '../../components/charts/chartColors';
+import { CONFIDENCE_COLORS, scoreTone } from '../../components/charts/chartColors';
 import { PlayerAvatar } from '../../components/players/PlayerAvatar';
 import type { EvidenceConfidence } from '../../types';
 import { motion } from 'framer-motion';
@@ -30,10 +30,14 @@ const SPORT_EMOJIS: Record<number, string> = {
   5: '🎾',
 };
 
+const SCORE_BADGE_CLS = {
+  green: 'bg-green-500/20 text-green-400 border border-green-500/30',
+  amber: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
+  red: 'bg-red-500/20 text-red-400 border border-red-500/30',
+} as const;
+
 function scoreColor(score: number) {
-  if (score > 7) return 'bg-green-500/20 text-green-400 border border-green-500/30';
-  if (score >= 5) return 'bg-amber-500/20 text-amber-400 border border-amber-500/30';
-  return 'bg-red-500/20 text-red-400 border border-red-500/30';
+  return SCORE_BADGE_CLS[scoreTone(score)];
 }
 
 export function PlayersPage() {
