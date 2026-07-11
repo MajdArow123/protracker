@@ -257,7 +257,7 @@ export function CoachDashboardPage() {
             />
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0">
             {data.teams.map((team, i) => {
               const g = getSportGradient(team.sportName);
               return (
@@ -270,6 +270,7 @@ export function CoachDashboardPage() {
                   onClick={() => navigate(`/teams/${team.id}`)}
                   className={clsx(
                     'group relative overflow-hidden rounded-2xl border p-5 cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]',
+                    'min-w-[82%] sm:min-w-0 snap-center flex-shrink-0 sm:flex-shrink',
                     `bg-gradient-to-br ${g.bg} ${g.border}`
                   )}
                 >
@@ -309,7 +310,7 @@ export function CoachDashboardPage() {
               animate="show"
               variants={fadeUp}
               onClick={() => navigate('/teams/new')}
-              className="group rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 p-5 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all flex flex-col items-center justify-center min-h-[140px] gap-2"
+              className="group rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-800 p-5 cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-600 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10 transition-all flex flex-col items-center justify-center min-h-[140px] gap-2 min-w-[60%] sm:min-w-0 snap-center flex-shrink-0 sm:flex-shrink"
             >
               <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/30 flex items-center justify-center transition-colors">
                 <Plus size={18} className="text-gray-400 group-hover:text-indigo-500 transition-colors" />

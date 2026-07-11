@@ -501,7 +501,7 @@ export function PlayerDashboardPage() {
       {/* Quick nav */}
       <motion.div custom={10} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">{t('dashboard.quickAccess', 'Quick Access')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="flex sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0">
           {[
             { label: t('nav.myStats', 'My Stats'), desc: t('dashboard.myStatsDesc', 'Full assessment history'), icon: TrendingUp, path: '/player-dashboard/stats', gradient: 'from-indigo-500 to-blue-600', shadow: 'hover:shadow-indigo-500/25' },
             { label: t('nav.myNutrition', 'My Nutrition'), desc: t('dashboard.myNutritionDesc', 'Meal plans & dietary profile'), icon: Salad, path: '/player-dashboard/nutrition', gradient: 'from-emerald-500 to-green-600', shadow: 'hover:shadow-emerald-500/25' },
@@ -513,6 +513,7 @@ export function PlayerDashboardPage() {
               onClick={() => navigate(item.path)}
               className={clsx(
                 'relative overflow-hidden group flex items-center gap-3 p-4 rounded-2xl bg-gradient-to-br text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer text-left',
+                'min-w-[78%] sm:min-w-0 snap-center flex-shrink-0 sm:flex-shrink',
                 item.gradient,
                 item.shadow,
               )}

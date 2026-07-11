@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
 import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad, Heart, Dumbbell, User } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../../context/AuthContext';
@@ -65,7 +66,16 @@ export function BottomNav() {
             )
           }
         >
-          <span className="relative">
+          {({ isActive }) => (
+            <>
+              {isActive && (
+                <motion.span
+                  layoutId="bottomnav-active"
+                  className="absolute top-0 inset-x-4 h-0.5 rounded-full bg-indigo-500"
+                  transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+                />
+              )}
+          <span className={clsx('relative transition-transform duration-150', isActive && 'scale-110 -translate-y-0.5')}>
             <item.icon size={20} />
             {item.badge === 'messages' && unread > 0 && (
               <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
@@ -74,6 +84,8 @@ export function BottomNav() {
             )}
           </span>
           <span>{t(item.labelKey, item.label)}</span>
+            </>
+          )}
         </NavLink>
       ))}
     </nav>

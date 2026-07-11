@@ -39,7 +39,7 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
 
   return (
     <ResponsiveContainer width="100%" height={h}>
-      <ComposedChart data={data} margin={{ top: 12, right: 24, left: leftMargin, bottom: 4 }}>
+      <ComposedChart data={data} margin={{ top: 12, right: isMobile ? 12 : 24, left: leftMargin, bottom: 4 }}>
         <defs>
           {series.map(s => (
             <linearGradient key={s.key} id={`lg-${s.key}`} x1="0" y1="0" x2="0" y2="1">
@@ -53,9 +53,10 @@ export function LineChartWrapper({ data, series, height = 300, focusedKey = null
 
         <XAxis
           dataKey="name"
-          tick={AXIS_TICK}
+          tick={isMobile ? { ...AXIS_TICK, fontSize: 10 } : AXIS_TICK}
           axisLine={false}
           tickLine={false}
+          minTickGap={isMobile ? 24 : 5}
         />
         <YAxis
           tick={AXIS_TICK}

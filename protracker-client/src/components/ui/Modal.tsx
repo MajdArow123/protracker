@@ -53,7 +53,9 @@ export function Modal({
           <motion.div
             {...panelMotion}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col max-h-[92vh] sm:max-h-[88vh]`}
+            className={`w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col sm:max-h-[88vh] ${
+              size === 'xl' ? 'max-h-[100dvh] h-[100dvh] sm:h-auto rounded-t-none sm:rounded-xl pt-[env(safe-area-inset-top)] sm:pt-0' : 'max-h-[92vh]'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">

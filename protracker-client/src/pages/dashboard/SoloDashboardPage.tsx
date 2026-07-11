@@ -296,13 +296,14 @@ export function SoloDashboardPage() {
       {/* Quick actions */}
       <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
         <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">{t('dashboard.quickActions', 'Quick Actions')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="flex sm:grid sm:grid-cols-2 gap-3 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 pb-1 sm:pb-0">
           {quickActions.map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
               className={clsx(
                 'relative overflow-hidden group flex items-center gap-4 p-5 rounded-2xl bg-gradient-to-br text-white shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all cursor-pointer text-left',
+                'min-w-[80%] sm:min-w-0 snap-center flex-shrink-0 sm:flex-shrink',
                 item.gradient,
                 item.shadow,
               )}

@@ -83,6 +83,14 @@ html.dark {
   50% { transform: translateY(-10px); }
 }
 
+/* Hide the scrollbar on horizontal snap carousels (mobile card rows). */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Chart tooltip entrance (referenced as animate-[fadeIn_120ms_ease-out]). */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(2px); }

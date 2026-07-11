@@ -8,6 +8,7 @@ import { MatchStatsForm } from './MatchStatsForm';
 import { GuidedQuestionsForm } from './GuidedQuestionsForm';
 import { ScorePreviewCard } from './ScorePreviewCard';
 import { confidenceBadgeClass, confidenceLabel, isVerified } from './evidenceUtils';
+import { useIsMobile } from '../../hooks/useMediaQuery';
 import type { SportMetricDefinition, EvidenceBasedScore } from '../../types';
 
 type EvidenceTab = 'tests' | 'match' | 'guided';
@@ -32,6 +33,7 @@ const WELCOME_KEY = 'pt_evidence_welcome_seen';
 // modal). Three entry tabs; after any save the fresh calculated score previews inline.
 export function EvidencePanel({ playerId, metric, score, self = false, teamId, canEnterMatchStats = true, onApplyScore }: Props) {
   const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   // One-time welcome the first time anyone expands an evidence panel.
   const [showWelcome, setShowWelcome] = useState(false);
@@ -118,23 +120,37 @@ export function EvidencePanel({ playerId, metric, score, self = false, teamId, c
                   </button>
                 </div>
               )}
-              <div className="flex gap-1 flex-wrap">
-                {tabs.map(tb => (
-                  <button
-                    key={tb.id}
-                    type="button"
-                    onClick={() => setTab(tb.id)}
-                    className={clsx(
-                      'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer',
-                      tab === tb.id
-                        ? 'bg-indigo-600 text-white'
-                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700',
-                    )}
-                  >
-                    <tb.icon size={11} /> {tb.label}
-                  </button>
-                ))}
-              </div>
+              {isMobile && tabs.length > 1 ? (
+                /* Phones get a dropdown — pills wrap awkwardly at 360px with long labels */
+                <select
+                  value={tab}
+                  onChange={e => setTab(e.target.value as EvidenceTab)}
+                  className="w-full rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-xs font-semibold text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                  aria-label={t('evidence.evidenceType', 'Evidence type')}
+                >
+                  {tabs.map(tb => (
+                    <option key={tb.id} value={tb.id}>{tb.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex gap-1 flex-wrap">
+                  {tabs.map(tb => (
+                    <button
+                      key={tb.id}
+                      type="button"
+                      onClick={() => setTab(tb.id)}
+                      className={clsx(
+                        'flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer',
+                        tab === tb.id
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700',
+                      )}
+                    >
+                      <tb.icon size={11} /> {tb.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {tab === 'tests' && hasObjectiveTab && (
                 <ObjectiveTestForm playerId={playerId} metric={metric} onSaved={s => s && setFreshScore(s)} />
