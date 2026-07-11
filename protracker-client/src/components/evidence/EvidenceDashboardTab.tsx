@@ -9,6 +9,7 @@ import { EvidenceBreakdownModal } from './EvidenceBreakdownModal';
 import { EvidenceAnalysisModal } from './EvidenceAnalysisModal';
 import { TestResultsSection } from './TestResultsSection';
 import { MatchStatsSection } from './MatchStatsSection';
+import { ConfidenceChart } from '../charts/ConfidenceChart';
 import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, overallConfidence } from './evidenceUtils';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useSportMetrics, usePlayerEvidenceScores, useRecalculateEvidence } from '../../hooks/useEvidence';
@@ -186,6 +187,9 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
       {/* Trends: test history + aggregated match stats (render only when data exists) */}
       <TestResultsSection playerId={playerId} sportId={sportId} />
       <MatchStatsSection playerId={playerId} sportId={sportId} />
+
+      {/* Data quality trend (renders only with ≥2 evidence events) */}
+      <ConfidenceChart playerId={playerId} sportId={sportId} variant="card" />
 
       {selected && (
         <EvidenceBreakdownModal

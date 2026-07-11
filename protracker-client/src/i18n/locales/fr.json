@@ -2992,6 +2992,8 @@
     "whyNoTest": "Pourquoi {{level}} ? Aucun test objectif enregistré. Ajoutez un test mesuré pour atteindre une confiance Élevée.",
     "whyExpired": "Pourquoi {{level}} ? Le dernier test objectif date d'il y a {{days}} jours (plus de 60 jours). Effectuez un nouveau test pour rétablir la confiance Élevée.",
     "whyFresh": "Confiance {{level}} — basée sur un test objectif d'il y a {{days}} jours plus {{count}} sources de preuves.",
-    "reminderExpiredTests": "{{count}} joueurs ont des tests objectifs expirés (>60 jours). Refaites les tests pour maintenir la confiance Élevée."
+    "reminderExpiredTests": "{{count}} joueurs ont des tests objectifs expirés (>60 jours). Refaites les tests pour maintenir la confiance Élevée.",
+    "confidenceOverTime": "Confiance dans le temps",
+    "confidenceOverTimeHint": "Confiance moyenne des données à mesure que les preuves s'accumulent"
   }
 }

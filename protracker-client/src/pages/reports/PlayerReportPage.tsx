@@ -26,10 +26,13 @@ import { usePlayerReport } from '../../hooks/useReports';
 import { useSportMetrics, usePlayerEvidenceScores, usePlayerObjectiveTests } from '../../hooks/useEvidence';
 import { EvidenceBreakdownModal } from '../../components/evidence/EvidenceBreakdownModal';
 import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
+import { categoryColor } from '../../components/charts/chartColors';
+import { ConfidenceChart } from '../../components/charts/ConfidenceChart';
 import { confidenceBadgeClass, confidenceLabel, isVerified } from '../../components/evidence/evidenceUtils';
 import type { SportMetricDefinition } from '../../types';
 
-const COLORS = ['#6366f1','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#14b8a6'];
+// Series colors come from the shared CVD-validated chart palette (chartColors.ts),
+// assigned per category name so the same metric wears the same hue everywhere.
 
 const SEVERITY_COLORS: Record<string, string> = {
   Minor: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300',
@@ -435,7 +438,7 @@ export function PlayerReportPage() {
             {/* Stat focus pills */}
             <div className="flex flex-wrap gap-2 mb-5">
               {allCategories.map((cat, i) => {
-                const color = COLORS[i % COLORS.length];
+                const color = categoryColor(cat, i);
                 const isFocused = focusedCategory === cat;
                 return (
                   <button
@@ -472,11 +475,14 @@ export function PlayerReportPage() {
               series={visibleCategories.map((cat, i) => ({
                 key: cat,
                 name: cat,
-                color: COLORS[i % COLORS.length],
+                color: categoryColor(cat, i),
               }))}
               height={300}
               focusedKey={focusedCategory}
               yAxisLabel={tr('reports.scoreOutOf10', 'Score / 10')}
+              confidenceByKey={Object.fromEntries(allCategories
+                .map(cat => [cat, confidenceForCategory(cat)])
+                .filter(([, c]) => c !== undefined))}
             />
           </>
         )}
@@ -710,6 +716,11 @@ export function PlayerReportPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Data quality trend */}
+          {playerId && (
+            <ConfidenceChart playerId={playerId} sportId={report?.player?.sportId} variant="section" />
+          )}
 
           {/* Test history timeline */}
           {objectiveTests.length > 0 && (

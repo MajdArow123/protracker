@@ -2992,6 +2992,8 @@
     "whyNoTest": "¿Por qué {{level}}? Sin prueba objetiva registrada. Añade una prueba medida para alcanzar confianza Alta.",
     "whyExpired": "¿Por qué {{level}}? La última prueba objetiva fue hace {{days}} días (más de 60 días). Realiza una nueva prueba para restaurar la confianza Alta.",
     "whyFresh": "Confianza {{level}} — basada en una prueba objetiva de hace {{days}} días más {{count}} fuentes de evidencia.",
-    "reminderExpiredTests": "{{count}} jugadores tienen pruebas objetivas caducadas (>60 días). Repite las pruebas para mantener la confianza Alta."
+    "reminderExpiredTests": "{{count}} jugadores tienen pruebas objetivas caducadas (>60 días). Repite las pruebas para mantener la confianza Alta.",
+    "confidenceOverTime": "Confianza a lo largo del tiempo",
+    "confidenceOverTimeHint": "Confianza media de los datos a medida que se acumula la evidencia"
   }
 }

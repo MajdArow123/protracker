@@ -12,12 +12,11 @@ import { Card } from '../../components/ui/Card';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
+import { categoryColor } from '../../components/charts/chartColors';
 import { TrendingUp, TrendingDown, Minus, Calendar, BarChart3, Trophy, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 
-const CHART_COLORS = [
-  '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4',
-];
+// Series colors come from the shared CVD-validated chart palette.
 
 function scoreColor(s: number): string {
   if (s > 7) return '#10b981';
@@ -158,7 +157,7 @@ export function PlayerStatsPage() {
           <Card header={t('dashboard.progressOverTime', 'Progress Over Time')}>
             <div className="flex flex-wrap gap-2 mb-5">
               {allCategories.map((cat, i) => {
-                const color = CHART_COLORS[i % CHART_COLORS.length];
+                const color = categoryColor(cat, i);
                 const isFocused = focusedCategory === cat;
                 const hasFocus = focusedCategory !== null;
                 return (
@@ -198,7 +197,7 @@ export function PlayerStatsPage() {
               series={allCategories.map((cat, i) => ({
                 key: cat,
                 name: cat,
-                color: CHART_COLORS[i % CHART_COLORS.length],
+                color: categoryColor(cat, i),
               }))}
               height={280}
               focusedKey={focusedCategory}

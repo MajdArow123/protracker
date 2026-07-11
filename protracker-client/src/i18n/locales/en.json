@@ -2992,6 +2992,8 @@
     "whyNoTest": "Why {{level}}? No objective test recorded. Add a measured test to reach High confidence.",
     "whyExpired": "Why {{level}}? The last objective test was {{days}} days ago (older than 60 days). Run a new test to restore High confidence.",
     "whyFresh": "{{level}} confidence — based on an objective test from {{days}} days ago plus {{count}} evidence sources.",
-    "reminderExpiredTests": "{{count}} players have expired objective tests (>60 days). Re-test to maintain High confidence."
+    "reminderExpiredTests": "{{count}} players have expired objective tests (>60 days). Re-test to maintain High confidence.",
+    "confidenceOverTime": "Confidence Over Time",
+    "confidenceOverTimeHint": "Average data confidence across metrics as evidence accumulates"
   }
 }

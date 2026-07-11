@@ -1,5 +1,6 @@
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
+import { ScoreRing } from '../charts/ScoreRing';
 
 // Shared between the coach AssessmentPage and the solo self-assessment page so the
 // slider/ring UX stays identical for both flows.
@@ -77,30 +78,14 @@ export function OverallScoreRing({ scores, total }: { scores: Record<number, num
   const { t } = useTranslation();
   const vals = Object.values(scores).filter((v): v is number => v !== null);
   const avg = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
-  const color = vals.length > 0 ? scoreColor(avg) : '#9ca3af';
-  const radius = 36;
-  const circumference = 2 * Math.PI * radius;
-  const dash = (avg / 10) * circumference;
 
   return (
     <div className="flex flex-col items-center justify-center py-4">
-      <div className="relative w-24 h-24">
-        <svg width="96" height="96" viewBox="0 0 96 96">
-          <circle cx="48" cy="48" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="8" className="dark:stroke-gray-700" />
-          <circle
-            cx="48" cy="48" r={radius} fill="none"
-            stroke={color} strokeWidth="8"
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${circumference}`}
-            strokeDashoffset={circumference / 4}
-            style={{ transition: 'stroke-dasharray 0.4s ease, stroke 0.4s ease' }}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="text-xl font-black" style={{ color }}>{vals.length > 0 ? avg.toFixed(1) : '—'}</span>
-          <span className="text-[10px] text-gray-400">{t('assessment.avg', 'avg')}</span>
-        </div>
-      </div>
+      <ScoreRing
+        value={avg}
+        display={vals.length > 0 ? avg.toFixed(1) : '—'}
+        sublabel={t('assessment.avg', 'avg')}
+      />
       <p className="text-xs font-bold text-gray-700 dark:text-gray-300 mt-2">{t('assessment.overallScore', 'Overall Score')}</p>
       <p className="text-xs text-gray-500">{vals.length}/{total} {t('assessment.scored', 'scored')}</p>
     </div>
