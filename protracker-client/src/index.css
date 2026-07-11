@@ -200,4 +200,23 @@ html.dark .skeleton {
   cursor: pointer;
 }
 
+/* Unscored state: ghost thumb + dimmed track, so an untouched slider can't be
+   mistaken for a deliberately-set midpoint score. */
+.score-slider--unset::-webkit-slider-runnable-track {
+  opacity: 0.35;
+}
+.score-slider--unset::-moz-range-track {
+  opacity: 0.35;
+}
+.score-slider--unset::-webkit-slider-thumb {
+  background: transparent;
+  border: 2px dashed #9ca3af;
+  box-shadow: none;
+}
+.score-slider--unset::-moz-range-thumb {
+  background: transparent;
+  border: 2px dashed #9ca3af;
+  box-shadow: none;
+}
+
 /* RTL support (Arabic / Hebrew) lives in src/styles/rtl.css (imported in main.tsx). */

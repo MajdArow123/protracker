@@ -65,8 +65,11 @@ export function ScoreSlider({ name, description, value, onChange, required, foot
         step={0.5}
         value={display}
         onChange={e => onChange(Number(e.target.value))}
-        className="score-slider"
+        // Ghost styling while unscored — the midpoint thumb used to look like a
+        // deliberately-set 5.5.
+        className={clsx('score-slider', !isSet && 'score-slider--unset')}
         style={{ '--thumb-color': color } as React.CSSProperties}
+        aria-label={isSet ? undefined : t('assessment.notScored', 'Not scored')}
       />
       <div className="flex justify-between text-[10px] text-gray-400 mt-1.5">
         <span>1 — {t('assessment.poor', 'Poor')}</span>
