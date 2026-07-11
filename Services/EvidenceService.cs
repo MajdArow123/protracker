@@ -399,6 +399,20 @@ public class EvidenceService : IEvidenceService
             });
         }
 
+        // Tests past the 60-day freshness window: High confidence has lapsed for these
+        // players until they re-test.
+        var expiredCutoff = now.AddDays(-EvidenceScoringEngine.ObjectiveFreshDays);
+        var expiredCount = players.Count(p => scoredPlayerIds.Contains(p.Id)
+            && lastTests.TryGetValue(p.Id, out var lt) && lt < expiredCutoff);
+        if (expiredCount > 0)
+        {
+            reminders.Add(new EvidenceReminderDto
+            {
+                Type = "ExpiredTests",
+                Count = expiredCount,
+            });
+        }
+
         var lowConfidencePlayers = scores
             .GroupBy(s => s.PlayerId)
             .Count(g => g.Count(s => s.Confidence == EvidenceConfidence.Low) >= 2);
@@ -533,6 +547,11 @@ public class EvidenceService : IEvidenceService
             sources = new();
         }
 
+        // Objective-test freshness, derived at read time so it stays current.
+        var daysSince = s.LastObjectiveTestAt is DateTime last
+            ? (int?)(DateTime.UtcNow - last).TotalDays
+            : null;
+
         return new EvidenceBasedScoreDto
         {
             Id = s.Id,
@@ -559,6 +578,10 @@ public class EvidenceService : IEvidenceService
                 s.ObjectiveScore != null, s.MatchStatScore != null,
                 s.CoachEvalScore != null, s.SelfAssessScore != null),
             LastCalculatedAt = s.LastCalculatedAt,
+            IsObjectiveTestable = def.InputType != MetricInputType.Rating,
+            IsObjectiveTestExpired = daysSince > EvidenceScoringEngine.ObjectiveFreshDays,
+            DaysSinceObjectiveTest = daysSince,
+            NextObjectiveTestDue = s.LastObjectiveTestAt?.AddDays(EvidenceScoringEngine.ObjectiveFreshDays),
         };
     }
 }

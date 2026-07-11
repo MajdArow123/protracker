@@ -9,7 +9,7 @@ import { EvidenceBreakdownModal } from './EvidenceBreakdownModal';
 import { EvidenceAnalysisModal } from './EvidenceAnalysisModal';
 import { TestResultsSection } from './TestResultsSection';
 import { MatchStatsSection } from './MatchStatsSection';
-import { confidenceBadgeClass, confidenceLabel, overallConfidence } from './evidenceUtils';
+import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, overallConfidence } from './evidenceUtils';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useSportMetrics, usePlayerEvidenceScores, useRecalculateEvidence } from '../../hooks/useEvidence';
 import { usePlayerBenchmarks } from '../../hooks/useBenchmarks';
@@ -160,7 +160,10 @@ export function EvidenceDashboardTab({ playerId, sportId, self = false, teamId, 
               <div className="flex items-center gap-2">
                 {score ? (
                   <>
-                    <span className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-full', confidenceBadgeClass(score.confidence))}>
+                    <span
+                      className={clsx('text-[10px] font-semibold px-1.5 py-0.5 rounded-full cursor-help', confidenceBadgeClass(score.confidence))}
+                      title={confidenceExplanation(score, t)}
+                    >
                       {confidenceLabel(score.confidence, t)}
                     </span>
                     <span className="flex items-center gap-1 ml-auto">

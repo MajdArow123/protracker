@@ -81,7 +81,9 @@ export function EvidenceRemindersCard() {
                 ? (r.daysSinceTest != null
                     ? t('evidence.reminderStaleTest', "{{name}} hasn't had an objective test in {{days}} days", { name: r.playerName, days: r.daysSinceTest })
                     : t('evidence.reminderNeverTested', "{{name}} hasn't had an objective test yet", { name: r.playerName }))
-                : t('evidence.reminderLowConfidence', '{{count}} players have Low confidence scores — add objective tests to improve accuracy', { count: r.count ?? 0 })}
+                : r.type === 'ExpiredTests'
+                  ? t('evidence.reminderExpiredTests', '{{count}} players have expired objective tests (>60 days). Re-test to maintain High confidence.', { count: r.count ?? 0 })
+                  : t('evidence.reminderLowConfidence', '{{count}} players have Low confidence scores — add objective tests to improve accuracy', { count: r.count ?? 0 })}
             </span>
           </button>
         ))}

@@ -74,6 +74,11 @@ public class EvidenceBasedScore
     // Plain-English explanation of how the score came about and what's missing.
     public string? Explanation { get; set; }
 
+    // When the objective test contributing to this score was taken (null = none in
+    // window). Confidence-freshness fields (expired / days since / next due) derive
+    // from this at read time.
+    public DateTime? LastObjectiveTestAt { get; set; }
+
     public DateTime LastCalculatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -6,7 +6,8 @@ import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { scoreColor } from '../assessments/ScoreWidgets';
 import { EvidencePanel } from './EvidencePanel';
-import { confidenceBadgeClass, confidenceLabel, translateEvidenceItem } from './evidenceUtils';
+import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, translateEvidenceItem } from './evidenceUtils';
+import { TestFreshnessBanner } from './TestFreshnessBanner';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import {
   usePlayerObjectiveTests, usePlayerCoachEvaluations,
@@ -120,12 +121,17 @@ export function EvidenceBreakdownModal({ isOpen, onClose, playerId, metric, scor
                 <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('evidence.weightedScore', 'Weighted score')}</span>
                 <div className="flex items-center gap-2">
                   <span className="text-lg font-black" style={{ color: scoreColor(score.finalScore) }}>{score.finalScore.toFixed(1)}/10</span>
-                  <span className={clsx('text-[11px] font-semibold px-2 py-0.5 rounded-full', confidenceBadgeClass(score.confidence))}>
+                  <span
+                    className={clsx('text-[11px] font-semibold px-2 py-0.5 rounded-full cursor-help', confidenceBadgeClass(score.confidence))}
+                    title={confidenceExplanation(score, t)}
+                  >
                     {confidenceLabel(score.confidence, t)}
                   </span>
                 </div>
               </div>
             </div>
+
+            <TestFreshnessBanner score={score} />
 
             {score.explanation && (
               <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">{score.explanation}</p>

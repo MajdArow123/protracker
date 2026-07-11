@@ -2,7 +2,8 @@ import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { clsx } from 'clsx';
 import { scoreColor } from '../assessments/ScoreWidgets';
-import { confidenceBadgeClass, confidenceLabel, toSliderStep, translateEvidenceItem } from './evidenceUtils';
+import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, toSliderStep, translateEvidenceItem } from './evidenceUtils';
+import { TestFreshnessBanner } from './TestFreshnessBanner';
 import type { EvidenceBasedScore } from '../../types';
 import type { TFunction } from 'i18next';
 
@@ -33,10 +34,15 @@ export function ScorePreviewCard({ score, onApply, compact }: Props) {
         <p className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wide">
           {t('evidence.calculatedScore', 'Calculated score')}
         </p>
-        <span className={clsx('text-[11px] font-semibold px-2 py-0.5 rounded-full', confidenceBadgeClass(score.confidence))}>
+        <span
+          className={clsx('text-[11px] font-semibold px-2 py-0.5 rounded-full cursor-help', confidenceBadgeClass(score.confidence))}
+          title={confidenceExplanation(score, t)}
+        >
           {t('evidence.confidenceBadge', '{{level}} confidence', { level: confidenceLabel(score.confidence, t) })}
         </span>
       </div>
+
+      <TestFreshnessBanner score={score} />
 
       <div className="flex items-center gap-3">
         <span className="text-2xl font-black" style={{ color }}>{score.finalScore.toFixed(1)}</span>

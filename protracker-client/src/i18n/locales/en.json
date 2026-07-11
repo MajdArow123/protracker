@@ -2982,6 +2982,16 @@
     "protocolVideo": "Watch demo video",
     "protocolGotIt": "Got it!",
     "welcomeTip": "Evidence-based scoring uses real test data to calculate accurate scores. Follow the test protocols (\"How to measure\") for consistent, comparable results.",
-    "downloadChecklist": "Test Day Checklist"
+    "downloadChecklist": "Test Day Checklist",
+    "noTestYetTitle": "No objective test recorded yet",
+    "noTestYetHint": "Add a measured test to unlock High confidence.",
+    "testRequiredTitle": "Objective test required for High confidence",
+    "testExpiredLine": "Last test: {{days}} days ago (expired)",
+    "testExpiredHint": "Run a new test to restore High confidence.",
+    "whyUntestable": "Why {{level}}? This metric is rated by observation — two sources (coach + self-assessment) give the highest possible confidence.",
+    "whyNoTest": "Why {{level}}? No objective test recorded. Add a measured test to reach High confidence.",
+    "whyExpired": "Why {{level}}? The last objective test was {{days}} days ago (older than 60 days). Run a new test to restore High confidence.",
+    "whyFresh": "{{level}} confidence — based on an objective test from {{days}} days ago plus {{count}} evidence sources.",
+    "reminderExpiredTests": "{{count}} players have expired objective tests (>60 days). Re-test to maintain High confidence."
   }
 }

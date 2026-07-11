@@ -52,6 +52,23 @@ export function translateEvidenceItem(item: string, t: TFunction): string {
   return item;
 }
 
+// One-line "why this confidence?" for badge tooltips.
+export function confidenceExplanation(score: EvidenceBasedScore, t: TFunction): string {
+  const level = confidenceLabel(score.confidence, t);
+  if (!score.isObjectiveTestable) {
+    return t('evidence.whyUntestable', 'Why {{level}}? This metric is rated by observation — two sources (coach + self-assessment) give the highest possible confidence.', { level });
+  }
+  if (score.daysSinceObjectiveTest == null) {
+    return t('evidence.whyNoTest', 'Why {{level}}? No objective test recorded. Add a measured test to reach High confidence.', { level });
+  }
+  if (score.isObjectiveTestExpired) {
+    return t('evidence.whyExpired', 'Why {{level}}? The last objective test was {{days}} days ago (older than 60 days). Run a new test to restore High confidence.', { level, days: score.daysSinceObjectiveTest });
+  }
+  return t('evidence.whyFresh', '{{level}} confidence — based on an objective test from {{days}} days ago plus {{count}} evidence sources.', {
+    level, days: score.daysSinceObjectiveTest, count: score.evidenceSources.length,
+  });
+}
+
 // Most common confidence across a player's scores (the "overall" level).
 export function overallConfidence(scores: EvidenceBasedScore[]): EvidenceConfidence | null {
   if (scores.length === 0) return null;

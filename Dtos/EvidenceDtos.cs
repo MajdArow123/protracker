@@ -157,6 +157,13 @@ public class EvidenceBasedScoreDto
     public string? Explanation { get; set; }
     public List<string> MissingEvidence { get; set; } = new();
     public DateTime LastCalculatedAt { get; set; }
+
+    // Objective-test freshness (High confidence requires a test in the last 60 days).
+    // Whether the metric can be objectively tested at all (rating-only metrics can't).
+    public bool IsObjectiveTestable { get; set; }
+    public bool IsObjectiveTestExpired { get; set; }
+    public int? DaysSinceObjectiveTest { get; set; }
+    public DateTime? NextObjectiveTestDue { get; set; }
 }
 
 // ─── Team evidence status (Phase G Section 4) ────────────────────────────────

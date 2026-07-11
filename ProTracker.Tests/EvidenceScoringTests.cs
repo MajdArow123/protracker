@@ -90,21 +90,29 @@ public class EvidenceScoringEngineTests
     }
 
     // ─── Confidence levels ────────────────────────────────────────────────────
+    // High/VeryHigh require a RECENT objective test; rating-only (untestable) metrics
+    // may reach High with two subjective sources.
 
     [Theory]
-    [InlineData(true, true, true, true, false, EvidenceConfidence.VeryHigh)]
-    [InlineData(true, false, true, false, false, EvidenceConfidence.High)]   // objective + coach
-    [InlineData(false, true, true, true, false, EvidenceConfidence.High)]    // 3 sources
-    [InlineData(false, false, true, true, false, EvidenceConfidence.Medium)] // coach + one other
-    [InlineData(true, true, false, false, false, EvidenceConfidence.Medium)] // 2 sources, no coach
-    [InlineData(false, false, true, false, false, EvidenceConfidence.Low)]   // coach only
-    [InlineData(false, false, false, true, false, EvidenceConfidence.Low)]   // self only
-    [InlineData(false, true, true, true, true, EvidenceConfidence.Low)]      // objective required & missing
-    [InlineData(true, true, true, true, true, EvidenceConfidence.VeryHigh)]  // objective required & present
-    public void GetConfidenceLevel_MatchesSpec(bool obj, bool match, bool coach, bool self,
-        bool objectiveRequired, EvidenceConfidence expected)
+    // (hasObjective, objectiveIsRecent, hasMatch, hasCoach, hasSelf, objectiveRequired, objectiveTestable)
+    [InlineData(true, true, true, true, true, false, true, EvidenceConfidence.VeryHigh)]  // all 4, fresh test
+    [InlineData(true, false, true, true, true, false, true, EvidenceConfidence.Medium)]   // all 4 but test EXPIRED
+    [InlineData(true, true, false, true, false, false, true, EvidenceConfidence.High)]    // fresh test + coach
+    [InlineData(true, true, true, false, false, false, true, EvidenceConfidence.High)]    // fresh test + match
+    [InlineData(true, false, false, true, false, false, true, EvidenceConfidence.Medium)] // expired test + coach
+    [InlineData(false, false, true, true, true, false, true, EvidenceConfidence.Medium)]  // 3 sources, NO objective → capped
+    [InlineData(false, false, false, true, true, false, true, EvidenceConfidence.Medium)] // coach + self
+    [InlineData(false, false, false, true, false, false, true, EvidenceConfidence.Low)]   // coach only
+    [InlineData(false, false, true, true, true, true, true, EvidenceConfidence.Low)]      // required & missing
+    [InlineData(true, true, true, true, true, true, true, EvidenceConfidence.VeryHigh)]   // required & fresh
+    [InlineData(false, false, false, true, true, false, false, EvidenceConfidence.High)]  // untestable: coach+self → High
+    [InlineData(false, false, true, true, true, false, false, EvidenceConfidence.High)]   // untestable: capped at High
+    [InlineData(false, false, false, true, false, false, false, EvidenceConfidence.Low)]  // untestable: single source
+    public void GetConfidenceLevel_MatchesSpec(bool obj, bool recent, bool match, bool coach, bool self,
+        bool objectiveRequired, bool objectiveTestable, EvidenceConfidence expected)
     {
-        Assert.Equal(expected, EvidenceScoringEngine.GetConfidenceLevel(obj, match, coach, self, objectiveRequired));
+        Assert.Equal(expected, EvidenceScoringEngine.GetConfidenceLevel(
+            obj, recent, match, coach, self, objectiveRequired, objectiveTestable));
     }
 
     [Theory]
@@ -414,6 +422,49 @@ public class EvidenceApiTests : IClassFixture<ProTrackerWebApplicationFactory>
     }
 
     [Fact]
+    public async Task ExpiredObjectiveTest_CapsConfidenceAtMedium()
+    {
+        var client = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var stamina = await GetSoccerMetricAsync(client, "Stamina");
+
+        // A 70-day-old test + a coach evaluation: score still counts, High does not.
+        var old = DateTime.UtcNow.AddDays(-70).ToString("o");
+        var testResponse = await client.PostAsJsonAsync("/api/objective-tests", new
+        {
+            playerId = TestAuth.LiamCarterPlayerId,
+            metricDefinitionId = stamina.Id,
+            value = 2600,
+            testedAt = old,
+        });
+        Assert.Equal(HttpStatusCode.Created, testResponse.StatusCode);
+        await client.PostAsJsonAsync("/api/coach-evaluations", new
+        {
+            playerId = TestAuth.LiamCarterPlayerId,
+            metricDefinitionId = stamina.Id,
+            rating = 7,
+        });
+
+        var calc = await client.PostAsync($"/api/evidence-scores/calculate/{TestAuth.LiamCarterPlayerId}/{stamina.Id}", null);
+        var score = (await calc.Content.ReadFromJsonAsync<TestApiResponse<ScoreShape>>())!.Data!;
+        Assert.Equal("Medium", score.Confidence); // expired test blocks High
+        Assert.True(score.IsObjectiveTestExpired);
+        Assert.True(score.DaysSinceObjectiveTest >= 69);
+        Assert.Contains("Run a new test", score.Explanation);
+
+        // A fresh test restores High.
+        await client.PostAsJsonAsync("/api/objective-tests", new
+        {
+            playerId = TestAuth.LiamCarterPlayerId,
+            metricDefinitionId = stamina.Id,
+            value = 2700,
+        });
+        var calc2 = await client.PostAsync($"/api/evidence-scores/calculate/{TestAuth.LiamCarterPlayerId}/{stamina.Id}", null);
+        var score2 = (await calc2.Content.ReadFromJsonAsync<TestApiResponse<ScoreShape>>())!.Data!;
+        Assert.Equal("High", score2.Confidence);
+        Assert.False(score2.IsObjectiveTestExpired);
+    }
+
+    [Fact]
     public async Task ObjectiveTest_WrongSportMetric_ReturnsBadRequest()
     {
         var client = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
@@ -456,6 +507,8 @@ public class EvidenceApiTests : IClassFixture<ProTrackerWebApplicationFactory>
         public decimal? MatchStatScore { get; set; }
         public string? Explanation { get; set; }
         public List<string> MissingEvidence { get; set; } = new();
+        public bool IsObjectiveTestExpired { get; set; }
+        public int? DaysSinceObjectiveTest { get; set; }
     }
 
     public class CoachEvalShape

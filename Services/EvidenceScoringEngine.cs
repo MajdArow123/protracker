@@ -33,6 +33,11 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
     // falls unless old evidence expires).
     public const int EvidenceWindowDays = 90;
 
+    // High/VeryHigh confidence requires an objective test at most this old. Between 60
+    // and 90 days the test still contributes to the score, but confidence is capped —
+    // real data must be fresh to be trusted.
+    public const int ObjectiveFreshDays = 60;
+
     private readonly ApplicationDbContext _context;
 
     public EvidenceScoringEngine(ApplicationDbContext context)
@@ -91,15 +96,26 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         return (obj / sum, match / sum, coach / sum, self / sum);
     }
 
+    // Confidence rules (accuracy round): High/VeryHigh require a RECENT objective test —
+    // a coach can't reach High on evaluations alone. Metrics that have no objective test
+    // at all (rating-only, e.g. Leadership) may still reach High with two subjective
+    // sources, since measured data is impossible there by design.
     public static EvidenceConfidence GetConfidenceLevel(
-        bool hasObjective, bool hasMatch, bool hasCoach, bool hasSelf, bool objectiveRequired)
+        bool hasObjective, bool objectiveIsRecent, bool hasMatch, bool hasCoach, bool hasSelf,
+        bool objectiveRequired, bool objectiveTestable)
     {
         var count = (hasObjective ? 1 : 0) + (hasMatch ? 1 : 0) + (hasCoach ? 1 : 0) + (hasSelf ? 1 : 0);
         if (count == 0) return EvidenceConfidence.Low;
+
+        if (!objectiveTestable)
+            return count >= 2 ? EvidenceConfidence.High : EvidenceConfidence.Low;
+
         if (objectiveRequired && !hasObjective) return EvidenceConfidence.Low;
-        if (hasObjective && hasMatch && hasCoach && hasSelf) return EvidenceConfidence.VeryHigh;
-        if ((hasObjective && hasCoach) || count >= 3) return EvidenceConfidence.High;
-        if (count >= 2) return EvidenceConfidence.Medium;
+
+        var recentObjective = hasObjective && objectiveIsRecent;
+        if (recentObjective && hasMatch && hasCoach && hasSelf) return EvidenceConfidence.VeryHigh;
+        if (recentObjective && count >= 2) return EvidenceConfidence.High;
+        if (count >= 2) return EvidenceConfidence.Medium; // incl. expired-test combinations
         return EvidenceConfidence.Low;
     }
 
@@ -361,7 +377,11 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
                   + (coachScore ?? 0) * wCoach + (selfScore ?? 0) * wSelf;
         final = Math.Clamp(Math.Round(final, 1), 1m, 10m);
 
-        var confidence = GetConfidenceLevel(hasObj, hasMatch, hasCoach, hasSelf, def.IsObjectiveRequired);
+        var objectiveTestable = def.InputType != MetricInputType.Rating;
+        var objectiveIsRecent = latestTest != null
+            && latestTest.TestedAt >= DateTime.UtcNow.AddDays(-ObjectiveFreshDays);
+        var confidence = GetConfidenceLevel(hasObj, objectiveIsRecent, hasMatch, hasCoach, hasSelf,
+            def.IsObjectiveRequired, objectiveTestable);
         var method = GetCalculationMethod(hasObj, hasMatch, hasCoach, hasSelf);
 
         var sources = new List<string>();
@@ -374,7 +394,8 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
 
         var explanation = BuildExplanation(def, final, confidence,
             latestTest, objScore, matchScore, matchEntries.Count, coachScore, selfScore,
-            MissingEvidence(def, hasObj, hasMatch, hasCoach, hasSelf));
+            MissingEvidence(def, hasObj, hasMatch, hasCoach, hasSelf),
+            objectiveTestable, objectiveIsRecent);
 
         return new EvidenceBasedScore
         {
@@ -394,6 +415,7 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
             SelfAssessWeight = Math.Round(wSelf, 3),
             EvidenceSources = JsonSerializer.Serialize(sources),
             Explanation = explanation,
+            LastObjectiveTestAt = latestTest?.TestedAt,
             LastCalculatedAt = DateTime.UtcNow,
         };
     }
@@ -414,7 +436,8 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
 
     private static string BuildExplanation(SportMetricDefinition def, decimal final, EvidenceConfidence confidence,
         ObjectiveTestResult? test, decimal? objScore, decimal? matchScore, int matchCount,
-        decimal? coachScore, decimal? selfScore, List<string> missing)
+        decimal? coachScore, decimal? selfScore, List<string> missing,
+        bool objectiveTestable, bool objectiveIsRecent)
     {
         var parts = new List<string>();
         if (test != null && objScore != null)
@@ -427,6 +450,25 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
             parts.Add($"a self-assessment of {selfScore:0.0}/10");
 
         var text = $"{def.Name} score is {final:0.0} based on {string.Join(", ", parts)}.";
+
+        // Freshness gate: name exactly what is capping the confidence.
+        if (objectiveTestable && confidence < EvidenceConfidence.High)
+        {
+            if (test == null)
+            {
+                text += $" Confidence is {confidence} because no objective {def.Name.ToLowerInvariant()} test has been recorded"
+                     + $" — run one to reach High confidence.";
+                return text;
+            }
+            if (!objectiveIsRecent)
+            {
+                var days = (int)(DateTime.UtcNow - test.TestedAt).TotalDays;
+                text += $" Confidence is {confidence} because the last {def.Name.ToLowerInvariant()} test was {days} days ago"
+                     + $" (older than {ObjectiveFreshDays} days). Run a new test to restore High confidence.";
+                return text;
+            }
+        }
+
         if (missing.Count > 0 && confidence != EvidenceConfidence.VeryHigh)
         {
             var next = confidence switch
@@ -468,6 +510,7 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         existing.SelfAssessWeight = score.SelfAssessWeight;
         existing.EvidenceSources = score.EvidenceSources;
         existing.Explanation = score.Explanation;
+        existing.LastObjectiveTestAt = score.LastObjectiveTestAt;
         existing.LastCalculatedAt = score.LastCalculatedAt;
         // Callers get the up-to-date row back (with the persisted Id).
         score.Id = existing.Id;

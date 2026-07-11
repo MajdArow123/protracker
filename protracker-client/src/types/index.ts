@@ -1662,6 +1662,10 @@ export interface EvidenceBasedScore {
   explanation: string | null;
   missingEvidence: string[];
   lastCalculatedAt: string;
+  isObjectiveTestable: boolean;
+  isObjectiveTestExpired: boolean;
+  daysSinceObjectiveTest: number | null;
+  nextObjectiveTestDue: string | null;
 }
 
 export interface EvidencePriority {
@@ -1702,7 +1706,7 @@ export interface TeamEvidenceStatus {
 }
 
 export interface EvidenceReminder {
-  type: 'NoRecentTest' | 'LowConfidence';
+  type: 'NoRecentTest' | 'LowConfidence' | 'ExpiredTests';
   playerId: number | null;
   playerName: string | null;
   teamId: number | null;
