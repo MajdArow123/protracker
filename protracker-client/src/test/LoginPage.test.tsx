@@ -30,16 +30,17 @@ describe('LoginPage', () => {
   it('renders the sign-in form', () => {
     renderLogin();
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Email address')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+    // Fields carry real <label>s since FINDING-003 (placeholders are just hints).
+    expect(screen.getByLabelText('Email address')).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(submitButton()).toBeInTheDocument();
   });
 
   it('submits the entered credentials to login()', async () => {
     const user = userEvent.setup();
     const { login } = renderLogin();
-    await user.type(screen.getByPlaceholderText('Email address'), 'coach@test.com');
-    await user.type(screen.getByPlaceholderText('Password'), 'secret123');
+    await user.type(screen.getByLabelText('Email address'), 'coach@test.com');
+    await user.type(screen.getByLabelText('Password'), 'secret123');
     await user.click(submitButton());
     expect(login).toHaveBeenCalledWith('coach@test.com', 'secret123');
   });
