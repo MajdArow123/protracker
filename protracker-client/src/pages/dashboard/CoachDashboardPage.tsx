@@ -113,13 +113,15 @@ export function CoachDashboardPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useCoachDashboard();
   const { data: activeSeasons = [] } = useActiveSeasons();
-  const { data: activeInjuries = [] } = useActiveInjuries();
-  const { data: allTasks = [] } = useCoachTasks();
+  const { data: activeInjuries = [], isLoading: loadingInjuries } = useActiveInjuries();
+  const { data: allTasks = [], isLoading: loadingTasks } = useCoachTasks();
   const overdueTasks = allTasks.filter(t => !t.isCompleted && t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   useSeenVersion(); // re-render when a card item is dismissed
   const visibleInjuries = activeInjuries.filter(inj => !isSeen(injuryKey(inj.id, inj.severity)));
 
-  if (isLoading) return <DashboardSkeleton />;
+  // The Overdue Tasks / Active Injuries stat cards derive from these two queries —
+  // rendering before they resolve shows a false 0 (their data defaults to []).
+  if (isLoading || loadingTasks || loadingInjuries) return <DashboardSkeleton />;
   if (isError)
     return (
       <PageWrapper>
