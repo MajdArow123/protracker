@@ -27,6 +27,9 @@ dotnet test ProTracker.Tests/ProTracker.Tests.csproj
 npm run dev            # vite dev server, localhost:5173
 npm run build           # tsc -b && vite build — THE authoritative type-check, see gotcha below
 npx oxlint src           # lint
+npx vitest run           # frontend unit tests (src/test/*.test.ts[x], jsdom) — RUN BEFORE
+                          # SHIPPING frontend changes; build+oxlint alone once let a commit
+                          # land that broke LoginPage tests (placeholder→label markup change)
 
 # EF Core migrations (from project root)
 dotnet ef migrations add <Name> --project ProTracker.csproj --startup-project ProTracker.csproj -o Data/Migrations
