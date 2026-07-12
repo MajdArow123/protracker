@@ -43,7 +43,11 @@
 :root.rtl .lucide-reply,
 :root.rtl .lucide-log-out,
 :root.rtl .lucide-log-in,
-:root.rtl .lucide-external-link {
+:root.rtl .lucide-external-link,
+/* Trend glyphs depict left→right time flow — mirror so "improving" points
+   up-start in RTL (evidence progress trend chips). */
+:root.rtl .lucide-trending-up,
+:root.rtl .lucide-trending-down {
   transform: scaleX(-1);
 }
 
