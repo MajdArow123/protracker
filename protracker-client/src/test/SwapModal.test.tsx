@@ -9,6 +9,16 @@ const foods: EquivalentFood[] = [
   { id: 3, foodName: 'Pumpkin seeds', category: 'Fat', suggestedPortion: '60g', calories: 335, protein: 18, carbs: 7, fats: 29, isGoodMatch: false, matchQuality: 'different', originalCalories: 330, caloriesDiffPct: 1.5 },
 ];
 
+// Without an initialized i18next instance, useTranslation()'s t() returns the
+// defaultValue WITHOUT interpolating {{placeholders}} — the modal title rendered
+// literally as "Swap {{food}}". Mock t() to interpolate so the assertion keeps
+// checking the real contract: the food name appears in the title.
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, fallback?: string, opts?: Record<string, unknown>) =>
+      (fallback ?? key).replace(/\{\{(\w+)\}\}/g, (_, name) => String(opts?.[name] ?? '')),
+  }),
+}));
 vi.mock('../hooks/useReports', () => ({
   useEquivalentFoods: () => ({ data: foods, isLoading: false }),
 }));
