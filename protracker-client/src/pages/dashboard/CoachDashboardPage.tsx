@@ -4,6 +4,7 @@ import { motion, type Variants } from 'framer-motion';
 import {
   Users, Shield, ClipboardList, TrendingUp, ArrowRight,
   Plus, Activity, AlertTriangle, ChevronRight, ShieldAlert, X, CalendarRange, Star, Library,
+  RefreshCw,
 } from 'lucide-react';
 import { useCoachDashboard } from '../../hooks/useDashboard';
 import { useTeamReport } from '../../hooks/useReports';
@@ -113,8 +114,8 @@ export function CoachDashboardPage() {
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useCoachDashboard();
   const { data: activeSeasons = [] } = useActiveSeasons();
-  const { data: activeInjuries = [], isLoading: loadingInjuries } = useActiveInjuries();
-  const { data: allTasks = [], isLoading: loadingTasks } = useCoachTasks();
+  const { data: activeInjuries = [], isLoading: loadingInjuries, isError: injuriesError, refetch: refetchInjuries } = useActiveInjuries();
+  const { data: allTasks = [], isLoading: loadingTasks, isError: tasksError, refetch: refetchTasks } = useCoachTasks();
   const overdueTasks = allTasks.filter(t => !t.isCompleted && t.dueDate && new Date(t.dueDate).getTime() < Date.now());
   useSeenVersion(); // re-render when a card item is dismissed
   const visibleInjuries = activeInjuries.filter(inj => !isSeen(injuryKey(inj.id, inj.severity)));
@@ -150,12 +151,17 @@ export function CoachDashboardPage() {
       value: overdueTasks.length,
       icon: ClipboardList,
       gradient: 'from-amber-500 to-orange-600',
+      // On query error the data defaults to [] — show "—" + retry, never a false 0.
+      error: tasksError,
+      onRetry: refetchTasks,
     },
     {
       title: t('dashboard.activeInjuries', 'Active Injuries'),
       value: activeInjuries.length,
       icon: ShieldAlert,
       gradient: 'from-red-500 to-rose-600',
+      error: injuriesError,
+      onRetry: refetchInjuries,
     },
   ];
 
@@ -201,7 +207,23 @@ export function CoachDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((card, i) => (
           <motion.div key={card.title} custom={i + 1} initial="hidden" animate="show" variants={fadeUp}>
-            <StatCard title={card.title} value={card.value} icon={card.icon} gradient={card.gradient} />
+            <StatCard
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              gradient={card.gradient}
+              valueNode={'error' in card && card.error ? (
+                <span className="text-3xl font-black mt-0.5 block text-gray-400 dark:text-gray-500">—</span>
+              ) : undefined}
+              footer={'error' in card && card.error ? (
+                <button
+                  onClick={() => card.onRetry?.()}
+                  className="flex items-center gap-1 text-xs font-semibold text-indigo-500 hover:text-indigo-400 transition-colors cursor-pointer"
+                >
+                  <RefreshCw size={12} /> {t('common.retry', 'Retry')}
+                </button>
+              ) : undefined}
+            />
           </motion.div>
         ))}
       </div>
