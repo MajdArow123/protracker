@@ -986,6 +986,53 @@ Design-sprint gotchas: run the dataviz palette validator before changing chart c
 primitives — extend them rather than hand-rolling card/avatar markup; carousels rely on
 the `.scrollbar-none` utility in index.css.
 
+## Phase G continuation — Section 4: Longitudinal progress tracking (COMPLETE, deployed)
+
+Frontend-only (no backend, no migration): coaches and athletes see whether measured
+performance is actually improving, per metric — the payoff of the objective-test data.
+One feature commit (`dd426df`) + follow-ups; build/lint/vitest clean; verified in-browser
+locally (desktop + Hebrew RTL, before/after screenshots) and on production as both roles.
+
+- **In-place upgrade of `TestResultsSection`** (deliberately NOT a new tab — player
+  detail already has 11; the section ships to all three roles for free via the shared
+  Evidence surfaces: coach player-detail Evidence tab, athlete My Stats, solo
+  /solo/performance). Default view is now **"Progress" — `normalizedScore` (0-10) over
+  `testedAt`** (direction-safe: lower-is-better sprints plot upward when improving),
+  per-point dots colored by `scoreTone`, raw value + unit + tester in the shared
+  `TooltipContent`. Benchmark anchors at normalized 3/5/10 are **deliberately neutral
+  gray** dashed lines labeled Low/Average/Elite + a permanent "not score bands" caption
+  (they share the 0-10 axis with the red/amber/green score bands — don't recolor them).
+  The original raw-value chart (reversed axis, colored Elite/Average lines, gold PB dot)
+  is preserved verbatim behind a **"Raw values" toggle**.
+- **New `MetricTrendSummary` strip** above the chart: Latest (raw + unit), **Δ since
+  first test (raw delta, sign/color from the *normalized* delta** so a sprinter's
+  −0.5s reads green), Personal best, and a **trend chip** from a least-squares fit of
+  normalizedScore over time (slope per 30 days, thresholds ±0.25).
+- **Honesty gates (FINDING-009 discipline — never confidently wrong):** a directional
+  improving/flat/declining chip requires **≥3 tests**; exactly 2 shows the Δ plus a
+  neutral "Trend needs ≥3 tests" chip; **R² < 0.3** (or all tests same-day, sxx=0)
+  renders "Too varied to call"; identical scores (syy=0) are genuinely **flat**; 1 test
+  = single dot, no line, "second test starts the trend line" caption; 0 tests = compact
+  `EmptyState` (the section used to render `null` — it's now discoverable); loading =
+  `SkeletonChart` gated on the tests+metrics queries; query error = message + Retry.
+- **`computeTrend` is pure and exported — it's the verification anchor**: 9 vitest
+  cases in `src/test/computeTrend.test.ts` (<2→null, 2→needsMore, collinear
+  rising/falling, low-R² scatter, same-day, identical scores, sub-threshold drift→flat,
+  and the lower-is-better direction-safety contract). Production data validated the
+  gate immediately: Lucas's 3 real Speed tests (two same-day, disagreeing) correctly
+  show "Too varied to call" (R²≈0.25), not a fake "Improving".
+- 23 i18n keys × all 5 locales (key-set equality re-validated 0/0);
+  `trending-up/down` added to the rtl.css icon-mirror list (they weren't covered) and
+  RTL verified in Hebrew — summary strip mirrors, arrows flip, charts stay LTR by design.
+- Follow-up commits in the same push: `6fb22ec` (LoginPage tests query by label —
+  FINDING-003 changed placeholder-only markup), `542638d` (SwapModal test: jsdom has no
+  i18next instance so `t()` returns defaults **uninterpolated** — title rendered
+  literally "Swap {{food}}"; fixed with an interpolating react-i18next mock), `6275bf6`
+  (added `npx vitest run` to the verification convention).
+- **Scoped out**: trending the composite `EvidenceBasedScore` over time — needs a
+  backend endpoint, but note the per-assessment score **snapshot rows already exist**
+  (AssessmentId-linked), so the follow-up is an endpoint + chart, not a new table.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -1091,7 +1138,14 @@ the `.scrollbar-none` utility in index.css.
 
 ## Current status
 
-**Final Design Sprint complete (latest).** All 7 sections above shipped as 7 commits,
+**Phase G continuation — Section 4 complete (latest).** Longitudinal progress tracking
+shipped as one feature commit (`dd426df`) + test/docs follow-ups, deployed and verified
+on production as coach and athlete (real 3-test Speed history correctly gated to "Too
+varied to call"). Frontend vitest suite green 54/54 and now part of the pre-ship
+convention. Also this session: a /design-review fix loop (findings 001-009, score
+7.2 → 7.9 measured) — see the design-audit report in ~/.gstack for details.
+
+**Final Design Sprint complete.** All 7 sections above shipped as 7 commits,
 each verified in-browser (desktop + 400px mobile) with build/lint clean; new landing
 strings translated into all 5 locales. Production verification after deploy (see that
 session's report).
