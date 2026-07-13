@@ -1,4 +1,4 @@
-import { Menu, Sun, Moon } from 'lucide-react';
+import { Menu, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useAuth } from '../../context/AuthContext';
@@ -41,9 +41,12 @@ function getTitle(pathname: string, t: TFunction): string {
 
 interface Props {
   onMenuClick: () => void;
+  /** Desktop (lg+) sidebar collapse — the mobile hamburger above is untouched. */
+  sidebarCollapsed: boolean;
+  onToggleCollapse: () => void;
 }
 
-export function Navbar({ onMenuClick }: Props) {
+export function Navbar({ onMenuClick, sidebarCollapsed, onToggleCollapse }: Props) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { isDark, toggle } = useTheme();
@@ -58,6 +61,16 @@ export function Navbar({ onMenuClick }: Props) {
         aria-label={t('common.openMenu', 'Open menu')}
       >
         <Menu size={20} />
+      </button>
+
+      {/* Desktop-only collapse/expand for the always-on sidebar. The panel icons are
+          mirrored in rtl.css so they point at the sidebar's actual edge in ar/he. */}
+      <button
+        onClick={onToggleCollapse}
+        className="hidden lg:inline-flex text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors p-1 cursor-pointer"
+        aria-label={sidebarCollapsed ? t('nav.expandSidebar', 'Expand sidebar') : t('nav.collapseSidebar', 'Collapse sidebar')}
+      >
+        {sidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
       </button>
 
       <h1 className="text-base font-semibold text-gray-900 dark:text-white flex-1">

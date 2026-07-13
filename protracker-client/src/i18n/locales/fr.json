@@ -192,7 +192,9 @@
     "report": "Rapport",
     "sectionManagement": "Gestion",
     "sectionFamily": "Famille",
-    "sectionMyProfile": "Mon profil"
+    "sectionMyProfile": "Mon profil",
+    "collapseSidebar": "Réduire la barre latérale",
+    "expandSidebar": "Développer la barre latérale"
   },
   "auth": {
     "signIn": "Se connecter",

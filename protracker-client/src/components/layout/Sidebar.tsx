@@ -102,6 +102,8 @@ function CoachSportBadge() {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  /** Desktop-only (lg+): animates the always-on aside to zero width. */
+  collapsed?: boolean;
 }
 
 function SidebarContent({ onClose }: { onClose: () => void }) {
@@ -247,13 +249,20 @@ function SidebarContent({ onClose }: { onClose: () => void }) {
   );
 }
 
-export function Sidebar({ isOpen, onClose }: Props) {
+export function Sidebar({ isOpen, onClose, collapsed = false }: Props) {
   const rtl = useIsRtl();
   return (
     <>
-      <aside className="hidden lg:flex h-screen sticky top-0 flex-shrink-0">
+      {/* Desktop: animated width with the content clipped (inner column stays w-64),
+          so collapsing slides it out of view instead of reflowing the nav items. */}
+      <motion.aside
+        initial={false}
+        animate={{ width: collapsed ? 0 : 256 }}
+        transition={{ duration: 0.25, ease: 'easeInOut' }}
+        className="hidden lg:block h-screen sticky top-0 flex-shrink-0 overflow-hidden"
+      >
         <SidebarContent onClose={onClose} />
-      </aside>
+      </motion.aside>
 
       <AnimatePresence>
         {isOpen && (

@@ -24,18 +24,30 @@ function useNewMessageToast() {
   }, [unread, location.pathname, addToast, t]);
 }
 
+// Desktop sidebar collapse survives reload; mobile drawer state stays ephemeral.
+const SIDEBAR_COLLAPSED_KEY = 'pt_sidebar_collapsed';
+
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1');
   const location = useLocation();
   useNewMessageToast();
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+  }, [collapsed]);
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       <Sidebar
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
       />
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Navbar onMenuClick={() => setSidebarOpen(true)} />
+        <Navbar
+          onMenuClick={() => setSidebarOpen(true)}
+          sidebarCollapsed={collapsed}
+          onToggleCollapse={() => setCollapsed(c => !c)}
+        />
         <main className="flex-1 overflow-y-auto">
           {/* Consistent enter transition on every route change (keyed by pathname). */}
           <motion.div

@@ -44,6 +44,10 @@
 :root.rtl .lucide-log-out,
 :root.rtl .lucide-log-in,
 :root.rtl .lucide-external-link,
+/* Panel glyphs depict the sidebar on the LEFT edge — in RTL it lives on the
+   right, so mirror them (navbar collapse/expand toggle). */
+:root.rtl .lucide-panel-left-close,
+:root.rtl .lucide-panel-left-open,
 /* Trend glyphs depict left→right time flow — mirror so "improving" points
    up-start in RTL (evidence progress trend chips). */
 :root.rtl .lucide-trending-up,

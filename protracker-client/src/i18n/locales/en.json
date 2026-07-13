@@ -192,7 +192,9 @@
     "report": "Report",
     "sectionManagement": "Management",
     "sectionFamily": "Family",
-    "sectionMyProfile": "My Profile"
+    "sectionMyProfile": "My Profile",
+    "collapseSidebar": "Collapse sidebar",
+    "expandSidebar": "Expand sidebar"
   },
   "auth": {
     "signIn": "Sign In",

@@ -192,7 +192,9 @@
     "report": "דוח",
     "sectionManagement": "ניהול",
     "sectionFamily": "משפחה",
-    "sectionMyProfile": "הפרופיל שלי"
+    "sectionMyProfile": "הפרופיל שלי",
+    "collapseSidebar": "כיווץ סרגל הצד",
+    "expandSidebar": "הרחבת סרגל הצד"
   },
   "auth": {
     "signIn": "התחבר",
