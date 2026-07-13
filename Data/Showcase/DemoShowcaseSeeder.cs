@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Models;
+using ProTracker.Dtos;
 using ProTracker.Services;
 
 namespace ProTracker.Data.Showcase;
@@ -28,13 +29,25 @@ public class DemoShowcaseSeeder
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _users;
     private readonly IEvidenceScoringEngine _engine;
+    private readonly ILeagueService _leagues;
 
-    public DemoShowcaseSeeder(ApplicationDbContext db, UserManager<ApplicationUser> users, IEvidenceScoringEngine engine)
+    public DemoShowcaseSeeder(ApplicationDbContext db, UserManager<ApplicationUser> users,
+        IEvidenceScoringEngine engine, ILeagueService leagues)
     {
         _db = db;
         _users = users;
         _engine = engine;
+        _leagues = leagues;
     }
+
+    // Synthetic principal so seeding can drive real service-layer logic (league
+    // scheduling + standings) instead of reimplementing it.
+    private static System.Security.Claims.ClaimsPrincipal PrincipalFor(ApplicationUser u) =>
+        new(new System.Security.Claims.ClaimsIdentity(new[]
+        {
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.NameIdentifier, u.Id),
+            new System.Security.Claims.Claim(System.Security.Claims.ClaimTypes.Role, "Coach"),
+        }, "showcase-seed"));
 
     public sealed class Report
     {
@@ -56,11 +69,14 @@ public class DemoShowcaseSeeder
         var report = new Report { Phase = phase, DryRun = dryRun };
         await using var tx = await _db.Database.BeginTransactionAsync();
 
-        var specs = phase == "all" ? Specs : Specs.Where(x => x.Phase == phase).ToArray();
-        if (specs.Length == 0)
-            throw new InvalidOperationException($"Unknown phase '{phase}'. Available: {string.Join(", ", Specs.Select(x => x.Phase))}, all.");
+        var specs = phase is "all" or "extras" ? (phase == "extras" ? Array.Empty<SportSpec>() : Specs)
+            : Specs.Where(x => x.Phase == phase).ToArray();
+        if (specs.Length == 0 && phase != "extras")
+            throw new InvalidOperationException($"Unknown phase '{phase}'. Available: {string.Join(", ", Specs.Select(x => x.Phase))}, extras, all.");
         foreach (var spec in specs)
             await SeedSportAsync(spec, report);
+        if (phase is "all" or "extras")
+            await SeedExtrasAsync(report);
 
         if (dryRun)
         {
@@ -1275,6 +1291,266 @@ public class DemoShowcaseSeeder
         new(name.ToLowerInvariant().Replace(' ', '.')
             .Where(c => c is >= 'a' and <= 'z' or >= '0' and <= '9' or '.').ToArray());
 
+    // ─── Extras: leagues, marketplace, solo demo, public profiles ────────────
+
+    private async Task SeedExtrasAsync(Report r)
+    {
+        await SeedLeagueAsync("City Premier League", LeagueType.League, LeagueFormat.RoundRobin,
+            "coach.soccer" + SeedDomain, "City FC U18",
+            new[] { "Harbor City FC", "Eastside Athletic", "Northern FC" }, sportId: 1, scoredMatches: 4, r);
+        await SeedLeagueAsync("Metro Hoops Cup", LeagueType.Tournament, LeagueFormat.Knockout,
+            "coach.basketball" + SeedDomain, "Riverside Hawks",
+            new[] { "Downtown Dunkers", "Metro Ballers", "Southside Nets" }, sportId: 2, scoredMatches: 2, r);
+        await SeedMarketplaceAsync(r);
+        await SeedSoloDemoAsync(r);
+        await SeedPublicProfilesAsync(r);
+    }
+
+    private async Task SeedLeagueAsync(string name, LeagueType type, LeagueFormat format,
+        string coachEmail, string mainTeamName, string[] shellNames, int sportId, int scoredMatches, Report r)
+    {
+        var coach = await RequireSeedCoachAsync(coachEmail);
+        if (await _db.Leagues.AnyAsync(l => l.Name == name && l.OrganizerId == coach.Id))
+        {
+            r.Hit("League", false);
+            return;
+        }
+
+        var principal = PrincipalFor(coach);
+        var main = await _db.Teams.FirstOrDefaultAsync(t => t.Name == mainTeamName && t.CoachId == coach.Id)
+            ?? throw new InvalidOperationException($"League seed needs team '{mainTeamName}' — run its sport phase first.");
+
+        // Shell opponent clubs: real Team rows (league FKs need them), zero players,
+        // clearly labeled. Clicking one in the UI shows an honest empty roster.
+        var teams = new List<Team> { main };
+        foreach (var shell in shellNames)
+        {
+            var t = await GetOrCreateTeamAsync(shell, sportId, coach, r);
+            if (string.IsNullOrEmpty(t.Description) || !t.Description.Contains("opponent club"))
+            {
+                t.Description = "Demo opponent club — exists for league fixtures only.";
+                await _db.SaveChangesAsync();
+            }
+            teams.Add(t);
+        }
+
+        var detail = await _leagues.CreateAsync(principal, new CreateLeagueDto
+        {
+            Name = name,
+            Description = "Seeded demo competition.",
+            SportId = sportId,
+            Type = type,
+            Format = format,
+            StartDate = DateTime.UtcNow.Date.AddDays(-35),
+            EndDate = DateTime.UtcNow.Date.AddDays(30),
+            IsPublic = true,
+        });
+        foreach (var t in teams)
+            await _leagues.RegisterTeamAsync(principal, detail.Id, t.Id);
+        await _leagues.GenerateScheduleAsync(principal, detail.Id);
+        r.Hit("League", true);
+
+        // Score the earliest N matches deterministically; the rest stay scheduled.
+        var rng = new ShowcaseRng($"league|{name}");
+        var matches = await _db.LeagueMatches.Where(m => m.LeagueId == detail.Id)
+            .OrderBy(m => m.Round).ThenBy(m => m.Id).Take(scoredMatches).ToListAsync();
+        foreach (var m in matches)
+        {
+            var (our, their, sets) = BuildScore(
+                sportId == 2 ? ScoreFormat.Points : ScoreFormat.Goals, rng, sportId);
+            await _leagues.UpdateMatchScoreAsync(principal, m.Id, new UpdateLeagueMatchScoreDto
+            {
+                HomeScore = our,
+                AwayScore = their,
+            });
+            r.Hit("LeagueMatchScored", true);
+        }
+    }
+
+    private async Task SeedMarketplaceAsync(Report r)
+    {
+        var bios = new Dictionary<string, string>
+        {
+            ["coach.soccer"] = "UEFA-B licensed coach focused on evidence-based youth development.",
+            ["coach.basketball"] = "Former college guard; builds guards who read the floor before they beat you.",
+            ["coach.volleyball"] = "National-league setter turned coach. Serve-receive is a lifestyle.",
+            ["coach.beachvolley"] = "Two-time regional beach champion. Small courts, big habits.",
+            ["coach.tennis"] = "Performance coach blending video analysis with measured fundamentals.",
+        };
+        var reviewTexts = new[]
+        {
+            "Sessions are structured and the data-driven feedback genuinely changed how I train.",
+            "Great communicator — my weekly plan always matches what we worked on.",
+            "Tough but fair. The measured testing keeps everyone honest.",
+        };
+
+        foreach (var spec in Specs)
+        {
+            var coach = await RequireSeedCoachAsync(spec.CoachEmail + SeedDomain);
+            var profile = await _db.CoachPublicProfiles.FirstOrDefaultAsync(p => p.CoachUserId == coach.Id);
+            if (profile == null)
+            {
+                profile = new CoachPublicProfile
+                {
+                    CoachUserId = coach.Id,
+                    Slug = Slug(coach.DisplayName ?? spec.CoachEmail).Replace('.', '-') + "-" + spec.Phase,
+                    SportId = spec.SportId,
+                    Bio = bios[spec.CoachEmail],
+                    City = "Springfield",
+                    Country = "USA",
+                    YearsCoaching = 5 + spec.SportId,
+                    IsAcceptingAthletes = true,
+                    IsPublic = true,
+                };
+                _db.CoachPublicProfiles.Add(profile);
+                r.Hit("CoachPublicProfile", true);
+            }
+            else
+            {
+                if (!profile.IsPublic) { profile.IsPublic = true; }
+                r.Hit("CoachPublicProfile", false);
+            }
+            await _db.SaveChangesAsync();
+
+            // Verified reviews from this team's linked athletes.
+            var reviewers = await _db.Players
+                .Where(p => p.SportId == spec.SportId && p.UserId != null && p.TeamId != null)
+                .OrderBy(p => p.FullName).Take(2).ToListAsync();
+            var i = 0;
+            foreach (var reviewer in reviewers)
+            {
+                if (await _db.CoachReviews.AnyAsync(x => x.CoachUserId == coach.Id && x.ReviewerUserId == reviewer.UserId))
+                {
+                    r.Hit("CoachReview", false);
+                    continue;
+                }
+                var rng = new ShowcaseRng($"review|{reviewer.FullName}|{coach.Id}");
+                _db.CoachReviews.Add(new CoachReview
+                {
+                    CoachUserId = coach.Id,
+                    ReviewerUserId = reviewer.UserId!,
+                    ReviewerName = reviewer.FullName,
+                    Rating = rng.Chance(0.7) ? 5 : 4,
+                    Title = "Knows exactly what to work on",
+                    Content = reviewTexts[i++ % reviewTexts.Length],
+                    SportId = spec.SportId,
+                    IsVerified = true,
+                    IsPublic = true,
+                });
+                r.Hit("CoachReview", true);
+            }
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    private async Task SeedSoloDemoAsync(Report r)
+    {
+        var email = "solo.demo" + SeedDomain;
+        var user = await _users.FindByEmailAsync(email);
+        if (user == null)
+        {
+            user = new ApplicationUser { UserName = email, Email = email, DisplayName = "Riley Chen", EmailConfirmed = true, HasCompletedOnboarding = true };
+            var res = await _users.CreateAsync(user, SeedPassword);
+            if (!res.Succeeded) throw new InvalidOperationException("solo.demo create failed: " + string.Join(",", res.Errors.Select(e => e.Description)));
+            await _users.AddToRoleAsync(user, "SoloAthlete");
+            r.Hit("SoloAccount", true);
+        }
+        else r.Hit("SoloAccount", false);
+
+        var player = await _db.Players.FirstOrDefaultAsync(p => p.SoloUserId == user.Id);
+        if (player == null)
+        {
+            player = new Player
+            {
+                FullName = "Riley Chen", Age = 24, Height = 175, Weight = 70,
+                SportId = 1, TeamId = null, PositionId = 3, FitnessLevel = 8,
+                IsSolo = true, SoloUserId = user.Id, UserId = user.Id,
+                Goals = "Break into a competitive Sunday-league squad by autumn.",
+            };
+            _db.Players.Add(player);
+            await _db.SaveChangesAsync();
+            _db.SoloProfiles.Add(new SoloProfile
+            {
+                PlayerId = player.Id, UserId = user.Id, SportId = 1,
+                SkillLevel = SkillLevel.Intermediate, TrainingFrequency = TrainingFrequency.FewTimesWeek,
+                Goals = player.Goals, Motivation = "Training alone but measuring everything.",
+            });
+            await _db.SaveChangesAsync();
+            r.Hit("SoloPlayer", true);
+        }
+        else r.Hit("SoloPlayer", false);
+
+        // Compact personal dataset: longitudinal tests, self-assessments, personal
+        // sessions/matches, tasks, goals, wellbeing, journal — enough that every
+        // /solo/* page renders populated.
+        var solo = new List<Player> { player };
+        await SeedObjectiveTestsAsync(new Team { Id = 0, SportId = 1, Name = "solo", CoachId = user.Id }, solo, r);
+        await SeedSelfAssessmentsAsync(solo, r);
+        await SeedTasksAsync(user, solo, r);
+        await SeedGoalsAsync(solo, r);
+        await SeedWellbeingAsync(solo, r);
+        await SeedJournalsAsync(solo, r);
+
+        var rng = new ShowcaseRng("solo|sessions");
+        for (var w = -3; w <= 1; w++)
+        {
+            var start = DateTime.UtcNow.Date.AddDays(w * 7 + 2).AddHours(18);
+            if (!await _db.ScheduledSessions.AnyAsync(x => x.PlayerId == player.Id && x.StartTime == start))
+            {
+                _db.ScheduledSessions.Add(new ScheduledSession
+                {
+                    PlayerId = player.Id, Title = "Solo conditioning + touch work",
+                    SessionType = SessionType.Training, StartTime = start, DurationMinutes = 75,
+                    Location = "Riverside park pitch",
+                });
+                r.Hit("SoloSession", true);
+            }
+        }
+        for (var m = 0; m < 2; m++)
+        {
+            var date = LastSaturday().AddDays(-7 * m);
+            if (!await _db.MatchResults.AnyAsync(x => x.PlayerId == player.Id && x.MatchDate == date))
+            {
+                _db.MatchResults.Add(new MatchResult
+                {
+                    PlayerId = player.Id, OpponentName = "Pickup XI", MatchDate = date,
+                    IsHome = true, HomeScore = rng.Next(1, 5), AwayScore = rng.Next(0, 4),
+                    ScoreFormat = ScoreFormat.Goals,
+                });
+                r.Hit("SoloMatch", true);
+            }
+        }
+        await _db.SaveChangesAsync();
+        await _engine.RecalculateAllAsync(player.Id);
+    }
+
+    private async Task SeedPublicProfilesAsync(Report r)
+    {
+        var names = new[] { "Lucas Ward", "Marcus Bell", "Carlos Santos Jr", "Alex Williams", "Riley Chen" };
+        foreach (var name in names)
+        {
+            var player = await _db.Players.Include(p => p.Sport).FirstOrDefaultAsync(p => p.FullName == name);
+            if (player == null) continue;
+            if (await _db.PublicProfiles.AnyAsync(x => x.PlayerId == player.Id))
+            {
+                r.Hit("PublicProfile", false);
+                continue;
+            }
+            _db.PublicProfiles.Add(new PublicProfile
+            {
+                PlayerId = player.Id,
+                UserId = player.UserId,
+                Slug = Slug(name).Replace('.', '-') + "-" + Slug(player.Sport.Name).Replace('.', '-'),
+                DisplayName = name,
+                Bio = "Tracking everything, improving weekly.",
+                IsPublic = true,
+                ShowAssessments = true, ShowGoals = true, ShowJournal = true, ShowMatchHistory = true,
+            });
+            r.Hit("PublicProfile", true);
+        }
+        await _db.SaveChangesAsync();
+    }
+
     // ─── Teardown ────────────────────────────────────────────────────────────
 
     // Removes the ENTIRE demo graph: every team owned by a @protracker.seed coach
@@ -1307,6 +1583,9 @@ public class DemoShowcaseSeeder
         }
 
         await Del(_db.Leagues.Where(l => coachIds.Contains(l.OrganizerId)), "Leagues(deleted)");
+        await Del(_db.CoachReviews.Where(x => seedUserIds.Contains(x.ReviewerUserId) || seedUserIds.Contains(x.CoachUserId)), "CoachReviews(deleted)");
+        await Del(_db.CoachConnectionRequests.Where(x => seedUserIds.Contains(x.AthleteUserId) || seedUserIds.Contains(x.CoachUserId)), "ConnectionRequests(deleted)");
+        await Del(_db.Players.Where(p => p.IsSolo && p.SoloUserId != null && seedUserIds.Contains(p.SoloUserId)), "SoloPlayers(deleted)");
         await Del(_db.Messages.Where(m => seedUserIds.Contains(m.SenderId) || seedUserIds.Contains(m.ReceiverId)), "Messages(deleted)");
         await Del(_db.ParentLinks.Where(l => playerIds.Contains(l.PlayerId)), "ParentLinks(deleted)");
         await Del(_db.ParentInvites.Where(i => playerIds.Contains(i.PlayerId)), "ParentInvites(deleted)");
