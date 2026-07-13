@@ -2959,7 +2959,6 @@
     "aiSourceSelfAssess": "{{count}} הערכות עצמיות",
     "testResultsTitle": "תוצאות בדיקות",
     "personalBest": "שיא אישי: {{value}} {{unit}}",
-    "benchmarkCompare": "עילית: {{high}} {{unit}} · ממוצע: {{mid}} {{unit}}",
     "eliteLabel": "עילית",
     "averageLabel": "ממוצע",
     "needTwoTests": "תעד בדיקת {{metric}} שנייה כדי לראות את מגמת ההתקדמות.",
@@ -3083,6 +3082,15 @@
     "testedByLabel": "על ידי",
     "testedByCoach": "מאמן",
     "testedByAthlete": "ספורטאי",
-    "testedByThirdParty": "גורם חיצוני"
+    "testedByThirdParty": "גורם חיצוני",
+    "standingBelowLow": "מתחת למדד הנמוך",
+    "standingLowToAverage": "בין נמוך לממוצע",
+    "standingAverageToElite": "בין ממוצע לעילית",
+    "standingBeyondElite": "הגיע לרמת עילית",
+    "standingGap": "{{gap}} {{unit}} עד {{anchor}}",
+    "standingAsOf": "נכון ל-{{date}}",
+    "defaultBenchmarksChip": "מדדי ברירת המחדל של האפליקציה — לא הוקצה פרופיל",
+    "assignProfileHint": "הקצו פרופיל מדדים מלשונית הראיות של הקבוצה כדי להשוות מול הרמה הנכונה.",
+    "benchmarksLoadError": "לא ניתן לטעון את המדדים"
   }
 }

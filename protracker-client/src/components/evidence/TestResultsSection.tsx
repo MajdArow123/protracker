@@ -12,6 +12,7 @@ import { scoreColor } from '../assessments/ScoreWidgets';
 import { scoreTone, SCORE_TONE_HEX, CHART_GRID, AXIS_TICK } from '../charts/chartColors';
 import { TooltipContent } from '../charts/TooltipContent';
 import { MetricTrendSummary } from './MetricTrendSummary';
+import { BenchmarkStandingBar } from './BenchmarkStandingBar';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { usePlayerObjectiveTests, useSportMetrics } from '../../hooks/useEvidence';
 import { usePlayerBenchmarks } from '../../hooks/useBenchmarks';
@@ -66,7 +67,7 @@ export function TestResultsSection({ playerId, sportId }: Props) {
   const { formatDate, formatNumber } = useLocaleFormat();
   const { data: tests = [], isLoading: loadingTests, isError: testsError, refetch: refetchTests } = usePlayerObjectiveTests(playerId);
   const { data: metrics = [], isLoading: loadingMetrics } = useSportMetrics(sportId);
-  const { data: benchmarks } = usePlayerBenchmarks(playerId);
+  const { data: benchmarks, isLoading: loadingBenchmarks, isError: benchmarksError, refetch: refetchBenchmarks } = usePlayerBenchmarks(playerId);
 
   const metricById = useMemo(() => new Map(metrics.map(m => [m.id, m])), [metrics]);
   const testedMetricIds = useMemo(
@@ -128,6 +129,7 @@ export function TestResultsSection({ playerId, sportId }: Props) {
 
   // Team benchmark calibration overrides the definition anchors for hints + chart lines.
   const calibrated = metric ? benchmarks?.values?.[metric.id] : undefined;
+  const benchmarkLow = calibrated?.benchmarkLow ?? metric?.benchmarkLow ?? 0;
   const benchmarkMid = calibrated?.benchmarkMid ?? metric?.benchmarkMid ?? 0;
   const benchmarkHigh = calibrated?.benchmarkHigh ?? metric?.benchmarkHigh ?? 0;
 
@@ -195,17 +197,30 @@ export function TestResultsSection({ playerId, sportId }: Props) {
         <>
           <MetricTrendSummary tests={metricTests} unit={unit} bestValue={best?.value ?? null} />
 
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mb-3 text-xs text-gray-500 dark:text-gray-400">
-            <span>
-              {t('evidence.benchmarkCompare', 'Elite: {{high}} {{unit}} · Average: {{mid}} {{unit}}', {
-                high: formatNumber(benchmarkHigh), mid: formatNumber(benchmarkMid),
-                unit,
-              })}
-              {benchmarks?.profileName && (
-                <span className="text-indigo-400"> · {benchmarks.profileName}</span>
-              )}
-            </span>
-          </div>
+          {/* Standing vs the CURRENT benchmark anchors (replaces the old
+              "Elite: X · Average: Y" text line — the ticks carry the values). */}
+          {loadingBenchmarks ? (
+            <SkeletonChart height={44} />
+          ) : benchmarksError ? (
+            <div className="flex items-center gap-3 mb-4 text-xs text-gray-500 dark:text-gray-400">
+              {t('evidence.benchmarksLoadError', "Couldn't load benchmarks")}
+              <button
+                type="button"
+                onClick={() => refetchBenchmarks()}
+                className="flex items-center gap-1 font-semibold text-indigo-500 hover:text-indigo-400 transition-colors cursor-pointer"
+              >
+                <RefreshCw size={11} /> {t('common.retry', 'Retry')}
+              </button>
+            </div>
+          ) : metricTests.length > 0 ? (
+            <BenchmarkStandingBar
+              value={metricTests[metricTests.length - 1].value}
+              unit={unit}
+              testedAt={metricTests[metricTests.length - 1].testedAt}
+              anchors={{ low: benchmarkLow, mid: benchmarkMid, high: benchmarkHigh }}
+              profileName={benchmarks?.profileName ?? null}
+            />
+          ) : null}
 
           {view === 'progress' ? (
             <>

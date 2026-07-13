@@ -2959,7 +2959,6 @@
     "aiSourceSelfAssess": "{{count}} autoevaluaciones",
     "testResultsTitle": "Resultados de pruebas",
     "personalBest": "Mejor marca: {{value}} {{unit}}",
-    "benchmarkCompare": "Élite: {{high}} {{unit}} · Promedio: {{mid}} {{unit}}",
     "eliteLabel": "Élite",
     "averageLabel": "Promedio",
     "needTwoTests": "Registra una segunda prueba de {{metric}} para ver la tendencia.",
@@ -3083,6 +3082,15 @@
     "testedByLabel": "Por",
     "testedByCoach": "Entrenador",
     "testedByAthlete": "Atleta",
-    "testedByThirdParty": "Tercero"
+    "testedByThirdParty": "Tercero",
+    "standingBelowLow": "Por debajo de la referencia Baja",
+    "standingLowToAverage": "Entre Bajo y Medio",
+    "standingAverageToElite": "Entre Medio y Élite",
+    "standingBeyondElite": "Nivel Élite alcanzado",
+    "standingGap": "{{gap}} {{unit}} hasta {{anchor}}",
+    "standingAsOf": "a fecha de {{date}}",
+    "defaultBenchmarksChip": "Referencias por defecto — sin perfil asignado",
+    "assignProfileHint": "Asigna un perfil de referencias desde la pestaña Evidencia del equipo para comparar con el nivel correcto.",
+    "benchmarksLoadError": "No se pudieron cargar las referencias"
   }
 }

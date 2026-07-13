@@ -2959,7 +2959,6 @@
     "aiSourceSelfAssess": "{{count}} self-assessments",
     "testResultsTitle": "Test Results",
     "personalBest": "Personal best: {{value}} {{unit}}",
-    "benchmarkCompare": "Elite: {{high}} {{unit}} · Average: {{mid}} {{unit}}",
     "eliteLabel": "Elite",
     "averageLabel": "Average",
     "needTwoTests": "Record a second {{metric}} test to see the progress trend.",
@@ -3083,6 +3082,15 @@
     "testedByLabel": "By",
     "testedByCoach": "Coach",
     "testedByAthlete": "Athlete",
-    "testedByThirdParty": "Third party"
+    "testedByThirdParty": "Third party",
+    "standingBelowLow": "Below the Low benchmark",
+    "standingLowToAverage": "Between Low and Average",
+    "standingAverageToElite": "Between Average and Elite",
+    "standingBeyondElite": "Elite reached",
+    "standingGap": "{{gap}} {{unit}} to {{anchor}}",
+    "standingAsOf": "as of {{date}}",
+    "defaultBenchmarksChip": "App default benchmarks — no profile assigned",
+    "assignProfileHint": "Assign a benchmark profile from the team's Evidence tab to compare against the right level.",
+    "benchmarksLoadError": "Couldn't load benchmarks"
   }
 }

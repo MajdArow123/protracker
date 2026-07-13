@@ -2959,7 +2959,6 @@
     "aiSourceSelfAssess": "{{count}} تقييم ذاتي",
     "testResultsTitle": "نتائج الاختبارات",
     "personalBest": "أفضل رقم شخصي: {{value}} {{unit}}",
-    "benchmarkCompare": "النخبة: {{high}} {{unit}} · المتوسط: {{mid}} {{unit}}",
     "eliteLabel": "النخبة",
     "averageLabel": "المتوسط",
     "needTwoTests": "سجّل اختبار {{metric}} ثانيًا لرؤية اتجاه التقدم.",
@@ -3083,6 +3082,15 @@
     "testedByLabel": "بواسطة",
     "testedByCoach": "المدرب",
     "testedByAthlete": "الرياضي",
-    "testedByThirdParty": "طرف ثالث"
+    "testedByThirdParty": "طرف ثالث",
+    "standingBelowLow": "دون معيار المستوى المنخفض",
+    "standingLowToAverage": "بين المنخفض والمتوسط",
+    "standingAverageToElite": "بين المتوسط والنخبة",
+    "standingBeyondElite": "بلغ مستوى النخبة",
+    "standingGap": "{{gap}} {{unit}} حتى {{anchor}}",
+    "standingAsOf": "حتى تاريخ {{date}}",
+    "defaultBenchmarksChip": "معايير التطبيق الافتراضية — لم يتم تعيين ملف معايير",
+    "assignProfileHint": "عيّن ملف معايير من تبويب الأدلة الخاص بالفريق للمقارنة بالمستوى المناسب.",
+    "benchmarksLoadError": "تعذّر تحميل المعايير"
   }
 }
