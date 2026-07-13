@@ -134,4 +134,90 @@ public static class ShowcasePools
     public static readonly string[] MealTypes = { "Breakfast", "Lunch", "Snack", "Dinner" };
     public static readonly string[] MealTimes = { "07:30", "12:30", "16:00", "19:30" };
     public static readonly string[] DayNames = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+
+    // ── Basketball ──
+    public static readonly string[] BasketballSeniorNames =
+    {
+        "Marcus Bell", "Tyler Grant", "Jordan Pierce", "Caleb Foster", "Aiden Walsh",
+        "Devon Clarke", "Ryan Thomas",
+        "DeShawn Carter", "Malik Johnson", "Trey Anderson", "Isaiah Brooks", "Chris Nowak", "Andre Osei",
+    };
+    public static readonly string[] BasketballMinorNames =
+    {
+        "Jayden Brown", "Elijah Moore", "Xavier Reed", "Noah Kim", "Damian Ortiz",
+        "Kylan Wright", "Marcus Webb", "Theo Jackson", "Omar Farah", "Lucas Meyer",
+        "Ben Ito", "Zion Carter", "Amari Boateng",
+    };
+    public static readonly (string Type, string BodyPart)[] BasketballInjuries =
+    {
+        ("Ankle sprain", "Ankle"), ("Jumper's knee", "Knee"),
+        ("Finger sprain", "Wrist"), ("Lower back tightness", "Back"),
+    };
+    public static readonly string[] BasketballOpponents =
+    {
+        "Downtown Dunkers", "Metro Ballers", "Southside Nets", "Hillcrest Eagles",
+        "Bayview Storm", "Central Kings",
+    };
+
+    // ── Indoor volleyball (baseline squad is women — pools stay consistent) ──
+    public static readonly string[] VolleyballSeniorNames =
+    {
+        "Sofia Martin", "Ava Coleman", "Grace Mitchell", "Mia Sanders", "Emma Reed", "Lily Park",
+        "Nora Blake", "Yuki Tanaka", "Ines Costa", "Hannah Weiss", "Zoe Laurent", "Priya Sharma", "Camila Reyes",
+    };
+    public static readonly string[] VolleyballMinorNames =
+    {
+        "Ella Novak", "Ruby Chen", "Maja Nilsson", "Tessa Brand", "Leila Haddad",
+        "Amelie Roux", "Sara Lindqvist", "Nina Kovač", "Freya Dahl", "Ida Berg",
+        "June Park", "Alma Vidal", "Rosa Marino",
+    };
+    public static readonly (string Type, string BodyPart)[] VolleyballInjuries =
+    {
+        ("Shoulder overuse", "Shoulder"), ("Ankle sprain", "Ankle"),
+        ("Jumper's knee", "Knee"), ("Finger sprain", "Wrist"),
+    };
+    public static readonly string[] VolleyballOpponents =
+    {
+        "Harbor Waves", "Northside Netters", "Valley Vipers", "Crestwood Aces",
+        "Lakeport Lynx", "Ridgeline Rally",
+    };
+
+    // ── Beach volleyball (pairs) ──
+    public static readonly string[] BeachSeniorNames =
+    {
+        "Carlos Santos Jr", "Diego Vega", "Kai Nakamura", "Marco Silva",
+        "Rafa Duarte", "Tom Bakker", "Nico Rossi", "Jonas Brandt",
+    };
+    public static readonly string[] BeachMinorNames =
+    {
+        "Timo Weber", "Luca Marino", "Sander Vik", "Mateus Costa", "Aleix Puig", "Enzo Ferreira",
+    };
+    public static readonly (string Type, string BodyPart)[] BeachInjuries =
+    {
+        ("Shoulder strain", "Shoulder"), ("Ankle sprain", "Ankle"), ("Lower back tightness", "Back"),
+    };
+    public static readonly string[] BeachOpponents =
+    {
+        "Dune Riders", "Sunset Smashers", "Boardwalk Blockers", "Tide Breakers", "Palm Court Duo",
+    };
+
+    // ── Tennis ──
+    public static readonly string[] TennisSeniorNames =
+    {
+        "Alex Williams", "Brooke Summers", "Finn O'Brien", "Nina Petrov", "Sam Keller",
+        "Elena Sokolova", "Jack Morton", "Aria Chen", "Tomas Novak", "Maya Lindberg",
+    };
+    public static readonly string[] TennisMinorNames =
+    {
+        "Oliver Grant", "Sofia Marino", "Leo Tanaka", "Emma Novak",
+        "Louis Petit", "Hana Kim", "Marco Ruiz", "Clara Fontaine",
+    };
+    public static readonly (string Type, string BodyPart)[] TennisInjuries =
+    {
+        ("Tennis elbow", "Wrist"), ("Shoulder strain", "Shoulder"), ("Calf strain", "Calf"),
+    };
+    public static readonly string[] TennisOpponents =
+    {
+        "Riverside Racquets", "Grandview TC", "Baseline Prep", "Meadow Park TA", "Clay Court Union",
+    };
 }

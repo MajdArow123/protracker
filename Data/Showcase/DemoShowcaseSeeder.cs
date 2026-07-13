@@ -56,18 +56,11 @@ public class DemoShowcaseSeeder
         var report = new Report { Phase = phase, DryRun = dryRun };
         await using var tx = await _db.Database.BeginTransactionAsync();
 
-        switch (phase)
-        {
-            case "soccer":
-                await SeedSoccerAsync(report);
-                break;
-            case "all":
-                await SeedSoccerAsync(report);
-                report.Notes.Add("Only implemented phases ran (soccer). Later phases land per the rollout plan.");
-                break;
-            default:
-                throw new InvalidOperationException($"Phase '{phase}' is not implemented yet. Available: soccer, all.");
-        }
+        var specs = phase == "all" ? Specs : Specs.Where(x => x.Phase == phase).ToArray();
+        if (specs.Length == 0)
+            throw new InvalidOperationException($"Unknown phase '{phase}'. Available: {string.Join(", ", Specs.Select(x => x.Phase))}, all.");
+        foreach (var spec in specs)
+            await SeedSportAsync(spec, report);
 
         if (dryRun)
         {
@@ -98,36 +91,88 @@ public class DemoShowcaseSeeder
             throw new InvalidOperationException($"Refusing to touch team '{team.Name}' — owner is not a {SeedDomain} coach.");
     }
 
-    // ─── Soccer phase ────────────────────────────────────────────────────────
+    // ─── Sport specs + generic pipeline ─────────────────────────────────────
 
-    private async Task SeedSoccerAsync(Report r)
+    private sealed record SportSpec(
+        string Phase, int SportId, string CoachEmail,
+        string SeniorTeam, string[] SeniorNames, int[] SeniorPositions, (int Min, int Max) SeniorAges,
+        string MinorTeam, string[] MinorNames, int[] MinorPositions, (int Min, int Max) MinorAges,
+        string SeniorProfile, string MinorProfile,
+        (string Type, string BodyPart)[] Injuries, string[] Opponents,
+        ScoreFormat Format, int SeniorMatches, int MinorMatches,
+        (int Min, int Max) SeniorHeights, (int Min, int Max) SeniorWeights,
+        (int Min, int Max) MinorHeights, (int Min, int Max) MinorWeights,
+        string? BaselineLogin, string? BaselineLoginPlayer);
+
+    private static readonly SportSpec[] Specs =
     {
-        var coach = await RequireSeedCoachAsync("coach.soccer" + SeedDomain);
+        new("soccer", 1, "coach.soccer",
+            "City FC U18", ShowcasePools.SoccerSeniorNames,
+            new[] { 1, 2, 3, 4, 5, 3, 2, 5, 2, 3, 1, 2, 4, 3, 2, 5, 2, 3, 1, 4, 2, 3, 4, 5 }, (18, 23),
+            "City FC U15 Academy", ShowcasePools.SoccerMinorNames,
+            new[] { 1, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 1, 2, 3, 4, 5, 2, 3, 4, 2, 3, 5 }, (13, 16),
+            "Semi-Professional", "Junior (U15–U18)",
+            ShowcasePools.SoccerInjuries, ShowcasePools.Opponents,
+            ScoreFormat.Goals, 6, 4, (168, 194), (62, 88), (150, 179), (42, 68),
+            "lucas.ward", "Lucas Ward"),
+        new("basketball", 2, "coach.basketball",
+            "Riverside Hawks", ShowcasePools.BasketballSeniorNames,
+            new[] { 6, 8, 10, 9, 7, 6, 10, 7, 8, 9, 6, 7, 8 }, (18, 24),
+            "Hawks U16", ShowcasePools.BasketballMinorNames,
+            new[] { 6, 7, 8, 9, 10, 6, 7, 8, 9, 10, 6, 8, 9 }, (14, 17),
+            "Semi-Professional", "Junior (U15–U18)",
+            ShowcasePools.BasketballInjuries, ShowcasePools.BasketballOpponents,
+            ScoreFormat.Points, 6, 4, (180, 208), (75, 110), (165, 196), (55, 88),
+            "marcus.bell", "Marcus Bell"),
+        new("volleyball", 3, "coach.volleyball",
+            "Lakeside Spikers", ShowcasePools.VolleyballSeniorNames,
+            new[] { 11, 12, 14, 15, 12, 13, 12, 14, 11, 13, 12, 14, 15 }, (18, 24),
+            "Spikers U16", ShowcasePools.VolleyballMinorNames,
+            new[] { 11, 12, 13, 14, 15, 12, 14, 11, 12, 13, 14, 15, 12 }, (14, 17),
+            "Semi-Professional", "Junior (U15–U18)",
+            ShowcasePools.VolleyballInjuries, ShowcasePools.VolleyballOpponents,
+            ScoreFormat.Sets, 6, 4, (168, 192), (58, 78), (158, 185), (46, 70),
+            null, null),
+        new("beach", 4, "coach.beachvolley",
+            "Sand Kings", ShowcasePools.BeachSeniorNames,
+            new[] { 17, 16, 18, 17, 16, 18, 16, 18 }, (19, 26),
+            "Sand Cadets U16", ShowcasePools.BeachMinorNames,
+            new[] { 16, 17, 18, 16, 17, 18 }, (14, 17),
+            "Amateur Adult", "Junior (U15–U18)",
+            ShowcasePools.BeachInjuries, ShowcasePools.BeachOpponents,
+            ScoreFormat.Sets, 5, 4, (180, 198), (72, 92), (165, 190), (55, 80),
+            "carlos.santos", "Carlos Santos Jr"),
+        new("tennis", 5, "coach.tennis",
+            "Ace Academy", ShowcasePools.TennisSeniorNames,
+            new[] { 19, 21, 22, 23, 20, 21, 19, 23, 22, 20 }, (18, 24),
+            "Ace Futures U14", ShowcasePools.TennisMinorNames,
+            new[] { 19, 21, 23, 20, 22, 19, 21, 23 }, (12, 15),
+            "Semi-Professional", "Youth (U12–U14)",
+            ShowcasePools.TennisInjuries, ShowcasePools.TennisOpponents,
+            ScoreFormat.GamesAndSets, 5, 4, (168, 190), (60, 84), (150, 178), (40, 66),
+            "alex.williams", "Alex Williams"),
+    };
+
+    private async Task SeedSportAsync(SportSpec spec, Report r)
+    {
+        var coach = await RequireSeedCoachAsync(spec.CoachEmail + SeedDomain);
         await EnsurePlanAsync(coach.Id, BillingPlan.Team, r);
 
-        var senior = await GetOrCreateTeamAsync("City FC U18", sportId: 1, coach, r);
-        var minor = await GetOrCreateTeamAsync("City FC U15 Academy", sportId: 1, coach, r);
+        var senior = await GetOrCreateTeamAsync(spec.SeniorTeam, spec.SportId, coach, r);
+        var minor = await GetOrCreateTeamAsync(spec.MinorTeam, spec.SportId, coach, r);
 
-        await AssignBenchmarkAsync(senior, "Semi-Professional", r);
-        await AssignBenchmarkAsync(minor, "Junior (U15–U18)", r);
+        await AssignBenchmarkAsync(senior, spec.SeniorProfile, r);
+        await AssignBenchmarkAsync(minor, spec.MinorProfile, r);
 
-        // Rosters. Senior adopts the 8 baseline players and grows to 24; the minor
-        // academy is entirely new, all under 18 with real dates of birth.
-        // Position ids (soccer): 1 GK, 2 DEF, 3 MID, 4 WING, 5 ST. Baseline slots
-        // 0-7 mirror DemoDataSeeder's canonical positions; the rest balance the squad
-        // (3 GK / 7 DEF / 6 MID / 4 WING / 4 ST — no six-goalkeeper rosters).
-        int[] seniorPositions = { 1, 2, 3, 4, 5, 3, 2, 5, 2, 3, 1, 2, 4, 3, 2, 5, 2, 3, 1, 4, 2, 3, 4, 5 };
-        int[] minorPositions = { 1, 2, 3, 4, 5, 2, 3, 4, 5, 2, 3, 1, 2, 3, 4, 5, 2, 3, 4, 2, 3, 5 };
-        var seniorPlayers = await EnsureRosterAsync(senior, ShowcasePools.SoccerSeniorNames, seniorPositions,
-            targetSize: 24, ages: (18, 23), minors: false, r);
-        var minorPlayers = await EnsureRosterAsync(minor, ShowcasePools.SoccerMinorNames, minorPositions,
-            targetSize: 22, ages: (13, 16), minors: true, r);
+        var seniorPlayers = await EnsureRosterAsync(senior, spec.SeniorNames, spec.SeniorPositions,
+            spec.SeniorNames.Length, spec.SeniorAges, spec.SeniorHeights, spec.SeniorWeights, minors: false, r);
+        var minorPlayers = await EnsureRosterAsync(minor, spec.MinorNames, spec.MinorPositions,
+            spec.MinorNames.Length, spec.MinorAges, spec.MinorHeights, spec.MinorWeights, minors: true, r);
 
-        // Accounts: keep the 4 baseline athlete logins linked; add 2 logins per team;
-        // parents for ~70% of minors (read-only portal, Team plan required).
         // Baseline demo login (firstname.lastname@) relinks to its player by name —
         // never create a duplicate athlete.* account for someone who has one.
-        await LinkBaselineLoginAsync("lucas.ward" + SeedDomain, "Lucas Ward", r);
+        if (spec.BaselineLogin != null)
+            await LinkBaselineLoginAsync(spec.BaselineLogin + SeedDomain, spec.BaselineLoginPlayer!, r);
 
         // Login players chosen by stable name order, never DB row order.
         await EnsureAthleteLoginsAsync(seniorPlayers.OrderBy(p => p.FullName).Take(2), r);
@@ -139,9 +184,9 @@ public class DemoShowcaseSeeder
             var players = team.Id == senior.Id ? seniorPlayers : minorPlayers;
             await SeedAssessmentLayerAsync(team, players, r);
             await SeedObjectiveTestsAsync(team, players, r);
-            await SeedMatchesAsync(team, players, matches: team.Id == senior.Id ? 6 : 4, r);
+            await SeedMatchesAsync(team, players, spec, team.Id == senior.Id ? spec.SeniorMatches : spec.MinorMatches, r);
             await SeedSelfAssessmentsAsync(players, r);
-            await SeedInjuriesAsync(coach, players, r);
+            await SeedInjuriesAsync(coach, players, spec.Injuries, r);
             await SeedNutritionAsync(players, r);
             await SeedTasksAsync(coach, players, r);
             await SeedGoalsAsync(players, r);
@@ -154,7 +199,6 @@ public class DemoShowcaseSeeder
 
         await SeedMessagesAsync(coach, seniorPlayers.Concat(minorPlayers), r);
 
-        // Evidence scores derive from everything above; one engine pass per player.
         foreach (var p in seniorPlayers.Concat(minorPlayers))
         {
             await _engine.RecalculateAllAsync(p.Id);
@@ -221,7 +265,8 @@ public class DemoShowcaseSeeder
     }
 
     private async Task<List<Player>> EnsureRosterAsync(Team team, string[] namePool, int[] positionPool,
-        int targetSize, (int Min, int Max) ages, bool minors, Report r)
+        int targetSize, (int Min, int Max) ages, (int Min, int Max) heights, (int Min, int Max) weights,
+        bool minors, Report r)
     {
         var players = await _db.Players.Where(p => p.TeamId == team.Id).OrderBy(p => p.FullName).ToListAsync();
         var usedJerseys = players.Select(p => p.JerseyNumber).Where(j => j != null).Select(j => j!.Value).ToHashSet();
@@ -240,8 +285,8 @@ public class DemoShowcaseSeeder
                 FullName = name,
                 Age = age,
                 DateOfBirth = minors ? DateTime.UtcNow.Date.AddYears(-age).AddDays(-rng.Next(20, 330)) : null,
-                Height = minors ? rng.Next(150, 179) : rng.Next(168, 194),
-                Weight = minors ? rng.Next(42, 68) : rng.Next(62, 88),
+                Height = rng.Next(heights.Min, heights.Max + 1),
+                Weight = rng.Next(weights.Min, weights.Max + 1),
                 SportId = team.SportId,
                 TeamId = team.Id,
                 PositionId = positionPool[slot % positionPool.Length],
@@ -441,62 +486,89 @@ public class DemoShowcaseSeeder
         await _db.SaveChangesAsync();
     }
 
-    private async Task SeedMatchesAsync(Team team, List<Player> players, int matches, Report r)
+    private async Task SeedMatchesAsync(Team team, List<Player> players, SportSpec spec, int matches, Report r)
     {
         var rng = new ShowcaseRng($"matches|{team.Name}");
         for (var m = 0; m < matches; m++)
         {
             var date = LastSaturday().AddDays(-7 * m);
-            var opponent = ShowcasePools.Opponents[(m + (team.Name.Length % 3)) % ShowcasePools.Opponents.Length];
+            var opponent = spec.Opponents[(m + (team.Name.Length % 3)) % spec.Opponents.Length];
+
             // Draws before the existence check (idempotency — see note above).
-            var ourGoals = rng.Next(0, 5);
-            var theirGoals = rng.Next(0, 4);
-            var existing = await _db.MatchResults.FirstOrDefaultAsync(x =>
-                x.TeamId == team.Id && x.OpponentName == opponent && x.MatchDate == date);
-            if (existing != null) { r.Hit("MatchResult", false); continue; }
-
+            var (ourScore, theirScore, setScores) = BuildScore(spec.Format, rng, spec.SportId);
             var isHome = m % 2 == 0;
-            var match = new MatchResult
-            {
-                TeamId = team.Id,
-                OpponentName = opponent,
-                MatchDate = date,
-                IsHome = isHome,
-                HomeScore = isHome ? ourGoals : theirGoals,
-                AwayScore = isHome ? theirGoals : ourGoals,
-                ScoreFormat = ScoreFormat.Goals,
-                Competition = "League",
-            };
-            _db.MatchResults.Add(match);
-            await _db.SaveChangesAsync();
-            r.Hit("MatchResult", true);
 
-            // Ratings + auto-imported evidence stat entries for 11-14 players.
+            var match = await _db.MatchResults.FirstOrDefaultAsync(x =>
+                x.TeamId == team.Id && x.OpponentName == opponent && x.MatchDate == date);
+            var created = match == null;
+            if (created)
+            {
+                match = new MatchResult
+                {
+                    TeamId = team.Id,
+                    OpponentName = opponent,
+                    MatchDate = date,
+                    IsHome = isHome,
+                    HomeScore = isHome ? ourScore : theirScore,
+                    AwayScore = isHome ? theirScore : ourScore,
+                    ScoreFormat = spec.Format,
+                    SetScores = setScores,
+                    Competition = "League",
+                };
+                _db.MatchResults.Add(match);
+                await _db.SaveChangesAsync();
+                r.Hit("MatchResult", true);
+            }
+            else r.Hit("MatchResult", false);
+
+            var lineupSize = spec.SportId switch
+            {
+                2 => Math.Min(players.Count, rng.Next(8, 11)),   // basketball rotation
+                3 => Math.Min(players.Count, rng.Next(8, 12)),   // volleyball
+                4 => Math.Min(players.Count, 2),                 // beach: the pair
+                5 => Math.Min(players.Count, rng.Next(3, 6)),    // tennis: squad tie
+                _ => Math.Min(players.Count, rng.Next(11, 15)),  // soccer
+            };
             var squad = players.OrderBy(p => new ShowcaseRng($"lineup|{p.FullName}|{m}").Next(0, 1000))
-                .Take(Math.Min(players.Count, rng.Next(11, 15))).ToList();
-            var goalsLeft = ourGoals;
+                .Take(lineupSize).ToList();
+
+            var existingRatings = created
+                ? new HashSet<int>()
+                : (await _db.PlayerMatchRatings.Where(x => x.MatchResultId == match!.Id)
+                    .Select(x => x.PlayerId).ToListAsync()).ToHashSet();
+
+            var goalsLeft = spec.SportId == 1 ? ourScore : 0;
             foreach (var p in squad)
             {
                 var pr = new ShowcaseRng($"rating|{p.FullName}|{team.Name}|{m}");
                 var q = Quality(p, m);
-                var goals = goalsLeft > 0 && pr.Chance(q * 0.45) ? 1 : 0;
+                var minutes = pr.Chance(0.8)
+                    ? (spec.SportId == 2 ? pr.Next(18, 37) : 90)
+                    : pr.Next(10, 60);
+                var goals = spec.SportId == 1 && goalsLeft > 0 && pr.Chance(q * 0.45) ? 1 : 0;
                 goalsLeft -= goals;
-                var minutes = pr.Chance(0.8) ? 90 : pr.Next(15, 75);
-                var passes = pr.Next(18, 70);
-                var passAcc = Math.Clamp((int)(60 + q * 35 + pr.Next(-5, 6)), 40, 97);
-                var statJson = System.Text.Json.JsonSerializer.Serialize(new Dictionary<string, object>
+                var statJson = BuildStatJson(spec.SportId, pr, q, minutes, goals);
+
+                if (existingRatings.Contains(p.Id))
                 {
-                    ["goals"] = goals,
-                    ["assists"] = pr.Chance(q * 0.3) ? 1 : 0,
-                    ["shots"] = goals + pr.Next(0, 4),
-                    ["shotsOnTarget"] = goals + pr.Next(0, 2),
-                    ["passes"] = passes,
-                    ["passAccuracy"] = passAcc,
-                    ["tackles"] = pr.Next(0, 6),
-                    ["distanceKm"] = Math.Round(6 + q * 5 + pr.Next(0, 10) / 10.0, 1),
-                    ["minutesPlayed"] = minutes,
-                });
-                match.Ratings.Add(new PlayerMatchRating
+                    // Idempotent ENRICH: earlier seed versions could miss mapping keys
+                    // (e.g. soccer dribbles/interceptions) which silently mutes the
+                    // match→evidence layer. Regenerate deterministically when short.
+                    var rating = await _db.PlayerMatchRatings.FirstAsync(x => x.MatchResultId == match!.Id && x.PlayerId == p.Id);
+                    if (MissingMappingKeys(spec.SportId, rating.StatJson))
+                    {
+                        rating.StatJson = statJson;
+                        var entry = await _db.MatchStatEntries.FirstOrDefaultAsync(e =>
+                            e.MatchResultId == match!.Id && e.PlayerId == p.Id);
+                        if (entry != null) entry.StatsJson = statJson;
+                        r.Hit("MatchStatEnriched", true);
+                    }
+                    else r.Hit("PlayerMatchRating", false);
+                    continue;
+                }
+                if (!created) continue; // pre-existing match not seeded by us: leave untouched
+
+                match!.Ratings.Add(new PlayerMatchRating
                 {
                     PlayerId = p.Id,
                     Rating = Math.Clamp(Math.Round((decimal)(4.5 + q * 5) + pr.NextDecimal(-0.5m, 0.5m, 1), 1), 1m, 10m),
@@ -517,6 +589,145 @@ public class DemoShowcaseSeeder
             }
             await _db.SaveChangesAsync();
         }
+    }
+
+    // Keys the evidence engine's MatchStatRules read per sport — if any is absent
+    // the match layer silently contributes nothing (keep in sync with the engine).
+    private static readonly Dictionary<int, string[]> MappingKeys = new()
+    {
+        [1] = new[] { "distanceKm", "passAccuracy", "shotsOnTarget", "shots", "dribbles", "tackles", "interceptions" },
+        [2] = new[] { "fgPercentage", "assists", "turnovers", "rebounds", "steals", "blocks", "minutesPlayed" },
+        [3] = new[] { "aces", "serves", "kills", "attempts", "blocks", "digs", "assists" },
+        [4] = new[] { "aces", "serves", "kills", "attempts", "blocks", "digs" },
+        [5] = new[] { "firstServeIn", "unforcedErrors", "breakPointsSaved" },
+    };
+
+    private static bool MissingMappingKeys(int sportId, string? statJson)
+    {
+        if (string.IsNullOrEmpty(statJson)) return true;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(statJson);
+            return MappingKeys[sportId].Any(k => !doc.RootElement.TryGetProperty(k, out _));
+        }
+        catch { return true; }
+    }
+
+    private static (int Our, int Their, string? SetScores) BuildScore(ScoreFormat format, ShowcaseRng rng, int sportId)
+    {
+        switch (format)
+        {
+            case ScoreFormat.Points: // basketball
+                var our = rng.Next(58, 97);
+                var their = rng.Next(55, 93);
+                if (our == their) our += 2;
+                return (our, their, null);
+
+            case ScoreFormat.Sets: // volleyball (to 25) / beach (to 21)
+            {
+                var target = sportId == 4 ? 21 : 25;
+                var bestOf = sportId == 4 ? 3 : 5;
+                var needed = bestOf / 2 + 1;
+                int w = 0, l = 0;
+                var sets = new List<string>();
+                while (w < needed && l < needed)
+                {
+                    var weWin = rng.Chance(0.55);
+                    var loserPts = rng.Next(Math.Max(10, target - 14), target - 1);
+                    sets.Add(weWin ? $"{target}-{loserPts}" : $"{loserPts}-{target}");
+                    if (weWin) w++; else l++;
+                }
+                return (w, l, string.Join(", ", sets));
+            }
+
+            case ScoreFormat.GamesAndSets: // tennis
+            {
+                int w = 0, l = 0;
+                var sets = new List<string>();
+                while (w < 2 && l < 2)
+                {
+                    var weWin = rng.Chance(0.55);
+                    var loserGames = rng.Next(0, 6);
+                    sets.Add(weWin ? $"6-{loserGames}" : $"{loserGames}-6");
+                    if (weWin) w++; else l++;
+                }
+                return (w, l, string.Join(", ", sets));
+            }
+
+            default: // soccer goals
+                return (rng.Next(0, 5), rng.Next(0, 4), null);
+        }
+    }
+
+    // Sport-correct StatJson whose keys line up with BOTH the frontend rating form
+    // (matchSport.ts STAT_FIELDS) and the engine's MatchStatRules extraction.
+    private static string BuildStatJson(int sportId, ShowcaseRng pr, double q, int minutes, int goals)
+    {
+        Dictionary<string, object> stats = sportId switch
+        {
+            2 => new()
+            {
+                ["points"] = (int)(4 + q * 22) + pr.Next(0, 5),
+                ["rebounds"] = (int)(1 + q * 8) + pr.Next(0, 3),
+                ["assists"] = (int)(q * 7) + pr.Next(0, 2),
+                ["steals"] = pr.Next(0, 3),
+                ["blocks"] = pr.Next(0, 3),
+                ["turnovers"] = Math.Max(0, 5 - (int)(q * 4) + pr.Next(0, 2)),
+                ["fgPercentage"] = Math.Clamp((int)(32 + q * 28) + pr.Next(-4, 5), 25, 68),
+                ["threePercentage"] = Math.Clamp((int)(24 + q * 22) + pr.Next(-5, 6), 15, 55),
+                ["ftPercentage"] = Math.Clamp((int)(60 + q * 30) + pr.Next(-5, 6), 45, 98),
+                ["minutesPlayed"] = minutes,
+            },
+            3 or 4 => BuildVolleyStats(pr, q, minutes, beach: sportId == 4),
+            5 => new()
+            {
+                ["aces"] = (int)(q * 6) + pr.Next(0, 3),
+                ["doubleFaults"] = Math.Max(0, 5 - (int)(q * 4) + pr.Next(0, 2)),
+                ["firstServeIn"] = Math.Clamp((int)(48 + q * 26) + pr.Next(-4, 5), 40, 82),
+                ["winners"] = (int)(8 + q * 20) + pr.Next(0, 6),
+                ["unforcedErrors"] = Math.Clamp((int)(38 - q * 26) + pr.Next(-4, 5), 5, 45),
+                ["breakPointsSaved"] = Math.Clamp((int)(30 + q * 48) + pr.Next(-6, 7), 15, 95),
+                ["gamesWon"] = pr.Next(6, 15),
+                ["minutesPlayed"] = minutes,
+            },
+            _ => new()
+            {
+                ["goals"] = goals,
+                ["assists"] = pr.Chance(q * 0.3) ? 1 : 0,
+                ["shots"] = goals + pr.Next(0, 4),
+                ["shotsOnTarget"] = goals + pr.Next(0, 2),
+                ["passes"] = pr.Next(18, 70),
+                ["passAccuracy"] = Math.Clamp((int)(60 + q * 35) + pr.Next(-5, 6), 40, 97),
+                ["dribbles"] = (int)(q * 6) + pr.Next(0, 3),
+                ["tackles"] = pr.Next(0, 6),
+                ["interceptions"] = pr.Next(0, 5),
+                ["distanceKm"] = Math.Round(6 + q * 5 + pr.Next(0, 10) / 10.0, 1),
+                ["minutesPlayed"] = minutes,
+            },
+        };
+        return System.Text.Json.JsonSerializer.Serialize(stats);
+    }
+
+    private static Dictionary<string, object> BuildVolleyStats(ShowcaseRng pr, double q, int minutes, bool beach)
+    {
+        var attempts = pr.Next(beach ? 12 : 15, beach ? 30 : 36);
+        var kills = Math.Clamp((int)(attempts * (0.18 + q * 0.38)) + pr.Next(0, 3), 0, attempts);
+        var serves = pr.Next(8, 20);
+        var aces = Math.Clamp((int)(serves * q * 0.22) + pr.Next(0, 2), 0, serves);
+        return new()
+        {
+            ["points"] = kills + aces + pr.Next(0, 4),
+            ["kills"] = kills,
+            ["errors"] = Math.Max(0, 6 - (int)(q * 5) + pr.Next(0, 3)),
+            ["attempts"] = attempts,
+            ["serves"] = serves,
+            ["aces"] = aces,
+            ["serviceErrors"] = pr.Next(0, 4),
+            ["digs"] = (int)(2 + q * 10) + pr.Next(0, 4),
+            ["blocks"] = pr.Next(0, 5),
+            ["assists"] = (int)(q * 12) + pr.Next(0, 6),
+            ["minutesPlayed"] = minutes,
+        };
     }
 
     private static DateTime LastSaturday()
@@ -556,7 +767,7 @@ public class DemoShowcaseSeeder
         await _db.SaveChangesAsync();
     }
 
-    private async Task SeedInjuriesAsync(ApplicationUser coach, List<Player> players, Report r)
+    private async Task SeedInjuriesAsync(ApplicationUser coach, List<Player> players, (string Type, string BodyPart)[] pool, Report r)
     {
         var templates = await _db.RecoveryTemplates.Include(t => t.Exercises).Include(t => t.Milestones).ToListAsync();
         foreach (var p in players)
@@ -566,7 +777,7 @@ public class DemoShowcaseSeeder
             var historical = rng.Chance(0.10);
             if (!active && !historical) continue;
 
-            var (type, bodyPart) = rng.Pick(ShowcasePools.SoccerInjuries);
+            var (type, bodyPart) = rng.Pick(pool);
             if (await _db.InjuryRecords.AnyAsync(i => i.PlayerId == p.Id && i.InjuryType == type))
             {
                 r.Hit("InjuryRecord", false);
