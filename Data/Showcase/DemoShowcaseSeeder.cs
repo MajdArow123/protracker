@@ -205,6 +205,7 @@ public class DemoShowcaseSeeder
             await SeedInjuriesAsync(coach, players, spec.Injuries, r);
             await SeedNutritionAsync(players, r);
             await SeedTasksAsync(coach, players, r);
+            await EnrichTasksWithDrillsAsync(players, spec.SportId, r);
             await SeedGoalsAsync(players, r);
             await SeedWellbeingAsync(players, r);
             await SeedJournalsAsync(players, r);
@@ -783,14 +784,15 @@ public class DemoShowcaseSeeder
         await _db.SaveChangesAsync();
     }
 
-    private async Task SeedInjuriesAsync(ApplicationUser coach, List<Player> players, (string Type, string BodyPart)[] pool, Report r)
+    private async Task SeedInjuriesAsync(ApplicationUser coach, List<Player> players, (string Type, string BodyPart)[] pool, Report r,
+        double activeChance = 0.15, double historicalChance = 0.10)
     {
         var templates = await _db.RecoveryTemplates.Include(t => t.Exercises).Include(t => t.Milestones).ToListAsync();
         foreach (var p in players)
         {
             var rng = new ShowcaseRng($"injury|{p.FullName}");
-            var active = rng.Chance(0.15);
-            var historical = rng.Chance(0.10);
+            var active = rng.Chance(activeChance);
+            var historical = rng.Chance(historicalChance);
             if (!active && !historical) continue;
 
             var (type, bodyPart) = rng.Pick(pool);
@@ -948,12 +950,40 @@ public class DemoShowcaseSeeder
         await _db.SaveChangesAsync();
     }
 
-    private async Task SeedGoalsAsync(List<Player> players, Report r)
+    // Links a deterministic ~40% of each player's tasks to a sport-matching built-in
+    // drill, so drill badges and the task-analytics "Drill Usage" section render.
+    // Iterates ALL tasks in stable Id order and draws rng per task regardless of
+    // state, so reruns replay the same sequence and set nothing new.
+    private async Task EnrichTasksWithDrillsAsync(List<Player> players, int sportId, Report r)
+    {
+        var needle = "," + sportId + ",";
+        var drills = (await _db.Drills.Where(d => d.IsBuiltIn).OrderBy(d => d.Id).ToListAsync())
+            .Where(d => ("," + d.SportIds + ",").Contains(needle)).ToList();
+        if (drills.Count == 0) return;
+
+        foreach (var p in players)
+        {
+            var rng = new ShowcaseRng($"drilltask|{p.FullName}");
+            var tasks = await _db.PlayerTasks.Where(t => t.PlayerId == p.Id).OrderBy(t => t.Id).ToListAsync();
+            foreach (var t in tasks)
+            {
+                // IMPORTANT: draw ALL randomness before any skip so reruns don't drift.
+                var want = rng.Chance(0.4);
+                var drill = rng.Pick(drills);
+                if (!want || t.DrillId != null) continue;
+                t.DrillId = drill.Id;
+                r.Hit("TaskDrillLink", true);
+            }
+        }
+        await _db.SaveChangesAsync();
+    }
+
+    private async Task SeedGoalsAsync(List<Player> players, Report r, double chance = 0.6)
     {
         foreach (var p in players)
         {
             var rng = new ShowcaseRng($"goals|{p.FullName}");
-            if (!rng.Chance(0.6)) continue;
+            if (!rng.Chance(chance)) continue;
             var count = rng.Next(1, 4);
             var existing = await _db.PersonalGoals.CountAsync(g => g.PlayerId == p.Id);
             for (var i = existing; i < count; i++)
@@ -1304,14 +1334,56 @@ public class DemoShowcaseSeeder
         await SeedMarketplaceAsync(r);
         await SeedSoloDemoAsync(r);
         await SeedPublicProfilesAsync(r);
+        await SeedConnectionRequestAsync(r);
+    }
+
+    // One pending marketplace connection request (Riley → the soccer coach): populates
+    // the coach's Requests page, Riley's "My Requests" section and the profile-analytics
+    // funnel. Safe to accept in a live demo — accepting only issues a join code; the
+    // solo account stays solo unless the code is actually used.
+    private async Task SeedConnectionRequestAsync(Report r)
+    {
+        var athlete = await _users.FindByEmailAsync("solo.demo" + SeedDomain);
+        var coach = await _users.FindByEmailAsync("coach.soccer" + SeedDomain);
+        if (athlete == null || coach == null) return;
+        if (await _db.CoachConnectionRequests.AnyAsync(c => c.AthleteUserId == athlete.Id && c.CoachUserId == coach.Id))
+        {
+            r.Hit("ConnectionRequest", false);
+            return;
+        }
+        var player = await _db.Players.FirstOrDefaultAsync(p => p.SoloUserId == athlete.Id);
+        var sport = await _db.Sports.FindAsync(1);
+        _db.CoachConnectionRequests.Add(new CoachConnectionRequest
+        {
+            CoachUserId = coach.Id,
+            CoachName = coach.DisplayName ?? "Coach",
+            AthleteUserId = athlete.Id,
+            AthleteName = athlete.DisplayName ?? "Athlete",
+            AthletePlayerId = player?.Id,
+            SportId = 1,
+            SportName = sport?.Name,
+            Message = "Training solo for a year — looking for structured coaching to make the jump to a competitive squad.",
+            Status = ConnectionRequestStatus.Pending,
+            RequestedAt = DateTime.UtcNow.AddDays(-2),
+        });
+        await _db.SaveChangesAsync();
+        r.Hit("ConnectionRequest", true);
     }
 
     private async Task SeedLeagueAsync(string name, LeagueType type, LeagueFormat format,
         string coachEmail, string mainTeamName, string[] shellNames, int sportId, int scoredMatches, Report r)
     {
         var coach = await RequireSeedCoachAsync(coachEmail);
-        if (await _db.Leagues.AnyAsync(l => l.Name == name && l.OrganizerId == coach.Id))
+        var existingLeague = await _db.Leagues.FirstOrDefaultAsync(l => l.Name == name && l.OrganizerId == coach.Id);
+        if (existingLeague != null)
         {
+            // A mid-season demo competition should read as Active, not Draft.
+            if (existingLeague.Status == LeagueStatus.Draft)
+            {
+                existingLeague.Status = LeagueStatus.Active;
+                await _db.SaveChangesAsync();
+                r.Hit("LeagueActivated", true);
+            }
             r.Hit("League", false);
             return;
         }
@@ -1365,6 +1437,11 @@ public class DemoShowcaseSeeder
             });
             r.Hit("LeagueMatchScored", true);
         }
+
+        // Results are in — the competition is underway, not a draft.
+        var created = await _db.Leagues.FirstAsync(l => l.Id == detail.Id);
+        created.Status = LeagueStatus.Active;
+        await _db.SaveChangesAsync();
     }
 
     private async Task SeedMarketplaceAsync(Report r)
@@ -1487,7 +1564,10 @@ public class DemoShowcaseSeeder
         await SeedObjectiveTestsAsync(new Team { Id = 0, SportId = 1, Name = "solo", CoachId = user.Id }, solo, r);
         await SeedSelfAssessmentsAsync(solo, r);
         await SeedTasksAsync(user, solo, r);
-        await SeedGoalsAsync(solo, r);
+        await SeedGoalsAsync(solo, r, chance: 1.0);
+        // Injuries BEFORE wellbeing, matching the team pipeline: the wellbeing pain
+        // draw branches on hasActiveInjury, so this order must never change.
+        await SeedInjuriesAsync(user, solo, ShowcasePools.SoccerInjuries, r, activeChance: 1.0, historicalChance: 0.0);
         await SeedWellbeingAsync(solo, r);
         await SeedJournalsAsync(solo, r);
 
@@ -1521,6 +1601,101 @@ public class DemoShowcaseSeeder
             }
         }
         await _db.SaveChangesAsync();
+
+        // ── Full solo surface: every /solo/* page a demo visitor opens must render
+        //    populated — nutrition, personal notes, slider assessments, match
+        //    ratings, drill-linked tasks (goals/injuries seeded in the block above).
+        if (!await _db.PlayerNutritionProfiles.AnyAsync(x => x.PlayerId == player.Id))
+        {
+            _db.PlayerNutritionProfiles.Add(new PlayerNutritionProfile
+            {
+                PlayerId = player.Id,
+                Category = NutritionCategory.Vegetarian,
+                PreferenceType = NutritionPreferenceType.Lifestyle,
+                Severity = NutritionSeverity.Lifestyle,
+            });
+            await _db.SaveChangesAsync();
+            r.Hit("NutritionProfile", true);
+        }
+        await SeedNutritionAsync(solo, r); // static weekly plan (UserId != null ⇒ plan)
+
+        // Slider self-assessments in the app's own "Personal Training" period so the
+        // solo dashboard Latest Score / trend chart and My Stats render.
+        var period = await _db.AssessmentPeriods.FirstOrDefaultAsync(ap => ap.PlayerId == player.Id);
+        if (period == null)
+        {
+            period = new AssessmentPeriod
+            {
+                Name = "Personal Training",
+                PlayerId = player.Id,
+                StartDate = DateTime.UtcNow.Date.AddDays(-42),
+                EndDate = DateTime.UtcNow.Date.AddYears(5),
+            };
+            _db.AssessmentPeriods.Add(period);
+            await _db.SaveChangesAsync();
+            r.Hit("SoloPeriod", true);
+        }
+        var cats = await _db.SportStatCategories.Where(c => c.SportId == 1).ToListAsync();
+        for (var a = 0; a < 3; a++)
+        {
+            var date = DateTime.UtcNow.Date.AddDays(-28 + a * 12);
+            // Drawn before the existence check (rerun-stable sequence).
+            var scores = cats.Select(c => new PlayerStatScore
+            {
+                SportStatCategoryId = c.Id,
+                Score = ScoreFromQuality(0.55 + 0.07 * a, new ShowcaseRng($"solo|assess|{c.Id}|{a}")),
+            }).ToList();
+            if (await _db.PlayerAssessments.AnyAsync(x => x.PlayerId == player.Id && x.DateRecorded == date))
+            {
+                r.Hit("SoloAssessment", false);
+                continue;
+            }
+            _db.PlayerAssessments.Add(new PlayerAssessment
+            {
+                PlayerId = player.Id,
+                AssessmentPeriodId = period.Id,
+                DateRecorded = date,
+                StatScores = scores,
+            });
+            r.Hit("SoloAssessment", true);
+        }
+        await _db.SaveChangesAsync();
+
+        // Personal notes (athlete-owned; the solo sidebar "My Notes" page).
+        var noteRng = new ShowcaseRng("solo|notes");
+        foreach (var content in new[]
+        {
+            "Track sprint times every Tuesday — same warm-up, same pitch, or the numbers lie.",
+            "Felt the difference from two weeks of consistent sleep. Keep the 23:00 cutoff.",
+        })
+        {
+            var category = (AthleteNoteCategory)noteRng.Next(0, 6);
+            if (await _db.AthleteNotes.AnyAsync(n => n.PlayerId == player.Id && n.Content == content))
+            {
+                r.Hit("AthleteNote", false);
+                continue;
+            }
+            _db.AthleteNotes.Add(new AthleteNote { PlayerId = player.Id, UserId = user.Id, Content = content, Category = category });
+            r.Hit("AthleteNote", true);
+        }
+
+        // A personal 1-10 rating on each logged match ("My Matches" avg rating).
+        var ratingRng = new ShowcaseRng("solo|ratings");
+        var soloMatches = await _db.MatchResults.Where(m => m.PlayerId == player.Id).OrderBy(m => m.Id).ToListAsync();
+        foreach (var m in soloMatches)
+        {
+            var rating = Math.Round(ratingRng.NextDecimal(6.5m, 8.5m, 1) * 2) / 2;
+            if (await _db.PlayerMatchRatings.AnyAsync(x => x.MatchResultId == m.Id && x.PlayerId == player.Id))
+            {
+                r.Hit("SoloMatchRating", false);
+                continue;
+            }
+            _db.PlayerMatchRatings.Add(new PlayerMatchRating { MatchResultId = m.Id, PlayerId = player.Id, Rating = rating });
+            r.Hit("SoloMatchRating", true);
+        }
+        await _db.SaveChangesAsync();
+
+        await EnrichTasksWithDrillsAsync(solo, sportId: 1, r);
         await _engine.RecalculateAllAsync(player.Id);
     }
 
@@ -1531,9 +1706,18 @@ public class DemoShowcaseSeeder
         {
             var player = await _db.Players.Include(p => p.Sport).FirstOrDefaultAsync(p => p.FullName == name);
             if (player == null) continue;
-            if (await _db.PublicProfiles.AnyAsync(x => x.PlayerId == player.Id))
+            var existing = await _db.PublicProfiles.FirstOrDefaultAsync(x => x.PlayerId == player.Id);
+            if (existing != null)
             {
-                r.Hit("PublicProfile", false);
+                // A pre-existing row (e.g. from earlier app testing) may be private —
+                // the showcase needs these five live. Flip the flag, keep everything else.
+                if (!existing.IsPublic)
+                {
+                    existing.IsPublic = true;
+                    await _db.SaveChangesAsync();
+                    r.Hit("PublicProfileMadePublic", true);
+                }
+                else r.Hit("PublicProfile", false);
                 continue;
             }
             _db.PublicProfiles.Add(new PublicProfile
