@@ -1,18 +1,20 @@
 // Supported languages. English is the default + fallback. Arabic & Hebrew are RTL.
+// Deliberately flag-free: flags denote countries, not languages (🇸🇦 for every Arabic
+// speaker / 🇬🇧 vs 🇺🇸 are the classic misfires) — the switcher shows `short` codes.
 export interface LanguageDef {
   code: string;
-  label: string;   // native name
-  flag: string;    // emoji flag
+  label: string;   // native name (kept as the accessible label)
+  short: string;   // abbreviated code shown in the switcher (EN/AR/…)
   dir: 'ltr' | 'rtl';
   font?: string;   // optional CSS font-family applied when active
 }
 
 export const LANGUAGES: LanguageDef[] = [
-  { code: 'en', label: 'English', flag: '🇬🇧', dir: 'ltr' },
-  { code: 'ar', label: 'العربية', flag: '🇸🇦', dir: 'rtl', font: "'Noto Sans Arabic', sans-serif" },
-  { code: 'he', label: 'עברית', flag: '🇮🇱', dir: 'rtl', font: "'Noto Sans Hebrew', sans-serif" },
-  { code: 'fr', label: 'Français', flag: '🇫🇷', dir: 'ltr' },
-  { code: 'es', label: 'Español', flag: '🇪🇸', dir: 'ltr' },
+  { code: 'en', label: 'English', short: 'EN', dir: 'ltr' },
+  { code: 'ar', label: 'العربية', short: 'AR', dir: 'rtl', font: "'Noto Sans Arabic', sans-serif" },
+  { code: 'he', label: 'עברית', short: 'HE', dir: 'rtl', font: "'Noto Sans Hebrew', sans-serif" },
+  { code: 'fr', label: 'Français', short: 'FR', dir: 'ltr' },
+  { code: 'es', label: 'Español', short: 'ES', dir: 'ltr' },
 ];
 
 export const RTL_LANGS = new Set(LANGUAGES.filter(l => l.dir === 'rtl').map(l => l.code));

@@ -10,6 +10,7 @@ import {
   ClipboardList, FlaskConical, ShieldCheck, Check,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useDynamicLabels } from '../i18n/dynamicLabels';
 import { CountUp } from '../components/ui/CountUp';
 import { useSports } from '../hooks/useSports';
 import { sportBadge } from '../utils/sportColors';
@@ -25,17 +26,18 @@ const fadeUp: Variants = {
 };
 
 // works: who the feature applies to — 'Both' (solo + team), 'Team' (coach-managed only).
+// `key` addresses landing.features.{key}Title / {key}Desc in the locales.
 const FEATURES = [
-  { icon: Brain, title: 'AI-Powered Insights', desc: 'Generate personalized improvement plans, weekly nutrition schedules, and injury recovery programs using Claude AI. Get smart task suggestions based on each athlete\'s weak areas.', color: 'from-purple-500 to-violet-500', works: 'Both' },
-  { icon: BarChart3, title: 'Performance Analytics', desc: 'Track athlete assessments across multiple categories with gradient sliders. View trend charts, radar skill profiles, and compare progress over time.', color: 'from-indigo-500 to-blue-500', works: 'Both' },
-  { icon: ShieldAlert, title: 'Injury & Recovery Tracking', desc: 'Log injuries with severity levels and assign structured recovery programs. AI generates sport-specific rehab exercises week by week.', color: 'from-red-500 to-rose-500', works: 'Both' },
-  { icon: CheckSquare, title: 'Task Management', desc: 'Assign targeted training tasks to athletes with priority levels and due dates. AI suggests tasks based on assessment weak areas. Track completion rates.', color: 'from-cyan-500 to-teal-500', works: 'Both' },
-  { icon: MessageSquare, title: 'Direct Messaging', desc: 'Built-in coach-to-athlete messaging with real-time updates. Share notes privately or with the athlete. Keep communication organized.', color: 'from-blue-500 to-indigo-500', works: 'Team' },
-  { icon: Salad, title: 'Nutrition Planning', desc: 'Generate 7-day AI meal plans tailored to the athlete\'s sport, position, and dietary restrictions. Athletes can swap foods for nutritionally equivalent alternatives.', color: 'from-green-500 to-emerald-500', works: 'Both' },
-  { icon: CalendarDays, title: 'Training Scheduler', desc: 'Plan weekly training sessions with a calendar view. Athletes see upcoming sessions on their dashboard. Track session completion.', color: 'from-orange-500 to-amber-500', works: 'Both' },
-  { icon: Trophy, title: 'Match Results', desc: 'Log match scores with sport-aware formatting — sets for volleyball/tennis, points for basketball, goals for soccer. Rate individual player performance.', color: 'from-amber-500 to-yellow-500', works: 'Both' },
-  { icon: Dumbbell, title: 'Multi-Sport Support', desc: 'Built for Basketball, Soccer, Volleyball, Beach Volleyball, and Tennis. Sport-specific positions, stats, scoring, and color themes throughout.', color: 'from-fuchsia-500 to-pink-500', works: 'Both' },
-  { icon: HeartPulse, title: 'Wellbeing Check-ins', desc: 'Athletes submit daily check-ins rating their energy, sleep, and overall feeling. Coaches see trends and get alerts when athletes report pain during recovery.', color: 'from-rose-500 to-pink-500', works: 'Both' },
+  { key: 'ai', icon: Brain, title: 'AI-Powered Insights', desc: 'Generate personalized improvement plans, weekly nutrition schedules, and injury recovery programs using Claude AI. Get smart task suggestions based on each athlete\'s weak areas.', color: 'from-purple-500 to-violet-500', works: 'Both' },
+  { key: 'analytics', icon: BarChart3, title: 'Performance Analytics', desc: 'Track athlete assessments across multiple categories with gradient sliders. View trend charts, radar skill profiles, and compare progress over time.', color: 'from-indigo-500 to-blue-500', works: 'Both' },
+  { key: 'injury', icon: ShieldAlert, title: 'Injury & Recovery Tracking', desc: 'Log injuries with severity levels and assign structured recovery programs. AI generates sport-specific rehab exercises week by week.', color: 'from-red-500 to-rose-500', works: 'Both' },
+  { key: 'tasks', icon: CheckSquare, title: 'Task Management', desc: 'Assign targeted training tasks to athletes with priority levels and due dates. AI suggests tasks based on assessment weak areas. Track completion rates.', color: 'from-cyan-500 to-teal-500', works: 'Both' },
+  { key: 'messaging', icon: MessageSquare, title: 'Direct Messaging', desc: 'Built-in coach-to-athlete messaging with real-time updates. Share notes privately or with the athlete. Keep communication organized.', color: 'from-blue-500 to-indigo-500', works: 'Team' },
+  { key: 'nutrition', icon: Salad, title: 'Nutrition Planning', desc: 'Generate 7-day AI meal plans tailored to the athlete\'s sport, position, and dietary restrictions. Athletes can swap foods for nutritionally equivalent alternatives.', color: 'from-green-500 to-emerald-500', works: 'Both' },
+  { key: 'scheduler', icon: CalendarDays, title: 'Training Scheduler', desc: 'Plan weekly training sessions with a calendar view. Athletes see upcoming sessions on their dashboard. Track session completion.', color: 'from-orange-500 to-amber-500', works: 'Both' },
+  { key: 'matches', icon: Trophy, title: 'Match Results', desc: 'Log match scores with sport-aware formatting — sets for volleyball/tennis, points for basketball, goals for soccer. Rate individual player performance.', color: 'from-amber-500 to-yellow-500', works: 'Both' },
+  { key: 'multiSport', icon: Dumbbell, title: 'Multi-Sport Support', desc: 'Built for Basketball, Soccer, Volleyball, Beach Volleyball, and Tennis. Sport-specific positions, stats, scoring, and color themes throughout.', color: 'from-fuchsia-500 to-pink-500', works: 'Both' },
+  { key: 'wellbeing', icon: HeartPulse, title: 'Wellbeing Check-ins', desc: 'Athletes submit daily check-ins rating their energy, sleep, and overall feeling. Coaches see trends and get alerts when athletes report pain during recovery.', color: 'from-rose-500 to-pink-500', works: 'Both' },
 ];
 
 // The three ways into ProTracker, front and center on the hero.
@@ -45,6 +47,7 @@ const ROLE_PATHS = [
     title: "I'm a Coach",
     titleKey: 'landing.roles.coach',
     ctaKey: 'landing.roles.coachCta',
+    descKey: 'landing.roles.coachDesc',
     desc: 'Manage your team, track athlete performance, generate AI nutrition and recovery plans.',
     cta: 'Get Started as Coach',
     to: '/login?tab=register',
@@ -57,6 +60,7 @@ const ROLE_PATHS = [
     title: "I'm on a Team",
     titleKey: 'landing.roles.teamAthlete',
     ctaKey: 'landing.roles.teamCta',
+    descKey: 'landing.roles.teamDesc',
     desc: 'Join your team with a code from your coach, view your progress, complete tasks and goals.',
     cta: 'Join My Team',
     to: '/register',
@@ -69,6 +73,7 @@ const ROLE_PATHS = [
     title: 'I Train Solo',
     titleKey: 'landing.roles.soloAthlete',
     ctaKey: 'landing.roles.soloCta',
+    descKey: 'landing.roles.soloDesc',
     desc: 'No coach? No problem. Track your own performance, generate AI meal plans, and improve at your own pace.',
     cta: 'Start Solo Training',
     to: '/register/solo',
@@ -79,17 +84,17 @@ const ROLE_PATHS = [
 ];
 
 const ABOUT_STATS = [
-  { value: 5, suffix: '', label: 'Sports Supported' },
-  { value: 10, suffix: '+', label: 'AI Features' },
-  { value: 34, suffix: '', label: 'Backend Tests' },
-  { value: 2026, suffix: '', label: 'Built in', countUp: false },
+  { value: 5, suffix: '', label: 'Sports Supported', labelKey: 'landing.about.statSports' },
+  { value: 10, suffix: '+', label: 'AI Features', labelKey: 'landing.about.statAi' },
+  { value: 34, suffix: '', label: 'Backend Tests', labelKey: 'landing.about.statTests' },
+  { value: 2026, suffix: '', label: 'Built in', labelKey: 'landing.about.statBuilt', countUp: false },
 ];
 
 const TECH_STACK = [
-  { group: 'Backend', items: ['ASP.NET Core 9', 'PostgreSQL', 'EF Core', 'JWT Auth'], color: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20' },
-  { group: 'Frontend', items: ['React 19', 'TypeScript', 'Tailwind CSS', 'Recharts'], color: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20' },
-  { group: 'AI', items: ['Anthropic Claude API (Haiku + Sonnet)'], color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
-  { group: 'Hosting', items: ['Railway', 'Vercel'], color: 'text-green-300 bg-green-500/10 border-green-500/20' },
+  { group: 'Backend', groupKey: 'landing.about.techBackend', items: ['ASP.NET Core 9', 'PostgreSQL', 'EF Core', 'JWT Auth'], color: 'text-indigo-300 bg-indigo-500/10 border-indigo-500/20' },
+  { group: 'Frontend', groupKey: 'landing.about.techFrontend', items: ['React 19', 'TypeScript', 'Tailwind CSS', 'Recharts'], color: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20' },
+  { group: 'AI', groupKey: 'landing.about.techAi', items: ['Anthropic Claude API (Haiku + Sonnet)'], color: 'text-purple-300 bg-purple-500/10 border-purple-500/20' },
+  { group: 'Hosting', groupKey: 'landing.about.techHosting', items: ['Railway', 'Vercel'], color: 'text-green-300 bg-green-500/10 border-green-500/20' },
 ];
 
 const NAV_LINKS = [
@@ -108,14 +113,15 @@ const SPORTS = [
 ];
 
 const STATS = [
-  { value: '5', label: 'Sports Supported', icon: Trophy },
-  { value: '100+', label: 'Stat Categories', icon: BarChart3 },
-  { value: 'Real-time', label: 'Analytics', icon: Zap },
-  { value: 'AI-Powered', label: 'Insights', icon: Brain },
+  { value: '5', label: 'Sports Supported', labelKey: 'landing.stats.sports', icon: Trophy },
+  { value: '100+', label: 'Stat Categories', labelKey: 'landing.stats.categories', icon: BarChart3 },
+  { value: 'Real-time', valueKey: 'landing.stats.realTimeValue', label: 'Analytics', labelKey: 'landing.stats.analytics', icon: Zap },
+  { value: 'AI-Powered', valueKey: 'landing.stats.aiValue', label: 'Insights', labelKey: 'landing.stats.insights', icon: Brain },
 ];
 
 const TESTIMONIALS = [
   {
+    key: 'marcus',
     name: 'Marcus Johnson',
     role: 'Head Coach, City FC',
     sport: 'Football',
@@ -124,6 +130,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
+    key: 'sarah',
     name: 'Sarah Williams',
     role: 'Performance Coach',
     sport: 'Basketball',
@@ -132,6 +139,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
+    key: 'carlos',
     name: 'Carlos Rivera',
     role: 'Academy Director',
     sport: 'Tennis',
@@ -140,6 +148,7 @@ const TESTIMONIALS = [
     stars: 5,
   },
   {
+    key: 'aisha',
     name: 'Aisha Diallo',
     role: 'Solo Athlete',
     sport: 'Basketball',
@@ -152,6 +161,10 @@ const TESTIMONIALS = [
 export function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  // Alias for map callbacks whose parameter is named `t` (tech stack, testimonials)
+  // — the documented shadowing gotcha.
+  const tr = t;
+  const L = useDynamicLabels();
   const [scrolled, setScrolled] = useState(false);
   const { data: sports = [] } = useSports();
 
@@ -292,7 +305,7 @@ export function LandingPage() {
                   <r.icon size={19} />
                 </div>
                 <h3 className="text-base font-bold text-white mb-1.5">{t(r.titleKey, r.title)}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed flex-1">{r.desc}</p>
+                <p className="text-gray-400 text-sm leading-relaxed flex-1">{t(r.descKey, r.desc)}</p>
                 <button
                   onClick={() => navigate(r.to)}
                   className={`mt-4 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl ${r.button} text-white font-semibold text-sm transition-all cursor-pointer group-hover:shadow-lg`}
@@ -311,9 +324,10 @@ export function LandingPage() {
             variants={fadeUp}
             className="mt-6 text-sm text-gray-500"
           >
-            Already have an account?{' '}
-            <button onClick={() => navigate('/login')} className="text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer">
-              Sign in →
+            {t('landing.hero.haveAccount', 'Already have an account?')}{' '}
+            <button onClick={() => navigate('/login')} className="inline-flex items-center gap-0.5 text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer">
+              {t('landing.hero.signIn', 'Sign In')}
+              <ChevronRight size={13} />
             </button>
           </motion.p>
 
@@ -324,9 +338,9 @@ export function LandingPage() {
             variants={fadeUp}
             className="mt-12 flex items-center justify-center gap-6 text-sm text-gray-500"
           >
-            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> Free to start</span>
-            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> No credit card</span>
-            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> AI-powered</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> {t('landing.hero.freeToStart', 'Free to start')}</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> {t('landing.hero.noCreditCard', 'No credit card')}</span>
+            <span className="flex items-center gap-1.5"><CheckCircle size={14} className="text-green-500" /> {t('landing.hero.aiPowered', 'AI-powered')}</span>
           </motion.div>
         </div>
       </section>
@@ -340,7 +354,7 @@ export function LandingPage() {
             viewport={{ once: true }}
             className="text-center text-sm font-semibold uppercase tracking-widest text-gray-500 mb-12"
           >
-            Trusted by coaches worldwide
+            {t('landing.stats.trustedBy', 'Trusted by coaches worldwide')}
           </motion.p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
             {STATS.map((s, i) => (
@@ -356,8 +370,8 @@ export function LandingPage() {
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 mb-3 mx-auto">
                   <s.icon size={22} />
                 </div>
-                <div className="text-3xl font-black text-white">{s.value}</div>
-                <div className="text-sm text-gray-500 mt-1">{s.label}</div>
+                <div className="text-3xl font-black text-white">{s.valueKey ? t(s.valueKey, s.value) : s.value}</div>
+                <div className="text-sm text-gray-500 mt-1">{t(s.labelKey, s.label)}</div>
               </motion.div>
             ))}
           </div>
@@ -433,11 +447,11 @@ export function LandingPage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl font-black tracking-tight mb-4">
-              Everything you need to{' '}
-              <span className="gradient-text">develop elite athletes</span>
+              {t('landing.features.titleA', 'Everything you need to')}{' '}
+              <span className="gradient-text">{t('landing.features.titleB', 'develop elite athletes')}</span>
             </h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              ProTracker combines AI, analytics, and communication tools into one platform built for modern sports teams.
+              {t('landing.features.subtitle', 'ProTracker combines AI, analytics, and communication tools into one platform built for modern sports teams.')}
             </p>
           </motion.div>
 
@@ -452,19 +466,20 @@ export function LandingPage() {
                 variants={fadeUp}
                 className="group relative p-6 rounded-2xl bg-gray-900/50 border border-gray-800 hover:border-gray-600 transition-all hover:shadow-xl hover:shadow-black/20 cursor-default"
               >
+                {/* Logical end-4 so the badge mirrors away from the title in RTL. */}
                 <span className={clsx(
-                  'absolute top-4 right-4 text-[10px] font-bold px-2 py-0.5 rounded-full border',
+                  'absolute top-4 end-4 text-[10px] font-bold px-2 py-0.5 rounded-full border',
                   f.works === 'Both'
                     ? 'text-purple-300 bg-purple-500/10 border-purple-500/30'
                     : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/30',
                 )}>
-                  {f.works === 'Both' ? 'Solo + Team' : 'Teams'}
+                  {f.works === 'Both' ? t('landing.features.worksBoth', 'Solo + Team') : t('landing.features.worksTeam', 'Teams')}
                 </span>
                 <div className={`inline-flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br ${f.color} mb-4 shadow-lg`}>
                   <f.icon size={22} className="text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{f.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+                <h3 className="text-lg font-bold text-white mb-2 pe-4">{t(`landing.features.${f.key}Title`, f.title)}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{t(`landing.features.${f.key}Desc`, f.desc)}</p>
               </motion.div>
             ))}
           </div>
@@ -556,8 +571,8 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl font-black tracking-tight mb-3">Built for every sport</h2>
-            <p className="text-gray-400">Sport-specific stat categories and position profiles for each discipline.</p>
+            <h2 className="text-3xl font-black tracking-tight mb-3">{t('landing.sports.title', 'Built for every sport')}</h2>
+            <p className="text-gray-400">{t('landing.sports.subtitle', 'Sport-specific stat categories and position profiles for each discipline.')}</p>
           </motion.div>
 
           <div className="flex flex-wrap justify-center gap-4">
@@ -574,7 +589,7 @@ export function LandingPage() {
                 <div className={`w-6 h-6 rounded-full ${s.dot} flex items-center justify-center`}>
                   <s.icon size={13} className="text-white" />
                 </div>
-                <span className="font-semibold text-white">{s.name}</span>
+                <span className="font-semibold text-white">{L.sport(s.name)}</span>
               </motion.div>
             ))}
           </div>
@@ -588,12 +603,12 @@ export function LandingPage() {
             {/* Left — text + stats */}
             <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
               <h2 className="text-4xl font-black tracking-tight mb-6">
-                About <span className="gradient-text">ProTracker</span>
+                {t('landing.about.titleA', 'About')} <span className="gradient-text" dir="ltr">ProTracker</span>
               </h2>
               <div className="space-y-4 text-gray-400 leading-relaxed">
-                <p>ProTracker is a full-stack sports performance platform designed for coaches and athletes who take performance seriously.</p>
-                <p>Built with modern technology including ASP.NET Core 9, React, PostgreSQL, and the Anthropic Claude AI API, ProTracker gives coaches the tools they need to track, analyze, and improve athlete performance across 5 sports.</p>
-                <p>From AI-generated nutrition plans to injury recovery programs, every feature is designed to save coaches time while giving athletes the personalized attention they need to reach their potential.</p>
+                <p>{t('landing.about.p1', 'ProTracker is a full-stack sports performance platform designed for coaches and athletes who take performance seriously.')}</p>
+                <p>{t('landing.about.p2', 'Built with modern technology including ASP.NET Core 9, React, PostgreSQL, and the Anthropic Claude AI API, ProTracker gives coaches the tools they need to track, analyze, and improve athlete performance across 5 sports.')}</p>
+                <p>{t('landing.about.p3', 'From AI-generated nutrition plans to injury recovery programs, every feature is designed to save coaches time while giving athletes the personalized attention they need to reach their potential.')}</p>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-10">
@@ -604,7 +619,7 @@ export function LandingPage() {
                         ? <span>{s.value}{s.suffix}</span>
                         : <CountUp value={s.value} suffix={s.suffix} />}
                     </div>
-                    <div className="text-xs text-gray-500 mt-1">{s.label}</div>
+                    <div className="text-xs text-gray-500 mt-1">{t(s.labelKey, s.label)}</div>
                   </div>
                 ))}
               </div>
@@ -615,14 +630,14 @@ export function LandingPage() {
               initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} custom={1}
               className="rounded-3xl bg-gray-900/50 border border-gray-800 p-7"
             >
-              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-6">Built with</h3>
+              <h3 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-6">{t('landing.about.builtWith', 'Built with')}</h3>
               <div className="space-y-5">
                 {TECH_STACK.map((t) => (
                   <div key={t.group}>
-                    <p className="text-xs font-semibold text-gray-400 mb-2">{t.group}</p>
+                    <p className="text-xs font-semibold text-gray-400 mb-2">{tr(t.groupKey, t.group)}</p>
                     <div className="flex flex-wrap gap-2">
                       {t.items.map((it) => (
-                        <span key={it} className={clsx('text-xs font-medium px-3 py-1.5 rounded-full border', t.color)}>{it}</span>
+                        <span key={it} dir="ltr" className={clsx('text-xs font-medium px-3 py-1.5 rounded-full border', t.color)}>{it}</span>
                       ))}
                     </div>
                   </div>
@@ -643,8 +658,8 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-black tracking-tight mb-3">Coaches and athletes love ProTracker</h2>
-            <p className="text-gray-400">From full squads to solo grinders — join the players already transforming their game.</p>
+            <h2 className="text-3xl font-black tracking-tight mb-3">{t('landing.testimonials.title', 'Coaches and athletes love ProTracker')}</h2>
+            <p className="text-gray-400">{t('landing.testimonials.subtitle', 'From full squads to solo grinders — join the players already transforming their game.')}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -663,14 +678,14 @@ export function LandingPage() {
                     <Star key={j} size={14} className="text-amber-400 fill-amber-400" />
                   ))}
                 </div>
-                <p className="text-gray-300 text-sm leading-relaxed mb-6">"{t.quote}"</p>
+                <p className="text-gray-300 text-sm leading-relaxed mb-6">"{tr(`landing.testimonials.${t.key}Quote`, t.quote)}"</p>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-sm flex-shrink-0">
                     {t.avatar}
                   </div>
                   <div>
                     <p className="font-semibold text-white text-sm">{t.name}</p>
-                    <p className="text-xs text-gray-500">{t.role} · {t.sport}</p>
+                    <p className="text-xs text-gray-500">{tr(`landing.testimonials.${t.key}Role`, t.role)} · {L.sport(t.sport)}</p>
                   </div>
                 </div>
               </motion.div>
@@ -794,9 +809,9 @@ export function LandingPage() {
       <section id="contact" className="py-24 scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp} className="text-center mb-14">
-            <h2 className="text-4xl font-black tracking-tight mb-4">Get in <span className="gradient-text">Touch</span></h2>
+            <h2 className="text-4xl font-black tracking-tight mb-4">{t('landing.contact.titleA', 'Get in')} <span className="gradient-text">{t('landing.contact.titleB', 'Touch')}</span></h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Have questions about ProTracker? Want to see a demo or discuss how it could work for your team? Reach out.
+              {t('landing.contact.subtitle', 'Have questions about ProTracker? Want to see a demo or discuss how it could work for your team? Reach out.')}
             </p>
           </motion.div>
 
@@ -809,15 +824,15 @@ export function LandingPage() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-white/5 border border-white/10 mb-5">
                 <Code2 size={24} className="text-white" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">View Source Code</h3>
-              <p className="text-gray-400 text-sm leading-relaxed flex-1">Explore the full codebase on GitHub.</p>
+              <h3 className="text-xl font-bold text-white mb-2">{t('landing.contact.sourceTitle', 'View Source Code')}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed flex-1">{t('landing.contact.sourceDesc', 'Explore the full codebase on GitHub.')}</p>
               <a
                 href="https://github.com/MajdArow123/protracker"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white font-semibold text-sm transition-all cursor-pointer"
               >
-                <Code2 size={16} /> View on GitHub
+                <Code2 size={16} /> {t('landing.contact.viewGithub', 'View on GitHub')}
               </a>
             </motion.div>
 
@@ -829,25 +844,25 @@ export function LandingPage() {
               <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/30 mb-5">
                 <Globe size={24} className="text-indigo-300" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Try the Live Demo</h3>
-              <p className="text-gray-400 text-sm leading-relaxed">Log in as a coach or athlete and explore all features for free.</p>
+              <h3 className="text-xl font-bold text-white mb-2">{t('landing.contact.demoTitle', 'Try the Live Demo')}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">{t('landing.contact.demoDesc', 'Log in as a coach or athlete and explore all features for free.')}</p>
 
               <div className="mt-4 rounded-xl bg-gray-950/50 border border-gray-800 p-3 text-xs">
-                <p className="text-gray-500">Coach: <span className="text-gray-300 font-mono">coach.soccer@protracker.seed</span></p>
-                <p className="text-gray-500 mt-1">Password: <span className="text-gray-300 font-mono">SeedCoach123!</span></p>
+                <p className="text-gray-500">{t('landing.contact.demoCoach', 'Coach')}: <span className="text-gray-300 font-mono" dir="ltr">coach.soccer@protracker.seed</span></p>
+                <p className="text-gray-500 mt-1">{t('landing.contact.demoPassword', 'Password')}: <span className="text-gray-300 font-mono" dir="ltr">SeedCoach123!</span></p>
               </div>
 
               <button
                 onClick={() => navigate('/login')}
                 className="mt-6 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm transition-all hover:shadow-lg hover:shadow-indigo-500/25 cursor-pointer"
               >
-                <Globe size={16} /> Try Demo
+                <Globe size={16} /> {t('landing.contact.tryDemo', 'Try Demo')}
               </button>
             </motion.div>
           </div>
 
           <p className="text-center text-sm text-gray-500 mt-10">
-            Built by <a href="https://github.com/MajdArow123" target="_blank" rel="noopener noreferrer" className="text-gray-300 font-semibold hover:text-indigo-400 transition-colors">Majd Arow</a>
+            {t('landing.contact.builtBy', 'Built by')} <a href="https://github.com/MajdArow123" target="_blank" rel="noopener noreferrer" className="text-gray-300 font-semibold hover:text-indigo-400 transition-colors">Majd Arow</a>
           </p>
         </div>
       </section>
@@ -857,11 +872,11 @@ export function LandingPage() {
         <div className="max-w-4xl mx-auto px-6 text-center">
           <motion.div initial="hidden" whileInView="show" viewport={{ once: true }} variants={fadeUp}>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold mb-4">
-              <Search size={13} /> Coach Marketplace
+              <Search size={13} /> {t('landing.findCoach.badge', 'Coach Marketplace')}
             </div>
-            <h2 className="text-4xl font-black tracking-tight mb-4">Find your perfect coach</h2>
+            <h2 className="text-4xl font-black tracking-tight mb-4">{t('landing.findCoach.title', 'Find your perfect coach')}</h2>
             <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto">
-              Browse verified coaches across 5 sports and connect with someone who matches your goals.
+              {t('landing.findCoach.subtitle', 'Browse verified coaches across 5 sports and connect with someone who matches your goals.')}
             </p>
             <div className="flex flex-wrap justify-center gap-2.5 mb-8">
               {sports.map((s) => (
@@ -870,7 +885,7 @@ export function LandingPage() {
                   onClick={() => navigate(`/coaches?sport=${s.id}`)}
                   className={clsx('px-4 py-2 rounded-full text-sm font-semibold transition-transform hover:scale-105 cursor-pointer', sportBadge(s.name))}
                 >
-                  {s.name}
+                  {L.sport(s.name)}
                 </button>
               ))}
             </div>
@@ -878,7 +893,7 @@ export function LandingPage() {
               onClick={() => navigate('/coaches')}
               className="group inline-flex items-center gap-2 px-8 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all hover:shadow-2xl hover:shadow-indigo-500/30 cursor-pointer"
             >
-              Browse All Coaches
+              {t('landing.findCoach.browseAll', 'Browse All Coaches')}
               <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
           </motion.div>
@@ -898,15 +913,15 @@ export function LandingPage() {
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl" />
             <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl" />
             <div className="relative z-10">
-              <h2 className="text-4xl font-black tracking-tight mb-4">Ready to elevate your program?</h2>
+              <h2 className="text-4xl font-black tracking-tight mb-4">{t('landing.cta.title', 'Ready to elevate your program?')}</h2>
               <p className="text-gray-400 text-lg mb-8 max-w-xl mx-auto">
-                Start tracking, analyzing, and winning today. It's free to get started.
+                {t('landing.cta.subtitle', "Start tracking, analyzing, and winning today. It's free to get started.")}
               </p>
               <button
                 onClick={() => navigate('/login')}
                 className="group inline-flex items-center gap-2 px-10 py-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-lg transition-all hover:shadow-2xl hover:shadow-indigo-500/30 hover:scale-105 cursor-pointer"
               >
-                Get Started Free
+                {t('landing.cta.button', 'Get Started Free')}
                 <ChevronRight size={20} className="group-hover:translate-x-1 transition-transform" />
               </button>
             </div>

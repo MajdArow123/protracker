@@ -43,7 +43,7 @@ export function LanguageSwitcher({ variant = 'app' }: { variant?: 'app' | 'dark'
         )}
       >
         <Globe size={18} />
-        <span className="text-sm">{current.flag}</span>
+        <span className="text-xs font-bold tracking-wide">{current.short}</span>
       </button>
 
       {open && (
@@ -57,7 +57,9 @@ export function LanguageSwitcher({ variant = 'app' }: { variant?: 'app' | 'dark'
               <button
                 key={l.code}
                 onClick={() => pick(l.code)}
-                dir={l.dir}
+                // Uniform, start-aligned rows showing the short code; the native
+                // name stays available to assistive tech.
+                aria-label={l.label}
                 className={clsx(
                   'w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm transition-colors cursor-pointer',
                   active
@@ -65,8 +67,7 @@ export function LanguageSwitcher({ variant = 'app' }: { variant?: 'app' | 'dark'
                     : 'text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800'
                 )}
               >
-                <span className="text-base">{l.flag}</span>
-                <span className="flex-1 text-start">{l.label}</span>
+                <span className="flex-1 text-start font-semibold tracking-wide">{l.short}</span>
                 {active && <Check size={15} />}
               </button>
             );

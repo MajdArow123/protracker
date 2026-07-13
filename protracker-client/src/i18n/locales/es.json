@@ -1301,11 +1301,39 @@
       "description": "La plataforma profesional de análisis deportivo para entrenadores, atletas de equipo y atletas individuales. Información impulsada por IA, seguimiento en tiempo real y gestión del rendimiento basada en datos.",
       "getStarted": "Empieza gratis",
       "findCoach": "Buscar un entrenador",
-      "signIn": "Iniciar sesión"
+      "signIn": "Iniciar sesión",
+      "haveAccount": "¿Ya tienes una cuenta?",
+      "freeToStart": "Gratis para empezar",
+      "noCreditCard": "Sin tarjeta de crédito",
+      "aiPowered": "Impulsado por IA"
     },
     "features": {
       "title": "Todo lo que necesitas",
-      "subtitle": "ProTracker combina IA, analíticas y comunicación"
+      "subtitle": "ProTracker combina IA, analíticas y comunicación",
+      "titleA": "Todo lo que necesitas para",
+      "titleB": "desarrollar atletas de élite",
+      "worksBoth": "Solo + Equipo",
+      "worksTeam": "Equipos",
+      "aiTitle": "Análisis con IA",
+      "aiDesc": "Genera planes de mejora personalizados, menús semanales y programas de recuperación con Claude AI, con sugerencias de tareas según los puntos débiles de cada atleta.",
+      "analyticsTitle": "Analítica de rendimiento",
+      "analyticsDesc": "Sigue las evaluaciones por categorías con deslizadores, mira gráficos de tendencia, perfiles radar y compara el progreso.",
+      "injuryTitle": "Lesiones y recuperación",
+      "injuryDesc": "Registra lesiones por gravedad y asigna programas estructurados; la IA genera ejercicios de rehabilitación por deporte, semana a semana.",
+      "tasksTitle": "Gestión de tareas",
+      "tasksDesc": "Asigna tareas de entrenamiento con prioridades y fechas; la IA sugiere tareas según los puntos débiles. Sigue las tasas de finalización.",
+      "messagingTitle": "Mensajería directa",
+      "messagingDesc": "Mensajería integrada entrenador-atleta en tiempo real; comparte notas en privado o con el atleta y mantén la comunicación ordenada.",
+      "nutritionTitle": "Planificación nutricional",
+      "nutritionDesc": "Genera planes de comida de 7 días según el deporte, la posición y las restricciones; los atletas pueden cambiar alimentos por equivalentes.",
+      "schedulerTitle": "Calendario de entrenamiento",
+      "schedulerDesc": "Planifica sesiones semanales en vista de calendario; los atletas ven las próximas sesiones en su panel.",
+      "matchesTitle": "Resultados de partidos",
+      "matchesDesc": "Registra marcadores según el deporte — sets en vóley/tenis, puntos en básquet, goles en fútbol — y califica a cada jugador.",
+      "multiSportTitle": "Multideporte",
+      "multiSportDesc": "Hecho para básquet, fútbol, vóley, vóley playa y tenis — posiciones, estadísticas, puntuación y temas por deporte.",
+      "wellbeingTitle": "Registros de bienestar",
+      "wellbeingDesc": "Los atletas registran a diario energía, sueño y sensación general; los entrenadores ven tendencias y reciben alertas si hay dolor."
     },
     "roles": {
       "coach": "Soy entrenador",
@@ -1313,12 +1341,16 @@
       "teamAthlete": "Estoy en un equipo",
       "teamCta": "Unirme a mi equipo",
       "soloAthlete": "Entreno por mi cuenta",
-      "soloCta": "Empezar entrenamiento individual"
+      "soloCta": "Empezar entrenamiento individual",
+      "coachDesc": "Gestiona tu equipo, sigue el rendimiento y genera planes de nutrición y recuperación con IA.",
+      "teamDesc": "Únete a tu equipo con un código de tu entrenador, mira tu progreso y completa tareas y metas.",
+      "soloDesc": "¿Sin entrenador? No hay problema. Sigue tu rendimiento, genera planes de comida con IA y mejora a tu ritmo."
     },
     "findCoach": {
       "title": "Encuentra a tu entrenador ideal",
       "subtitle": "Explora entrenadores verificados en 5 deportes y conecta con alguien que se ajuste a tus objetivos.",
-      "browseAll": "Explorar todos los entrenadores"
+      "browseAll": "Explorar todos los entrenadores",
+      "badge": "Mercado de entrenadores"
     },
     "nav": {
       "features": "Funciones",
@@ -1392,6 +1424,65 @@
       "sourceCode": "Código fuente",
       "liveDemo": "Demo en vivo",
       "copyright": "Creado con Claude AI · © 2026 ProTracker"
+    },
+    "stats": {
+      "trustedBy": "La confianza de entrenadores de todo el mundo",
+      "sports": "Deportes compatibles",
+      "categories": "Categorías de estadísticas",
+      "realTimeValue": "Tiempo real",
+      "analytics": "Analítica",
+      "aiValue": "Con IA",
+      "insights": "Información"
+    },
+    "sports": {
+      "title": "Hecho para cada deporte",
+      "subtitle": "Categorías de estadísticas y perfiles de posición por disciplina."
+    },
+    "about": {
+      "titleA": "Acerca de",
+      "p1": "ProTracker es una plataforma integral de rendimiento deportivo para entrenadores y atletas exigentes.",
+      "p2": "Construido con ASP.NET Core 9, React, PostgreSQL y la API Claude de Anthropic, ProTracker da a los entrenadores herramientas para seguir, analizar y mejorar el rendimiento en 5 deportes.",
+      "p3": "De los planes de nutrición con IA a los programas de recuperación, cada función ahorra tiempo al entrenador y da al atleta la atención personalizada que necesita.",
+      "statSports": "Deportes compatibles",
+      "statAi": "Funciones de IA",
+      "statTests": "Pruebas de backend",
+      "statBuilt": "Creado en",
+      "builtWith": "Construido con",
+      "techBackend": "Backend",
+      "techFrontend": "Frontend",
+      "techAi": "IA",
+      "techHosting": "Alojamiento"
+    },
+    "testimonials": {
+      "title": "Entrenadores y atletas aman ProTracker",
+      "subtitle": "De plantillas completas a atletas solitarios — únete a quienes ya transforman su juego.",
+      "marcusQuote": "ProTracker cambió por completo cómo gestiono mi plantilla; las evaluaciones y los planes de IA me ahorran horas cada semana.",
+      "marcusRole": "Primer entrenador, City FC",
+      "sarahQuote": "El seguimiento nutricional y la gestión de lesiones son increíbles; mis atletas rinden al máximo.",
+      "sarahRole": "Entrenadora de rendimiento",
+      "carlosQuote": "He probado muchas plataformas, pero nada se acerca a la profundidad analítica y facilidad de uso de ProTracker.",
+      "carlosRole": "Director de academia",
+      "aishaQuote": "Perfecto para jugadores recreativos que quieren tomarse el juego en serio sin un equipo formal; yo misma lo registro todo — y simplemente funciona.",
+      "aishaRole": "Atleta solitaria"
+    },
+    "contact": {
+      "titleA": "Ponte en",
+      "titleB": "contacto",
+      "subtitle": "¿Preguntas sobre ProTracker? ¿Quieres una demo o hablar de cómo funcionaría para tu equipo? Escríbenos.",
+      "sourceTitle": "Ver el código fuente",
+      "sourceDesc": "Explora todo el código en GitHub.",
+      "viewGithub": "Ver en GitHub",
+      "demoTitle": "Prueba la demo en vivo",
+      "demoDesc": "Inicia sesión como entrenador o atleta y explora todo gratis.",
+      "demoCoach": "Entrenador",
+      "demoPassword": "Contraseña",
+      "tryDemo": "Probar la demo",
+      "builtBy": "Creado por"
+    },
+    "cta": {
+      "title": "¿Listo para elevar tu programa?",
+      "subtitle": "Empieza a seguir, analizar y ganar hoy. Empezar es gratis.",
+      "button": "Empieza gratis"
     }
   },
   "profile": {
