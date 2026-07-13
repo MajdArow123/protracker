@@ -208,6 +208,8 @@ builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IEvidenceScoringEngine, EvidenceScoringEngine>();
 builder.Services.AddScoped<IEvidenceService, EvidenceService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
+// On-demand demo showcase seeding (token-gated endpoint; see DemoShowcaseSeeder).
+builder.Services.AddScoped<ProTracker.Data.Showcase.DemoShowcaseSeeder>();
 
 // AI service — reads API key from env var first, then appsettings
 var anthropicKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
