@@ -1246,9 +1246,77 @@ domain triggers a Security Checkpoint (probe GitHub's deployments API instead �
 Vercel posts statuses there); Vercel missed the push webhook for `aefb526` entirely
 (Railway deployed, Vercel didn't) — an empty retrigger commit (`3e0180d`) fixed it.
 
+## Demo showcase seed dataset (COMPLETE, live on production)
+
+Production is fully populated for showcasing via an **on-demand, token-gated
+seeding routine** — NOT a startup seeder (`DemoDataSeeder`'s baseline stays
+untouched). Code: `Data/Showcase/{DemoShowcaseSeeder,ShowcaseRng,ShowcasePools}.cs`
++ `Controllers/Api/DemoShowcaseController.cs`; tests in
+`ProTracker.Tests/DemoShowcaseSeederTests.cs` (token gate 403 + dry-run→real→
+rerun-creates-nothing→teardown-preview).
+
+- **Invocation**: `POST /api/admin/demo-showcase` body `{"phase","dryRun"}`,
+  phases `soccer|basketball|volleyball|beach|tennis|extras|all`;
+  `POST /api/admin/demo-showcase/teardown` body `{"dryRun"}`. Both require the
+  `X-Seed-Token` header to equal the `SEED_ADMIN_TOKEN` env var. **The env var
+  has been REMOVED from Railway — the endpoint is dead (every request 403s,
+  verified). To re-seed or tear down, set a fresh high-entropy value on Railway
+  (`railway variables --set "SEED_ADMIN_TOKEN=$(openssl rand -hex 24)"`), call
+  the endpoint, then remove the variable again.** The controller returns a raw
+  `StatusCode(403)`, never `Forbid()` (which would 302 into the login flow).
+- **Safety contract (do not weaken)**: GUARDED — only touches teams owned by the
+  five `@protracker.seed` coaches, throws otherwise; IDEMPOTENT — natural-key
+  get-or-create + deterministic `ShowcaseRng` (FNV-1a/xorshift32 seeded by stable
+  names), with **all randomness drawn BEFORE existence checks** so reruns replay
+  identical sequences (violating this caused real drift twice: conditional draws
+  after guards, and a short-circuited pain draw that branched on
+  `hasActiveInjury` — hence **injuries must seed BEFORE wellbeing**, the order is
+  load-bearing); DRY-RUN — whole run in a transaction, rolled back with
+  would-create counts; REMOVABLE — teardown deletes the demo graph (leagues by
+  organizer, CoachReviews/ConnectionRequests of seed users, solo players,
+  messages, parent links/invites, matches, sessions, announcements, players
+  (cascade), periods, teams, `athlete.*`/`parent.*`/`solo.*` accounts) and keeps
+  the 5 coaches, the 4 baseline `firstname.lastname` logins, and reference data.
+- **What's seeded** (~130 players / 10 real teams + 6 labeled shell opponent
+  clubs, all 5 sports, one minor-age team per sport): full assessment layers
+  (6 weekly periods + coach evals), objective tests, matches with sport-correct
+  score formats + StatJson keys matched to `MatchStatRules` (the audit found and
+  product-fixed 3 dead mappings: soccer dribbles/interceptions, tennis
+  breakPointsSaved — `matchSport.ts`), self-assessments, injuries + template
+  recovery plans, nutrition profiles + static weekly plans, tasks (~40%
+  deterministic drill-linked via `EnrichTasksWithDrillsAsync` → Drill Usage
+  analytics render), goals w/ milestones+progress, wellbeing, journals, sessions
+  + athlete feedback, announcements, coach/athlete notes, messages, 2 leagues
+  (**standings independently recomputed and verified exact** on prod; status
+  forced Active once results exist), marketplace coach profiles + verified
+  reviews, one pending connection request (Riley → Coach Daniels; safe to
+  accept — only issues a join code), public athlete profiles (pre-existing
+  private rows get flipped public), parent accounts + links for ~70% of minors,
+  and a complete solo demo (Riley Chen: personal period + slider assessments,
+  goals, recovery plan, nutrition, notes, match ratings).
+- **Accounts** (password `SeedCoach123!` for all): the 5 seed coaches;
+  `athlete.<firstname>.<lastname>@protracker.seed` (2 per team);
+  `parent.<name>@protracker.seed` (e.g. `parent.amina.holm@` → Casper Holm, City
+  FC U15 Academy); `solo.demo@protracker.seed` (Riley Chen). Coaches are on the
+  **Team** billing plan (parent portal gate).
+- **Verification sweep (all four roles, every route/tab)**: zero unexpected
+  empty sections. Remaining empties are by design: Notifications ("all caught
+  up" — the seeder writes DB rows directly, no NotificationService events fire),
+  solo "My Leagues" (solo athletes have no team to register), Lucas's Parents
+  tab (adult), journal heat-map "No entry" legend, per-player "No check-ins yet"
+  wellbeing realism. Known cosmetics: league standings show "(you)" on shell
+  clubs (the seed coach owns them), nutrition plan header shows the seeding-week
+  date, player-detail Training/Matches tabs render raw ISO dates (pre-existing
+  product formatting, not seed data).
+
 ## Current status
 
-**Landing localization pass complete (latest).** See section above — `aefb526` +
+**Demo showcase dataset complete (latest).** See section above — seeder built
+across Phases 1-3 + a post-sweep gap-fill commit (`08760b5`), all phases written
+to production and verified in-browser as coach, team athlete, solo athlete and
+parent. `SEED_ADMIN_TOKEN` removed from Railway (endpoint 403s).
+
+**Landing localization pass complete.** See section above — `aefb526` +
 retrigger `3e0180d`, verified on production in all 5 languages.
 
 **Phase G continuation — Section 6 complete.** Team performance analytics:
