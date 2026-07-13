@@ -1033,6 +1033,51 @@ locally (desktop + Hebrew RTL, before/after screenshots) and on production as bo
   backend endpoint, but note the per-assessment score **snapshot rows already exist**
   (AssessmentId-linked), so the follow-up is an endpoint + chart, not a new table.
 
+## Phase G continuation — Section 5: Benchmark-driven standing (COMPLETE, deployed)
+
+Frontend-only (no backend, no migration): per metric, where the athlete's latest
+measured value stands against the benchmark profile in force — band placement + raw
+gap to the next anchor. One commit (`cf282bd`); build/oxlint/vitest 61/61 clean;
+verified locally (desktop + Hebrew RTL) and on production as coach + athlete in both
+profile states (assigned via the prod API, then unassigned to restore pristine state).
+
+- **In-place upgrade of the benchmark meta line** — the old "Elite: X · Average: Y ·
+  {profileName}" text row in `TestResultsSection` became **`BenchmarkStandingBar`**:
+  a neutral-gray positional scale with Low/Average/Elite ticks carrying the raw anchor
+  values (so nothing is rendered twice — the chart's gray anchor *lines* are untouched),
+  one athlete marker dot (the ONLY score-band-colored element), a band sentence, gap,
+  "as of {test date}", and a profile chip. Ships to all three roles via the shared
+  Evidence surfaces; **the bar itself stays LTR in RTL locales** (positional scale under
+  the LTR chart), surrounding text translates.
+- **Current anchors, NOT the stored `normalizedScore` — this is the key decision.**
+  The stored score is calibrated to whatever profile was in force when the test was
+  recorded and drifts on profile edit/reassign: observed live during verification —
+  assigning the Junior profile made the server recalc Lucas's stored timeline scores
+  (e.g. 6.0→7.5 locally, 7.5→9.4 on prod) for the *same* raw values. `computeStanding
+  (value, {low, mid, high})` (`benchmarkStanding.ts`, pure/exported) recomputes the
+  piecewise Low→3/Mid→5/High→10 mapping from the live anchors and returns `{ band,
+  position (0..1), score, gapToNext, lowerIsBetter }` — **one function drives the
+  marker position, tick geometry, band text AND scoreTone color**, so they can never
+  disagree. Ticks sit at 0.3/0.5/1.0.
+- **Honesty contract**: with 3 anchors the only defensible claims are the band
+  ('belowLow' | 'lowToAverage' | 'averageToElite' | 'beyondElite', boundary values land
+  in the upper band) and the raw-unit gap to the next anchor toward Elite — **no
+  percentiles** (fabricated precision). Degenerate anchors (equal or non-monotonic,
+  e.g. capped percentage profiles where Average == Elite) → **null, render nothing**.
+  No profile assigned (`benchmarkProfileId === null`) → geometry + gap render against
+  the app-default anchors with an explicit neutral "App default benchmarks — no profile
+  assigned" chip and a coach-only assign hint, but the **band sentence is suppressed**
+  (a cohort claim without a chosen cohort). Benchmarks query loading → skeleton;
+  error → "Couldn't load benchmarks" + Retry while the chart (real history) still renders.
+- **`computeStanding` unit suite** (`benchmarkStanding.test.ts`, 7 tests): per-band
+  placement + gaps in both directions (sprint 4.5s between Low 4.8 and Average 4.3 must
+  read "0.2 to Average"), linear interpolation points, clamping, degenerate→null, gap
+  rounding, and the required **anchor-boundary agreement case** — value exactly at
+  Low/Average/Elite asserts position ≈ 0.3/0.5/1.0 (its own tick) AND the upper band,
+  both directions. Also DOM-verified: a seeded 4.3s test (== Average anchor) rendered
+  `markerLeft: "50%"` on the 50% tick; prod's real 4.05s rendered 75%, matching the
+  hand-computed position.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -1138,7 +1183,12 @@ locally (desktop + Hebrew RTL, before/after screenshots) and on production as bo
 
 ## Current status
 
-**Phase G continuation — Section 4 complete (latest).** Longitudinal progress tracking
+**Phase G continuation — Section 5 complete (latest).** Benchmark-driven standing
+(`cf282bd`) deployed and verified on production as coach + athlete in both profile
+states (profile assigned via the prod API for verification, then unassigned — prod
+data restored). Marker-on-tick geometry DOM-asserted at an anchor value. Suite 61/61.
+
+**Phase G continuation — Section 4 complete.** Longitudinal progress tracking
 shipped as one feature commit (`dd426df`) + test/docs follow-ups, deployed and verified
 on production as coach and athlete (real 3-test Speed history correctly gated to "Too
 varied to call"). Frontend vitest suite green 54/54 and now part of the pre-ship
