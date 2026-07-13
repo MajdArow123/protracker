@@ -1078,6 +1078,51 @@ profile states (assigned via the prod API, then unassigned to restore pristine s
   `markerLeft: "50%"` on the 50% tick; prod's real 4.05s rendered 75%, matching the
   hand-computed position.
 
+## Phase G continuation — Section 6: Team performance analytics (COMPLETE, deployed)
+
+First continuation section needing backend work. Coach-facing: "where is my squad
+strong or weak, and who needs attention". Two commits — backend `d7d98d0`, frontend
+`037d63e` — pushed together (dual-target deploy: Railway probe-verified 404→401→200
+with data BEFORE trusting the Vercel frontend). No schema migration: read-only
+aggregate over existing tables. dotnet 89/89, vitest 66/66.
+
+- **Endpoint** `GET /api/teams/{id}/evidence-performance` (Coach/Admin, existing
+  team-access check; `EvidenceController`/`EvidenceService`, same pattern as
+  evidence-status): per sport metric — average/min/max of the CURRENT blended
+  `FinalScore`s (AssessmentId == null), **sample (n-1) stdDev, null under 4 scored**,
+  score-band counts (mirrors `scoreTone` <5/<7 thresholds — keep in sync with
+  chartColors.ts), `BelowAverageCount`, and notable outliers (**≥1.5 from the team
+  average, max 2/side, suppressed under 3 scored** — named constants in
+  `TeamPerformanceMath`, pure statics, DB-free tests). Every stat ships with its
+  coverage denominators (`scoredCount` + `verifiedCount` vs top-level `squadSize`);
+  **all sport metrics returned including unscored ones** (honest gaps).
+- **CALIBRATION RULING (the key finding)**: coach-eval and self-assessment components
+  are raw 1-10 ratings — `EvidenceScoringEngine.cs:366-367` clamps without anchor
+  normalization — so blended `FinalScore == 5.0` is the app scale's average, NOT the
+  benchmark Average anchor. Hence the field is **`BelowAverageCount` ("below average,
+  score < 5"), never "below benchmark"**; an objective-only anchor-relative count is
+  documented in code comments as a possible future refinement (costs a second
+  denominator). Top-level `benchmarkProfileId`/`profileName` (null = app defaults) let
+  the FE frame without a cohort claim, S5-consistent.
+- **`SquadPerformanceCard`** in `TeamEvidenceTab` (between the coverage callouts and
+  the player rows — no new tab): per-metric rows grouped by category, **weakest
+  average first**; red/amber/green composition band bar (mirrors naturally in RTL —
+  unlike S5's positional scale it has no directional meaning), tone-colored average,
+  coverage badge, "below avg" chip (tooltip carries the calibration honesty), expand →
+  min/max/stdDev/verified + **outlier chips deep-linking to `/players/{id}?tab=evidence`**
+  (PlayerDetailPage gained validated `?tab=` init — first deep-link support on that
+  page). Unscored metrics collapse into a muted "No data yet: …" footer.
+- **`coverageLevel(scored, squad)`** (`teamCoverage.ts`, pure/exported, 5 tests) is the
+  honesty anchor: none / thin / partial / good with an **absolute floor (<3 scored is
+  always thin — 2/2 is an anecdote, not an average)** plus 50%/80% ratio bands. Thin
+  metrics render the average muted + amber-flagged, never confident. FINDING-009
+  gates: skeleton, error + Retry, the coverage list renders independently.
+- 21 i18n keys × 5 locales incl. `metricCategory*` labels (no MetricCategory
+  translator existed); Hebrew verified locally + on prod.
+- Prod-data note: to demonstrate the confident state on prod, 3 realistic Speed
+  tests were seeded for City FC players (permanent — tests/scores have no DELETE
+  endpoints); disclosed and kept as demo enrichment.
+
 ## Architecture decisions & gotchas (read before touching related code)
 
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
@@ -1183,7 +1228,13 @@ profile states (assigned via the prod API, then unassigned to restore pristine s
 
 ## Current status
 
-**Phase G continuation — Section 5 complete (latest).** Benchmark-driven standing
+**Phase G continuation — Section 6 complete (latest).** Team performance analytics:
+aggregate endpoint (`d7d98d0`) + SquadPerformanceCard (`037d63e`) pushed together,
+Railway deploy probe-verified before trusting the Vercel frontend, then browser-
+verified on production (confident + thin coverage states, weakest-first sort,
+app-default framing, outlier deep-link, Hebrew RTL). dotnet 89/89, vitest 66/66.
+
+**Phase G continuation — Section 5 complete.** Benchmark-driven standing
 (`cf282bd`) deployed and verified on production as coach + athlete in both profile
 states (profile assigned via the prod API for verification, then unassigned — prod
 data restored). Marker-on-tick geometry DOM-asserted at an anchor value. Suite 61/61.
