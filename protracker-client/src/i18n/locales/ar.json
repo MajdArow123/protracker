@@ -3091,6 +3091,27 @@
     "standingAsOf": "حتى تاريخ {{date}}",
     "defaultBenchmarksChip": "معايير التطبيق الافتراضية — لم يتم تعيين ملف معايير",
     "assignProfileHint": "عيّن ملف معايير من تبويب الأدلة الخاص بالفريق للمقارنة بالمستوى المناسب.",
-    "benchmarksLoadError": "تعذّر تحميل المعايير"
+    "benchmarksLoadError": "تعذّر تحميل المعايير",
+    "squadPerformanceTitle": "أداء الفريق",
+    "squadPerfVsProfile": "درجات الأدلة المدمجة · معايرة وفق {{profile}}",
+    "squadPerfDefaultAnchors": "درجات الأدلة المدمجة · معايير التطبيق الافتراضية (لم يُعيَّن ملف)",
+    "squadPerfEmpty": "لا توجد درجات أدلة بعد — نفّذ تقييمًا أو يوم اختبارات لملء الملخص.",
+    "squadPerfScored": "{{scored}}/{{squad}} مُقيَّمون",
+    "squadPerfThin": "بيانات قليلة · {{scored}}/{{squad}}",
+    "squadPerfBelowAvg": "{{count}} دون المتوسط",
+    "squadPerfBelowAvgHint": "درجة مدمجة أقل من 5 على مقياس 0-10 — متوسط التطبيق، وليس معيار فئة.",
+    "squadPerfMin": "الأدنى",
+    "squadPerfMax": "الأقصى",
+    "squadPerfStdDev": "الانحراف المعياري",
+    "squadPerfVerified": "{{count}} موثّق",
+    "squadPerfNeedsAttention": "يحتاج اهتمامًا",
+    "squadPerfStandouts": "المتميزون",
+    "squadPerfNoDataYet": "لا بيانات بعد: {{metrics}}",
+    "squadPerfLoadError": "تعذّر تحميل أداء الفريق",
+    "metricCategoryPhysical": "بدني",
+    "metricCategoryTechnical": "تقني",
+    "metricCategoryTactical": "تكتيكي",
+    "metricCategoryMental": "ذهني",
+    "metricCategoryPositional": "مركزي (مواقع)"
   }
 }

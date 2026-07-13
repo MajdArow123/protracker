@@ -3091,6 +3091,27 @@
     "standingAsOf": "a fecha de {{date}}",
     "defaultBenchmarksChip": "Referencias por defecto — sin perfil asignado",
     "assignProfileHint": "Asigna un perfil de referencias desde la pestaña Evidencia del equipo para comparar con el nivel correcto.",
-    "benchmarksLoadError": "No se pudieron cargar las referencias"
+    "benchmarksLoadError": "No se pudieron cargar las referencias",
+    "squadPerformanceTitle": "Rendimiento de la plantilla",
+    "squadPerfVsProfile": "Puntuaciones combinadas · calibradas según {{profile}}",
+    "squadPerfDefaultAnchors": "Puntuaciones combinadas · referencias por defecto (sin perfil asignado)",
+    "squadPerfEmpty": "Aún no hay puntuaciones — realiza una evaluación o un día de pruebas.",
+    "squadPerfScored": "{{scored}}/{{squad}} evaluados",
+    "squadPerfThin": "Datos escasos · {{scored}}/{{squad}}",
+    "squadPerfBelowAvg": "{{count}} bajo la media",
+    "squadPerfBelowAvgHint": "Puntuación combinada bajo 5 en la escala 0-10 — la media de la app, no una referencia de cohorte.",
+    "squadPerfMin": "Mín",
+    "squadPerfMax": "Máx",
+    "squadPerfStdDev": "Desv. típica",
+    "squadPerfVerified": "{{count}} verificados",
+    "squadPerfNeedsAttention": "Requiere atención",
+    "squadPerfStandouts": "Destacados",
+    "squadPerfNoDataYet": "Sin datos aún: {{metrics}}",
+    "squadPerfLoadError": "No se pudo cargar el rendimiento",
+    "metricCategoryPhysical": "Físico",
+    "metricCategoryTechnical": "Técnico",
+    "metricCategoryTactical": "Táctico",
+    "metricCategoryMental": "Mental",
+    "metricCategoryPositional": "Posicional"
   }
 }

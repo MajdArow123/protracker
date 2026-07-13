@@ -47,6 +47,14 @@ import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 
 type Tab = 'overview' | 'evidence' | 'injuries' | 'matches' | 'training' | 'tasks' | 'goals' | 'wellbeing' | 'journal' | 'notes' | 'parents';
 
+const TABS: readonly Tab[] = ['overview', 'evidence', 'injuries', 'matches', 'training', 'tasks', 'goals', 'wellbeing', 'journal', 'notes', 'parents'];
+
+// ?tab= deep links (e.g. squad-performance outlier chips open the Evidence tab).
+function initialTab(): Tab {
+  const requested = new URLSearchParams(window.location.search).get('tab');
+  return TABS.includes(requested as Tab) ? (requested as Tab) : 'overview';
+}
+
 const INJURY_SEVERITIES = ['Minor', 'Moderate', 'Severe'] as const;
 const RECOVERY_STATUSES = ['Active', 'Recovering', 'FullyRecovered'] as const;
 const BODY_PARTS = ['Knee', 'Ankle', 'Shoulder', 'Back', 'Hamstring', 'Quad', 'Calf', 'Hip', 'Wrist', 'Other'] as const;
@@ -153,7 +161,7 @@ export function PlayerDetailPage() {
   const deleteSession = useDeleteTrainingSession();
   const deletePlayer = useDeletePlayer();
 
-  const [tab, setTab] = useState<Tab>('overview');
+  const [tab, setTab] = useState<Tab>(initialTab);
   const [taskFilter, setTaskFilter] = useState<'all' | 'drill' | 'manual'>('all');
   const [recoveryInjuryId, setRecoveryInjuryId] = useState<number | null>(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);

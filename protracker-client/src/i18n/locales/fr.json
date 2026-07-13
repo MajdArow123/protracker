@@ -3091,6 +3091,27 @@
     "standingAsOf": "au {{date}}",
     "defaultBenchmarksChip": "Repères par défaut — aucun profil attribué",
     "assignProfileHint": "Attribuez un profil de repères depuis l'onglet Évidence de l'équipe pour comparer au bon niveau.",
-    "benchmarksLoadError": "Impossible de charger les repères"
+    "benchmarksLoadError": "Impossible de charger les repères",
+    "squadPerformanceTitle": "Performance de l'effectif",
+    "squadPerfVsProfile": "Scores d'évidence combinés · calibrés vs {{profile}}",
+    "squadPerfDefaultAnchors": "Scores combinés · repères par défaut (aucun profil attribué)",
+    "squadPerfEmpty": "Pas encore de scores — lancez une évaluation ou une journée de tests.",
+    "squadPerfScored": "{{scored}}/{{squad}} évalués",
+    "squadPerfThin": "Données minces · {{scored}}/{{squad}}",
+    "squadPerfBelowAvg": "{{count}} sous la moyenne",
+    "squadPerfBelowAvgHint": "Score combiné sous 5 sur l'échelle 0-10 — la moyenne de l'app, pas un repère de cohorte.",
+    "squadPerfMin": "Min",
+    "squadPerfMax": "Max",
+    "squadPerfStdDev": "Écart-type",
+    "squadPerfVerified": "{{count}} vérifiés",
+    "squadPerfNeedsAttention": "À surveiller",
+    "squadPerfStandouts": "En vue",
+    "squadPerfNoDataYet": "Pas encore de données : {{metrics}}",
+    "squadPerfLoadError": "Impossible de charger la performance",
+    "metricCategoryPhysical": "Physique",
+    "metricCategoryTechnical": "Technique",
+    "metricCategoryTactical": "Tactique",
+    "metricCategoryMental": "Mental",
+    "metricCategoryPositional": "Positionnel"
   }
 }

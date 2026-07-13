@@ -9,6 +9,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { confidenceBadgeClass, confidenceLabel } from './evidenceUtils';
 import { TestDayModal } from './TestDayModal';
 import { BenchmarkProfileCard } from './BenchmarkProfileCard';
+import { SquadPerformanceCard } from './SquadPerformanceCard';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useTeamEvidenceStatus, useSportMetrics } from '../../hooks/useEvidence';
 import { useToast } from '../../context/ToastContext';
@@ -127,6 +128,10 @@ export function TeamEvidenceTab({ teamId, sportId, teamName }: Props) {
           </div>
         </div>
       </div>
+
+      {/* Per-metric squad rollup (independent query — the coverage list below
+          renders regardless of this card's loading/error state) */}
+      <SquadPerformanceCard teamId={teamId} />
 
       {/* Player rows */}
       <div className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 divide-y divide-gray-100 dark:divide-gray-800">

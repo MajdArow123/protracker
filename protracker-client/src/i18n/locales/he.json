@@ -3091,6 +3091,27 @@
     "standingAsOf": "נכון ל-{{date}}",
     "defaultBenchmarksChip": "מדדי ברירת המחדל של האפליקציה — לא הוקצה פרופיל",
     "assignProfileHint": "הקצו פרופיל מדדים מלשונית הראיות של הקבוצה כדי להשוות מול הרמה הנכונה.",
-    "benchmarksLoadError": "לא ניתן לטעון את המדדים"
+    "benchmarksLoadError": "לא ניתן לטעון את המדדים",
+    "squadPerformanceTitle": "ביצועי הסגל",
+    "squadPerfVsProfile": "ציוני ראיות משוקללים · מכוילים מול {{profile}}",
+    "squadPerfDefaultAnchors": "ציוני ראיות משוקללים · מדדי ברירת מחדל (לא הוקצה פרופיל)",
+    "squadPerfEmpty": "אין עדיין ציוני ראיות — הריצו הערכה או יום מבחנים כדי למלא את הסיכום.",
+    "squadPerfScored": "{{scored}}/{{squad}} עם ציון",
+    "squadPerfThin": "נתונים דלים · {{scored}}/{{squad}}",
+    "squadPerfBelowAvg": "{{count}} מתחת לממוצע",
+    "squadPerfBelowAvgHint": "ציון משוקלל מתחת ל-5 בסולם 0-10 — ממוצע האפליקציה, לא מדד עמיתים.",
+    "squadPerfMin": "מינ'",
+    "squadPerfMax": "מקס'",
+    "squadPerfStdDev": "סטיית תקן",
+    "squadPerfVerified": "{{count}} מאומתים",
+    "squadPerfNeedsAttention": "דורש תשומת לב",
+    "squadPerfStandouts": "מצטיינים",
+    "squadPerfNoDataYet": "אין עדיין נתונים: {{metrics}}",
+    "squadPerfLoadError": "לא ניתן לטעון את ביצועי הסגל",
+    "metricCategoryPhysical": "פיזי",
+    "metricCategoryTechnical": "טכני",
+    "metricCategoryTactical": "טקטי",
+    "metricCategoryMental": "מנטלי",
+    "metricCategoryPositional": "עמדתי"
   }
 }

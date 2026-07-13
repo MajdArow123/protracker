@@ -1705,6 +1705,41 @@ export interface TeamEvidenceStatus {
   playersWithoutEvidence: number;
 }
 
+// ── Team performance analytics (Phase G continuation, Section 6) ─────────────
+
+export interface TeamMetricOutlier {
+  playerId: number;
+  playerName: string;
+  score: number;
+}
+
+export interface TeamMetricPerformance {
+  metricDefinitionId: number;
+  name: string;
+  category: string;
+  unit: string | null;
+  scoredCount: number;
+  verifiedCount: number;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  /** Sample (n-1) std dev; null when fewer than 4 players are scored. */
+  stdDev: number | null;
+  bandCounts: { red: number; amber: number; green: number };
+  /** Players with blended FinalScore < 5 — the app scale's average, not a cohort benchmark. */
+  belowAverageCount: number;
+  lowOutliers: TeamMetricOutlier[];
+  highOutliers: TeamMetricOutlier[];
+}
+
+export interface TeamEvidencePerformance {
+  teamId: number;
+  squadSize: number;
+  benchmarkProfileId: number | null;
+  profileName: string | null;
+  metrics: TeamMetricPerformance[];
+}
+
 export interface EvidenceReminder {
   type: 'NoRecentTest' | 'LowConfidence' | 'ExpiredTests';
   playerId: number | null;

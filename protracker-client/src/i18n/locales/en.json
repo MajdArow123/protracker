@@ -3091,6 +3091,27 @@
     "standingAsOf": "as of {{date}}",
     "defaultBenchmarksChip": "App default benchmarks — no profile assigned",
     "assignProfileHint": "Assign a benchmark profile from the team's Evidence tab to compare against the right level.",
-    "benchmarksLoadError": "Couldn't load benchmarks"
+    "benchmarksLoadError": "Couldn't load benchmarks",
+    "squadPerformanceTitle": "Squad Performance",
+    "squadPerfVsProfile": "Blended evidence scores · calibrated vs {{profile}}",
+    "squadPerfDefaultAnchors": "Blended evidence scores · app default benchmarks (no profile assigned)",
+    "squadPerfEmpty": "No evidence scores yet — run an assessment or a test day to populate the rollup.",
+    "squadPerfScored": "{{scored}}/{{squad}} scored",
+    "squadPerfThin": "Thin data · {{scored}}/{{squad}}",
+    "squadPerfBelowAvg": "{{count}} below avg",
+    "squadPerfBelowAvgHint": "Blended score under 5 on the 0-10 scale — the app average, not a cohort benchmark.",
+    "squadPerfMin": "Min",
+    "squadPerfMax": "Max",
+    "squadPerfStdDev": "Std dev",
+    "squadPerfVerified": "{{count}} verified",
+    "squadPerfNeedsAttention": "Needs attention",
+    "squadPerfStandouts": "Standouts",
+    "squadPerfNoDataYet": "No data yet: {{metrics}}",
+    "squadPerfLoadError": "Couldn't load squad performance",
+    "metricCategoryPhysical": "Physical",
+    "metricCategoryTechnical": "Technical",
+    "metricCategoryTactical": "Tactical",
+    "metricCategoryMental": "Mental",
+    "metricCategoryPositional": "Positional"
   }
 }

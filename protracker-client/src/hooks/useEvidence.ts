@@ -139,6 +139,15 @@ export function useTeamEvidenceStatus(teamId: number | null | undefined, enabled
   });
 }
 
+export function useTeamEvidencePerformance(teamId: number | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['evidence', 'teamPerformance', teamId],
+    queryFn: () => evidenceApi.getTeamEvidencePerformance(teamId!),
+    enabled: !!teamId && enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useEvidenceReminders(enabled = true) {
   return useQuery({
     queryKey: ['evidence', 'reminders'],
