@@ -1226,9 +1226,32 @@ aggregate over existing tables. dotnet 89/89, vitest 66/66.
 - Recharts custom tooltips use `bg-slate-900` (not `bg-gray-900`) per the current
   design spec — keep new chart tooltips consistent.
 
+## Landing page localization pass (COMPLETE, deployed — commit `aefb526`)
+
+The landing page is now **fully localized** (closes the "PDF/matchSport aside,
+landing had hardcoded strings" gap from the Fix-1 known-gaps list): +79 keys × 5
+locales (landing namespace 160 keys, key-set equality 0/0), all 10 feature
+titles/descs, role-card descs, testimonial quotes/roles, about paragraphs, stats,
+contact/find-a-coach/CTA sections. Language switcher is **flag-free** (flags denote
+countries, not languages) — `LanguageDef.flag` removed, `short` codes (EN/AR/HE/FR/ES)
+on the trigger + uniform start-aligned rows, native names kept as aria-labels. The
+feature-card "works" badge moved `right-4` → `end-4` (mirrors away from RTL titles;
+badge text now translated). Deliberate-English tokens (tech-stack items, demo
+credentials) wrapped `dir="ltr"`. Verified on production in all 5 languages
+(20-sentinel bleed sweep clean; badge/title no-overlap geometrically asserted in
+AR + HE). NOTE: design-audit **finding #10 (fabricated testimonials + README-style
+About content) remains OPEN** — this pass translated that content, it did not
+remove it. Ops gotchas from this deploy: aggressive curl-polling of the Vercel
+domain triggers a Security Checkpoint (probe GitHub's deployments API instead —
+Vercel posts statuses there); Vercel missed the push webhook for `aefb526` entirely
+(Railway deployed, Vercel didn't) — an empty retrigger commit (`3e0180d`) fixed it.
+
 ## Current status
 
-**Phase G continuation — Section 6 complete (latest).** Team performance analytics:
+**Landing localization pass complete (latest).** See section above — `aefb526` +
+retrigger `3e0180d`, verified on production in all 5 languages.
+
+**Phase G continuation — Section 6 complete.** Team performance analytics:
 aggregate endpoint (`d7d98d0`) + SquadPerformanceCard (`037d63e`) pushed together,
 Railway deploy probe-verified before trusting the Vercel frontend, then browser-
 verified on production (confident + thin coverage states, weakest-first sort,
