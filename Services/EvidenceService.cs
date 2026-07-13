@@ -32,6 +32,7 @@ public interface IEvidenceService
     Task<EvidenceBasedScoreDto?> RecalculateMetricAsync(ClaimsPrincipal user, int playerId, int metricDefinitionId);
 
     Task<TeamEvidenceStatusDto> GetTeamEvidenceStatusAsync(ClaimsPrincipal user, int teamId);
+    Task<TeamEvidencePerformanceDto> GetTeamEvidencePerformanceAsync(ClaimsPrincipal user, int teamId);
 
     Task<List<EvidenceReminderDto>> GetRemindersAsync(ClaimsPrincipal user);
 }
@@ -340,6 +341,101 @@ public class EvidenceService : IEvidenceService
             PlayersNeedingTests = rows.Count(r => r.LastTestAt == null || r.LastTestAt < recentCutoff),
             PlayersWithoutMatchStats = rows.Count(r => r.MatchStatCount == 0),
             PlayersWithoutEvidence = rows.Count(r => r.ScoredMetrics == 0),
+        };
+    }
+
+    // ─── Team performance rollup (Section 6) ─────────────────────────────────
+
+    // Per-metric squad rollup of the CURRENT blended FinalScores: average, spread,
+    // score-band counts, below-average count, notable outliers — each with its
+    // coverage denominator (scored vs squad size), because an average built from a
+    // fraction of the roster is not authoritative. Read-only aggregate over
+    // existing tables; every sport metric is returned, including unscored ones
+    // ("we know nothing about X squad-wide" is itself the answer).
+    //
+    // CALIBRATION NOTE: FinalScore blends anchor-calibrated components (objective
+    // tests, match stats) with raw 1-10 subjective ratings (coach eval and
+    // self-assessment are clamped, not anchor-normalized — see
+    // EvidenceScoringEngine). 5.0 therefore means "average on the app's 0-10
+    // scale", NOT "at the benchmark Average anchor" — which is why the DTO says
+    // BelowAverageCount, never "below benchmark". A future refinement could count
+    // ObjectiveScore < 5 for a true anchor-relative claim, at the cost of a second
+    // coverage denominator per metric.
+    public async Task<TeamEvidencePerformanceDto> GetTeamEvidencePerformanceAsync(ClaimsPrincipal user, int teamId)
+    {
+        await _access.EnsureCanAccessTeamAsync(user, teamId);
+
+        var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId)
+            ?? throw new NotFoundApiException($"Team {teamId} was not found.");
+
+        var profileName = team.BenchmarkProfileId == null
+            ? null
+            : await _context.BenchmarkProfiles
+                .Where(p => p.Id == team.BenchmarkProfileId)
+                .Select(p => p.Name)
+                .FirstOrDefaultAsync();
+
+        var players = await _context.Players
+            .Where(p => p.TeamId == teamId)
+            .Select(p => new { p.Id, p.FullName })
+            .ToListAsync();
+        var playerIds = players.Select(p => p.Id).ToList();
+        var nameById = players.ToDictionary(p => p.Id, p => p.FullName);
+
+        var metricDefs = await _context.SportMetricDefinitions
+            .Where(d => d.SportId == team.SportId)
+            .OrderBy(d => d.Category).ThenBy(d => d.Name)
+            .ToListAsync();
+
+        var scores = await _context.EvidenceBasedScores
+            .Where(s => playerIds.Contains(s.PlayerId) && s.AssessmentId == null)
+            .Select(s => new { s.PlayerId, s.MetricDefinitionId, s.FinalScore, s.Confidence })
+            .ToListAsync();
+        var scoresByMetric = scores.ToLookup(s => s.MetricDefinitionId);
+
+        var metrics = metricDefs.Select(def =>
+        {
+            var metricScores = scoresByMetric[def.Id]
+                .Select(s => new TeamMetricOutlierDto
+                {
+                    PlayerId = s.PlayerId,
+                    PlayerName = nameById.GetValueOrDefault(s.PlayerId, ""),
+                    Score = s.FinalScore,
+                })
+                .ToList();
+            var values = metricScores.Select(s => s.Score).ToList();
+            var average = values.Count == 0 ? (decimal?)null : Math.Round(values.Average(), 2);
+            var (low, high) = average == null
+                ? (new List<TeamMetricOutlierDto>(), new List<TeamMetricOutlierDto>())
+                : TeamPerformanceMath.PickOutliers(metricScores, average.Value);
+
+            return new TeamMetricPerformanceDto
+            {
+                MetricDefinitionId = def.Id,
+                Name = def.Name,
+                Category = def.Category.ToString(),
+                Unit = def.Unit,
+                ScoredCount = values.Count,
+                VerifiedCount = scoresByMetric[def.Id]
+                    .Count(s => s.Confidence is EvidenceConfidence.High or EvidenceConfidence.VeryHigh),
+                Average = average,
+                Min = values.Count == 0 ? null : values.Min(),
+                Max = values.Count == 0 ? null : values.Max(),
+                StdDev = TeamPerformanceMath.SampleStdDev(values),
+                BandCounts = TeamPerformanceMath.CountBands(values),
+                BelowAverageCount = values.Count(v => v < 5m),
+                LowOutliers = low,
+                HighOutliers = high,
+            };
+        }).ToList();
+
+        return new TeamEvidencePerformanceDto
+        {
+            TeamId = teamId,
+            SquadSize = players.Count,
+            BenchmarkProfileId = team.BenchmarkProfileId,
+            ProfileName = profileName,
+            Metrics = metrics,
         };
     }
 

@@ -94,6 +94,13 @@ public class EvidenceController : ApiControllerBase
     public async Task<ActionResult> GetTeamEvidenceStatus(int teamId)
         => Success(await _service.GetTeamEvidenceStatusAsync(User, teamId));
 
+    // Coach: per-metric squad performance rollup (average/spread/bands/outliers,
+    // each with its coverage denominator) — powers the Squad performance card.
+    [HttpGet("teams/{teamId}/evidence-performance")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetTeamEvidencePerformance(int teamId)
+        => Success(await _service.GetTeamEvidencePerformanceAsync(User, teamId));
+
     // Coach dashboard: stale-test + low-confidence reminder items.
     [HttpGet("evidence-reminders")]
     [Authorize(Roles = "Coach,Admin")]

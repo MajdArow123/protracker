@@ -210,3 +210,52 @@ public class EvidenceReminderDto
     // LowConfidence: how many players are affected.
     public int? Count { get; set; }
 }
+
+// ─── Team performance analytics (Phase G continuation, Section 6) ────────────
+
+public class TeamMetricOutlierDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public decimal Score { get; set; }
+}
+
+public class TeamBandCountsDto
+{
+    public int Red { get; set; }
+    public int Amber { get; set; }
+    public int Green { get; set; }
+}
+
+public class TeamMetricPerformanceDto
+{
+    public int MetricDefinitionId { get; set; }
+    public string Name { get; set; } = "";
+    public string Category { get; set; } = "";
+    public string? Unit { get; set; }
+    // Coverage denominators — every stat below is only as good as these.
+    public int ScoredCount { get; set; }
+    public int VerifiedCount { get; set; }
+    public decimal? Average { get; set; }
+    public decimal? Min { get; set; }
+    public decimal? Max { get; set; }
+    // Sample (n-1) standard deviation; null below TeamPerformanceMath.MinScoredForStdDev.
+    public decimal? StdDev { get; set; }
+    public TeamBandCountsDto BandCounts { get; set; } = new();
+    // Players whose blended FinalScore < 5.0. Deliberately "below average (score < 5)",
+    // NOT "below benchmark": the blend mixes anchor-calibrated components (objective,
+    // match stats) with raw 1-10 subjective ratings (coach eval, self-assessment), so
+    // 5.0 is the app scale's average, not the cohort Average anchor.
+    public int BelowAverageCount { get; set; }
+    public List<TeamMetricOutlierDto> LowOutliers { get; set; } = new();
+    public List<TeamMetricOutlierDto> HighOutliers { get; set; } = new();
+}
+
+public class TeamEvidencePerformanceDto
+{
+    public int TeamId { get; set; }
+    public int SquadSize { get; set; }
+    public int? BenchmarkProfileId { get; set; }
+    public string? ProfileName { get; set; }
+    public List<TeamMetricPerformanceDto> Metrics { get; set; } = new();
+}
