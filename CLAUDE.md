@@ -1309,9 +1309,67 @@ rerun-creates-nothing→teardown-preview).
   date, player-detail Training/Matches tabs render raw ISO dates (pre-existing
   product formatting, not seed data).
 
+## Team lineup view — Phase 1 (COMPLETE, deployed — commit `3f79125`)
+
+Read-only, sport-aware FC-style lineup visualization: a coach-only **"Lineup" tab**
+on TeamDetailPage (`components/teams/lineup/`, frontend-only — no backend, no
+migration). Per sport (`lineupLayouts.ts`, keyed off the FK-enforced seeded
+`positionId`s 1-23, so no free-text drift): **soccer** portrait pitch with an
+auto-arranged XI + bench; **basketball** half-court starting 5 (one slot per
+position, fixed court coordinates); **volleyball** 5-1 rotation on court (front
+OH/MB/OPP, back OH/Libero/Setter — the OH position feeds BOTH slots, the Libero
+slot is `accent`-flagged: amber ring + amber label); **beach** pair (Blocker at
+net, Defender deep, All-Round fills either); **tennis** = a ranked **ladder**, not
+a court. Surfaces (`PitchSurface.tsx` → `SportSurface` switch) are `dir="ltr"`
+spatial diagrams (chart convention — RTL locales mirror everything around them).
+
+- **Rating = client-side mean of the player's current `EvidenceBasedScore.finalScore`s**
+  (one `evidence-scores` request per roster player via `useQueries`, shared query
+  key with the player pages) with the **honesty ladder** on the chip: confident
+  (High/VeryHigh, ≥3 metrics) = bold + band color; Medium = normal weight + amber
+  dot; **thin (Low confidence OR < 3 scored metrics — the same coverage floor as
+  `coverageLevel`) = muted gray + dashed border, never bold**; zero evidence = "—"
+  (never 0.0); query error = "?" (a load failure is not a "no data" claim). Stat
+  popover (hover on desktop / bottom-sheet on mobile per tap) = per-MetricCategory
+  means with the same muting; card click → `/players/{id}?tab=evidence`.
+- **Framing is deliberately modest**: the soccer formation chip is line counts
+  only ("Shape: 4-3-3 · *implied by positions*"), every surface carries
+  "Auto-arranged by rating — not a saved lineup", and the ladder says "not an
+  official ladder". Court sports derive no formation string at all.
+- **Pure, unit-tested logic** (`lineupLogic.ts`, 32 tests in
+  `src/test/lineupLogic.test.ts`): `computeOverallRating` (gates above),
+  `compareByRating` (value first — per explicit ruling, thin data is flagged not
+  demoted — then confidence tiebreak, coverage, name), `assignToSlots` (pass 1
+  line minimums by rating; pass 2 fill to max; **pass 3 "rescue"** — a stranded
+  specialist is seated by shifting a flexible occupant to another open slot,
+  never by benching a higher-rated player; empty keeper-type lines shrink
+  capacity: no GK → 10 outfielders, never a faked position), `deriveFormation`,
+  and `buildLadder` (**ranking gate: < 3 scored metrics can never rank** — a 9.5
+  over 2 metrics sits below a "Not enough data to rank" divider, unranked players
+  sort alphabetically, never by their unreliable values).
+- Squad-health overlay toggle (injured = red ring from the page's existing
+  `injuredIds`; thin/no-data = dashed amber ring + flask, zero extra requests);
+  Suspended/Inactive → "Unavailable" tray, unknown positions → "Unpositioned"
+  tray (layout is total, never broken). TeamDetailPage also gained `?tab=`
+  deep-linking (PlayerDetailPage's `initialTab` pattern, coach-only tabs guarded)
+  and the tab bar got `overflow-x-auto` (fixes the tab-overflow finding). 49 i18n
+  keys (`teams.lineup*`, `teams.posAbbr_1..23`) × all 5 locales.
+- **Phase 2 (explicitly scoped out, still open)**: coach-editable formations +
+  drag-drop assignment; saved/persisted lineups + per-match tie (needs a `Lineup`
+  model + migration); "Best XI" auto-suggest as a coach tool; and a **per-team
+  batch evidence-scores endpoint** to replace the ~24 per-player requests fired
+  on tab open (acceptable for Phase 1 by explicit decision, cached 60s).
+
 ## Current status
 
-**Demo showcase dataset complete (latest).** See section above — seeder built
+**Team lineup view Phase 1 complete (latest).** See section above — one atomic
+commit (`3f79125`), frontend-only, single Vercel deploy. Prod-smoke-checked:
+tennis ladder ranking gate (temp under-3-metric player created via prod API sat
+below the divider at 9.5, then deleted), soccer pitch + basketball court, click-
+throughs to `?tab=evidence`, Hebrew RTL, and 400px mobile (court + bench carousel
++ tap stat-sheet). vitest 98/98, build + oxlint clean.
+
+**Demo showcase dataset complete.** See section above — seeder built
 across Phases 1-3 + a post-sweep gap-fill commit (`08760b5`), all phases written
 to production and verified in-browser as coach, team athlete, solo athlete and
 parent. `SEED_ADMIN_TOKEN` removed from Railway (endpoint 403s).
