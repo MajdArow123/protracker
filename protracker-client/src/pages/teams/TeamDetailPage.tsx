@@ -32,14 +32,27 @@ import { useTeamMatches } from '../../hooks/useMatches';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { TeamEvidenceTab } from '../../components/evidence/TeamEvidenceTab';
+import { TeamLineupSection } from '../../components/teams/lineup/TeamLineupSection';
 import { PlayerAvatar } from '../../components/players/PlayerAvatar';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert, ClipboardCheck,
-  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange, ShieldCheck,
+  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange, ShieldCheck, Shirt,
 } from 'lucide-react';
 
-type TeamTab = 'overview' | 'schedule' | 'matches' | 'seasons' | 'evidence';
+type TeamTab = 'overview' | 'lineup' | 'schedule' | 'matches' | 'seasons' | 'evidence';
+
+const TEAM_TABS: TeamTab[] = ['overview', 'lineup', 'schedule', 'matches', 'seasons', 'evidence'];
+const COACH_ONLY_TABS: TeamTab[] = ['lineup', 'evidence'];
+
+// Deep-link support (?tab=lineup), read once on mount — same pattern as PlayerDetailPage.
+function initialTab(isCoach: boolean): TeamTab {
+  const requested = new URLSearchParams(window.location.search).get('tab') as TeamTab | null;
+  if (requested && TEAM_TABS.includes(requested) && (isCoach || !COACH_ONLY_TABS.includes(requested))) {
+    return requested;
+  }
+  return 'overview';
+}
 
 const SPORT_HEADER_COLORS: Record<string, string> = {
   Football: 'from-green-600 via-emerald-600 to-green-700',
@@ -105,7 +118,7 @@ export function TeamDetailPage() {
   const { data: teamMatches = [] } = useTeamMatches(teamId);
   const deleteTeam = useDeleteTeam();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [teamTab, setTeamTab] = useState<TeamTab>('overview');
+  const [teamTab, setTeamTab] = useState<TeamTab>(() => initialTab(isCoach));
   const heightUnit = getStoredHeightUnit();
   const weightUnit = getStoredWeightUnit();
 
@@ -329,9 +342,10 @@ export function TeamDetailPage() {
 
       {/* Section tabs */}
       <div className="px-4 lg:px-6 pt-4">
-        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex gap-1 border-b border-gray-200 dark:border-gray-800 overflow-x-auto scrollbar-none">
           {([
             ['overview', t('teams.tabOverview', 'Overview'), Users],
+            ...(isCoach ? [['lineup', t('teams.tabLineup', 'Lineup'), Shirt] as [TeamTab, string, typeof Users]] : []),
             ['schedule', t('teams.tabSchedule', 'Schedule'), Calendar],
             ['matches', t('teams.tabMatches', 'Matches'), Star],
             ['seasons', t('teams.tabSeasons', 'Seasons'), CalendarRange],
@@ -341,7 +355,7 @@ export function TeamDetailPage() {
               key={id}
               onClick={() => setTeamTab(id)}
               className={clsx(
-                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all cursor-pointer',
+                'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-all cursor-pointer whitespace-nowrap flex-shrink-0',
                 teamTab === id
                   ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400 dark:border-indigo-500'
                   : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200',
@@ -352,6 +366,12 @@ export function TeamDetailPage() {
           ))}
         </div>
       </div>
+
+      {teamTab === 'lineup' && (
+        <div className="p-4 lg:p-6">
+          <TeamLineupSection sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} />
+        </div>
+      )}
 
       {teamTab === 'schedule' && (
         <div className="p-4 lg:p-6">
