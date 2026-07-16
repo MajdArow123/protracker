@@ -130,6 +130,17 @@ export function useRecalculateEvidence() {
   });
 }
 
+// One request for the whole roster's current scores; staleTime matches the
+// per-player hook so the two never fight over freshness.
+export function useTeamEvidenceScores(teamId: number | null | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['evidence', 'teamScores', teamId],
+    queryFn: () => evidenceApi.getTeamEvidenceScores(teamId!),
+    enabled: !!teamId && enabled,
+    staleTime: 60_000,
+  });
+}
+
 export function useTeamEvidenceStatus(teamId: number | null | undefined, enabled = true) {
   return useQuery({
     queryKey: ['evidence', 'teamStatus', teamId],

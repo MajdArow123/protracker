@@ -1668,6 +1668,12 @@ export interface EvidenceBasedScore {
   nextObjectiveTestDue: string | null;
 }
 
+// Per-team batch payload: one roster player's current evidence scores.
+export interface PlayerEvidenceScores {
+  playerId: number;
+  scores: EvidenceBasedScore[];
+}
+
 export interface EvidencePriority {
   metric: string;
   action: string;

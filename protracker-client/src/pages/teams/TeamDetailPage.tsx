@@ -369,7 +369,7 @@ export function TeamDetailPage() {
 
       {teamTab === 'lineup' && (
         <div className="p-4 lg:p-6">
-          <TeamLineupSection sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} />
+          <TeamLineupSection teamId={teamId} sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} canManage={canManageTeam} />
         </div>
       )}
 

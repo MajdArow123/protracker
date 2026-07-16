@@ -1,6 +1,6 @@
 import api from './axiosInstance';
 import type {
-  SportMetricDefinition, ObjectiveTestResult, MatchStatEntry,
+  SportMetricDefinition, ObjectiveTestResult, MatchStatEntry, PlayerEvidenceScores,
   CoachEvaluationEntry, SelfAssessmentEvidence, EvidenceBasedScore,
   TeamEvidenceStatus, TeamEvidencePerformance, EvidenceReminder,
 } from '../types';
@@ -64,6 +64,10 @@ export const evidenceApi = {
     api.post<SelfAssessmentEvidence>('/api/self-assessments/evidence', data).then(r => r.data),
   getSelfAssessments: (playerId: number) =>
     api.get<SelfAssessmentEvidence[]>(`/api/players/${playerId}/self-assessments`).then(r => r.data),
+
+  // Batch: every roster player's current scores in one request (lineup view).
+  getTeamEvidenceScores: (teamId: number) =>
+    api.get<PlayerEvidenceScores[]>(`/api/teams/${teamId}/evidence-scores`).then(r => r.data),
 
   getEvidenceScores: (playerId: number) =>
     api.get<EvidenceBasedScore[]>(`/api/players/${playerId}/evidence-scores`).then(r => r.data),

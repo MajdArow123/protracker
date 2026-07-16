@@ -68,12 +68,16 @@ interface Props {
   overlay: boolean;
   /** Visually distinct slot (volleyball Libero — inverted-jersey convention). Overlay rings take precedence. */
   accent?: boolean;
+  /** Edit mode: this card is the active selection (tap-swap source). */
+  selected?: boolean;
+  /** Edit mode: the player's position isn't natural for this slot. */
+  oop?: boolean;
   onActivate: () => void;
   onHoverChange?: (hovering: boolean) => void;
 }
 
 // Compact on-pitch card. Rendered inside the dir="ltr" pitch container.
-export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay, accent, onActivate, onHoverChange }: Props) {
+export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay, accent, selected, oop, onActivate, onHoverChange }: Props) {
   const { t } = useTranslation();
   const needsTesting = !loadFailed && (rating.kind === 'none' || rating.kind === 'thin');
   const showOverlayInjured = overlay && injured;
@@ -87,14 +91,16 @@ export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay,
       onMouseLeave={() => onHoverChange?.(false)}
       className="flex flex-col items-center w-16 sm:w-[4.5rem] cursor-pointer group focus:outline-none"
       aria-label={player.fullName}
+      aria-pressed={selected}
     >
       <div className="relative">
         <div
           className={clsx(
             'rounded-full transition-transform group-hover:scale-105 group-focus-visible:ring-2 group-focus-visible:ring-white',
-            showOverlayInjured && 'ring-2 ring-red-500 ring-offset-1 ring-offset-transparent',
-            showOverlayThin && 'outline-dashed outline-2 outline-amber-400',
-            accent && !showOverlayInjured && !showOverlayThin && 'ring-2 ring-amber-300/90',
+            selected && 'ring-4 ring-indigo-400 scale-105',
+            !selected && showOverlayInjured && 'ring-2 ring-red-500 ring-offset-1 ring-offset-transparent',
+            !selected && showOverlayThin && 'outline-dashed outline-2 outline-amber-400',
+            !selected && accent && !showOverlayInjured && !showOverlayThin && 'ring-2 ring-amber-300/90',
           )}
         >
           <PlayerAvatar name={player.fullName} imageUrl={player.profileImageUrl} sportId={player.sportId} size={44} />
@@ -108,6 +114,14 @@ export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay,
         {overlay && !injured && needsTesting && (
           <span className="absolute -bottom-0.5 -right-1 w-4 h-4 rounded-full bg-amber-400 flex items-center justify-center" title={t('teams.lineupNeedsTesting', 'Needs testing')}>
             <FlaskConical size={10} className="text-amber-950" />
+          </span>
+        )}
+        {oop && (
+          <span
+            className="absolute -bottom-1 -left-1.5 px-1 rounded-full bg-amber-400/95 text-amber-950 text-[8px] font-black leading-3"
+            title={t('teams.lineupOutOfPosition', 'Out of position')}
+          >
+            {t('teams.lineupOopShort', 'OOP')}
           </span>
         )}
       </div>
