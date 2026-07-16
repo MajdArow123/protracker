@@ -1,5 +1,21 @@
 {
   "common": {
+    "dataSource": {
+      "recorded": "مُسجَّل",
+      "coachEntered": "أدخله المدرب",
+      "playerReported": "أبلغ عنه اللاعب",
+      "calculated": "محسوب",
+      "notTracked": "غير مُتتبَّع",
+      "unknown": "مصدر غير معروف",
+      "calculatedFromEvidence": "محسوب · من درجات الأدلة",
+      "ratingTitle": "محسوب من {{count}} مقاييس أدلة — ثقة {{confidence}}",
+      "missingNotTracked": "غير مُتتبَّع",
+      "missingNotRecorded": "غير مُسجَّل",
+      "missingNotSet": "غير محدد",
+      "missingNotEnoughData": "بيانات غير كافية",
+      "missingLoadFailed": "تعذّر التحميل",
+      "missingUnknown": "غير معروف"
+    },
     "save": "حفظ",
     "cancel": "إلغاء",
     "delete": "حذف",

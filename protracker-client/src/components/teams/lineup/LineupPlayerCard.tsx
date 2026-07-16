@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, FlaskConical } from 'lucide-react';
 import { PlayerAvatar } from '../../players/PlayerAvatar';
 import { scoreTone } from '../../charts/chartColors';
-import { confidenceDotColor } from '../../evidence/evidenceUtils';
+import { confidenceDotColor, confidenceLabel } from '../../evidence/evidenceUtils';
 import { positionAbbr } from './lineupLayouts';
 import type { RatingState } from './lineupLogic';
 import type { Player } from '../../../types';
@@ -47,8 +47,14 @@ export function RatingChip({ rating, loadFailed, className }: {
   }
 
   const toneClass = { red: 'text-red-500', amber: 'text-amber-500', green: 'text-emerald-500' }[scoreTone(rating.value)];
+  // Provenance, accessibly (Phase 0): the value is CALCULATED, and the title says
+  // from what. Deliberately no visual change — the compact marker stays as-is.
+  const sourceTitle = t('common.dataSource.ratingTitle', 'Calculated from {{count}} evidence metrics — {{confidence}} confidence', {
+    count: rating.scoredMetrics,
+    confidence: confidenceLabel(rating.confidence, t),
+  });
   return (
-    <span className={clsx(base, toneClass, rating.kind === 'confident' ? 'font-black' : 'font-semibold', 'border border-gray-200/60 dark:border-gray-700/60', className)}>
+    <span className={clsx(base, toneClass, rating.kind === 'confident' ? 'font-black' : 'font-semibold', 'border border-gray-200/60 dark:border-gray-700/60', className)} title={sourceTitle}>
       {rating.value.toFixed(1)} {dot}
     </span>
   );

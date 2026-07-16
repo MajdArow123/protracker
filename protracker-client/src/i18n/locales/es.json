@@ -1,5 +1,21 @@
 {
   "common": {
+    "dataSource": {
+      "recorded": "Registrado",
+      "coachEntered": "Introducido por el entrenador",
+      "playerReported": "Reportado por el jugador",
+      "calculated": "Calculado",
+      "notTracked": "Sin seguimiento",
+      "unknown": "Fuente desconocida",
+      "calculatedFromEvidence": "Calculado · a partir de puntuaciones de evidencia",
+      "ratingTitle": "Calculado a partir de {{count}} métricas de evidencia — confianza {{confidence}}",
+      "missingNotTracked": "Sin seguimiento",
+      "missingNotRecorded": "No registrado",
+      "missingNotSet": "Sin definir",
+      "missingNotEnoughData": "Datos insuficientes",
+      "missingLoadFailed": "No se pudo cargar",
+      "missingUnknown": "Desconocido"
+    },
     "save": "Guardar",
     "cancel": "Cancelar",
     "delete": "Eliminar",

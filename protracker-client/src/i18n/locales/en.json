@@ -1,5 +1,21 @@
 {
   "common": {
+    "dataSource": {
+      "recorded": "Recorded",
+      "coachEntered": "Coach-entered",
+      "playerReported": "Player-reported",
+      "calculated": "Calculated",
+      "notTracked": "Not tracked",
+      "unknown": "Unknown source",
+      "calculatedFromEvidence": "Calculated · from evidence scores",
+      "ratingTitle": "Calculated from {{count}} evidence metrics — {{confidence}} confidence",
+      "missingNotTracked": "Not tracked",
+      "missingNotRecorded": "Not recorded",
+      "missingNotSet": "Not set",
+      "missingNotEnoughData": "Not enough data",
+      "missingLoadFailed": "Unable to load",
+      "missingUnknown": "Unknown"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",

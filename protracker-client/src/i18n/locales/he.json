@@ -1,5 +1,21 @@
 {
   "common": {
+    "dataSource": {
+      "recorded": "מתועד",
+      "coachEntered": "הוזן על ידי המאמן",
+      "playerReported": "דווח על ידי השחקן",
+      "calculated": "מחושב",
+      "notTracked": "לא במעקב",
+      "unknown": "מקור לא ידוע",
+      "calculatedFromEvidence": "מחושב · מציוני ראיות",
+      "ratingTitle": "מחושב מ-{{count}} מדדי ראיות — רמת ביטחון {{confidence}}",
+      "missingNotTracked": "לא במעקב",
+      "missingNotRecorded": "לא תועד",
+      "missingNotSet": "לא הוגדר",
+      "missingNotEnoughData": "אין מספיק נתונים",
+      "missingLoadFailed": "הטעינה נכשלה",
+      "missingUnknown": "לא ידוע"
+    },
     "save": "שמור",
     "cancel": "ביטול",
     "delete": "מחק",

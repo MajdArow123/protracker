@@ -1398,6 +1398,51 @@ spatial diagrams (chart convention — RTL locales mirror everything around them
   `MatchResult` that renders as a Draw); desktop drag-and-drop (deferred polish —
   tap-swap covers all platforms); per-match lineup surfacing on the Matches tab.
 
+## Lineup program (LINEUP_BLUEPRINT.md) — Phase 0: honesty primitives (COMPLETE)
+
+The authoritative roadmap for the lineup workspace is
+`protracker-client/LINEUP_BLUEPRINT.md` (note: lives in the CLIENT folder, not the
+repo root); when it conflicts with any older FC-style spec, the blueprint wins.
+Phase 0 = the data-honesty taxonomy as typed infrastructure. Frontend-only, no
+migration, no new dependencies.
+
+- **Types** (`src/types/index.ts`): `DataSource` ('recorded' | 'coach-entered' |
+  'player-reported' | 'calculated' | 'not-tracked') + `MissingReason`
+  ('not-tracked' | 'not-recorded' | 'not-set' | 'not-enough-data' | 'load-failed')
+  + optional `Sourced<T>` carrier so future DTOs can adopt provenance without any
+  API changing now. Taxonomy rules documented as TSDoc in `src/utils/dataSource.ts`
+  (`sourceMeta`/`missingReasonMeta` pure helpers — unexpected runtime values fall
+  back to an explicit "Unknown" meta, NEVER to a real provenance type).
+- **Components** (`src/components/ui/`): `SourceBadge` (icon + visible text,
+  never color-only; `title` override for method detail; badge palette deliberately
+  distinct from the confidence-badge palette) and `MissingValue` (full = icon +
+  state text; compact = glyph with sr-only + title label; **"?" is reserved for
+  load failures, "—" for absent data** — the RatingChip convention, now app-wide).
+- **The (C)-split ruling**: the compact pitch marker is NOT badged (every rating
+  chip has the same constant source — 'calculated' — so a visible badge ×11 is
+  clutter); `RatingChip` instead declares provenance accessibly — the
+  medium/confident value chips (which previously had NO title) gained
+  `title="Calculated from N evidence metrics — {confidence} confidence"`; the
+  thin/none/failed titles are untouched. The first visible `SourceBadge` sits in
+  `StatPopover`'s badge row ("Calculated", hover "Calculated · from evidence
+  scores"). Zero visual/behavioural change to the marker.
+- **Blueprint §2 corrections made** (approved): (1) `Player.form` does not exist —
+  the only `form` in the codebase is league-standing form; row reclassified
+  not-tracked until a coach-entered field ships (Phase 3 candidate). (2)
+  `Player.FitnessLevel` is a NON-nullable int 1–10 (frontend type wrongly says
+  `number | null`), always carries a value, and demo data seeds it randomly — a
+  "Not recorded" state needs a nullability migration. **MUST-RESOLVE in Phase 2
+  (user ruling): make it nullable or don't badge it coach-entered** — a seeded
+  random value must never wear the coach-entered badge.
+- **i18n**: 14 keys in a grouped `common.dataSource.*` sub-object × all 5 locales
+  (key-set + interpolation validated). **Tests**: `dataSource.test.ts`,
+  `SourceBadge.test.tsx`, `MissingValue.test.tsx`, and `RatingChip.test.tsx` — the
+  last is the regression net that locks today's chip contract (— never 0.0, "?"
+  only on load failure, thin = muted + dashed).
+- **Deploy note (pending)**: local mobile verification used a same-origin 390px
+  iframe (the Chrome extension pins the tab viewport, so real window resize was
+  impossible) — run a device/emulator mobile pass when Phase 0 deploys.
+
 ## Current status
 
 **Team lineup view Phase 2 complete (latest).** See section above — sequenced

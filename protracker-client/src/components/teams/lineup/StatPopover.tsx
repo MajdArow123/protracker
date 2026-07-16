@@ -4,6 +4,7 @@ import { AlertTriangle, ExternalLink } from 'lucide-react';
 import { PlayerAvatar } from '../../players/PlayerAvatar';
 import { scoreTone, SCORE_TONE_HEX } from '../../charts/chartColors';
 import { confidenceBadgeClass, confidenceLabel } from '../../evidence/evidenceUtils';
+import { SourceBadge } from '../../ui/SourceBadge';
 import { RatingChip } from './LineupPlayerCard';
 import type { CategoryStat, RatingState } from './lineupLogic';
 import type { Player } from '../../../types';
@@ -41,6 +42,11 @@ export function StatPopover({ player, rating, breakdown, injured, onViewProfile,
       <div className="flex items-center gap-1.5 flex-wrap mb-2 text-[11px]">
         {rating.kind !== 'none' && (
           <>
+            <SourceBadge
+              source="calculated"
+              size="xs"
+              title={t('common.dataSource.calculatedFromEvidence', 'Calculated · from evidence scores')}
+            />
             <span className={clsx('px-1.5 py-0.5 rounded-full font-semibold', confidenceBadgeClass(rating.confidence))}>
               {confidenceLabel(rating.confidence, t)}
             </span>
