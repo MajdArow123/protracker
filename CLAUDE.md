@@ -1354,15 +1354,65 @@ spatial diagrams (chart convention — RTL locales mirror everything around them
   deep-linking (PlayerDetailPage's `initialTab` pattern, coach-only tabs guarded)
   and the tab bar got `overflow-x-auto` (fixes the tab-overflow finding). 49 i18n
   keys (`teams.lineup*`, `teams.posAbbr_1..23`) × all 5 locales.
-- **Phase 2 (explicitly scoped out, still open)**: coach-editable formations +
-  drag-drop assignment; saved/persisted lineups + per-match tie (needs a `Lineup`
-  model + migration); "Best XI" auto-suggest as a coach tool; and a **per-team
-  batch evidence-scores endpoint** to replace the ~24 per-player requests fired
-  on tab open (acceptable for Phase 1 by explicit decision, cached 60s).
+- **Phase 2 (COMPLETE, deployed — commits `f14d972` backend, `7d612c7` frontend)
+  — editable, savable lineups.** Backend: `Lineup` + `LineupSlot` (migration
+  `AddLineups` — two new tables, reversible, zero existing-table changes; up/down
+  verified on BOTH Npgsql and the SQLite test rig, the latter pinned permanently
+  in `LineupMigrationTests`). **One lineup per (TeamId, MatchResultId) key**:
+  null = team default XI, set = that match's lineup — enforced by
+  `LineupService`'s **transactional, self-healing upsert** (deterministic
+  oldest-row pick + duplicate removal; service-layer uniqueness per codebase
+  convention, NO filtered index). `GET/PUT/DELETE /api/teams/{id}/lineup?matchId=`;
+  reads = team access, **writes = `EnsureTeamPermissionAsync(CanManageTeam)`**.
+  Validation: match + every player must belong to the team, ≤11 slots, unique
+  slotKeys/players; slot semantics stay client-side (server is sport-agnostic).
+  Player deleted → slot row cascades away (empty slot, never a dangling id).
+  **Batch endpoint** `GET /api/teams/{id}/evidence-scores` (Coach/Admin) returns
+  every roster player's current `EvidenceBasedScoreDto`s in one request — the
+  lineup tab now fires 1 call instead of ~24 and primes the per-player
+  `['evidence','scores',id]` caches (`useTeamEvidenceScores`). Also fixed
+  `TestAuth.MarcusBellPlayerId` (was 7 = Jack Turner; the seeder makes 8 soccer
+  players, Marcus Bell is 9).
+- **Phase 2 frontend**: Edit mode on the lineup tab (gated by the page's
+  `canManageTeam`), **tap-to-select-then-tap-to-place** swapping that works
+  identically with touch, mouse and keyboard (cards are buttons; Enter
+  selects/places, Esc cancels, `aria-pressed` on selection). Soccer gets a
+  **6-formation picker** (4-3-3/4-4-2/4-2-3-1/3-5-2/3-4-3/5-3-2 in
+  `lineupFormations.ts`) with line-preserving remap (shrinking lines drop
+  overflow to bench); basketball/volleyball/beach edit their single fixed slot
+  sets; **tennis stays a read-only ladder — no edit, no save**. Save chooser =
+  "Team default XI" vs "For a specific match" (**match options are date-labeled**
+  — attaching to a logged match, NOT fixture planning); Save disabled while the
+  PUT is in flight; dirty-dot + discard-confirm guard. "Reset to suggested XI"
+  re-runs the Phase 1 auto-arrange into the current formation (suggestions build
+  a per-slot layout so rating/confidence-tiebreak/rescue apply unchanged).
+  **Hydration is roster-keyed**: saved slot players missing from the LIVE roster
+  (deleted OR transferred), unknown slot keys, and duplicates all drop to empty
+  slots — never a ghost or crash. **Honesty carries into edit mode**: rating
+  chips render identically, out-of-position placements get an amber "OOP" hint.
+  Pure logic in `lineupEditLogic.ts` (suggestedAssignments/hydrateAssignments/
+  moveOrSwap/remapFormation/validateLineup/sameLineup) — 15 vitest cases.
+  +35 i18n keys × 5 locales.
+- **Still open after Phase 2**: true upcoming-fixture planning (needs a
+  scheduled/played concept on matches — today a "future match" is a 0-0
+  `MatchResult` that renders as a Draw); desktop drag-and-drop (deferred polish —
+  tap-swap covers all platforms); per-match lineup surfacing on the Matches tab.
 
 ## Current status
 
-**Team lineup view Phase 1 complete (latest).** See section above — one atomic
+**Team lineup view Phase 2 complete (latest).** See section above — sequenced
+deploy: backend commit `f14d972` pushed first (Railway ran `AddLineups`,
+verified live: health 200, lineup GET `{data:null}`, batch endpoint 24
+players/216 scores), then frontend `7d612c7` (Vercel). Prod-smoke-checked on
+City FC U18: default XI (3-4-3) + a date-labeled match lineup saved via the UI,
+full-page reload round-tripped both coexisting keys, edit-mode chips stayed
+honest (Ward muted-dashed 8.3 among bold chips), tab open fired **1 batch
+request / 0 per-player calls** (performance-API-verified), Hebrew RTL (controls
+mirror, date localized "11 ביולי", surface LTR) and mobile checked; test
+lineups deleted after (prod pristine). vitest 113/113, dotnet 104/104,
+build + oxlint clean.
+
+**Team lineup view Phase 1 complete.** See section above — one atomic
 commit (`3f79125`), frontend-only, single Vercel deploy. Prod-smoke-checked:
 tennis ladder ranking gate (temp under-3-metric player created via prod API sat
 below the divider at 9.5, then deleted), soccer pitch + basketball court, click-
