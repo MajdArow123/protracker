@@ -117,6 +117,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CoachEvaluation> CoachEvaluations => Set<CoachEvaluation>();
     public DbSet<SelfAssessmentEntry> SelfAssessmentEntries => Set<SelfAssessmentEntry>();
     public DbSet<EvidenceBasedScore> EvidenceBasedScores => Set<EvidenceBasedScore>();
+    public DbSet<Lineup> Lineups => Set<Lineup>();
+    public DbSet<LineupSlot> LineupSlots => Set<LineupSlot>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -242,6 +244,37 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<AthleteNote>()
             .HasIndex(n => n.PlayerId);
+
+        // --- Saved lineups ---
+        // One per (TeamId, MatchResultId) key — enforced in LineupService's
+        // transactional upsert (codebase convention; no filtered index).
+        builder.Entity<Lineup>()
+            .HasOne(l => l.Team)
+            .WithMany()
+            .HasForeignKey(l => l.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Lineup>()
+            .HasOne(l => l.MatchResult)
+            .WithMany()
+            .HasForeignKey(l => l.MatchResultId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Lineup>()
+            .HasIndex(l => new { l.TeamId, l.MatchResultId });
+        builder.Entity<Lineup>()
+            .Property(l => l.Formation).HasMaxLength(16);
+        builder.Entity<LineupSlot>()
+            .HasOne(s => s.Lineup)
+            .WithMany(l => l.Slots)
+            .HasForeignKey(s => s.LineupId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // Deleting a player empties their slot, never leaves a dangling id.
+        builder.Entity<LineupSlot>()
+            .HasOne(s => s.Player)
+            .WithMany()
+            .HasForeignKey(s => s.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<LineupSlot>()
+            .Property(s => s.SlotKey).HasMaxLength(16);
 
         // --- Assessments ---
         builder.Entity<AssessmentPeriod>()

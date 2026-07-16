@@ -88,6 +88,13 @@ public class EvidenceController : ApiControllerBase
     public async Task<ActionResult> RecalculateMetric(int playerId, int metricId)
         => Success(await _service.RecalculateMetricAsync(User, playerId, metricId));
 
+    // Coach: every roster player's current evidence scores in one request (the
+    // lineup view's batch load — full DTOs so per-player caches can be primed).
+    [HttpGet("teams/{teamId}/evidence-scores")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetTeamEvidenceScores(int teamId)
+        => Success(await _service.GetTeamEvidenceScoresAsync(User, teamId));
+
     // Coach: the whole roster's evidence coverage (who needs a test day / match stats).
     [HttpGet("teams/{teamId}/evidence-status")]
     [Authorize(Roles = "Coach,Admin")]

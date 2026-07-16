@@ -207,6 +207,7 @@ builder.Services.AddScoped<IWeeklyNutritionPlanService, WeeklyNutritionPlanServi
 builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IEvidenceScoringEngine, EvidenceScoringEngine>();
 builder.Services.AddScoped<IEvidenceService, EvidenceService>();
+builder.Services.AddScoped<ILineupService, LineupService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 // On-demand demo showcase seeding (token-gated endpoint; see DemoShowcaseSeeder).
 builder.Services.AddScoped<ProTracker.Data.Showcase.DemoShowcaseSeeder>();

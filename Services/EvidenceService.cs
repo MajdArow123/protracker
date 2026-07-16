@@ -32,6 +32,7 @@ public interface IEvidenceService
     Task<EvidenceBasedScoreDto?> RecalculateMetricAsync(ClaimsPrincipal user, int playerId, int metricDefinitionId);
 
     Task<TeamEvidenceStatusDto> GetTeamEvidenceStatusAsync(ClaimsPrincipal user, int teamId);
+    Task<List<PlayerEvidenceScoresDto>> GetTeamEvidenceScoresAsync(ClaimsPrincipal user, int teamId);
     Task<TeamEvidencePerformanceDto> GetTeamEvidencePerformanceAsync(ClaimsPrincipal user, int teamId);
 
     Task<List<EvidenceReminderDto>> GetRemindersAsync(ClaimsPrincipal user);
@@ -242,6 +243,35 @@ public class EvidenceService : IEvidenceService
             .Where(s => s.PlayerId == playerId && s.AssessmentId == null)
             .ToListAsync();
         return scores.Select(ToScoreDto).OrderBy(s => s.MetricName).ToList();
+    }
+
+    // Batch variant: every roster player's current scores in one request — the
+    // lineup view primes its per-player caches from this instead of N requests.
+    public async Task<List<PlayerEvidenceScoresDto>> GetTeamEvidenceScoresAsync(ClaimsPrincipal user, int teamId)
+    {
+        await _access.EnsureCanAccessTeamAsync(user, teamId);
+
+        var playerIds = await _context.Players
+            .Where(p => p.TeamId == teamId)
+            .Select(p => p.Id)
+            .ToListAsync();
+
+        var scores = await _context.EvidenceBasedScores
+            .Include(s => s.MetricDefinition)
+            .Where(s => playerIds.Contains(s.PlayerId) && s.AssessmentId == null)
+            .ToListAsync();
+        var byPlayer = scores.GroupBy(s => s.PlayerId)
+            .ToDictionary(g => g.Key, g => g.Select(ToScoreDto).OrderBy(d => d.MetricName).ToList());
+
+        // Every roster player appears, evidence or not — the client can prime
+        // empty caches too instead of treating absence as "not fetched".
+        return playerIds
+            .Select(id => new PlayerEvidenceScoresDto
+            {
+                PlayerId = id,
+                Scores = byPlayer.GetValueOrDefault(id) ?? new List<EvidenceBasedScoreDto>(),
+            })
+            .ToList();
     }
 
     public async Task<List<EvidenceBasedScoreDto>> RecalculateAllAsync(ClaimsPrincipal user, int playerId)

@@ -166,6 +166,13 @@ public class EvidenceBasedScoreDto
     public DateTime? NextObjectiveTestDue { get; set; }
 }
 
+// One roster player's current evidence scores — the per-team batch payload.
+public class PlayerEvidenceScoresDto
+{
+    public int PlayerId { get; set; }
+    public List<EvidenceBasedScoreDto> Scores { get; set; } = new();
+}
+
 // ─── Team evidence status (Phase G Section 4) ────────────────────────────────
 
 public class PlayerEvidenceStatusDto
