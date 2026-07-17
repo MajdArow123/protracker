@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import {
   AlertTriangle, ChevronDown, ChevronUp, FlaskConical, HeartPulse, Pencil, Redo2, RotateCcw, Save, Trash2, Undo2, X,
 } from 'lucide-react';
-import { useIsMobile } from '../../../hooks/useMediaQuery';
+import { useIsMobile, useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useIsRtl } from '../../../hooks/useIsRtl';
 import { useLocaleFormat } from '../../../hooks/useLocaleFormat';
 import { useTeamMatches } from '../../../hooks/useMatches';
@@ -19,6 +19,8 @@ import { SportSurface } from './PitchSurface';
 import { LineupPlayerCard, RatingChip } from './LineupPlayerCard';
 import { StatPopover } from './StatPopover';
 import { SaveLineupModal } from './SaveLineupModal';
+import { PlayerInspectorPanel } from './PlayerInspector';
+import { InspectorSheet } from './InspectorSheet';
 import { DragGhost } from './DragGhost';
 import { FormationPreview } from './FormationPreview';
 import { layoutForSport, positionAbbr } from './lineupLayouts';
@@ -78,7 +80,7 @@ export function LineupBoard({
   const [selection, setSelection] = useState<Selection | null>(null);
   const [overlay, setOverlay] = useState(false);
   const [hoverId, setHoverId] = useState<number | null>(null);
-  const [sheetId, setSheetId] = useState<number | null>(null);
+  const [inspectorId, setInspectorId] = useState<number | null>(null);
   const [saveOpen, setSaveOpen] = useState(false);
   const [confirmDiscard, setConfirmDiscard] = useState<null | (() => void)>(null);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -86,6 +88,8 @@ export function LineupBoard({
   const [announcement, setAnnouncement] = useState('');
 
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const inspectorInvokerRef = useRef<HTMLElement | null>(null);
+  const isLgUp = useMediaQuery('(min-width: 1024px)');
 
   const playerById = useMemo(() => new Map(players.map(p => [p.id, p])), [players]);
   const lineupById = useMemo(() => new Map(lineupPlayers.map(p => [p.id, p])), [lineupPlayers]);
@@ -166,7 +170,31 @@ export function LineupBoard({
 
   // ── Edit lifecycle ───────────────────────────────────────────────────────────
 
+  // ── Inspector (view mode only, per ruling) ───────────────────────────────────
+
+  const openInspector = (playerId: number) => {
+    inspectorInvokerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setInspectorId(playerId);
+  };
+
+  const closeInspector = useCallback(() => {
+    setInspectorId(null);
+    inspectorInvokerRef.current?.focus();
+    inspectorInvokerRef.current = null;
+  }, []);
+
+  // Esc closes the desktop panel (the mobile sheet inherits Modal's own Esc).
+  useEffect(() => {
+    if (editing || inspectorId == null || !isLgUp) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeInspector();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [editing, inspectorId, isLgUp, closeInspector]);
+
   const startEdit = () => {
+    closeInspector();
     dispatch({ type: 'begin', draft: { formationKey: baseline.formationKey, assignments: { ...baseline.assignments } } });
     setSelection(null);
   };
@@ -270,9 +298,10 @@ export function LineupBoard({
     setSelection(null);
   };
 
+  // View mode: open the inspector (desktop panel / mobile-tablet sheet). The
+  // old navigate-away lives inside the inspector as "Open full profile".
   const viewTap = (playerId: number) => {
-    if (isMobile) setSheetId(playerId);
-    else navigate(`/players/${playerId}?tab=evidence`);
+    openInspector(playerId);
   };
 
   // Shared tap entry: swallows the synthetic click that follows a real drag.
@@ -348,6 +377,19 @@ export function LineupBoard({
     : null;
   const selectedSlotOccupied = selection?.kind === 'slot' && current.assignments[selection.key] != null;
   const benchAreaHover = drag?.hoverTarget?.kind === 'benchArea';
+
+  const inspectorPlayer = !editing && inspectorId != null ? playerById.get(inspectorId) : undefined;
+  const inspectorBody = inspectorPlayer
+    ? {
+        player: inspectorPlayer,
+        rating: lineupById.get(inspectorPlayer.id)?.rating ?? ({ kind: 'none' } as const),
+        loadFailed: failedIds.has(inspectorPlayer.id),
+        breakdown: categoryBreakdown(scoresById.get(inspectorPlayer.id) ?? []),
+        injured: injuredIds.has(inspectorPlayer.id),
+        open: true,
+        onOpenProfile: () => navigate(`/players/${inspectorPlayer.id}?tab=evidence`),
+      }
+    : null;
 
   const benchSection = benchPlayers.length > 0 && (
     <div
@@ -609,6 +651,9 @@ export function LineupBoard({
         </div>
       )}
 
+      {/* View mode with the inspector open: content column + panel. */}
+      <div className={clsx(inspectorBody && isLgUp && 'lg:flex lg:items-start lg:gap-6')}>
+      <div className="lg:flex-1 lg:min-w-0">
       {/* Workspace: pitch beside the bench panel while editing on desktop. */}
       <div className={clsx(editing && benchPlayers.length > 0 && 'lg:flex lg:flex-row-reverse lg:items-start lg:gap-6')}>
         <div className="lg:flex-1 lg:min-w-0">
@@ -707,17 +752,17 @@ export function LineupBoard({
         {/* Bench — in edit mode every unplaced roster player is placeable */}
         {benchSection}
       </div>
+      </div>
 
-      {/* Mobile stat sheet (view mode) */}
-      {isMobile && !editing && sheetId != null && playerById.has(sheetId) && (
-        <div className="fixed inset-0 z-50 bg-black/40" onClick={() => setSheetId(null)}>
-          <div
-            className="absolute bottom-0 inset-x-0 rounded-t-2xl bg-white dark:bg-gray-900 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl"
-            onClick={e => e.stopPropagation()}
-          >
-            {renderPopoverBody(sheetId, true)}
-          </div>
-        </div>
+      {/* Player Inspector (view mode only): desktop inline panel… */}
+      {inspectorBody && isLgUp && (
+        <PlayerInspectorPanel {...inspectorBody} onClose={closeInspector} />
+      )}
+      </div>
+
+      {/* …and the mobile/tablet drawer (reuses Modal's sheet mechanics). */}
+      {inspectorBody && !isLgUp && (
+        <InspectorSheet {...inspectorBody} isOpen onClose={closeInspector} />
       )}
 
       {/* Drag ghost (pointer enhancement — decorative only) */}

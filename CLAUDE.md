@@ -1490,9 +1490,54 @@ tap/keyboard (the primary path) and commits ONLY through `moveOrSwap`.
   Bench-collapse state is session-only. Announcements use slot keys (what the
   screen shows on empty slots) — revisit if Phase 3 roles add friendlier labels.
 
+## Lineup program — Phase 2: player inspector (COMPLETE)
+
+Frontend-only, no migration, no new dependency. **View-mode only (per ruling)** —
+tapping a player on the lineup now opens the **Player Inspector** instead of
+navigating away: desktop (lg+) = inline sticky side panel beside the pitch
+(`PlayerInspectorPanel`), below lg = a bottom sheet (`InspectorSheet`) — the
+Phase-1-deferred mobile drawer, delivered by **reusing the shared `Modal`**
+(focus trap/Esc/tap-out for free), one `PlayerInspectorBody` as the single
+source of truth. The old navigate-away lives inside as "Open full profile"
+(→ `/players/{id}?tab=evidence`). Edit mode is untouched — `startEdit` closes
+the inspector; the old view-mode `StatPopover` hover path is unchanged.
+
+- **Built ENTIRELY from real data** via existing hooks (objective tests,
+  benchmarks, wellbeing, non-private goals, open coach tasks, injuries), every
+  query gated on `open` so nothing fetches until the inspector opens. Sections:
+  header (RatingChip **verbatim** + Phase 0 `calculated` SourceBadge), category
+  breakdown bars (same muting rules as StatPopover), **Measured tests**
+  (`topTrends` — per-metric grouping, `computeTrend` reused verbatim so all S4
+  gates apply; standing band sentence only when a benchmark profile is assigned
+  — the S5 no-cohort-claim ruling), Injuries, Wellbeing check-in
+  (player-reported badge, dated, pain flag), Goals ("Shared goals only"
+  caption), Open tasks (coach-entered badge), and **Form = `not-tracked`**
+  (stated, not faked). `fitnessLevel` is deliberately ABSENT until the Phase 3
+  nullability migration (Phase 0 MUST-RESOLVE ruling).
+- **Absence semantics** (encoded in `inspectorLogic.ts`, asserted in tests): an
+  empty task/goal/injury list is a *fact* rendered as plain text ("No open
+  tasks"); a missing periodic measurement (no check-in, no tests) is
+  `not-recorded`; each query section fails independently to a typed
+  `load-failed` — never masquerading as "no data". The
+  **all-empty no-fabrication dossier** case in `PlayerInspector.test.tsx`
+  locks this: zero data → zero invented values.
+- **Pure logic** `inspectorLogic.ts` (`wellbeingRecency`, `topTrends`) +
+  `inspectorLogic.test.ts`; a11y: panel is a labeled `role="complementary"`
+  region, focus moves in on open and returns to the invoker on close, Esc
+  closes the desktop panel (sheet inherits Modal's Esc). 19 i18n keys
+  (`teams.inspector*`) × all 5 locales (0/0/0). vitest 183/183, build +
+  oxlint clean.
+
 ## Current status
 
-**Team lineup view Phase 2 complete (latest).** See section above — sequenced
+**Lineup program Phase 2 (player inspector) complete (latest).** See section
+above — single atomic frontend commit, view-mode inspector panel/sheet built
+from real data with honest sourcing per section; verified per-section sourcing,
+the all-empty no-fabrication dossier, and edit mode untouched. Phase 3
+(coach-authored tactical layer — first migration phase) is next, planning
+approved separately.
+
+**Team lineup view Phase 2 complete.** See section above — sequenced
 deploy: backend commit `f14d972` pushed first (Railway ran `AddLineups`,
 verified live: health 200, lineup GET `{data:null}`, batch endpoint 24
 players/216 scores), then frontend `7d612c7` (Vercel). Prod-smoke-checked on
