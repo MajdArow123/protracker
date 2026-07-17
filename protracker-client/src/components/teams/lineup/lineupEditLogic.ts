@@ -145,6 +145,28 @@ export function remapFormation(assignments: Assignments, from: FormationDef, to:
   return next;
 }
 
+export interface FormationChangeSummary {
+  /** Players still placed after the remap. */
+  kept: number;
+  /** Players the remap drops to the bench (shrinking/removed lines). */
+  benched: number[];
+}
+
+/**
+ * What applying `remapFormation(assignments, from, to)` would do — drives the
+ * apply-summary toast and the a11y announcement. Pure preview: does not apply.
+ */
+export function formationChangeSummary(
+  assignments: Assignments,
+  from: FormationDef,
+  to: FormationDef,
+): FormationChangeSummary {
+  const next = remapFormation(assignments, from, to);
+  const after = new Set(Object.values(next));
+  const benched = [...new Set(Object.values(assignments))].filter(id => !after.has(id));
+  return { kept: after.size, benched };
+}
+
 // ── Save validation ──────────────────────────────────────────────────────────
 
 /**

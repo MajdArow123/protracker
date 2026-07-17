@@ -78,12 +78,18 @@ interface Props {
   selected?: boolean;
   /** Edit mode: the player's position isn't natural for this slot. */
   oop?: boolean;
+  /** Edit mode: a live drag is hovering this card as its drop target. */
+  dropTarget?: boolean;
+  /** Edit mode: this card is the source of the live drag (ghost carries it). */
+  dimmed?: boolean;
   onActivate: () => void;
   onHoverChange?: (hovering: boolean) => void;
+  /** Edit mode: arms the pointer drag (tap/keyboard stay the primary path). */
+  onPointerDown?: (e: React.PointerEvent) => void;
 }
 
 // Compact on-pitch card. Rendered inside the dir="ltr" pitch container.
-export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay, accent, selected, oop, onActivate, onHoverChange }: Props) {
+export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay, accent, selected, oop, dropTarget, dimmed, onActivate, onHoverChange, onPointerDown }: Props) {
   const { t } = useTranslation();
   const needsTesting = !loadFailed && (rating.kind === 'none' || rating.kind === 'thin');
   const showOverlayInjured = overlay && injured;
@@ -93,9 +99,13 @@ export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay,
     <button
       type="button"
       onClick={onActivate}
+      onPointerDown={onPointerDown}
       onMouseEnter={() => onHoverChange?.(true)}
       onMouseLeave={() => onHoverChange?.(false)}
-      className="flex flex-col items-center w-16 sm:w-[4.5rem] cursor-pointer group focus:outline-none"
+      className={clsx(
+        'flex flex-col items-center w-16 sm:w-[4.5rem] cursor-pointer group focus:outline-none',
+        dimmed && 'opacity-40',
+      )}
       aria-label={player.fullName}
       aria-pressed={selected}
     >
@@ -103,10 +113,11 @@ export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay,
         <div
           className={clsx(
             'rounded-full transition-transform group-hover:scale-105 group-focus-visible:ring-2 group-focus-visible:ring-white',
-            selected && 'ring-4 ring-indigo-400 scale-105',
-            !selected && showOverlayInjured && 'ring-2 ring-red-500 ring-offset-1 ring-offset-transparent',
-            !selected && showOverlayThin && 'outline-dashed outline-2 outline-amber-400',
-            !selected && accent && !showOverlayInjured && !showOverlayThin && 'ring-2 ring-amber-300/90',
+            dropTarget && 'ring-4 ring-emerald-400 scale-105',
+            !dropTarget && selected && 'ring-4 ring-indigo-400 scale-105',
+            !dropTarget && !selected && showOverlayInjured && 'ring-2 ring-red-500 ring-offset-1 ring-offset-transparent',
+            !dropTarget && !selected && showOverlayThin && 'outline-dashed outline-2 outline-amber-400',
+            !dropTarget && !selected && accent && !showOverlayInjured && !showOverlayThin && 'ring-2 ring-amber-300/90',
           )}
         >
           <PlayerAvatar name={player.fullName} imageUrl={player.profileImageUrl} sportId={player.sportId} size={44} />

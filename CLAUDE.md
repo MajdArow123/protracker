@@ -1443,6 +1443,53 @@ migration, no new dependencies.
   iframe (the Chrome extension pins the tab viewport, so real window resize was
   impossible) — run a device/emulator mobile pass when Phase 0 deploys.
 
+## Lineup program — Phase 1: interactive workspace + drag-and-drop (COMPLETE)
+
+Frontend-only, no migration, no new dependency. Drag is an ENHANCEMENT over
+tap/keyboard (the primary path) and commits ONLY through `moveOrSwap`.
+
+- **Pure layer** (the verification anchors, all in `components/teams/lineup/`):
+  `lineupDraftReducer.ts` (past/present/future undo history, 50-step cap, no-op
+  applies skipped, null = view mode; every mutation = exactly one undo step);
+  `lineupDragLogic.ts` — `dragCommit` (Selection targets → `moveOrSwap`
+  VERBATIM; null target and bench→benchArea are identity — **release-outside
+  can never silently drop a player, by construction**), `hitTest` (first-match
+  over a rect cache), `dragArmDecision` (mouse 6px threshold / touch-pen 250ms
+  hold, early movement = the scroll wins), `sameDropTarget`; additive
+  `formationChangeSummary` in lineupEditLogic.
+- **DOM shell** `useLineupDrag.ts`: rects read ONCE at drag start; ghost via
+  rAF + direct transform (zero re-renders per pointermove); non-passive
+  touchmove preventDefault only while a drag is LIVE (bench carousel pan and
+  page scroll keep working until the hold fires); pointercancel/Esc cancel;
+  post-drag click suppression so tap-swap never double-fires. `DragGhost`
+  (decorative, aria-hidden) + `FormationPreview` (pure SVG dot-diagram pills).
+- **LineupBoard**: draft `useState` → `useReducer`; ONE `commitMove` path for
+  tap AND drag; undo/redo buttons + Cmd/Ctrl+Z / +Shift+Z (ignored in
+  inputs/selects); `aria-live` region announces every commit/undo/redo/
+  formation change; **formation change = apply immediately + summary toast
+  naming benched players when ≤3 (count otherwise) + one-step undo — no
+  confirm dialog (user ruling)**; sticky edit action bar; desktop edit mode =
+  collapsible bench panel beside an enlarged pitch via `lg:flex-row-reverse`
+  (self-mirrors in RTL); **no mobile drawer (user ruling — stacked bench
+  stays; the drawer question moves to Phase 2's inspector)**. `dirty` still
+  derives from `sameLineup(present, baseline)` — undo back to baseline clears
+  it (browser-verified explicitly).
+- **Untouched by construction** (0 diff lines): TeamLineupSection (tennis
+  ladder), lineupLayouts, lineupFormations, StatPopover, PitchSurface; rating
+  chips render identically (Phase 0 regression net + 24-chip DOM check).
+- 14 i18n changes × 5 locales (13 new keys + updated lineupEditHint value).
+  vitest 170/170 (22 new incl. drag≡moveOrSwap equivalence and
+  never-drops-identity), build + oxlint clean, locales 0/0/0.
+  Browser-verified: all drag pairs, cancel-outside (DOM byte-identical),
+  keyboard-only undo via real Cmd+Z, Hebrew RTL edit mode + drag, 390px
+  mobile iframe (tap-swap + stacked bench). Nothing saved during verification.
+- **Known limitations**: real-finger long-press drag untested (CDP synthesizes
+  mouse only) — covered by dragArmDecision unit tests, rides the Phase 0
+  device-pass deploy note; `@dnd-kit/core` is the documented fallback if iOS
+  touch-drag fights back (commit layer makes the swap architecturally free).
+  Bench-collapse state is session-only. Announcements use slot keys (what the
+  screen shows on empty slots) — revisit if Phase 3 roles add friendlier labels.
+
 ## Current status
 
 **Team lineup view Phase 2 complete (latest).** See section above — sequenced

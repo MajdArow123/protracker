@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   suggestedAssignments, hydrateAssignments, moveOrSwap, clearSlot, remapFormation,
-  validateLineup, toSaveSlots, sameLineup, isOutOfPosition, type Assignments,
+  formationChangeSummary, validateLineup, toSaveSlots, sameLineup, isOutOfPosition,
+  type Assignments,
 } from '../components/teams/lineup/lineupEditLogic';
 import { SOCCER_FORMATIONS, formationOrDefault, isEditableSport, defaultFormation } from '../components/teams/lineup/lineupFormations';
 import type { LineupPlayer, RatingState } from '../components/teams/lineup/lineupLogic';
@@ -139,6 +140,27 @@ describe('remapFormation', () => {
     const to532 = remapFormation(a, F433, F532);
     expect(Object.keys(to532).filter(k => k.startsWith('D'))).toHaveLength(4);
     expect(Object.values(to532)).toHaveLength(10);
+  });
+});
+
+describe('formationChangeSummary', () => {
+  it('previews the remap without applying: shrink → benched names, fit → none benched', () => {
+    const a: Assignments = {};
+    F433.slots.forEach((s, i) => { a[s.key] = i + 1; });
+
+    // 4-3-3 → 4-4-2: the ATT line shrinks 3→2, exactly one attacker benched.
+    const to442 = formationChangeSummary(a, F433, F442);
+    expect(to442.kept).toBe(10);
+    expect(to442.benched).toHaveLength(1);
+    const attIds = F433.slots.filter(s => s.key.startsWith('A')).map(s => a[s.key]);
+    expect(attIds).toContain(to442.benched[0]);
+    expect(Object.values(a)).toHaveLength(11); // pure: input untouched
+
+    // Partial lineup that fits entirely: nobody benched.
+    const partial: Assignments = { GK: 1, D1: 2, M1: 3 };
+    const summary = formationChangeSummary(partial, F433, F532);
+    expect(summary.benched).toEqual([]);
+    expect(summary.kept).toBe(3);
   });
 });
 
