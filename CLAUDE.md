@@ -1571,7 +1571,7 @@ presets/audit stay in Phase 6). One batched migration **`AddTacticalLayer`**:
   departed-player pass-through/block, foot+secondary lifecycle incl. cross-sport
   400 and create-without-fitness → null).
 
-## Lineup program — Phase 3 FRONTEND (built, pending sign-off/deploy)
+## Lineup program — Phase 3 FRONTEND (COMPLETE, deployed — commit `070517d`)
 
 Tactical layer UI on top of the deployed backend. Frontend-only commit; no new deps.
 
@@ -1616,10 +1616,19 @@ Tactical layer UI on top of the deployed backend. Frontend-only commit; no new d
 
 ## Current status
 
-**Lineup program Phase 3 frontend built (latest) — awaiting sign-off before the
-Vercel deploy.** Backend deployed and probe-verified earlier (5/5 checks: migration
-applied, existing fitness preserved, lineups load, both register flows → null
-fitness, AI FitnessText both paths).
+**Lineup program Phase 3 COMPLETE and deployed (latest).** Backend `35c2d47`
+(Railway ran `AddTacticalLayer`; probe-verified 5/5: migration applied, existing
+fitness values preserved, lineups load, both register flows → null fitness, AI
+FitnessText on both null- and valued-fitness players; all probe artifacts cleaned
+with confirming reads — accounts 401, player rows gone, join code inactive).
+Frontend `070517d` (Vercel), prod-smoked 10/10 on City FC U18: full tactical
+lineup (captain/vice/role/set-piece/2 labels/notes) saved via the UI →
+full-reload persistence (summary + coach-entered badge + C/VC pitch badges) →
+inspector coach-entered profile rows → Hebrew RTL (dir=rtl, translated summary) →
+390px mobile (summary, C badge, inspector sheet via real touch tap) → removed,
+GET back to `{data:null}` — prod pristine. Deferred within Phase 3: per-slot
+Instructions UI (column + DTO shipped), blueprint Phase 4 (positionFit-driven
+auto-build explanations) onward.
 
 **Lineup program Phase 2 (player inspector) complete.** See section
 above — single atomic frontend commit, view-mode inspector panel/sheet built
