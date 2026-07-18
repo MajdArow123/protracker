@@ -119,6 +119,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<EvidenceBasedScore> EvidenceBasedScores => Set<EvidenceBasedScore>();
     public DbSet<Lineup> Lineups => Set<Lineup>();
     public DbSet<LineupSlot> LineupSlots => Set<LineupSlot>();
+    public DbSet<SetPieceAssignment> SetPieceAssignments => Set<SetPieceAssignment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -275,6 +276,46 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Entity<LineupSlot>()
             .Property(s => s.SlotKey).HasMaxLength(16);
+
+        // --- Tactical layer (Phase 3) ---
+        // Captain/vice: player deleted → SetNull (honestly-empty captaincy).
+        // Deliberately different from LineupSlot/SetPieceAssignment, which cascade.
+        builder.Entity<Lineup>()
+            .HasOne(l => l.Captain)
+            .WithMany()
+            .HasForeignKey(l => l.CaptainPlayerId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<Lineup>()
+            .HasOne(l => l.ViceCaptain)
+            .WithMany()
+            .HasForeignKey(l => l.ViceCaptainPlayerId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<Lineup>()
+            .Property(l => l.Notes).HasMaxLength(2000);
+        builder.Entity<Lineup>()
+            .Property(l => l.TacticalLabels).HasMaxLength(400);
+        builder.Entity<LineupSlot>()
+            .Property(s => s.Role).HasMaxLength(40);
+        builder.Entity<LineupSlot>()
+            .Property(s => s.Instructions).HasMaxLength(200);
+        // One per (LineupId, Type) — enforced in LineupService's transactional
+        // upsert (codebase convention; no filtered/unique index on SQLite rig).
+        builder.Entity<SetPieceAssignment>()
+            .HasOne(a => a.Lineup)
+            .WithMany(l => l.SetPieces)
+            .HasForeignKey(a => a.LineupId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SetPieceAssignment>()
+            .HasOne(a => a.Player)
+            .WithMany()
+            .HasForeignKey(a => a.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SetPieceAssignment>()
+            .Property(a => a.Type).HasMaxLength(40);
+        builder.Entity<SetPieceAssignment>()
+            .HasIndex(a => a.LineupId);
+        builder.Entity<Player>()
+            .Property(p => p.SecondaryPositionIds).HasMaxLength(50);
 
         // --- Assessments ---
         builder.Entity<AssessmentPeriod>()

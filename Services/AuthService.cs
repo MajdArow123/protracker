@@ -147,7 +147,6 @@ public class AuthService : IAuthService
             TeamId = joinCode.TeamId,
             PositionId = request.PositionId,
             JerseyNumber = request.JerseyNumber,
-            FitnessLevel = 5, // neutral default until the coach assesses
             Goals = NullIfBlank(request.Preferences),
             UserId = user.Id,
             JoinedViaCodeAt = DateTime.UtcNow,
@@ -275,7 +274,6 @@ public class AuthService : IAuthService
             TeamId = null,
             PositionId = position.Id,
             JerseyNumber = request.JerseyNumber,
-            FitnessLevel = 5, // neutral default until assessments say otherwise
             Goals = NullIfBlank(request.Goals),
             UserId = user.Id,
             IsSolo = true,

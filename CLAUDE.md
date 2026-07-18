@@ -1528,9 +1528,58 @@ the inspector; the old view-mode `StatPopover` hover path is unchanged.
   (`teams.inspector*`) × all 5 locales (0/0/0). vitest 183/183, build +
   oxlint clean.
 
+## Lineup program — Phase 3: coach-authored tactical layer — BACKEND (deployed)
+
+First migration phase of the lineup program (blueprint §5a subset — Status/Version/
+presets/audit stay in Phase 6). One batched migration **`AddTacticalLayer`**:
+
+- **Players**: `FitnessLevel` int → **int? (null = "not recorded")** — the deferred
+  Phase 0/2 MUST-RESOLVE ruling; `PreferredFoot` (nullable enum Left/Right/Both);
+  `SecondaryPositionIds` (varchar(50) comma-separated, the `Drill.SportIds` precedent).
+  **Existing rows keep their values** (a coach-set 7 and a legacy default 5 are
+  indistinguishable — nulling nothing was the approved ruling); the two register
+  flows STOPPED fabricating `FitnessLevel = 5` (new athletes are genuinely null);
+  the 4 `AIController` prompt sites use `FitnessText(p)` → `"7/10"` or
+  `"not recorded"` (string interpolation compiles silently on int? — the compiler
+  only surfaced the DTO mapping; the prompt sites had to come from grep).
+- **Lineups**: `CaptainPlayerId`/`ViceCaptainPlayerId` (FKs → Players,
+  **ON DELETE SET NULL** — an honestly-empty captaincy, deliberately unlike the
+  slot cascade), `Notes` (2000), `TacticalLabels` (400, comma-joined opaque preset
+  keys — frontend owns the per-sport catalog, like SlotKey). **LineupSlots**:
+  `Role` (40) + `Instructions` (200 — column + DTO shipped, **UI deferred** per
+  ruling). New **`SetPieceAssignments`** (LineupId cascade, PlayerId cascade, Type
+  varchar(40) opaque key; one-per-(LineupId,Type) in the service, no filtered index).
+- **Down() is hand-edited**: `UPDATE "Players" SET "FitnessLevel" = 5 WHERE ... IS
+  NULL` (quoted SQL valid on both providers) before the NOT NULL restore — without
+  it the down fails on both; also dropped the scaffolder's `defaultValue: 0`.
+  **Both-provider up/down proven with a real NULL-fitness row** (Postgres manual
+  cycle + `TacticalLayerMigrationTests` pinning SQLite permanently, incl. the
+  backfilled-5 assertion).
+- **Validation split**: payload shape in FluentValidation (set-piece types unique
+  case-insensitive ≤10, labels ≤6/≤40/no-comma, notes/role/instruction caps,
+  secondary positions ≤3/distinct/≠primary); **XI-membership in
+  `LineupService.UpsertAsync`** (captain ∈ XI, vice ∈ XI, captain ≠ vice, takers
+  ∈ XI — ownership is transitive from the existing every-player-belongs check);
+  sport-membership of secondary positions in `PlayerService` against the Positions
+  table. `ParseFoot` 400s on invalid input (deliberately NOT ParseStatus's
+  silent-ignore). **Saves are full write-through, no merge** — a save without
+  tactical fields CLEARS them (the frontend must always send complete tactical
+  state). **Departed-player contract**: GET passes stored captain/taker ids
+  through (frontend drops roster-keyed), the next save re-validates and 400s.
+- Tests 115/115 (10 new: 5 shape, tactical round-trip + write-through-clear,
+  XI-vs-ownership 400s via Marcus Bell, player-delete → SetNull + cascades,
+  departed-player pass-through/block, foot+secondary lifecycle incl. cross-sport
+  400 and create-without-fitness → null).
+
 ## Current status
 
-**Lineup program Phase 2 (player inspector) complete (latest).** See section
+**Lineup program Phase 3 BACKEND deployed (latest).** See section above. Frontend
+(captain picker, role selector, set-piece manager, secondary-position editor,
+fitness/foot/secondary inspector rows, sharper OOP hint) is next; its save layer
+must always send the complete tactical state (write-through contract) with a test
+asserting it.
+
+**Lineup program Phase 2 (player inspector) complete.** See section
 above — single atomic frontend commit, view-mode inspector panel/sheet built
 from real data with honest sourcing per section; verified per-section sourcing,
 the all-empty no-fabrication dossier, and edit mode untouched. Phase 3

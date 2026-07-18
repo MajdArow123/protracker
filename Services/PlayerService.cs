@@ -96,6 +96,9 @@ public class PlayerService : IPlayerService
             TeamId = dto.TeamId,
             PositionId = dto.PositionId,
             FitnessLevel = dto.FitnessLevel,
+            PreferredFoot = ParseFoot(dto.PreferredFoot),
+            SecondaryPositionIds = await ValidateSecondaryPositionsAsync(
+                dto.SecondaryPositionIds, team.SportId),
             JerseyNumber = dto.JerseyNumber,
             Status = ParseStatus(dto.Status) ?? PlayerStatus.Active,
             InjuryNotes = dto.InjuryNotes,
@@ -133,6 +136,9 @@ public class PlayerService : IPlayerService
         player.Weight = dto.Weight;
         player.PositionId = dto.PositionId;
         player.FitnessLevel = dto.FitnessLevel;
+        player.PreferredFoot = ParseFoot(dto.PreferredFoot);
+        player.SecondaryPositionIds = await ValidateSecondaryPositionsAsync(
+            dto.SecondaryPositionIds, player.SportId);
         player.JerseyNumber = dto.JerseyNumber;
         if (ParseStatus(dto.Status) is { } status) player.Status = status;
         player.InjuryNotes = dto.InjuryNotes;
@@ -170,6 +176,8 @@ public class PlayerService : IPlayerService
         PositionId = p.PositionId,
         PositionName = p.Position?.Name ?? "",
         FitnessLevel = p.FitnessLevel,
+        PreferredFoot = p.PreferredFoot?.ToString(),
+        SecondaryPositionIds = ParseSecondaryPositionIds(p.SecondaryPositionIds),
         ProfileImageUrl = p.ProfileImageUrl,
         JerseyNumber = p.JerseyNumber,
         Status = p.Status.ToString(),
@@ -181,6 +189,36 @@ public class PlayerService : IPlayerService
         !string.IsNullOrWhiteSpace(status) && Enum.TryParse<PlayerStatus>(status, true, out var parsed)
             ? parsed
             : null;
+
+    // Coach-entered; an invalid non-blank value is a 400, never silently dropped
+    // (unlike Status's null-means-unchanged contract, this is a full write-through).
+    private static PreferredFoot? ParseFoot(string? foot)
+    {
+        if (string.IsNullOrWhiteSpace(foot)) return null;
+        if (Enum.TryParse<PreferredFoot>(foot, true, out var parsed)) return parsed;
+        throw new ValidationApiException($"'{foot}' is not a valid preferred foot (Left, Right or Both).");
+    }
+
+    public static List<int> ParseSecondaryPositionIds(string? stored) =>
+        string.IsNullOrWhiteSpace(stored)
+            ? new List<int>()
+            : stored.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .ToList();
+
+    // Sport membership check (shape rules — ≤3, distinct, ≠ primary — live in the
+    // FluentValidation validators). The Positions table is the sport's position
+    // config, so a cross-sport or invented id can never be stored.
+    private async Task<string?> ValidateSecondaryPositionsAsync(List<int>? ids, int sportId)
+    {
+        if (ids == null || ids.Count == 0) return null;
+        var validCount = await _context.Positions
+            .CountAsync(p => ids.Contains(p.Id) && p.SportId == sportId);
+        if (validCount != ids.Count)
+            throw new ValidationApiException("Every secondary position must belong to the player's sport.");
+        return string.Join(',', ids);
+    }
 
     public static PlayerProfileDto ToProfileDto(Player p)
     {
@@ -198,6 +236,8 @@ public class PlayerService : IPlayerService
             PositionId = dto.PositionId,
             PositionName = dto.PositionName,
             FitnessLevel = dto.FitnessLevel,
+            PreferredFoot = dto.PreferredFoot,
+            SecondaryPositionIds = dto.SecondaryPositionIds,
             ProfileImageUrl = dto.ProfileImageUrl,
             JerseyNumber = dto.JerseyNumber,
             Status = dto.Status,

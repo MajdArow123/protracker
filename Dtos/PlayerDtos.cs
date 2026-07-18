@@ -14,7 +14,11 @@ public class PlayerDto
     public bool IsSolo { get; set; }
     public int PositionId { get; set; }
     public string PositionName { get; set; } = "";
-    public int FitnessLevel { get; set; }
+    // Null = not recorded (a value is a real coach entry, never a default).
+    public int? FitnessLevel { get; set; }
+    // Coach-entered tactical attributes; enum name ("Left"/"Right"/"Both"), null = not set.
+    public string? PreferredFoot { get; set; }
+    public List<int> SecondaryPositionIds { get; set; } = new();
     public string? ProfileImageUrl { get; set; }
     public int? JerseyNumber { get; set; }
     public string Status { get; set; } = "Active";
@@ -39,7 +43,9 @@ public class PlayerCreateDto
     public double Weight { get; set; }
     public int TeamId { get; set; }
     public int PositionId { get; set; }
-    public int FitnessLevel { get; set; }
+    public int? FitnessLevel { get; set; }
+    public string? PreferredFoot { get; set; }
+    public List<int>? SecondaryPositionIds { get; set; }
     public int? JerseyNumber { get; set; }
     // Enum name; null/empty keeps the default (Active).
     public string? Status { get; set; }
@@ -56,7 +62,9 @@ public class PlayerUpdateDto
     public double Height { get; set; }
     public double Weight { get; set; }
     public int PositionId { get; set; }
-    public int FitnessLevel { get; set; }
+    public int? FitnessLevel { get; set; }
+    public string? PreferredFoot { get; set; }
+    public List<int>? SecondaryPositionIds { get; set; }
     public int? JerseyNumber { get; set; }
     // Enum name; null/empty leaves the current status unchanged.
     public string? Status { get; set; }

@@ -18,6 +18,24 @@ public class SaveLineupDtoValidator : AbstractValidator<SaveLineupDto>
             .Must(s => s.Select(x => x.PlayerId).Distinct().Count() == s.Count)
             .WithMessage("A player can only fill one slot.");
         RuleForEach(x => x.Slots).SetValidator(new LineupSlotDtoValidator());
+
+        // Tactical layer (Phase 3) — shape only; XI-membership rules live in
+        // LineupService.UpsertAsync where the slot set is authoritative.
+        RuleFor(x => x.CaptainPlayerId).GreaterThan(0).When(x => x.CaptainPlayerId.HasValue);
+        RuleFor(x => x.ViceCaptainPlayerId).GreaterThan(0).When(x => x.ViceCaptainPlayerId.HasValue);
+        RuleFor(x => x.Notes).MaximumLength(2000);
+        RuleFor(x => x.TacticalLabels!)
+            .Must(l => l.Count <= 6).WithMessage("At most 6 tactical labels.")
+            .Must(l => l.All(k => !string.IsNullOrWhiteSpace(k) && k.Length <= 40 && !k.Contains(',')))
+            .WithMessage("Each tactical label must be a non-empty key of at most 40 characters without commas.")
+            .When(x => x.TacticalLabels != null);
+        RuleFor(x => x.SetPieces!)
+            .Must(s => s.Count <= 10).WithMessage("At most 10 set-piece assignments.")
+            .Must(s => s.Select(a => a.Type.Trim().ToLowerInvariant()).Distinct().Count() == s.Count)
+            .WithMessage("Each set-piece type can only have one taker.")
+            .When(x => x.SetPieces != null);
+        RuleForEach(x => x.SetPieces!).SetValidator(new SetPieceAssignmentDtoValidator())
+            .When(x => x.SetPieces != null);
     }
 }
 
@@ -26,6 +44,17 @@ public class LineupSlotDtoValidator : AbstractValidator<LineupSlotDto>
     public LineupSlotDtoValidator()
     {
         RuleFor(x => x.SlotKey).NotEmpty().MaximumLength(16);
+        RuleFor(x => x.PlayerId).GreaterThan(0);
+        RuleFor(x => x.Role).MaximumLength(40);
+        RuleFor(x => x.Instructions).MaximumLength(200);
+    }
+}
+
+public class SetPieceAssignmentDtoValidator : AbstractValidator<SetPieceAssignmentDto>
+{
+    public SetPieceAssignmentDtoValidator()
+    {
+        RuleFor(x => x.Type).NotEmpty().MaximumLength(40);
         RuleFor(x => x.PlayerId).GreaterThan(0);
     }
 }

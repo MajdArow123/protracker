@@ -113,6 +113,11 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             scores.Count > 0 || tests.Count > 0 || matchEntries.Count > 0, scores);
     }
 
+    // Honest fitness line for prompts: never fabricate a value for players
+    // whose fitness was never recorded (nullable since the tactical layer).
+    private static string FitnessText(Player p) =>
+        p.FitnessLevel is int f ? $"{f}/10" : "not recorded";
+
     // The evidence sections appended to prompts (empty string when no evidence exists).
     private static string EvidencePromptBlock(EvidenceContext e)
     {
@@ -280,7 +285,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + $"Sport: {p.Sport.Name}\n"
             + $"Position: {p.Position.Name}\n"
             + $"Age: {p.Age}\n"
-            + $"Fitness level: {p.FitnessLevel}/10\n\n"
+            + $"Fitness level: {FitnessText(p)}\n\n"
             + "Weakest assessment areas (lowest scores first):\n"
             + weakAreasText + "\n"
             + evidenceBlock + "\n"
@@ -414,7 +419,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + $"Sport: {p.Sport.Name}\n"
             + $"Position: {p.Position.Name}\n"
             + $"Age: {p.Age}\n"
-            + $"Fitness level: {p.FitnessLevel}/10\n\n"
+            + $"Fitness level: {FitnessText(p)}\n\n"
             + "Weakest assessment areas (score out of 10, lowest first):\n"
             + weakAreasText + "\n\n"
             + "Return ONLY a JSON array of exactly 4 goal objects, no other text. Each object:\n"
@@ -885,7 +890,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + $"- Sport: {p.Sport.Name}\n"
             + $"- Position: {p.Position.Name}\n"
             + $"- Age: {p.Age}\n"
-            + $"- Fitness level: {p.FitnessLevel}/10\n"
+            + $"- Fitness level: {FitnessText(p)}\n"
             + $"- Injury type: {injury.InjuryType}\n"
             + $"- Body part: {injury.BodyPart ?? "unspecified"}\n"
             + $"- Severity: {injury.Severity}\n\n"
@@ -1232,7 +1237,7 @@ public class AIController : ApiControllerBase, IAsyncActionFilter
             + $"Sport: {p.Sport.Name}\n"
             + $"Position: {p.Position.Name}\n"
             + $"Age: {p.Age}\n"
-            + $"Fitness Level: {p.FitnessLevel}/10\n\n"
+            + $"Fitness Level: {FitnessText(p)}\n\n"
             + "Latest Assessment Scores:\n"
             + scoresText + "\n"
             + evidenceBlock + "\n"

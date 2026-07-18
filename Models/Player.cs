@@ -11,6 +11,14 @@ public enum PlayerStatus
     Inactive
 }
 
+// Coach-entered, soccer-relevant. Null = not set (never guessed).
+public enum PreferredFoot
+{
+    Left,
+    Right,
+    Both
+}
+
 public class Player
 {
     public int Id { get; set; }
@@ -35,8 +43,17 @@ public class Player
     public Position Position { get; set; } = null!;
 
     // 1-10 scale, consistent with PlayerStatScore.Score and MatchPerformance.PerformanceRating.
+    // Nullable since the tactical layer: null = "not recorded" — a value here is a real
+    // coach entry, never a registration default (register flows used to fabricate 5).
     [Range(1, 10)]
-    public int FitnessLevel { get; set; }
+    public int? FitnessLevel { get; set; }
+
+    // Coach-entered tactical attributes (lineup program Phase 3). Both optional.
+    public PreferredFoot? PreferredFoot { get; set; }
+
+    // Comma-separated Position ids (same-sport only, validated in PlayerService;
+    // the Drill.SportIds storage precedent — never SQL-filtered, parsed in memory).
+    public string? SecondaryPositionIds { get; set; }
 
     public string? InjuryNotes { get; set; }
     public string? Goals { get; set; }

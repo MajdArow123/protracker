@@ -33,6 +33,7 @@ public class LineupService : ILineupService
         await _access.EnsureCanAccessTeamAsync(user, teamId);
         var lineup = await QueryByKey(teamId, matchResultId)
             .Include(l => l.Slots)
+            .Include(l => l.SetPieces)
             .FirstOrDefaultAsync();
         return lineup == null ? null : ToDto(lineup);
     }
@@ -57,11 +58,30 @@ public class LineupService : ILineupService
                 throw new ValidationApiException("Every player in the lineup must belong to this team.");
         }
 
+        // Tactical layer: captaincy and set-piece takers are eligible-from-XI
+        // only (the slot set is the XI; team ownership is transitive from the
+        // check above). Re-runs on every save, so a player who left the roster
+        // can never be re-persisted (the frontend drops them roster-keyed).
+        var xi = playerIds.ToHashSet();
+        if (dto.CaptainPlayerId is int captainId && !xi.Contains(captainId))
+            throw new ValidationApiException("The captain must be one of the lineup's players.");
+        if (dto.ViceCaptainPlayerId is int viceId && !xi.Contains(viceId))
+            throw new ValidationApiException("The vice-captain must be one of the lineup's players.");
+        if (dto.CaptainPlayerId != null && dto.CaptainPlayerId == dto.ViceCaptainPlayerId)
+            throw new ValidationApiException("The captain and vice-captain must be different players.");
+        var setPieces = dto.SetPieces ?? new List<SetPieceAssignmentDto>();
+        foreach (var sp in setPieces)
+        {
+            if (!xi.Contains(sp.PlayerId))
+                throw new ValidationApiException($"The set-piece taker for '{sp.Type}' must be one of the lineup's players.");
+        }
+
         await using var tx = await _context.Database.BeginTransactionAsync();
 
         // Deterministic pick (oldest row) + self-heal if a duplicate ever slipped through.
         var existing = await QueryByKey(teamId, dto.MatchResultId)
             .Include(l => l.Slots)
+            .Include(l => l.SetPieces)
             .OrderBy(l => l.Id)
             .ToListAsync();
         var lineup = existing.FirstOrDefault();
@@ -76,8 +96,26 @@ public class LineupService : ILineupService
         lineup.Formation = dto.Formation;
         lineup.UpdatedAt = DateTime.UtcNow;
         lineup.UpdatedByUserId = _access.RequireUserId(user);
+        lineup.CaptainPlayerId = dto.CaptainPlayerId;
+        lineup.ViceCaptainPlayerId = dto.ViceCaptainPlayerId;
+        lineup.Notes = NullIfBlank(dto.Notes);
+        lineup.TacticalLabels = dto.TacticalLabels is { Count: > 0 } labels
+            ? string.Join(',', labels.Select(l => l.Trim()))
+            : null;
         lineup.Slots.Clear();
-        lineup.Slots.AddRange(dto.Slots.Select(s => new LineupSlot { SlotKey = s.SlotKey, PlayerId = s.PlayerId }));
+        lineup.Slots.AddRange(dto.Slots.Select(s => new LineupSlot
+        {
+            SlotKey = s.SlotKey,
+            PlayerId = s.PlayerId,
+            Role = NullIfBlank(s.Role),
+            Instructions = NullIfBlank(s.Instructions),
+        }));
+        lineup.SetPieces.Clear();
+        lineup.SetPieces.AddRange(setPieces.Select(sp => new SetPieceAssignment
+        {
+            Type = sp.Type.Trim(),
+            PlayerId = sp.PlayerId,
+        }));
 
         await _context.SaveChangesAsync();
         await tx.CommitAsync();
@@ -100,6 +138,9 @@ public class LineupService : ILineupService
             .Where(l => l.TeamId == teamId && l.MatchResultId == matchResultId)
             .OrderBy(l => l.Id); // deterministic even if a duplicate ever exists
 
+    private static string? NullIfBlank(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
     private static LineupDto ToDto(Lineup l) => new()
     {
         Id = l.Id,
@@ -107,9 +148,25 @@ public class LineupService : ILineupService
         MatchResultId = l.MatchResultId,
         Formation = l.Formation,
         UpdatedAt = l.UpdatedAt,
+        CaptainPlayerId = l.CaptainPlayerId,
+        ViceCaptainPlayerId = l.ViceCaptainPlayerId,
+        Notes = l.Notes,
+        TacticalLabels = string.IsNullOrWhiteSpace(l.TacticalLabels)
+            ? new List<string>()
+            : l.TacticalLabels.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList(),
         Slots = l.Slots
             .OrderBy(s => s.SlotKey, StringComparer.Ordinal)
-            .Select(s => new LineupSlotDto { SlotKey = s.SlotKey, PlayerId = s.PlayerId })
+            .Select(s => new LineupSlotDto
+            {
+                SlotKey = s.SlotKey,
+                PlayerId = s.PlayerId,
+                Role = s.Role,
+                Instructions = s.Instructions,
+            })
+            .ToList(),
+        SetPieces = l.SetPieces
+            .OrderBy(a => a.Type, StringComparer.Ordinal)
+            .Select(a => new SetPieceAssignmentDto { Type = a.Type, PlayerId = a.PlayerId })
             .ToList(),
     };
 }
