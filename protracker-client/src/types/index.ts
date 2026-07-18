@@ -168,7 +168,11 @@ export interface Player {
   teamName?: string;
   positionId?: number;
   positionName?: string;
-  fitnessLevel?: number;
+  // Null = not recorded (nullable since the tactical layer — a value is a real coach entry).
+  fitnessLevel?: number | null;
+  // Coach-entered tactical attributes (Phase 3). Enum name "Left"/"Right"/"Both"; null = not set.
+  preferredFoot?: string | null;
+  secondaryPositionIds?: number[];
   profileImageUrl?: string | null;
   jerseyNumber?: number | null;
   status?: PlayerStatus;

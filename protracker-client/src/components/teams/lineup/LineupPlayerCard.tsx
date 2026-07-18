@@ -78,6 +78,10 @@ interface Props {
   selected?: boolean;
   /** Edit mode: the player's position isn't natural for this slot. */
   oop?: boolean;
+  /** Edit mode: not natural, but one of the player's coach-entered SECONDARY positions is. */
+  secondaryFit?: boolean;
+  /** Coach-entered captaincy (Phase 3). */
+  captainMark?: 'C' | 'VC' | null;
   /** Edit mode: a live drag is hovering this card as its drop target. */
   dropTarget?: boolean;
   /** Edit mode: this card is the source of the live drag (ghost carries it). */
@@ -89,7 +93,7 @@ interface Props {
 }
 
 // Compact on-pitch card. Rendered inside the dir="ltr" pitch container.
-export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay, accent, selected, oop, dropTarget, dimmed, onActivate, onHoverChange, onPointerDown }: Props) {
+export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay, accent, selected, oop, secondaryFit, captainMark, dropTarget, dimmed, onActivate, onHoverChange, onPointerDown }: Props) {
   const { t } = useTranslation();
   const needsTesting = !loadFailed && (rating.kind === 'none' || rating.kind === 'thin');
   const showOverlayInjured = overlay && injured;
@@ -139,6 +143,25 @@ export function LineupPlayerCard({ player, rating, loadFailed, injured, overlay,
             title={t('teams.lineupOutOfPosition', 'Out of position')}
           >
             {t('teams.lineupOopShort', 'OOP')}
+          </span>
+        )}
+        {!oop && secondaryFit && (
+          <span
+            className="absolute -bottom-1 -left-1.5 px-1 rounded-full bg-sky-400/95 text-sky-950 text-[8px] font-black leading-3"
+            title={t('teams.lineupSecondaryFit', 'Secondary position')}
+          >
+            {t('teams.lineupSecShort', 'SEC')}
+          </span>
+        )}
+        {captainMark && (
+          <span
+            className={clsx(
+              'absolute -right-2 min-w-4 h-4 px-0.5 rounded-full bg-yellow-400 text-yellow-950 text-[8px] font-black flex items-center justify-center shadow-sm',
+              injured ? 'top-3' : '-top-1.5', // the injured badge owns the corner
+            )}
+            title={captainMark === 'C' ? t('teams.lineupCaptain', 'Captain') : t('teams.lineupViceCaptain', 'Vice-captain')}
+          >
+            {captainMark}
           </span>
         )}
       </div>

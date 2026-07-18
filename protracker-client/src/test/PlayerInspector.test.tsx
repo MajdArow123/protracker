@@ -54,9 +54,13 @@ describe('PlayerInspector — the all-empty dossier fabricates NOTHING', () => {
   it('renders explicit typed states, plain-fact empties, and no invented numbers', () => {
     const { container } = render(<PlayerInspectorBody {...baseProps} rating={noRating} />);
 
-    // measurements absent → typed not-recorded (tests + wellbeing)
-    expect(screen.getAllByText('Not recorded')).toHaveLength(2);
+    // measurements absent → typed not-recorded (tests + wellbeing + FITNESS —
+    // the row returned in Phase 3 once FitnessLevel became nullable)
+    expect(screen.getAllByText('Not recorded')).toHaveLength(3);
     expect(screen.getByText('No check-in in the last 30 days')).toBeInTheDocument();
+    // Phase 3 coach-entered profile: absent foot/secondaries are typed not-set
+    expect(screen.getByText('Coach-entered profile')).toBeInTheDocument();
+    expect(screen.getAllByText('Not set')).toHaveLength(2);
     // empty LISTS are facts, not missing states
     expect(screen.getByText('No active injuries')).toBeInTheDocument();
     expect(screen.getByText('No shared goals')).toBeInTheDocument();
@@ -65,8 +69,6 @@ describe('PlayerInspector — the all-empty dossier fabricates NOTHING', () => {
     expect(screen.getByText('Not tracked')).toBeInTheDocument();
     // rating with zero evidence is an em-dash, never 0.0
     expect(container.textContent).not.toContain('0.0');
-    // fitnessLevel is deliberately absent until the Phase 3 nullability ruling
-    expect(container.textContent!.toLowerCase()).not.toContain('fitness');
     // no numeric value appears anywhere in the empty dossier (jersey #7 aside)
     expect(container.textContent!.replace('#7', '')).not.toMatch(/\d+\.\d/);
   });
@@ -137,7 +139,20 @@ describe('PlayerInspector — real data renders with provenance', () => {
     state.tests = { data: undefined, isLoading: false, isError: true };
     render(<PlayerInspectorBody {...baseProps} rating={goodRating} />);
     expect(screen.getByText('Unable to load')).toBeInTheDocument();
-    // the failed section must NOT claim not-recorded; wellbeing's is the only one
-    expect(screen.getAllByText('Not recorded')).toHaveLength(1);
+    // the failed section must NOT claim not-recorded; wellbeing + the fitness
+    // profile row (null in this fixture) are the only two
+    expect(screen.getAllByText('Not recorded')).toHaveLength(2);
+  });
+
+  it('coach-entered profile shows real values when set (fitness/foot/secondaries)', () => {
+    const filled = {
+      ...player, fitnessLevel: 7, preferredFoot: 'Left', secondaryPositionIds: [2, 3],
+    } as unknown as Player;
+    render(<PlayerInspectorBody {...baseProps} player={filled} rating={goodRating} />);
+    expect(screen.getByText('7/10')).toBeInTheDocument();
+    expect(screen.getByText('Left')).toBeInTheDocument();
+    // two secondary abbreviations joined — never "Not set"
+    expect(screen.queryByText('Not set')).not.toBeInTheDocument();
+    expect(screen.getAllByText('Not recorded')).toHaveLength(2); // tests + wellbeing only
   });
 });

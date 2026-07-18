@@ -1,14 +1,18 @@
 import { sameLineup, type Assignments } from './lineupEditLogic';
+import { sameTactical, type TacticalState } from './lineupTacticalLogic';
 
 // Pure undo/redo history for the lineup draft (Phase 1 of the lineup program).
 // null state = not editing. Every user-visible mutation (tap-swap, drag commit,
-// send-to-bench, formation change, reset-to-suggested) is exactly one 'apply',
-// so each is exactly one undo step. Exported and unit-tested
+// send-to-bench, formation change, reset-to-suggested, and since Phase 3 every
+// tactical edit — captain/vice/role/set-piece/label toggle; notes commit on
+// blur, one step per edit session, never per keystroke) is exactly one
+// 'apply', so each is exactly one undo step. Exported and unit-tested
 // (src/test/lineupDraftReducer.test.ts) — UI stays thin.
 
 export interface Draft {
   formationKey: string;
   assignments: Assignments;
+  tactical: TacticalState;
 }
 
 export interface DraftHistory {
@@ -28,7 +32,10 @@ export type DraftAction =
   | { type: 'end' };
 
 function sameDraft(a: Draft, b: Draft): boolean {
-  return sameLineup(a.formationKey, a.assignments, b.formationKey, b.assignments);
+  return (
+    sameLineup(a.formationKey, a.assignments, b.formationKey, b.assignments) &&
+    sameTactical(a.tactical, b.tactical)
+  );
 }
 
 export function draftReducer(state: DraftHistory | null, action: DraftAction): DraftHistory | null {

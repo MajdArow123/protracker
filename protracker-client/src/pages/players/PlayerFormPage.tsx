@@ -30,7 +30,10 @@ interface FormValues {
   sportId: string;
   teamId: string;
   positionId: string;
+  /** '' = not recorded (the honest default since the tactical layer). */
   fitnessLevel: string;
+  preferredFoot: string;
+  secondaryPositionIds: string[];
   jerseyNumber: string;
   status: string;
   goals: string;
@@ -55,7 +58,9 @@ const EMPTY: FormValues = {
   sportId: '',
   teamId: '',
   positionId: '',
-  fitnessLevel: '5',
+  fitnessLevel: '',
+  preferredFoot: '',
+  secondaryPositionIds: [],
   jerseyNumber: '',
   status: 'Active',
   goals: '',
@@ -81,8 +86,10 @@ function validate(v: FormValues, t: TFunc): FormErrors {
     if (isNaN(n) || n < 30 || n > 200) e.weightKg = t('players.errWeightRange', 'Weight must be 30–200 kg');
   }
   if (!v.sportId) e.sportId = t('players.errSportRequired', 'Sport is required');
-  const fl = Number(v.fitnessLevel);
-  if (isNaN(fl) || fl < 1 || fl > 10) e.fitnessLevel = t('players.errFitnessRange', 'Fitness level must be 1–10');
+  if (v.fitnessLevel !== '') {
+    const fl = Number(v.fitnessLevel);
+    if (isNaN(fl) || fl < 1 || fl > 10) e.fitnessLevel = t('players.errFitnessRange', 'Fitness level must be 1–10');
+  }
   return e;
 }
 
@@ -130,7 +137,9 @@ export function PlayerFormPage() {
         sportId: player.sportId?.toString() ?? '',
         teamId: player.teamId?.toString() ?? '',
         positionId: player.positionId?.toString() ?? '',
-        fitnessLevel: player.fitnessLevel?.toString() ?? '5',
+        fitnessLevel: player.fitnessLevel?.toString() ?? '',
+        preferredFoot: player.preferredFoot ?? '',
+        secondaryPositionIds: (player.secondaryPositionIds ?? []).map(String),
         jerseyNumber: player.jerseyNumber?.toString() ?? '',
         status: player.status ?? 'Active',
         goals: player.goals ?? '',
@@ -220,7 +229,10 @@ export function PlayerFormPage() {
       sportId: Number(values.sportId),
       teamId: values.teamId ? Number(values.teamId) : undefined,
       positionId: values.positionId ? Number(values.positionId) : undefined,
-      fitnessLevel: Number(values.fitnessLevel),
+      // '' = not recorded -> explicit null (never a fabricated default)
+      fitnessLevel: values.fitnessLevel === '' ? null : Number(values.fitnessLevel),
+      preferredFoot: values.preferredFoot || null,
+      secondaryPositionIds: values.secondaryPositionIds.map(Number),
       jerseyNumber: values.jerseyNumber ? Number(values.jerseyNumber) : null,
       status: (values.status || undefined) as import('../../types').PlayerStatus | undefined,
       goals: values.goals || undefined,
@@ -382,17 +394,40 @@ export function PlayerFormPage() {
             </div>
 
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                {t('players.fitnessLevel', 'Fitness Level')}: {values.fitnessLevel}/10
-              </label>
-              <input
-                type="range"
-                min={1}
-                max={10}
-                value={values.fitnessLevel}
-                onChange={set('fitnessLevel')}
-                className="w-full accent-indigo-600"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {values.fitnessLevel === ''
+                    ? `${t('players.fitnessLevel', 'Fitness Level')}: ${t('players.fitnessNotRecorded', 'Not recorded')}`
+                    : `${t('players.fitnessLevel', 'Fitness Level')}: ${values.fitnessLevel}/10`}
+                </label>
+                {values.fitnessLevel === '' ? (
+                  <button
+                    type="button"
+                    onClick={() => setValues(v => ({ ...v, fitnessLevel: '5' }))}
+                    className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer"
+                  >
+                    {t('players.fitnessSet', 'Set a value')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setValues(v => ({ ...v, fitnessLevel: '' }))}
+                    className="text-xs font-semibold text-gray-500 dark:text-gray-400 hover:underline cursor-pointer"
+                  >
+                    {t('players.fitnessClear', 'Clear — not recorded')}
+                  </button>
+                )}
+              </div>
+              {values.fitnessLevel !== '' && (
+                <input
+                  type="range"
+                  min={1}
+                  max={10}
+                  value={values.fitnessLevel}
+                  onChange={set('fitnessLevel')}
+                  className="w-full accent-indigo-600"
+                />
+              )}
               {errors.fitnessLevel && <p className="text-xs text-red-500 mt-1">{errors.fitnessLevel}</p>}
             </div>
           </div>
@@ -434,13 +469,80 @@ export function PlayerFormPage() {
             <Select
               label={t('players.position', 'Position')}
               value={values.positionId}
-              onChange={set('positionId')}
+              onChange={e => {
+                const next = e.target.value;
+                // The primary can never double as a secondary.
+                setValues(v => ({
+                  ...v,
+                  positionId: next,
+                  secondaryPositionIds: v.secondaryPositionIds.filter(id => id !== next),
+                }));
+              }}
               disabled={!values.sportId}
               options={[
                 { value: '', label: t('players.selectPosition', 'Select position…') },
                 ...positions.map(p => ({ value: String(p.id), label: p.name })),
               ]}
             />
+
+            {/* Preferred foot — coach-entered, soccer-relevant (sport id 1) */}
+            {values.sportId === '1' && (
+              <Select
+                label={t('players.preferredFoot', 'Preferred foot')}
+                value={values.preferredFoot}
+                onChange={set('preferredFoot')}
+                options={[
+                  { value: '', label: t('players.footNotSet', 'Not set') },
+                  { value: 'Left', label: t('teams.footLeft', 'Left') },
+                  { value: 'Right', label: t('teams.footRight', 'Right') },
+                  { value: 'Both', label: t('teams.footBoth', 'Both') },
+                ]}
+              />
+            )}
+
+            {/* Secondary positions — coach-entered, max 3, never the primary */}
+            {values.positionId && positions.length > 1 && (
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                  {t('players.secondaryPositions', 'Secondary positions')}
+                  <span className="ms-1.5 text-xs font-normal text-gray-400">
+                    {t('players.secondaryPositionsHint', 'optional, up to 3')}
+                  </span>
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {positions.filter(p => String(p.id) !== values.positionId).map(p => {
+                    const idStr = String(p.id);
+                    const active = values.secondaryPositionIds.includes(idStr);
+                    const capped = !active && values.secondaryPositionIds.length >= 3;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        aria-pressed={active}
+                        disabled={capped}
+                        onClick={() =>
+                          setValues(v => ({
+                            ...v,
+                            secondaryPositionIds: active
+                              ? v.secondaryPositionIds.filter(id => id !== idStr)
+                              : [...v.secondaryPositionIds, idStr],
+                          }))
+                        }
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                          active
+                            ? 'bg-indigo-600 border-indigo-600 text-white cursor-pointer'
+                            : capped
+                              ? 'border-gray-200 dark:border-gray-700 text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                              : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-indigo-400 cursor-pointer'
+                        }`}
+                      >
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
 

@@ -27,8 +27,13 @@ import { layoutForSport, positionAbbr } from './lineupLayouts';
 import { formationsForSport, formationOrDefault, type FormationDef } from './lineupFormations';
 import {
   suggestedAssignments, hydrateAssignments, remapFormation, formationChangeSummary,
-  validateLineup, toSaveSlots, sameLineup, isOutOfPosition, type Assignments, type Selection,
+  validateLineup, sameLineup, type Assignments, type Selection,
 } from './lineupEditLogic';
+import {
+  emptyTactical, hydrateTactical, pruneTactical, sameTactical, buildSaveInput,
+  hasTacticalContent, positionFit, slotKeysOf, type TacticalState,
+} from './lineupTacticalLogic';
+import { TacticsPanel, TacticsSummary, type XiEntry } from './TacticsPanel';
 import { dragCommit, type DropTarget } from './lineupDragLogic';
 import { draftReducer, canUndo, canRedo } from './lineupDraftReducer';
 import { useLineupDrag } from './useLineupDrag';
@@ -105,13 +110,17 @@ export function LineupBoard({
     const assignments = saved
       ? hydrateAssignments(saved, formation, rosterIds)
       : suggestedAssignments(lineupPlayers, formation);
-    return { formationKey: formation.key, assignments };
+    // Tactical state hydrates with the same roster-keyed drop as slots
+    // (captain/vice/takers off the live roster fall to empty, never ghosts).
+    const tactical = saved ? hydrateTactical(saved, assignments, rosterIds) : emptyTactical();
+    return { formationKey: formation.key, assignments, tactical };
   }, [saved, sportId, rosterIds, lineupPlayers]);
 
   const current = draft ?? baseline;
   const formation: FormationDef = formationOrDefault(sportId, current.formationKey)!;
   const dirty = editing && draft != null
-    && !sameLineup(draft.formationKey, draft.assignments, baseline.formationKey, baseline.assignments);
+    && (!sameLineup(draft.formationKey, draft.assignments, baseline.formationKey, baseline.assignments)
+      || !sameTactical(draft.tactical, baseline.tactical));
 
   const benchPlayers = useMemo(() => {
     const placed = new Set(Object.values(current.assignments));
@@ -147,9 +156,13 @@ export function LineupBoard({
     const before = draft.assignments;
     const after = dragCommit(before, source, target);
     if (sameLineup(draft.formationKey, before, draft.formationKey, after)) return;
-    dispatch({ type: 'apply', draft: { formationKey: draft.formationKey, assignments: after } });
+    const fdef = formationOrDefault(sportId, draft.formationKey)!;
+    // Every assignments change re-establishes the tactical invariants
+    // (captain/vice/takers ∈ XI; roles only on occupied slots).
+    const tactical = pruneTactical(draft.tactical, after, slotKeysOf(fdef));
+    dispatch({ type: 'apply', draft: { formationKey: draft.formationKey, assignments: after, tactical } });
     announceMove(before, source, target);
-  }, [draft, announceMove]);
+  }, [draft, sportId, announceMove]);
 
   // ── Drag (pointer enhancement over the same commit path) ─────────────────────
 
@@ -195,7 +208,19 @@ export function LineupBoard({
 
   const startEdit = () => {
     closeInspector();
-    dispatch({ type: 'begin', draft: { formationKey: baseline.formationKey, assignments: { ...baseline.assignments } } });
+    dispatch({
+      type: 'begin',
+      draft: {
+        formationKey: baseline.formationKey,
+        assignments: { ...baseline.assignments },
+        tactical: {
+          ...baseline.tactical,
+          labels: [...baseline.tactical.labels],
+          roles: { ...baseline.tactical.roles },
+          setPieces: { ...baseline.tactical.setPieces },
+        },
+      },
+    });
     setSelection(null);
   };
 
@@ -236,7 +261,9 @@ export function LineupBoard({
     const to = formationOrDefault(sportId, key)!;
     if (from.key === to.key) return;
     const summary = formationChangeSummary(draft.assignments, from, to);
-    dispatch({ type: 'apply', draft: { formationKey: to.key, assignments: remapFormation(draft.assignments, from, to) } });
+    const remapped = remapFormation(draft.assignments, from, to);
+    const tactical = pruneTactical(draft.tactical, remapped, slotKeysOf(to));
+    dispatch({ type: 'apply', draft: { formationKey: to.key, assignments: remapped, tactical } });
     setSelection(null);
     const names = summary.benched.map(id => nameOf(id)).filter(Boolean);
     const msg = names.length === 0
@@ -251,10 +278,25 @@ export function LineupBoard({
   const resetToSuggested = () => {
     if (!draft) return;
     const def = formationOrDefault(sportId, draft.formationKey)!;
-    dispatch({ type: 'apply', draft: { formationKey: def.key, assignments: suggestedAssignments(lineupPlayers, def) } });
+    const suggested = suggestedAssignments(lineupPlayers, def);
+    // Coach-authored tactical data survives the re-arrange where still valid.
+    const tactical = pruneTactical(draft.tactical, suggested, slotKeysOf(def));
+    dispatch({ type: 'apply', draft: { formationKey: def.key, assignments: suggested, tactical } });
     setSelection(null);
     setAnnouncement(t('teams.lineupResetSuggested', 'Reset to suggested XI'));
   };
+
+  // Tactical edits (captain/vice/role/set-piece/label/notes) share the same
+  // reducer path — each commit is one undo step; prune keeps invariants.
+  const applyTactical = useCallback((mutate: (prev: TacticalState) => TacticalState) => {
+    if (!draft) return;
+    const tactical = pruneTactical(
+      mutate(draft.tactical),
+      draft.assignments,
+      slotKeysOf(formationOrDefault(sportId, draft.formationKey)!),
+    );
+    dispatch({ type: 'apply', draft: { ...draft, tactical } });
+  }, [draft, sportId]);
 
   // Keyboard: Esc clears the selection; Cmd/Ctrl+Z / +Shift+Z undo/redo.
   // (The drag hook's capture-phase Esc handler wins during a live drag.)
@@ -319,7 +361,9 @@ export function LineupBoard({
       return;
     }
     saveMutation.mutate(
-      { matchResultId: matchId, formation: draft.formationKey, slots: toSaveSlots(draft.assignments) },
+      // buildSaveInput is the write-through contract: EVERY tactical field is
+      // always in the payload (the server clears whatever is omitted).
+      buildSaveInput(matchId, draft.formationKey, draft.assignments, draft.tactical),
       {
         onSuccess: () => {
           setSaveOpen(false);
@@ -377,6 +421,16 @@ export function LineupBoard({
     : null;
   const selectedSlotOccupied = selection?.kind === 'slot' && current.assignments[selection.key] != null;
   const benchAreaHover = drag?.hoverTarget?.kind === 'benchArea';
+
+  // XI list for the tactics panel, in the formation's slot order.
+  const xiEntries: XiEntry[] = formation.slots
+    .filter(slot => current.assignments[slot.key] != null)
+    .map(slot => ({
+      playerId: current.assignments[slot.key],
+      name: nameOf(current.assignments[slot.key]),
+      slotKey: slot.key,
+      slotAbbr: slot.key,
+    }));
 
   const inspectorPlayer = !editing && inspectorId != null ? playerById.get(inspectorId) : undefined;
   const inspectorBody = inspectorPlayer
@@ -671,6 +725,8 @@ export function LineupBoard({
               const isSelected = selection?.kind === 'slot' && selection.key === slot.key;
               const isDropTarget = drag?.hoverTarget?.kind === 'slot' && drag.hoverTarget.key === slot.key;
               const isDragSource = drag?.source.kind === 'slot' && drag.source.key === slot.key;
+              // Coach-entered secondary positions sharpen the OOP hint.
+              const fit = editing && p ? positionFit(slot, p.positionId, p.secondaryPositionIds) : 'natural';
               return (
                 <div
                   key={slot.key}
@@ -687,7 +743,13 @@ export function LineupBoard({
                       overlay={overlay && !editing}
                       accent={slot.accent}
                       selected={isSelected}
-                      oop={editing && isOutOfPosition(slot, p.positionId)}
+                      oop={fit === 'oop'}
+                      secondaryFit={fit === 'secondary'}
+                      captainMark={
+                        current.tactical.captainId === p.id ? 'C'
+                          : current.tactical.viceCaptainId === p.id ? 'VC'
+                            : null
+                      }
                       dropTarget={isDropTarget}
                       dimmed={isDragSource}
                       onActivate={() => tap({ kind: 'slot', key: slot.key }, p.id)}
@@ -752,6 +814,19 @@ export function LineupBoard({
         {/* Bench — in edit mode every unplaced roster player is placeable */}
         {benchSection}
       </div>
+
+      {/* Coach-authored tactical layer (Phase 3) */}
+      {editing && draft && (
+        <TacticsPanel
+          sportId={sportId}
+          xi={xiEntries}
+          tactical={draft.tactical}
+          onChange={applyTactical}
+        />
+      )}
+      {!editing && saved && hasTacticalContent(baseline.tactical) && (
+        <TacticsSummary sportId={sportId} tactical={baseline.tactical} nameOf={nameOf} />
+      )}
       </div>
 
       {/* Player Inspector (view mode only): desktop inline panel… */}

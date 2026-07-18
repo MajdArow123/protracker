@@ -2,9 +2,10 @@ import { describe, it, expect } from 'vitest';
 import {
   draftReducer, canUndo, canRedo, HISTORY_LIMIT, type Draft, type DraftHistory,
 } from '../components/teams/lineup/lineupDraftReducer';
+import { emptyTactical, type TacticalState } from '../components/teams/lineup/lineupTacticalLogic';
 
-const d = (formationKey: string, assignments: Record<string, number>): Draft =>
-  ({ formationKey, assignments });
+const d = (formationKey: string, assignments: Record<string, number>, tactical?: Partial<TacticalState>): Draft =>
+  ({ formationKey, assignments, tactical: { ...emptyTactical(), ...tactical } });
 
 const begin = (draft: Draft): DraftHistory =>
   draftReducer(null, { type: 'begin', draft })!;
@@ -72,5 +73,27 @@ describe('draftReducer', () => {
     expect(s.past).toHaveLength(HISTORY_LIMIT);
     expect(s.past[0].assignments.GK).toBe(10); // 0..9 dropped
     expect(s.present.assignments.GK).toBe(HISTORY_LIMIT + 10);
+  });
+});
+
+// Phase 3: tactical edits ride the same history — one apply = one undo step,
+// and a tactical no-op never pollutes the past.
+describe('draftReducer — tactical state', () => {
+  it('a tactical-only change is exactly one undo step', () => {
+    let s = begin(d('4-3-3', { GK: 1 }));
+    s = draftReducer(s, { type: 'apply', draft: d('4-3-3', { GK: 1 }, { captainId: 1 }) })!;
+    expect(s.past).toHaveLength(1);
+    expect(s.present.tactical.captainId).toBe(1);
+    s = draftReducer(s, { type: 'undo' })!;
+    expect(s.present.tactical.captainId).toBeNull();
+    s = draftReducer(s, { type: 'redo' })!;
+    expect(s.present.tactical.captainId).toBe(1);
+  });
+
+  it('an identical tactical state is a no-op apply', () => {
+    let s = begin(d('4-3-3', { GK: 1 }, { labels: ['highPress'], roles: { GK: 'sweeperKeeper' } }));
+    const same = d('4-3-3', { GK: 1 }, { labels: ['highPress'], roles: { GK: 'sweeperKeeper' } });
+    s = draftReducer(s, { type: 'apply', draft: same })!;
+    expect(s.past).toHaveLength(0);
   });
 });

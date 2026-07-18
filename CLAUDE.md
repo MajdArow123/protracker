@@ -1571,13 +1571,55 @@ presets/audit stay in Phase 6). One batched migration **`AddTacticalLayer`**:
   departed-player pass-through/block, foot+secondary lifecycle incl. cross-sport
   400 and create-without-fitness → null).
 
+## Lineup program — Phase 3 FRONTEND (built, pending sign-off/deploy)
+
+Tactical layer UI on top of the deployed backend. Frontend-only commit; no new deps.
+
+- **Write-through contract is typed AND tested**: `SaveLineupInput` now REQUIRES
+  every tactical field (compiler rejects partial payloads); `buildSaveInput`
+  (`lineupTacticalLogic.ts`) is the only sanctioned payload builder and its test
+  asserts captain/vice/notes/labels/roles/set-pieces are present whenever set AND
+  present-as-null/empty when not (a partial save can never silently wipe tactical
+  data — the review requirement).
+- **Pure layer** `lineupTacticalLogic.ts`: `TacticalState` (captain/vice/notes/
+  labels/roles-by-slotKey/setPieces-by-type), `hydrateTactical` (roster-keyed drop
+  mirroring slots; **defensive against pre-tactical wire data — a missing array
+  hydrates empty, never crashes**; found live against a stale backend),
+  `pruneTactical` (re-establishes captain/vice/takers ∈ XI + roles-on-occupied-
+  known-slots after EVERY assignments/formation change; returns the same object
+  when unchanged so reducer no-op detection holds), `sameTactical`,
+  `positionFit` ('natural'|'secondary'|'oop' — coach-entered secondary positions
+  soften OOP to a sky "SEC" hint; unknown position claims nothing),
+  `hasTacticalContent`. `Draft` gained `tactical`; every tactical edit is ONE undo
+  step (notes commit on BLUR, never per keystroke — reducer tests).
+- **`tacticalCatalog.ts`**: per-sport preset KEYS (opaque server-side, like
+  SlotKey): soccer 9 roles/6 labels/5 set-piece types, basketball 5/5/2,
+  volleyball 4/4/0, beach 2/3/0, tennis none (no edit). **Keys are stable API
+  data — never rename, only add.** Labels/roles are presentation-only vocabulary.
+- **UI**: `TacticsPanel` (edit mode, below the workspace) — captain/vice native
+  selects (XI-only options, each excludes the other), set-piece selects (section
+  hidden for sports with no types), per-slot role selects in slot order, label
+  toggle chips, notes textarea; `TacticsSummary` (view mode, only when saved
+  lineup `hasTacticalContent`) with a **coach-entered SourceBadge**. Pitch cards:
+  gold C/VC badge (injured badge keeps the corner; C drops below), SEC hint.
+  Inspector gained a **"Coach-entered profile" section**: fitness (value/10 or
+  the true not-recorded state — the row RETURNED per the Phase 0 ruling), foot
+  (soccer only, not-set state), secondary positions (abbrs, not-set state).
+  Player form: fitness slider now optional ("Not recorded" default for new
+  players + Set-a-value/Clear toggle), preferred-foot select (soccer), secondary
+  position chips (≤3, primary excluded and auto-dropped on primary change).
+- 72 i18n keys × 5 locales (0/0/0). vitest 202/202 (19 new). Local full-stack
+  browser pass 19/19 (real backend at migration head): panel controls, C/VC
+  badges, undo-of-notes-as-one-step, save→reload persistence of the whole
+  tactical state, summary + badge, inspector rows, form states, Hebrew RTL,
+  cleanup to pristine.
+
 ## Current status
 
-**Lineup program Phase 3 BACKEND deployed (latest).** See section above. Frontend
-(captain picker, role selector, set-piece manager, secondary-position editor,
-fitness/foot/secondary inspector rows, sharper OOP hint) is next; its save layer
-must always send the complete tactical state (write-through contract) with a test
-asserting it.
+**Lineup program Phase 3 frontend built (latest) — awaiting sign-off before the
+Vercel deploy.** Backend deployed and probe-verified earlier (5/5 checks: migration
+applied, existing fitness preserved, lineups load, both register flows → null
+fitness, AI FitnessText both paths).
 
 **Lineup program Phase 2 (player inspector) complete.** See section
 above — single atomic frontend commit, view-mode inspector panel/sheet built

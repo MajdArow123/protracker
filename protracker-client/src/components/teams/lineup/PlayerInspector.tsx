@@ -37,8 +37,10 @@ import type { Player } from '../../../types';
 // There is NO fabricated fallback anywhere in this file — asserted by
 // PlayerInspector.test.tsx's all-empty-dossier case.
 //
-// fitnessLevel is deliberately ABSENT (user ruling): it cannot honestly claim
-// "Not recorded" until the Phase 3 nullability migration lands.
+// Phase 3: fitnessLevel RETURNED once the nullability migration landed — a
+// value is a real coach entry (badged coach-entered), null renders the true
+// "Not recorded" state. Preferred foot / secondary positions are coach-entered
+// with an honest "Not set" default.
 
 export interface InspectorProps {
   player: Player;
@@ -183,6 +185,41 @@ export function PlayerInspectorBody({ player, rating, loadFailed, breakdown, inj
           );
         })}
       </div>
+
+      {/* Coach-entered profile (Phase 3) — value or a typed honest absence */}
+      <Section
+        title={t('teams.inspectorCoachProfile', 'Coach-entered profile')}
+        badges={<SourceBadge source="coach-entered" size="xs" />}
+      >
+        <dl className="space-y-1 text-[11px]">
+          <div className="flex items-center justify-between gap-2">
+            <dt className="text-gray-500 dark:text-gray-400">{t('players.fitnessLevel', 'Fitness Level')}</dt>
+            <dd className="text-gray-800 dark:text-gray-200 font-semibold">
+              {player.fitnessLevel != null
+                ? `${player.fitnessLevel}/10`
+                : <MissingValue reason="not-recorded" variant="compact" />}
+            </dd>
+          </div>
+          {player.sportId === 1 && (
+            <div className="flex items-center justify-between gap-2">
+              <dt className="text-gray-500 dark:text-gray-400">{t('teams.inspectorPreferredFoot', 'Preferred foot')}</dt>
+              <dd className="text-gray-800 dark:text-gray-200 font-semibold">
+                {player.preferredFoot
+                  ? t(`teams.foot${player.preferredFoot}`, player.preferredFoot)
+                  : <MissingValue reason="not-set" variant="compact" />}
+              </dd>
+            </div>
+          )}
+          <div className="flex items-center justify-between gap-2">
+            <dt className="text-gray-500 dark:text-gray-400">{t('teams.inspectorSecondaryPositions', 'Secondary positions')}</dt>
+            <dd className="text-gray-800 dark:text-gray-200 font-semibold">
+              {player.secondaryPositionIds && player.secondaryPositionIds.length > 0
+                ? player.secondaryPositionIds.map(id => positionAbbr(id, t)).join(', ')
+                : <MissingValue reason="not-set" variant="compact" />}
+            </dd>
+          </div>
+        </dl>
+      </Section>
 
       {/* Measured tests — recorded values, calculated trend/standing */}
       <Section
