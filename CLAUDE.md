@@ -1125,6 +1125,18 @@ aggregate over existing tables. dotnet 89/89, vitest 66/66.
 
 ## Architecture decisions & gotchas (read before touching related code)
 
+- **Git-worktree backend runs ignore appsettings*.json** (hit during Phase 5): a
+  `dotnet run` from a worktree under `.claude/worktrees/` started with the correct
+  Development environment, content root and file contents, yet loaded NEITHER
+  `appsettings.json` nor `appsettings.Development.json` ("Connection string not
+  found", zero-length JWT key) — same code + files work fine from the main
+  checkout; root cause never identified (not user-secrets, not env vars, not
+  cwd). Workaround that just works: pass the needed config as env vars —
+  `PORT`, `ASPNETCORE_ENVIRONMENT=Development`,
+  `ConnectionStrings__DefaultConnection=...`, `Jwt__SigningKey/Issuer/Audience/
+  AccessTokenMinutes/RefreshTokenDays` (values from appsettings.json), plus
+  `Cors__AllowedOrigins__0=http://localhost:<vite-port>` when the frontend runs
+  on a non-default port. Don't burn time re-diagnosing.
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
   players by team must null-guard (`p.TeamId != null && teamIds.Contains(p.TeamId.Value)`).
   Same for `AssessmentPeriod`/`ScheduledSession`/`MatchResult`, which are team-scoped
@@ -1661,9 +1673,70 @@ familiarity/minutes appear NOWHERE.
   diverge-hides/undo-reshows, tennis ladder untouched, Hebrew RTL, 390px
   mobile tap-select, nothing saved (server lineup stayed null).
 
+## Lineup program — Phase 5: squad analysis + player comparison (COMPLETE, deployed — commit `dcbf0fa`)
+
+Frontend-only, no migration, no new dependency. Built in a worktree
+(`.claude/worktrees/lineup-phase5`), single commit pushed to main after checkpoint
+sign-off; prod-smoked on City FC U18.
+
+- **Pure layer** (`lineupAnalysisLogic.ts`, 23 tests): **`buildWarnings`** — 8 typed
+  codes: emptySlots / injuredStarters / oopStarters / lowEvidenceStarters /
+  noBackupKeeper / noBenchCover (warnings) + footMismatch / captainNotSet (info).
+  **ONE deterministic sort: severity → catalog code order → first slot key** —
+  pinned incl. recompute stability AND roster-input-order independence (user
+  ruling: the panel must never reshuffle). Every warning is a recorded/
+  coach-entered fact or a DATA-absence claim, never a quality verdict
+  (lowEvidenceStarters = "ratings may be unreliable", wording-pinned). Keeper
+  detection is per-sport config (`KEEPER_POSITION_IDS`, only soccer entry) —
+  layout flags CAN'T infer it (basketball marks every line countsInShape:false);
+  keeper line excluded from the generic noBenchCover sweep; coach-entered
+  secondary positions count as cover; Suspended/Inactive never do. footMismatch
+  fires ONLY on a coach-entered foot (null/'Both'/central/non-soccer silent);
+  captainNotSet is edit-mode-only. **`recommendForSlot`** — the unchanged engine:
+  primary-position eligibility (the engine never places by secondary, so the
+  recommendation doesn't either), compareByRating order, Phase 4 `headToHead`
+  reused verbatim (now exported); none eligible → null (no suggestion is the
+  honest answer). **`coAppearanceCount`** — distinct shared matchResultIds; a
+  labeled COUNT, never a chemistry score (blueprint §4 ceiling).
+- **Wording ruling (retroactive to Phase 4):** `runnerUpNoEvidence` reads as
+  absence of information — "Selected while less is recorded about {{name}} —
+  there was no evidence to compare" — never a quality verdict. EN fallbacks live
+  in exported `PICK_DETAIL_EN`/`WARNING_EN` maps consumed by BOTH WhyPicksPanel
+  and the comparison; the distinction (absence framing vs. permitted measured
+  superiority in higherValue) is pinned by test. Key value updated ×5 locales.
+- **UI**: `SquadAnalysisPanel` — collapsible panel (not a drawer, per ruling)
+  under the workspace in BOTH modes; info rows visually subordinate (smaller,
+  muted, gray icon) and always after warnings; zero warnings renders an explicit
+  "No gaps detected" line; real focusable actions per row (View slot = select it
+  in edit / Open player = inspector in view / Set captain = scroll to tactics);
+  count changes announce via the panel's OWN aria-live region (never stomps the
+  board's move announcements). `ComparePlayersModal` (size xl, keyed per open) —
+  2-4 columns: RatingChip verbatim, category means (StatPopover muting), coach-
+  entered facts (not-set/not-recorded MissingValues), topTrends-gated tests,
+  pairwise co-appearance counts + "not a chemistry measure" caption; slot-context
+  entry ("Compare candidates" on a selected slot, seeds occupant + best eligible
+  bench) adds per-column fit + the recommendation banner (Calculated badge,
+  "the call is yours", honest no-suggestion line when none eligible); view-mode
+  entry = "Compare with a teammate" in the inspector. Lazy useQueries on the
+  existing query keys (evidence tests + match ratings) — nothing fetches until
+  open. Tennis untouched by construction (panel lives in LineupBoard; the ladder
+  branch never mounts it) — verified.
+- 41 new i18n keys + 1 reworded × 5 locales (0/0/0). vitest 243/243 (23 new),
+  build + oxlint clean. Local full-stack pass (worktree stack on alt ports
+  8081/5174) then prod smoke: pinned order on real data, live suppression
+  (GK benched → emptySlots inserted FIRST, noBackupKeeper stayed suppressed by
+  the two bench keepers), Open player action → inspector, real co-appearance
+  ("rated in the same logged match 3 times"), GK recommendation (8.9 vs 7.8) w/
+  Calculated badge, info subordination, Hebrew RTL + 390px (incl. both at once),
+  GET lineup `{data:null}` before AND after — nothing saved.
+
 ## Current status
 
-**Lineup program Phase 4 COMPLETE and deployed (latest).** Signed off,
+**Lineup program Phase 5 COMPLETE and deployed (latest).** See section above —
+signed off at checkpoint, committed from the worktree as `dcbf0fa`, Vercel
+production deploy verified via GitHub's deployments API, prod smoke all green.
+
+**Lineup program Phase 4 COMPLETE and deployed.** Signed off,
 committed as `82ae6ff` (frontend-only; a parallel-session check first confirmed
 the work was still uncommitted — three sessions share this tree), Vercel deploy
 verified via GitHub's deployments API, then prod-smoked on City FC U18: fit
