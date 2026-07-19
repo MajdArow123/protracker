@@ -140,7 +140,21 @@ export interface LineupArrangement {
   unpositioned: LineupPlayer[];
 }
 
-export function assignToSlots(players: LineupPlayer[], layout: SportLineupLayout): LineupArrangement {
+/**
+ * Optional Phase 4 instrumentation: callers pass an array to receive one event
+ * per placement, exposing WHAT THE ENGINE DID (pass number; the rescue shift)
+ * so explanations report facts, never reconstructions. Purely additive — the
+ * arrangement is byte-identical with or without a trace (pinned by test).
+ */
+export type AssignTraceEvent =
+  | { pass: 1 | 2; lineId: string; playerId: number }
+  | { pass: 3; lineId: string; playerId: number; displacedId: number; displacedToLineId: string };
+
+export function assignToSlots(
+  players: LineupPlayer[],
+  layout: SportLineupLayout,
+  trace?: AssignTraceEvent[],
+): LineupArrangement {
   const knownPositions = new Set<number>();
   for (const line of layout.lines) {
     for (const pid of line.positionIds) knownPositions.add(pid);
@@ -170,10 +184,11 @@ export function assignToSlots(players: LineupPlayer[], layout: SportLineupLayout
   const chosen = new Map<string, LineupPlayer[]>(layout.lines.map(l => [l.id, []]));
   const chosenIds = new Set<number>();
   let placedCount = 0;
-  const place = (line: LineSpec, p: LineupPlayer) => {
+  const place = (line: LineSpec, p: LineupPlayer, pass?: 1 | 2) => {
     chosen.get(line.id)!.push(p);
     chosenIds.add(p.id);
     placedCount++;
+    if (trace && pass != null) trace.push({ pass, lineId: line.id, playerId: p.id });
   };
 
   // Pass 1 — line minimums, best-rated eligible player first ("auto-arranged by
@@ -186,7 +201,7 @@ export function assignToSlots(players: LineupPlayer[], layout: SportLineupLayout
     for (const p of candidates) {
       if (chosen.get(line.id)!.length >= line.min || placedCount >= capacity) break;
       if (chosenIds.has(p.id) || !line.positionIds.includes(p.positionId!)) continue;
-      place(line, p);
+      place(line, p, 1);
     }
   }
 
@@ -197,7 +212,7 @@ export function assignToSlots(players: LineupPlayer[], layout: SportLineupLayout
     if (chosenIds.has(p.id)) continue;
     for (const line of layout.lines) {
       if (line.positionIds.includes(p.positionId!) && chosen.get(line.id)!.length < line.max) {
-        place(line, p);
+        place(line, p, 2);
         break;
       }
     }
@@ -219,7 +234,8 @@ export function assignToSlots(players: LineupPlayer[], layout: SportLineupLayout
           const from = chosen.get(line.id)!;
           from.splice(from.indexOf(q), 1);
           chosen.get(other.id)!.push(q);
-          place(line, p);
+          place(line, p); // pass 3 traced below as one structural event, not a pick
+          trace?.push({ pass: 3, lineId: line.id, playerId: p.id, displacedId: q.id, displacedToLineId: other.id });
           break outer;
         }
       }

@@ -16,12 +16,13 @@ export interface SavedLineupLike {
 // ── Suggestion (the Phase 1 auto-arrange, aimed at a formation's slots) ──────
 
 /**
- * Auto-arrange players into a formation's slots by reusing the Phase 1 engine:
- * each slot becomes a single-capacity line keyed by the slot key, so ratings,
- * the confidence tiebreak and the rescue pass all apply unchanged.
+ * The per-slot single-capacity layout the suggestion engine runs on — each slot
+ * becomes a line keyed by the slot key, so ratings, the confidence tiebreak and
+ * the rescue pass all apply unchanged. Exported for Phase 4's explainSuggestion,
+ * which MUST run on the identical layout (pinned by test).
  */
-export function suggestedAssignments(players: LineupPlayer[], formation: FormationDef): Assignments {
-  const layout: SportLineupLayout = {
+export function suggestionLayout(formation: FormationDef): SportLineupLayout {
+  return {
     kind: 'pitch',
     capacity: formation.slots.length,
     aspect: '1 / 1', // unused here
@@ -35,7 +36,13 @@ export function suggestedAssignments(players: LineupPlayer[], formation: Formati
       countsInShape: false,
     })),
   };
-  const { placed } = assignToSlots(players, layout);
+}
+
+/**
+ * Auto-arrange players into a formation's slots by reusing the Phase 1 engine.
+ */
+export function suggestedAssignments(players: LineupPlayer[], formation: FormationDef): Assignments {
+  const { placed } = assignToSlots(players, suggestionLayout(formation));
   const assignments: Assignments = {};
   for (const p of placed) assignments[p.lineId] = p.player.id;
   return assignments;

@@ -33,6 +33,9 @@ import {
   emptyTactical, hydrateTactical, pruneTactical, sameTactical, buildSaveInput,
   hasTacticalContent, positionFit, slotKeysOf, type TacticalState,
 } from './lineupTacticalLogic';
+import { fitMatrix, explainSuggestion, type SlotExplanation } from './lineupFitLogic';
+import { FitChip } from './FitChip';
+import { WhyPicksPanel } from './WhyPicksPanel';
 import { TacticsPanel, TacticsSummary, type XiEntry } from './TacticsPanel';
 import { dragCommit, type DropTarget } from './lineupDragLogic';
 import { draftReducer, canUndo, canRedo } from './lineupDraftReducer';
@@ -91,6 +94,14 @@ export function LineupBoard({
   const [confirmReset, setConfirmReset] = useState(false);
   const [panelCollapsed, setPanelCollapsed] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  // Phase 4: explanations attach ONLY to the suggestion that produced them —
+  // rendered while the draft still matches that snapshot, hidden the moment it
+  // diverges (undo back to the snapshot honestly re-shows them).
+  const [whyPicks, setWhyPicks] = useState<null | {
+    formationKey: string;
+    assignments: Assignments;
+    explanations: SlotExplanation[];
+  }>(null);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const inspectorInvokerRef = useRef<HTMLElement | null>(null);
@@ -126,6 +137,13 @@ export function LineupBoard({
     const placed = new Set(Object.values(current.assignments));
     return lineupPlayers.filter(p => !placed.has(p.id)).sort(compareByRating);
   }, [lineupPlayers, current.assignments]);
+
+  // Phase 4: per-player-per-slot fit, recomputed only on roster/formation change.
+  const fits = useMemo(() => fitMatrix(players, formation), [players, formation]);
+  const fitnessNullIds = useMemo(
+    () => new Set(players.filter(p => p.fitnessLevel == null).map(p => p.id)),
+    [players],
+  );
 
   // ── Commit path (shared by tap-swap AND drag — the equivalence is by construction) ──
 
@@ -227,6 +245,7 @@ export function LineupBoard({
   const stopEdit = useCallback(() => {
     dispatch({ type: 'end' });
     setSelection(null);
+    setWhyPicks(null);
   }, []);
 
   const guardDirty = (action: () => void) => {
@@ -278,10 +297,16 @@ export function LineupBoard({
   const resetToSuggested = () => {
     if (!draft) return;
     const def = formationOrDefault(sportId, draft.formationKey)!;
-    const suggested = suggestedAssignments(lineupPlayers, def);
+    // Identical arrangement to suggestedAssignments (pinned by test) plus the
+    // per-pick explanations of what the engine actually did.
+    const { assignments: suggested, explanations } = explainSuggestion(lineupPlayers, def, {
+      injuredIds,
+      fitnessNullIds,
+    });
     // Coach-authored tactical data survives the re-arrange where still valid.
     const tactical = pruneTactical(draft.tactical, suggested, slotKeysOf(def));
     dispatch({ type: 'apply', draft: { formationKey: def.key, assignments: suggested, tactical } });
+    setWhyPicks({ formationKey: def.key, assignments: suggested, explanations });
     setSelection(null);
     setAnnouncement(t('teams.lineupResetSuggested', 'Reset to suggested XI'));
   };
@@ -421,6 +446,19 @@ export function LineupBoard({
     : null;
   const selectedSlotOccupied = selection?.kind === 'slot' && current.assignments[selection.key] != null;
   const benchAreaHover = drag?.hoverTarget?.kind === 'benchArea';
+
+  // Phase 4: while a player is selected or dragged, other slots wear their fit
+  // for THAT player (icon + text, never color alone). Pure read — tap/drag
+  // behavior is untouched.
+  const activePlayerId = editing
+    ? drag
+      ? drag.playerId
+      : selection
+        ? selection.kind === 'bench'
+          ? selection.playerId
+          : current.assignments[selection.key] ?? null
+        : null
+    : null;
 
   // XI list for the tactics panel, in the formation's slot order.
   const xiEntries: XiEntry[] = formation.slots
@@ -734,6 +772,11 @@ export function LineupBoard({
                   className="absolute -translate-x-1/2 -translate-y-1/2"
                   style={{ left: `${slot.x}%`, top: `${slot.y}%` }}
                 >
+                  {activePlayerId != null && playerId !== activePlayerId && (
+                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
+                      <FitChip fit={fits.get(activePlayerId)?.get(slot.key) ?? { category: 'cantAssess', footFact: null }} />
+                    </span>
+                  )}
                   {p && lp ? (
                     <LineupPlayerCard
                       player={p}
@@ -814,6 +857,17 @@ export function LineupBoard({
         {/* Bench — in edit mode every unplaced roster player is placeable */}
         {benchSection}
       </div>
+
+      {/* Phase 4: "why these picks" — only while the draft still matches the
+          suggestion it explains (never retro-fitted onto manual edits). */}
+      {editing && draft && whyPicks
+        && sameLineup(draft.formationKey, draft.assignments, whyPicks.formationKey, whyPicks.assignments) && (
+        <WhyPicksPanel
+          explanations={whyPicks.explanations}
+          nameOf={nameOf}
+          onClose={() => setWhyPicks(null)}
+        />
+      )}
 
       {/* Coach-authored tactical layer (Phase 3) */}
       {editing && draft && (
