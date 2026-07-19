@@ -1614,9 +1614,70 @@ Tactical layer UI on top of the deployed backend. Frontend-only commit; no new d
   tactical state, summary + badge, inspector rows, form states, Hebrew RTL,
   cleanup to pristine.
 
+## Lineup program — Phase 4: honest position fit + explained auto-build (COMPLETE, deployed — commit `82ae6ff`)
+
+Frontend + pure logic only; NO migration, no new endpoint, no new dependency —
+every input was already client-side (batch evidence scores, Phase 3 player
+fields, injuredIds, client formation config). The closed honest input set:
+evidence value+confidence+scoredMetrics, primary/secondary positions, preferred
+foot, injury/status, fitnessLevel-only-when-set. Form/readiness/chemistry/
+familiarity/minutes appear NOWHERE.
+
+- **Position fit is CATEGORICAL, never a %** (`lineupFitLogic.ts`):
+  `assessFit` extends the Phase 3 `positionFit` primitive into a displayed
+  claim — natural | secondary | outOfPosition | **cantAssess** (unknown primary
+  says so out loud; the Phase 3 SEC/OOP badges keep suppressing, unchanged). A
+  test asserts the assessment contains NO number. Preferred foot is a
+  supplementary stated fact (soccer wide slots only, from slot geometry
+  x≤35/x≥65) that never changes the category. Fit is `calculated` — the chip
+  title states the method. `fitMatrix` is memoized per (roster, formation).
+- **Explained auto-build introduces NO new weighting**: the engine stays
+  `suggestedAssignments`→`assignToSlots` under value-first `compareByRating`
+  (confidence only breaks exact ties; thin data visible, never demoted — the
+  approved ruling). `assignToSlots` gained an OPTIONAL trace param (default off,
+  output byte-identical — pinned) so `explainSuggestion` reports what the
+  engine DID, never a reconstruction. **Reason-code separation (pinned by
+  tests): `selectedOver` fires ONLY on a genuine head-to-head vs a benched
+  eligible runner-up** (detail: higherValue / confidenceTiebreak /
+  coverageTiebreak / runnerUpNoEvidence / alphabetical); pass-3 structural
+  displacements are `rescued`/`movedForRescue` and never phrased as wins;
+  `onlyEligible` / `uncontested` / `noEligible` ("left empty, never faked")
+  complete the set. Caveats on the picked player are stated, never hidden:
+  thinData / noEvidence / injured / fitnessNotRecorded (**only when null** —
+  a set fitness value is a fact, never a selection input).
+- **UI**: `FitChip` — while a player is selected/dragged, every other slot wears
+  that player's fit (distinct icon + title + aria-label per category, never
+  color alone; "?" for cantAssess per ruling); pure read, tap/drag untouched.
+  `WhyPicksPanel` — attaches to "Reset to suggested XI" only; renders 11 typed
+  reason rows + caveat chips + `calculated` SourceBadge + "the call is yours"
+  caption; **hidden the moment the arrangement diverges from the explained
+  snapshot** (undo back re-shows it); "optimal"/"best" never appear (asserted
+  in the browser pass). Explanations are never retro-fitted onto manual edits.
+- 21 i18n keys × 5 locales (0/0/0). vitest 220/220 (18 new incl. the
+  engine-identity regression pins: explain.assignments ≡ suggestedAssignments,
+  trace vs no-trace byte-identical, hard-coded fixture expectation). Local
+  full-stack browser pass 15/15: chips on select (2 natural + 8 OOP for a
+  striker), Esc clears, panel + real reasons + injured/thin caveats,
+  diverge-hides/undo-reshows, tennis ladder untouched, Hebrew RTL, 390px
+  mobile tap-select, nothing saved (server lineup stayed null).
+
 ## Current status
 
-**Lineup program Phase 3 COMPLETE and deployed (latest).** Backend `35c2d47`
+**Lineup program Phase 4 COMPLETE and deployed (latest).** Signed off,
+committed as `82ae6ff` (frontend-only; a parallel-session check first confirmed
+the work was still uncommitted — three sessions share this tree), Vercel deploy
+verified via GitHub's deployments API, then prod-smoked on City FC U18: fit
+chips on tap-select desktop + 390px mobile (11 chips, natural/OOP icons +
+accessible labels + method title; no cantAssess on prod — every City FC player
+has a primary position), drag commit ≡ tap-swap, why-these-picks panel with 11
+real selectedOver reasons (8.9 vs 7.8 etc.) + thin-data/Injured caveat chips +
+Calculated badge + "the call is yours" (no "optimal"/"best"), panel hid on BOTH
+manual tap-swap and drag and returned after real Cmd+Z each time, fit and
+rating rendered as separate claims, Hebrew RTL full mirror with translated
+chips/panel and LTR pitch, exit via Cancel with server lineup `{data:null}`
+before AND after — prod pristine, nothing saved.
+
+**Lineup program Phase 3 COMPLETE and deployed.** Backend `35c2d47`
 (Railway ran `AddTacticalLayer`; probe-verified 5/5: migration applied, existing
 fitness values preserved, lineups load, both register flows → null fitness, AI
 FitnessText on both null- and valued-fitness players; all probe artifacts cleaned
