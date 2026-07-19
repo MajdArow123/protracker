@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { SourceBadge } from '../../ui/SourceBadge';
 import { confidenceLabel } from '../../evidence/evidenceUtils';
+import { PICK_DETAIL_EN } from './lineupAnalysisLogic';
 import type { SlotExplanation, PickReason, PickCaveat } from './lineupFitLogic';
 import type { EvidenceConfidence } from '../../../types';
 
@@ -24,21 +25,24 @@ export function WhyPicksPanel({ explanations, nameOf, onClose }: Props) {
   const sentence = (reason: PickReason): string => {
     switch (reason.code) {
       case 'selectedOver': {
+        // EN fallbacks live in PICK_DETAIL_EN (lineupAnalysisLogic) — shared
+        // with the Phase 5 comparison and wording-pinned by test:
+        // runnerUpNoEvidence is absence framing, never a quality verdict.
         const name = nameOf(reason.overId);
         switch (reason.detail.kind) {
           case 'higherValue':
-            return t('teams.whyHigherValue', 'Selected over {{name}}: higher evidence ({{a}} vs {{b}})',
+            return t('teams.whyHigherValue', PICK_DETAIL_EN.higherValue,
               { name, a: reason.detail.a.toFixed(1), b: reason.detail.b.toFixed(1) });
           case 'confidenceTiebreak':
-            return t('teams.whyConfidenceTiebreak', 'Selected over {{name}}: equal rating ({{value}}) — higher confidence ({{a}} vs {{b}})',
+            return t('teams.whyConfidenceTiebreak', PICK_DETAIL_EN.confidenceTiebreak,
               { name, value: reason.detail.value.toFixed(1), a: conf(reason.detail.a), b: conf(reason.detail.b) });
           case 'coverageTiebreak':
-            return t('teams.whyCoverageTiebreak', 'Selected over {{name}}: equal rating — more scored metrics ({{a}} vs {{b}})',
+            return t('teams.whyCoverageTiebreak', PICK_DETAIL_EN.coverageTiebreak,
               { name, a: reason.detail.a, b: reason.detail.b });
           case 'runnerUpNoEvidence':
-            return t('teams.whyRunnerUpNoEvidence', 'Selected over {{name}} — no evidence to compare against', { name });
+            return t('teams.whyRunnerUpNoEvidence', PICK_DETAIL_EN.runnerUpNoEvidence, { name });
           case 'alphabetical':
-            return t('teams.whyAlphabetical', 'No evidence to compare with {{name}} — alphabetical order', { name });
+            return t('teams.whyAlphabetical', PICK_DETAIL_EN.alphabetical, { name });
         }
         break;
       }

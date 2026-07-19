@@ -51,6 +51,8 @@ export interface InspectorProps {
   /** Gates every query — nothing fetches until the inspector is open. */
   open: boolean;
   onOpenProfile: () => void;
+  /** Phase 5: open the comparison modal seeded with this player. */
+  onCompare?: () => void;
 }
 
 const TREND_META: Record<TrendState['kind'], { icon: LucideIcon; color: string; key: string; fallback: string }> = {
@@ -106,7 +108,7 @@ function QuerySection({ loading, error, children }: {
   return <>{children}</>;
 }
 
-export function PlayerInspectorBody({ player, rating, loadFailed, breakdown, injured, open, onOpenProfile }: InspectorProps) {
+export function PlayerInspectorBody({ player, rating, loadFailed, breakdown, injured, open, onOpenProfile, onCompare }: InspectorProps) {
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormat();
   const dyn = useDynamicLabels();
@@ -383,6 +385,15 @@ export function PlayerInspectorBody({ player, rating, loadFailed, breakdown, inj
         <ExternalLink size={12} /> {t('teams.inspectorOpenProfile', 'Open full profile')}
         <ArrowUpRight size={12} className="opacity-70" />
       </button>
+      {onCompare && (
+        <button
+          type="button"
+          onClick={onCompare}
+          className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xs font-semibold transition-colors cursor-pointer"
+        >
+          {t('teams.inspectorCompare', 'Compare with a teammate')}
+        </button>
+      )}
     </div>
   );
 }

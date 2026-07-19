@@ -124,7 +124,12 @@ export interface ExplainContext {
   fitnessNullIds: ReadonlySet<number>;
 }
 
-function headToHead(picked: LineupPlayer, runnerUp: LineupPlayer): PickDetail {
+/**
+ * The genuine head-to-head detail between a picked player and an eligible
+ * runner-up — mirrors compareByRating's actual order. Exported for Phase 5's
+ * comparison recommendation, which must reuse THIS logic (no new weighting).
+ */
+export function headToHead(picked: LineupPlayer, runnerUp: LineupPlayer): PickDetail {
   const a = picked.rating;
   const b = runnerUp.rating;
   if (a.kind === 'none' || b.kind === 'none') {

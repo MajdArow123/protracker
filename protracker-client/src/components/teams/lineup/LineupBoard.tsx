@@ -34,6 +34,9 @@ import {
   hasTacticalContent, positionFit, slotKeysOf, type TacticalState,
 } from './lineupTacticalLogic';
 import { fitMatrix, explainSuggestion, type SlotExplanation } from './lineupFitLogic';
+import { buildWarnings } from './lineupAnalysisLogic';
+import { SquadAnalysisPanel } from './SquadAnalysisPanel';
+import { ComparePlayersModal } from './ComparePlayersModal';
 import { FitChip } from './FitChip';
 import { WhyPicksPanel } from './WhyPicksPanel';
 import { TacticsPanel, TacticsSummary, type XiEntry } from './TacticsPanel';
@@ -102,6 +105,10 @@ export function LineupBoard({
     assignments: Assignments;
     explanations: SlotExplanation[];
   }>(null);
+  // Phase 5: comparison modal seed — a fresh object per open (the modal is
+  // keyed on it, so its column state resets); null = closed.
+  const [compare, setCompare] = useState<null | { seq: number; ids: number[]; slotKey: string | null }>(null);
+  const compareSeq = useRef(0);
 
   const boardRef = useRef<HTMLDivElement | null>(null);
   const inspectorInvokerRef = useRef<HTMLElement | null>(null);
@@ -144,6 +151,52 @@ export function LineupBoard({
     () => new Set(players.filter(p => p.fitnessLevel == null).map(p => p.id)),
     [players],
   );
+
+  // Phase 5: squad analysis — recomputed once per arrangement change (view
+  // mode analyzes the displayed baseline; edit mode the live draft).
+  const footById = useMemo(() => new Map(players.map(p => [p.id, p.preferredFoot ?? null])), [players]);
+  const secondaryById = useMemo(
+    () => new Map(players.map(p => [p.id, (p.secondaryPositionIds ?? []) as readonly number[]])),
+    [players],
+  );
+  const warnings = useMemo(() => buildWarnings({
+    sportId,
+    formation,
+    assignments: current.assignments,
+    players: lineupPlayers,
+    fits,
+    injuredIds,
+    footById,
+    secondaryById,
+    editing,
+    captainId: current.tactical.captainId,
+  }), [sportId, formation, current.assignments, lineupPlayers, fits, injuredIds, footById, secondaryById, editing, current.tactical.captainId]);
+
+  const tacticsRef = useRef<HTMLDivElement | null>(null);
+
+  const openCompare = useCallback((ids: number[], slotKey: string | null) => {
+    compareSeq.current += 1;
+    setCompare({ seq: compareSeq.current, ids, slotKey });
+  }, []);
+
+  // "Compare candidates" for a slot: occupant first, then the best eligible
+  // bench players (primary position, available) by the engine's own order.
+  const compareCandidatesForSlot = useCallback((slotKey: string) => {
+    const slot = formation.slots.find(s => s.key === slotKey);
+    if (!slot) return;
+    const occupant = current.assignments[slotKey];
+    const placed = new Set(Object.values(current.assignments));
+    const benchEligible = lineupPlayers
+      .filter(p => !placed.has(p.id)
+        && p.status !== 'Suspended' && p.status !== 'Inactive'
+        && p.positionId != null && slot.naturalPositionIds.includes(p.positionId))
+      .sort(compareByRating);
+    const ids = [
+      ...(occupant != null ? [occupant] : []),
+      ...benchEligible.map(p => p.id),
+    ].slice(0, 4);
+    openCompare(ids, slotKey);
+  }, [formation, current.assignments, lineupPlayers, openCompare]);
 
   // ── Commit path (shared by tap-swap AND drag — the equivalence is by construction) ──
 
@@ -480,6 +533,10 @@ export function LineupBoard({
         injured: injuredIds.has(inspectorPlayer.id),
         open: true,
         onOpenProfile: () => navigate(`/players/${inspectorPlayer.id}?tab=evidence`),
+        onCompare: () => {
+          closeInspector();
+          openCompare([inspectorPlayer.id], null);
+        },
       }
     : null;
 
@@ -725,9 +782,18 @@ export function LineupBoard({
               : t('teams.lineupSelectHint', 'Tap a player or slot to select it (keyboard: Tab + Enter)')}
           </span>
           {selectedSlotOccupied && (
-            <button type="button" onClick={() => { commitMove(selection as Selection, { kind: 'benchArea' }); setSelection(null); }} className="font-semibold underline cursor-pointer flex-shrink-0">
-              {t('teams.lineupSendToBench', 'Send to bench')}
-            </button>
+            <span className="flex items-center gap-3 flex-shrink-0">
+              <button type="button" onClick={() => { commitMove(selection as Selection, { kind: 'benchArea' }); setSelection(null); }} className="font-semibold underline cursor-pointer">
+                {t('teams.lineupSendToBench', 'Send to bench')}
+              </button>
+              <button
+                type="button"
+                onClick={() => compareCandidatesForSlot((selection as { key: string }).key)}
+                className="font-semibold underline cursor-pointer"
+              >
+                {t('teams.compareCandidates', 'Compare candidates')}
+              </button>
+            </span>
           )}
         </div>
       )}
@@ -858,6 +924,18 @@ export function LineupBoard({
         {benchSection}
       </div>
 
+      {/* Phase 5: squad analysis — both modes, deterministic order, info rows
+          subordinate. Rendered right under the workspace so its position is
+          stable regardless of the transient why-picks panel. */}
+      <SquadAnalysisPanel
+        warnings={warnings}
+        nameOf={nameOf}
+        editing={editing}
+        onSelectSlot={editing ? key => setSelection({ kind: 'slot', key }) : undefined}
+        onOpenPlayer={!editing ? openInspector : undefined}
+        onOpenTactics={editing ? () => tacticsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) : undefined}
+      />
+
       {/* Phase 4: "why these picks" — only while the draft still matches the
           suggestion it explains (never retro-fitted onto manual edits). */}
       {editing && draft && whyPicks
@@ -871,12 +949,14 @@ export function LineupBoard({
 
       {/* Coach-authored tactical layer (Phase 3) */}
       {editing && draft && (
-        <TacticsPanel
-          sportId={sportId}
-          xi={xiEntries}
-          tactical={draft.tactical}
-          onChange={applyTactical}
-        />
+        <div ref={tacticsRef}>
+          <TacticsPanel
+            sportId={sportId}
+            xi={xiEntries}
+            tactical={draft.tactical}
+            onChange={applyTactical}
+          />
+        </div>
       )}
       {!editing && saved && hasTacticalContent(baseline.tactical) && (
         <TacticsSummary sportId={sportId} tactical={baseline.tactical} nameOf={nameOf} />
@@ -896,6 +976,23 @@ export function LineupBoard({
 
       {/* Drag ghost (pointer enhancement — decorative only) */}
       {drag && dragPlayer && <DragGhost player={dragPlayer} ghostElRef={ghostElRef} />}
+
+      {/* Phase 5: player comparison (keyed per open so column state resets) */}
+      {compare && (
+        <ComparePlayersModal
+          key={compare.seq}
+          isOpen
+          onClose={() => setCompare(null)}
+          initialIds={compare.ids}
+          targetSlot={compare.slotKey != null ? formation.slots.find(s => s.key === compare.slotKey) ?? null : null}
+          players={players}
+          lineupById={lineupById}
+          scoresById={scoresById}
+          failedIds={failedIds}
+          injuredIds={injuredIds}
+          sportId={sportId}
+        />
+      )}
 
       <SaveLineupModal
         key={`${saveOpen}-${matchContext ?? 'default'}`}
