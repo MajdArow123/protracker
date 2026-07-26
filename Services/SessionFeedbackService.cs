@@ -191,19 +191,19 @@ public class SessionFeedbackService : ISessionFeedbackService
 
     // ─── helpers ────────────────────────────────────────────────────────────────
 
-    private async Task EnsurePlayerOnSessionAsync(Player player, ScheduledSession session)
+    private static Task EnsurePlayerOnSessionAsync(Player player, ScheduledSession session)
     {
         if (session.PlayerId != null)
         {
             if (session.PlayerId != player.Id)
                 throw new ForbiddenApiException("This session doesn't belong to you.");
-            return;
+            return Task.CompletedTask;
         }
         if (session.TeamId != null)
         {
             if (player.TeamId != session.TeamId)
                 throw new ForbiddenApiException("You are not on this session's team.");
-            return;
+            return Task.CompletedTask;
         }
         throw new ForbiddenApiException();
     }

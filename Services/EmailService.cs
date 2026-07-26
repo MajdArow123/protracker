@@ -55,7 +55,7 @@ public class EmailService : IEmailService
             var socketOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
             await client.ConnectAsync(host, port, socketOption);
             if (!string.IsNullOrWhiteSpace(user))
-                await client.AuthenticateAsync(user, pass);
+                await client.AuthenticateAsync(user, pass ?? "");
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
@@ -95,7 +95,7 @@ public class EmailService : IEmailService
             var socketOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
             await client.ConnectAsync(host, port, socketOption);
             if (!string.IsNullOrWhiteSpace(user))
-                await client.AuthenticateAsync(user, pass);
+                await client.AuthenticateAsync(user, pass ?? "");
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
@@ -134,7 +134,7 @@ public class EmailService : IEmailService
             var socketOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
             await client.ConnectAsync(host, port, socketOption);
             if (!string.IsNullOrWhiteSpace(user))
-                await client.AuthenticateAsync(user, pass);
+                await client.AuthenticateAsync(user, pass ?? "");
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 
@@ -173,7 +173,7 @@ public class EmailService : IEmailService
             var socketOption = port == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls;
             await client.ConnectAsync(host, port, socketOption);
             if (!string.IsNullOrWhiteSpace(user))
-                await client.AuthenticateAsync(user, pass);
+                await client.AuthenticateAsync(user, pass ?? "");
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
 

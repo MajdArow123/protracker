@@ -153,6 +153,26 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 20,
                 Window = TimeSpan.FromMinutes(1),
             }));
+
+    // Public Vora meal-suggestion endpoint: every request spends an Anthropic call, so
+    // this is far tighter than join-validate. Partitions by the first X-Forwarded-For
+    // hop — behind Railway's proxy the socket IP is the proxy itself, which would
+    // collapse all clients into one shared bucket. XFF is spoofable; accepted trade
+    // for a free anonymous endpoint (max_tokens caps the per-call cost).
+    options.AddPolicy("meal-suggestion", context =>
+    {
+        var forwarded = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
+        var clientIp = !string.IsNullOrWhiteSpace(forwarded)
+            ? forwarded.Split(',')[0].Trim()
+            : context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            clientIp,
+            _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromHours(1),
+            });
+    });
 });
 
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -209,6 +229,7 @@ builder.Services.AddScoped<IEvidenceScoringEngine, EvidenceScoringEngine>();
 builder.Services.AddScoped<IEvidenceService, EvidenceService>();
 builder.Services.AddScoped<ILineupService, LineupService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
+builder.Services.AddScoped<IMealSuggestionService, MealSuggestionService>();
 // On-demand demo showcase seeding (token-gated endpoint; see DemoShowcaseSeeder).
 builder.Services.AddScoped<ProTracker.Data.Showcase.DemoShowcaseSeeder>();
 

@@ -5,7 +5,7 @@ namespace ProTracker.Services;
 
 public interface IAIService
 {
-    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null, string? assistantPrefill = null);
+    Task<string> GenerateTextAsync(string prompt, int? maxTokensOverride = null, string? modelOverride = null, string? assistantPrefill = null, CancellationToken ct = default);
 }
 
 public class AIService : IAIService
@@ -27,7 +27,8 @@ public class AIService : IAIService
         string prompt,
         int? maxTokensOverride = null,
         string? modelOverride = null,
-        string? assistantPrefill = null)
+        string? assistantPrefill = null,
+        CancellationToken ct = default)
     {
         // Build the messages array; optionally seed the assistant turn so the
         // model continues from that exact text (great for guaranteed JSON output).
@@ -52,16 +53,16 @@ public class AIService : IAIService
         var json    = JsonSerializer.Serialize(body);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await _httpClient.PostAsync("v1/messages", content);
+        var response = await _httpClient.PostAsync("v1/messages", content, ct);
 
         if (!response.IsSuccessStatusCode)
         {
-            var err = await response.Content.ReadAsStringAsync();
+            var err = await response.Content.ReadAsStringAsync(ct);
             _logger.LogError("Anthropic API error {Status}: {Body}", response.StatusCode, err);
             throw new InvalidOperationException($"AI service returned {response.StatusCode}.");
         }
 
-        var raw = await response.Content.ReadAsStringAsync();
+        var raw = await response.Content.ReadAsStringAsync(ct);
         using var doc = JsonDocument.Parse(raw);
         var text = doc.RootElement
             .GetProperty("content")[0]
