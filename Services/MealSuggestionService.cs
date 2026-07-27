@@ -1,3 +1,5 @@
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using ProTracker.Dtos;
 
 namespace ProTracker.Services;
@@ -8,11 +10,18 @@ public interface IMealSuggestionService
 }
 
 // AI meal suggestions for the public Vora iOS endpoint. Stateless: no player, no DB —
-// the caller's remaining macros are the entire context.
+// the caller's remaining macros are the entire context. The model must return a strict
+// JSON structure (guaranteed to start as JSON via the assistant-prefill trick) so the
+// iOS app can match each food against its database.
 public class MealSuggestionService : IMealSuggestionService
 {
     private const string HaikuModel = "claude-haiku-4-5-20251001";
     private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(15);
+
+    private static readonly JsonSerializerOptions ParseOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
 
     private readonly IAIService _ai;
     private readonly ILogger<MealSuggestionService> _logger;
@@ -35,7 +44,8 @@ public class MealSuggestionService : IMealSuggestionService
             using var cts = new CancellationTokenSource(RequestTimeout);
             try
             {
-                lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 300, modelOverride: HaikuModel, ct: cts.Token);
+                lastRaw = await _ai.GenerateTextAsync(prompt, maxTokensOverride: 500,
+                    modelOverride: HaikuModel, assistantPrefill: "{", ct: cts.Token);
             }
             catch (OperationCanceledException) when (cts.IsCancellationRequested)
             {
@@ -46,13 +56,15 @@ public class MealSuggestionService : IMealSuggestionService
 
             try
             {
-                var (mealName, detail) = ParseMealText(lastRaw);
-                return new MealSuggestionResponse
-                {
-                    MealName = mealName,
-                    Detail = detail,
-                    GeneratedAt = DateTime.UtcNow,
-                };
+                var meal = ParseMealJson(lastRaw);
+                // The requested meal type is authoritative — never trust the model to
+                // echo it. No request value -> the model's value -> generic "meal".
+                if (!string.IsNullOrWhiteSpace(request.MealType))
+                    meal.MealType = request.MealType;
+                else if (string.IsNullOrWhiteSpace(meal.MealType))
+                    meal.MealType = "meal";
+                meal.GeneratedAt = DateTime.UtcNow;
+                return meal;
             }
             catch (FormatException ex)
             {
@@ -61,39 +73,116 @@ public class MealSuggestionService : IMealSuggestionService
         }
 
         _logger.LogError("Failed to parse AI meal suggestion after retries: {Raw}", lastRaw);
-        throw new InvalidOperationException("AI returned an unexpected meal format.");
+        throw new InvalidOperationException("Could not generate a valid suggestion. Try again.");
     }
 
-    // First non-empty line = meal name, the rest = detail. Public + pure for unit tests.
-    public static (string MealName, string Detail) ParseMealText(string raw)
+    // Strict on structure (meal name, 2-5 foods with names and positive grams), lenient
+    // on cosmetics (missing description/cookingTip/unit get defaults — not worth a
+    // retry). Public + pure for unit tests. Throws FormatException on violations.
+    public static MealSuggestionResponse ParseMealJson(string raw)
     {
-        var lines = raw.Split('\n')
-            .Select(l => l.Trim())
-            .Where(l => l.Length > 0)
-            .ToList();
+        ParsedMeal? parsed;
+        try
+        {
+            parsed = JsonSerializer.Deserialize<ParsedMeal>(raw, ParseOptions);
+        }
+        catch (JsonException ex)
+        {
+            throw new FormatException("AI reply was not valid JSON.", ex);
+        }
 
-        if (lines.Count < 2)
-            throw new FormatException("Expected a meal name line followed by detail lines.");
+        if (parsed is null || string.IsNullOrWhiteSpace(parsed.MealName))
+            throw new FormatException("AI reply is missing mealName.");
+        if (parsed.Foods is null || parsed.Foods.Count < 2 || parsed.Foods.Count > 5)
+            throw new FormatException("AI reply must contain 2-5 foods.");
+        if (parsed.Foods.Any(f => string.IsNullOrWhiteSpace(f.Name) || f.Grams is null or <= 0))
+            throw new FormatException("Every food needs a name and positive grams.");
 
-        return (lines[0], string.Join("\n", lines.Skip(1)));
+        return new MealSuggestionResponse
+        {
+            MealName = parsed.MealName.Trim(),
+            MealType = parsed.MealType?.Trim() ?? "",
+            Description = parsed.Description?.Trim() ?? "",
+            CookingTip = parsed.CookingTip?.Trim() ?? "",
+            Foods = parsed.Foods.Select(f => new SuggestedFood
+            {
+                Name = f.Name!.Trim(),
+                Grams = f.Grams!.Value,
+                Unit = string.IsNullOrWhiteSpace(f.Unit) ? "g" : f.Unit.Trim(),
+            }).ToList(),
+        };
     }
 
-    private static string BuildPrompt(MealSuggestionRequest r) =>
-        $"""
-        You are a nutrition assistant for a fitness tracking app.
-        The user has these remaining macros for today:
-        - Calories remaining: {r.CaloriesRemaining} kcal
-        - Protein remaining: {r.ProteinRemaining}g
-        - Carbs remaining: {r.CarbsRemaining}g
-        - Fat remaining: {r.FatRemaining}g
-        - Time of day: {r.TimeOfDay}
-        - Their goal: {r.GoalType}
+    private string BuildPrompt(MealSuggestionRequest r)
+    {
+        var mealType = string.IsNullOrWhiteSpace(r.MealType) ? "meal" : r.MealType.Trim();
+        var preference = SanitizePreference(r.UserPreference);
+        var userPreferenceLine = preference.Length > 0 ? $"\n- User preference: {preference}" : "";
 
-        Suggest ONE specific meal or food combination that would
-        closely match these remaining macros. Be specific with
-        portions (e.g. 200g chicken breast + 1 cup rice + salad).
-        Keep your response under 60 words. First line: meal name only.
-        Second line onwards: specific foods and portions.
-        No preamble, no explanation — just the meal suggestion.
-        """;
+        return $$"""
+            You are a precision nutrition assistant for a fitness tracking
+            app. Return ONLY valid JSON, no other text.
+
+            The user needs a {{mealType}} with these remaining macros:
+            - Calories: {{r.CaloriesRemaining}} kcal
+            - Protein: {{r.ProteinRemaining}}g
+            - Carbs: {{r.CarbsRemaining}}g
+            - Fat: {{r.FatRemaining}}g
+            - Goal: {{r.GoalType}}
+            - Time: {{r.TimeOfDay}}{{userPreferenceLine}}
+
+            Return this exact JSON structure:
+            {
+              "mealName": "meal name here",
+              "mealType": "{{mealType}}",
+              "description": "one sentence description",
+              "foods": [
+                {
+                  "name": "food name for database search",
+                  "grams": 200,
+                  "unit": "g"
+                }
+              ],
+              "cookingTip": "one short cooking or prep tip"
+            }
+
+            Rules:
+            - foods array must have 2-5 items
+            - food names must be simple and searchable
+              (e.g. 'chicken breast' not 'grilled seasoned chicken')
+            - grams must be realistic portions
+            - the combined macros of all foods must closely match
+              the remaining macro targets
+            - if userPreference specifies an ingredient, at least
+              one food must include it
+            - mealType must match what was requested
+            """;
+    }
+
+    // The only free-text field that reaches the prompt: strip control characters and
+    // collapse all whitespace to single spaces so it can't fake new prompt sections.
+    private static string SanitizePreference(string? preference)
+    {
+        if (string.IsNullOrWhiteSpace(preference)) return "";
+        var noControl = Regex.Replace(preference, @"\p{C}+", " ");
+        return Regex.Replace(noControl, @"\s+", " ").Trim();
+    }
+
+    // Wire shape of the model's reply. Nullable throughout so structural validation
+    // (not the deserializer) decides what's acceptable.
+    private sealed class ParsedMeal
+    {
+        public string? MealName { get; set; }
+        public string? MealType { get; set; }
+        public string? Description { get; set; }
+        public List<ParsedFood>? Foods { get; set; }
+        public string? CookingTip { get; set; }
+    }
+
+    private sealed class ParsedFood
+    {
+        public string? Name { get; set; }
+        public double? Grams { get; set; }
+        public string? Unit { get; set; }
+    }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using ProTracker.Common;
 using ProTracker.Dtos;
 using ProTracker.Services;
 
@@ -19,12 +20,23 @@ public class MealSuggestionController : ApiControllerBase
     }
 
     // Returns the DTO bare (deliberately NOT the {success, data} envelope) — the Vora
-    // client's contract is exactly { mealName, detail, generatedAt }.
-    // Validation failures -> 400 (FluentValidation auto-validation); AI errors/timeouts
-    // surface as 500 via ErrorHandlingMiddleware; rate limit -> 429.
+    // client's contract is exactly the MealSuggestionResponse shape.
+    // Validation failures -> 400 (FluentValidation auto-validation); rate limit -> 429.
+    // AI failures are caught here (not left to ErrorHandlingMiddleware, which would
+    // genericize the message) so the client gets the contract's exact 500 message.
     [HttpPost]
     [AllowAnonymous]
     [EnableRateLimiting("meal-suggestion")]
-    public async Task<ActionResult<MealSuggestionResponse>> Suggest(MealSuggestionRequest request) =>
-        Ok(await _service.SuggestAsync(request));
+    public async Task<ActionResult<MealSuggestionResponse>> Suggest(MealSuggestionRequest request)
+    {
+        try
+        {
+            return Ok(await _service.SuggestAsync(request));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ApiErrorResponse { Message = ex.Message });
+        }
+    }
 }

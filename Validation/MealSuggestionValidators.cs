@@ -7,6 +7,7 @@ public class MealSuggestionRequestValidator : AbstractValidator<MealSuggestionRe
 {
     private static readonly string[] GoalTypes = { "fatLoss", "maintain", "muscleGain" };
     private static readonly string[] TimesOfDay = { "morning", "afternoon", "evening", "night" };
+    private static readonly string[] MealTypes = { "breakfast", "lunch", "dinner", "snack", "postWorkout" };
 
     public MealSuggestionRequestValidator()
     {
@@ -26,5 +27,11 @@ public class MealSuggestionRequestValidator : AbstractValidator<MealSuggestionRe
         RuleFor(x => x.TimeOfDay)
             .Must(v => TimesOfDay.Contains(v, StringComparer.OrdinalIgnoreCase))
             .WithMessage("timeOfDay must be one of: morning, afternoon, evening, night.");
+        RuleFor(x => x.MealType)
+            .Must(v => MealTypes.Contains(v, StringComparer.OrdinalIgnoreCase))
+            .When(x => !string.IsNullOrEmpty(x.MealType))
+            .WithMessage("mealType must be one of: breakfast, lunch, dinner, snack, postWorkout.");
+        RuleFor(x => x.UserPreference)
+            .MaximumLength(100).WithMessage("userPreference must be 100 characters or fewer.");
     }
 }
