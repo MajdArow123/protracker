@@ -58,7 +58,7 @@ A `<SourceBadge source={...} />` (or a prop on the existing `RatingChip`) makes 
 | Squad coverage / confidence | calculated | S6 `coverageLevel` | denominator always shown |
 | Injuries (type, severity, return date) | recorded | injury entity | real; "return date not set" when null |
 | Player status (Suspended/Inactive) | recorded | `PlayerStatus` | "Suspended — no end date tracked" |
-| Fitness level | coach-entered | `Player.FitnessLevel` (**int 1–10, NOT nullable** — always carries a value; demo data seeds it randomly, so it can wear a coach-entered label it didn't earn) | labeled "coach-set"; a real "Not recorded" state requires making it nullable — Phase 2 ruling |
+| Fitness level | coach-entered | `Player.FitnessLevel` (**int? 1–10, nullable since Phase 3** `35c2d47` — null = "Not recorded"; registration no longer fabricates 5; pre-existing values were kept, so a legacy default 5 is indistinguishable from a coach-set 5) | labeled "coach-set" when a value exists; null renders the true "Not recorded" state |
 | Form | **not-tracked** | **no `Player.form` field exists** (the only `form` in the codebase is league-standing form "WWDLL") | "Not tracked" until a coach-entered field ships (Phase 3 candidate) |
 | Wellbeing: Energy / Feeling | player-reported | wellbeing check-in | keep real names + "self-reported, {date}"; **Energy ≠ fatigue, Feeling ≠ morale** |
 | Position (primary) | coach-entered | `Player.position` (single string) | as-is |
