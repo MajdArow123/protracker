@@ -2867,6 +2867,8 @@
     "permManagePlayersHint": "הוסף, ערוך והסר שחקנים",
     "permManageTeam": "נהל קבוצה",
     "permManageTeamHint": "ערוך את פרטי הקבוצה וההגדרות",
+    "permPublishLineup": "פרסום הרכבים",
+    "permPublishLineupHint": "פרסום וביטול פרסום של הרכבי הקבוצה",
     "permViewPrivateNotes": "צפה בהערות פרטיות",
     "permViewPrivateNotesHint": "צפה בהערות פרטיות של המאמן על השחקנים",
     "permissions": "הרשאות",

@@ -2867,6 +2867,8 @@
     "permManagePlayersHint": "Ajouter, modifier et retirer des joueurs",
     "permManageTeam": "Gérer l'équipe",
     "permManageTeamHint": "Modifier les détails et les paramètres de l'équipe",
+    "permPublishLineup": "Publier les compositions",
+    "permPublishLineupHint": "Publier et dépublier les compositions de l'équipe",
     "permViewPrivateNotes": "Voir les notes privées",
     "permViewPrivateNotesHint": "Voir les notes privées de l'entraîneur sur les joueurs",
     "permissions": "Autorisations",

@@ -2867,6 +2867,8 @@
     "permManagePlayersHint": "Add, edit & remove players",
     "permManageTeam": "Manage team",
     "permManageTeamHint": "Edit team details & settings",
+    "permPublishLineup": "Publish lineups",
+    "permPublishLineupHint": "Publish & unpublish team lineups",
     "permViewPrivateNotes": "View private notes",
     "permViewPrivateNotesHint": "See coach-private player notes",
     "permissions": "Permissions",

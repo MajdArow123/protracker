@@ -2867,6 +2867,8 @@
     "permManagePlayersHint": "إضافة اللاعبين وتعديلهم وإزالتهم",
     "permManageTeam": "إدارة الفريق",
     "permManageTeamHint": "تعديل تفاصيل الفريق وإعداداته",
+    "permPublishLineup": "نشر التشكيلات",
+    "permPublishLineupHint": "نشر التشكيلات وإلغاء نشرها",
     "permViewPrivateNotes": "عرض الملاحظات الخاصة",
     "permViewPrivateNotesHint": "الاطلاع على ملاحظات اللاعبين الخاصة بالمدرب",
     "permissions": "الصلاحيات",

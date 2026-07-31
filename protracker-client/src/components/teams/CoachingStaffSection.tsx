@@ -18,12 +18,13 @@ const PERMISSION_LABELS: { key: keyof CoachPermissions; labelKey: string; label:
   { key: 'canViewPrivateNotes', labelKey: 'teams.permViewPrivateNotes', label: 'View private notes', hintKey: 'teams.permViewPrivateNotesHint', hint: 'See coach-private player notes' },
   { key: 'canManagePlayers', labelKey: 'teams.permManagePlayers', label: 'Manage players', hintKey: 'teams.permManagePlayersHint', hint: 'Add, edit & remove players' },
   { key: 'canManageTeam', labelKey: 'teams.permManageTeam', label: 'Manage team', hintKey: 'teams.permManageTeamHint', hint: 'Edit team details & settings' },
+  { key: 'canPublishLineup', labelKey: 'teams.permPublishLineup', label: 'Publish lineups', hintKey: 'teams.permPublishLineupHint', hint: 'Publish & unpublish team lineups' },
 ];
 
 const ROLE_PRESETS: Record<CoachRoleType, CoachPermissions> = {
-  HeadCoach: { canAssessPlayers: true, canAssignTasks: true, canViewPrivateNotes: true, canManagePlayers: true, canManageTeam: true },
-  AssistantCoach: { canAssessPlayers: true, canAssignTasks: true, canViewPrivateNotes: false, canManagePlayers: true, canManageTeam: false },
-  Analyst: { canAssessPlayers: true, canAssignTasks: false, canViewPrivateNotes: false, canManagePlayers: false, canManageTeam: false },
+  HeadCoach: { canAssessPlayers: true, canAssignTasks: true, canViewPrivateNotes: true, canManagePlayers: true, canManageTeam: true, canPublishLineup: true },
+  AssistantCoach: { canAssessPlayers: true, canAssignTasks: true, canViewPrivateNotes: false, canManagePlayers: true, canManageTeam: false, canPublishLineup: false },
+  Analyst: { canAssessPlayers: true, canAssignTasks: false, canViewPrivateNotes: false, canManagePlayers: false, canManageTeam: false, canPublishLineup: false },
 };
 
 type TFunc = (key: string, fallback: string) => string;

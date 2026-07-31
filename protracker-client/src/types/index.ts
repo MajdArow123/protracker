@@ -229,6 +229,9 @@ export interface CoachPermissions {
   canViewPrivateNotes: boolean;
   canManagePlayers: boolean;
   canManageTeam: boolean;
+  // Phase 6: publish/unpublish lineups — gated tighter than lineup editing
+  // (canManageTeam). Pre-Phase-6 assistants deserialize to false server-side.
+  canPublishLineup: boolean;
 }
 
 export interface TeamCoach {
