@@ -403,6 +403,15 @@ History (one line each; full detail in git history + blueprint):
 - **Program Phase 5** (`dcbf0fa`): `SquadAnalysisPanel` (`buildWarnings`, 8 typed codes)
   + `ComparePlayersModal` (2-4 columns, slot-context or inspector entry;
   `recommendForSlot`, `coAppearanceCount`) — `lineupAnalysisLogic.ts`.
+- **Program Phase 6 BACKEND** (`49a6122` backend + `69fb3d1` permission plumbing,
+  migration `AddLineupWorkflow`): draft/publish workflow (`LineupStatus`, `PublishedAt`),
+  optimistic `Version` (EF concurrency token), named lineups, `TacticalPreset` +
+  `TacticalPresetsController`, `LineupChangeAudit` + `LineupDiffSummarizer`,
+  `CanPublishLineup`, `ConflictApiException` → 409. Existing rows backfill
+  Status=Draft/Version=1 (migration default, both-provider proven incl. down-leg,
+  pinned in `LineupWorkflowMigrationTests`). NOTE: this work was found 11 days stale
+  and uncommitted in the lineup-phase5 worktree (a parallel session started it without
+  a checkpoint), was audited against the approved spec, completed, and landed.
 
 **Lineup pinned contracts (rulings — do not violate):**
 
@@ -506,8 +515,32 @@ History (one line each; full detail in git history + blueprint):
   values. Form = `not-tracked` (stated, not faked). `computeTrend` reused verbatim (all
   S4 gates apply); standing band sentence only when a benchmark profile is assigned (S5
   no-cohort-claim ruling).
+- **Phase 6 workflow contracts**: Published = locked — upsert/DELETE on a Published
+  lineup → 409; unpublish is an explicit, `CanPublishLineup`-gated, audited act.
+  `CanPublishLineup` is gated TIGHTER than editing (`CanManageTeam`); head coach
+  implicit via `All()`; pre-Phase-6 assistants deserialize to false. Version check is
+  STRICT: stale, missing-on-existing-row, or set-against-a-deleted-row `BaseVersion`
+  all 409 (never a silent clobber or re-create); true write races are caught by the
+  EF concurrency token on `Lineup.Version` → same 409. Named-lineup keys:
+  (team, match) and (team, normalized name, case-insensitive) — Name forbidden on
+  match lineups, both null = default XI, service-enforced, cap 10 named/team.
+  Audit rows are written IN the change's transaction, summaries come only from
+  `LineupDiffSummarizer` real diffs (an identical re-save bumps Version but writes NO
+  audit row — never "updated lineup"); audits outlive their lineup (LineupId SET NULL,
+  denormalized KeyLabel/ChangedByName). `TacticalPreset` stores NO player ids
+  (captain/vice/takers are player-bound; presets are cross-team reusable) and
+  **apply-diff is client-side by design** — no server apply endpoint; sport fixed
+  after create; name unique per (coach, sport); cap 20/coach. All caps + the
+  deleted-elsewhere 409 were explicitly signed off.
 
 **Still open (lineup):**
+- **Phase 6 FRONTEND (next)**: publish/unpublish UI, named-lineup picker (`GET
+  /api/teams/{id}/lineups`), audit panel (`GET .../lineup-audit`), preset manager +
+  client-side apply-diff into the draft, 409-conflict resolution UX (reload vs
+  overwrite), and BaseVersion echo on save (`SaveLineupDto.BaseVersion` — the current
+  UI saves without it, which now 409s on existing rows: ship the frontend before
+  coaches re-save existing lineups, or they'll hit unexplained conflicts; prod has
+  ZERO saved lineups today, so nothing is currently affected).
 
 - True upcoming-fixture planning — needs a scheduled/played concept on matches; today a
   "future match" is a 0-0 `MatchResult` that renders as a Draw.
@@ -534,7 +567,9 @@ History (one line each; full detail in git history + blueprint):
   `ConnectionStrings__DefaultConnection=...`, `Jwt__SigningKey/Issuer/Audience/
   AccessTokenMinutes/RefreshTokenDays` (values from appsettings.json), plus
   `Cors__AllowedOrigins__0=http://localhost:<vite-port>` when the frontend runs
-  on a non-default port. Don't burn time re-diagnosing.
+  on a non-default port. Don't burn time re-diagnosing. **This hits `dotnet test`
+  too** (Phase 6: WebApplicationFactory host dies with "Connection string
+  'DefaultConnection' not found") — same env-var workaround fixes it.
 - **`Player.TeamId` is nullable** (since Solo Athlete Mode). Any new query filtering
   players by team must null-guard (`p.TeamId != null && teamIds.Contains(p.TeamId.Value)`).
   Same for `AssessmentPeriod`/`ScheduledSession`/`MatchResult`, which are team-scoped
@@ -610,7 +645,19 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Lineup program Phase 5 COMPLETE and deployed** (`dcbf0fa`) — squad analysis
+- **Latest: Lineup program Phase 6 BACKEND COMPLETE and deployed** (`49a6122` +
+  plumbing `69fb3d1`) — signed off at the migration checkpoint, sequenced backend-first:
+  Railway ran `AddLineupWorkflow` (deploy success via GitHub deployments API, health
+  200), prod-verified live: schema present (SQL sweep — zero pre-existing lineups, so
+  the Draft backfill had nothing to touch; contract pinned by both-provider tests),
+  full gate probe as coach + a real invited no-publish assistant (draft save v1→v2 by
+  assistant, assistant publish 403, publish v3, edit/delete on Published both 409,
+  unpublish v4, delete 204, GET `{data:null}`), then ALL probe artifacts removed
+  (assistant role 204, account self-deleted → login 401, audit + invite rows
+  SQL-deleted via Railway public DB URL; final counts lineups/presets/audits 0/0/0).
+  Post-merge suites: dotnet 172/172, vitest 243/243, build + oxlint clean.
+  **Phase 6 frontend (workflow UI) not started — see Still open (lineup).**
+- Lineup program Phase 5 COMPLETE and deployed (`dcbf0fa`) — squad analysis
   panel + player comparison; built in a worktree, signed off at checkpoint, Vercel
   deploy verified via GitHub's deployments API, prod-smoked on City FC U18 (pinned
   warning order, live suppression, real co-appearance counts, GK recommendation with
