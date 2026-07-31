@@ -25,6 +25,13 @@ public class PlanLimitApiException : Exception
     public PlanLimitApiException(string message) : base(message) { }
 }
 
+// The request conflicts with current server state (stale version, published lock).
+// Maps to 409; the client refetches and derives the resolution path from data.
+public class ConflictApiException : Exception
+{
+    public ConflictApiException(string message) : base(message) { }
+}
+
 public class ValidationApiException : Exception
 {
     public List<string> Errors { get; }

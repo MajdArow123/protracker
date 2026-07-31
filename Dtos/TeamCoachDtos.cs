@@ -9,6 +9,7 @@ public class CoachPermissionsDto
     public bool CanViewPrivateNotes { get; set; }
     public bool CanManagePlayers { get; set; }
     public bool CanManageTeam { get; set; }
+    public bool CanPublishLineup { get; set; }
 }
 
 // One coach on a team (head coach or an assistant/analyst).

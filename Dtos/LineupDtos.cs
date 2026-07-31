@@ -24,8 +24,20 @@ public class LineupDto
     public int Id { get; set; }
     public int TeamId { get; set; }
     public int? MatchResultId { get; set; }
+    public string? Name { get; set; }
     public string Formation { get; set; } = string.Empty;
+
+    /// <summary>Enum name ("Draft" | "Published") — the NotificationDto.Type precedent.</summary>
+    public string Status { get; set; } = "Draft";
+    public DateTime? PublishedAt { get; set; }
+
+    /// <summary>Current optimistic-concurrency version; echo as BaseVersion on save.</summary>
+    public int Version { get; set; }
+
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>Display name of the last editor (read-time join); null if unknown.</summary>
+    public string? UpdatedByName { get; set; }
     public int? CaptainPlayerId { get; set; }
     public int? ViceCaptainPlayerId { get; set; }
     public string? Notes { get; set; }
@@ -34,10 +46,16 @@ public class LineupDto
     public List<SetPieceAssignmentDto> SetPieces { get; set; } = new();
 }
 
-/// <summary>Upsert payload — the (TeamId from route, MatchResultId) pair is the key.</summary>
+/// <summary>
+/// Upsert payload. Key = (TeamId from route, MatchResultId) for match lineups,
+/// or (TeamId, Name) for team lineups (Name null = default XI). BaseVersion
+/// must match the server's Version when the row exists — stale or missing → 409.
+/// </summary>
 public class SaveLineupDto
 {
     public int? MatchResultId { get; set; }
+    public string? Name { get; set; }
+    public int? BaseVersion { get; set; }
     public string Formation { get; set; } = string.Empty;
     public int? CaptainPlayerId { get; set; }
     public int? ViceCaptainPlayerId { get; set; }
@@ -45,4 +63,32 @@ public class SaveLineupDto
     public List<string>? TacticalLabels { get; set; }
     public List<LineupSlotDto> Slots { get; set; } = new();
     public List<SetPieceAssignmentDto>? SetPieces { get; set; } = new();
+}
+
+/// <summary>One row of GET /api/teams/{id}/lineups — every saved lineup for the team.</summary>
+public class LineupSummaryDto
+{
+    public int Id { get; set; }
+    public int? MatchResultId { get; set; }
+    public string? Name { get; set; }
+    public string Formation { get; set; } = string.Empty;
+    public string Status { get; set; } = "Draft";
+    public DateTime? PublishedAt { get; set; }
+    public int Version { get; set; }
+    public int SlotCount { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public string? UpdatedByName { get; set; }
+}
+
+/// <summary>One lightweight audit row: who / when / real-diff summary.</summary>
+public class LineupAuditEntryDto
+{
+    public int Id { get; set; }
+    public int? LineupId { get; set; }
+    public string KeyLabel { get; set; } = "";
+    public string ChangedByName { get; set; } = "";
+    public string Action { get; set; } = "";
+    public int Version { get; set; }
+    public string Summary { get; set; } = "";
+    public DateTime CreatedAt { get; set; }
 }

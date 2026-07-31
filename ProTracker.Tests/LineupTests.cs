@@ -107,10 +107,14 @@ public class LineupEndpointTests : IClassFixture<ProTrackerWebApplicationFactory
         Assert.Equal(3, saved.Slots.Count);
 
         // 3. Re-save with changes → same row mutated (upsert), never a duplicate.
-        var second = await coach.PutAsJsonAsync($"/api/teams/{TestAuth.SoccerTeamId}/lineup", DefaultXi("4-4-2"));
+        //    Phase 6: a re-save must echo the current version (BaseVersion).
+        var resaveDto = DefaultXi("4-4-2");
+        resaveDto.BaseVersion = saved.Version;
+        var second = await coach.PutAsJsonAsync($"/api/teams/{TestAuth.SoccerTeamId}/lineup", resaveDto);
         var resaved = (await second.Content.ReadFromJsonAsync<TestApiResponse<LineupDto>>())!.Data!;
         Assert.Equal(saved.Id, resaved.Id);
         Assert.Equal("4-4-2", resaved.Formation);
+        Assert.Equal(saved.Version + 1, resaved.Version);
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -444,7 +448,8 @@ public class TacticalLineupEndpointTests : IClassFixture<ProTrackerWebApplicatio
 
         var put = await coach.PutAsJsonAsync(LineupUrl, TacticalXi());
         Assert.Equal(HttpStatusCode.OK, put.StatusCode);
-        AssertTactical((await put.Content.ReadFromJsonAsync<TestApiResponse<LineupDto>>())!.Data!);
+        var firstSave = (await put.Content.ReadFromJsonAsync<TestApiResponse<LineupDto>>())!.Data!;
+        AssertTactical(firstSave);
 
         // A fresh GET (not the upsert echo) proves persistence.
         var got = (await coach.GetFromJsonAsync<TestApiResponse<LineupDto>>(LineupUrl))!.Data!;
@@ -452,6 +457,7 @@ public class TacticalLineupEndpointTests : IClassFixture<ProTrackerWebApplicatio
 
         // Saving without tactical fields clears them — full write-through, no merge.
         var bare = TacticalXi();
+        bare.BaseVersion = firstSave.Version;
         bare.CaptainPlayerId = null;
         bare.ViceCaptainPlayerId = null;
         bare.Notes = null;

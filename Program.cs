@@ -228,6 +228,7 @@ builder.Services.AddScoped<ILeagueService, LeagueService>();
 builder.Services.AddScoped<IEvidenceScoringEngine, EvidenceScoringEngine>();
 builder.Services.AddScoped<IEvidenceService, EvidenceService>();
 builder.Services.AddScoped<ILineupService, LineupService>();
+builder.Services.AddScoped<ITacticalPresetService, TacticalPresetService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 builder.Services.AddScoped<IMealSuggestionService, MealSuggestionService>();
 // On-demand demo showcase seeding (token-gated endpoint; see DemoShowcaseSeeder).

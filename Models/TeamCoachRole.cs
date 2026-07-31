@@ -19,10 +19,15 @@ public class CoachPermissions
     public bool CanManagePlayers { get; set; }
     public bool CanManageTeam { get; set; }
 
+    // Publish/unpublish lineups (Phase 6) — gated tighter than lineup editing
+    // (CanManageTeam). Rows serialized before this field existed deserialize to
+    // false: existing assistants can't publish until the head coach grants it.
+    public bool CanPublishLineup { get; set; }
+
     public static CoachPermissions All() => new()
     {
         CanAssessPlayers = true, CanAssignTasks = true, CanViewPrivateNotes = true,
-        CanManagePlayers = true, CanManageTeam = true,
+        CanManagePlayers = true, CanManageTeam = true, CanPublishLineup = true,
     };
 
     public string ToJson() => JsonSerializer.Serialize(this);

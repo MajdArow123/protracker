@@ -255,11 +255,13 @@ public class TeamCoachService : ITeamCoachService
     {
         CanAssessPlayers = p.CanAssessPlayers, CanAssignTasks = p.CanAssignTasks,
         CanViewPrivateNotes = p.CanViewPrivateNotes, CanManagePlayers = p.CanManagePlayers, CanManageTeam = p.CanManageTeam,
+        CanPublishLineup = p.CanPublishLineup,
     };
 
     private static CoachPermissions FromPermsDto(CoachPermissionsDto p) => new()
     {
         CanAssessPlayers = p.CanAssessPlayers, CanAssignTasks = p.CanAssignTasks,
         CanViewPrivateNotes = p.CanViewPrivateNotes, CanManagePlayers = p.CanManagePlayers, CanManageTeam = p.CanManageTeam,
+        CanPublishLineup = p.CanPublishLineup,
     };
 }

@@ -44,6 +44,7 @@ public class ErrorHandlingMiddleware
         ForbiddenApiException fb => (StatusCodes.Status403Forbidden, fb.Message, new List<string>()),
         UnauthorizedApiException ua => (StatusCodes.Status401Unauthorized, ua.Message, new List<string>()),
         PlanLimitApiException pl => (StatusCodes.Status402PaymentRequired, pl.Message, new List<string>()),
+        ConflictApiException cf => (StatusCodes.Status409Conflict, cf.Message, new List<string>()),
         ValidationApiException ve => (StatusCodes.Status400BadRequest, ve.Message, ve.Errors),
         _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.", new List<string>())
     };

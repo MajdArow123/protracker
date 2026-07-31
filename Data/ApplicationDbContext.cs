@@ -120,6 +120,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Lineup> Lineups => Set<Lineup>();
     public DbSet<LineupSlot> LineupSlots => Set<LineupSlot>();
     public DbSet<SetPieceAssignment> SetPieceAssignments => Set<SetPieceAssignment>();
+    public DbSet<TacticalPreset> TacticalPresets => Set<TacticalPreset>();
+    public DbSet<LineupChangeAudit> LineupChangeAudits => Set<LineupChangeAudit>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -316,6 +318,56 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(a => a.LineupId);
         builder.Entity<Player>()
             .Property(p => p.SecondaryPositionIds).HasMaxLength(50);
+
+        // --- Lineup workflow (Phase 6) ---
+        // Name joins the uniqueness key for team lineups (null = default XI) —
+        // still service-enforced, the index above stays non-unique.
+        builder.Entity<Lineup>()
+            .Property(l => l.Name).HasMaxLength(60);
+        // Optimistic concurrency: saves carry BaseVersion; the token turns a
+        // true write race into DbUpdateConcurrencyException → 409.
+        builder.Entity<Lineup>()
+            .Property(l => l.Version).IsConcurrencyToken();
+        builder.Entity<TacticalPreset>()
+            .HasOne(p => p.Sport)
+            .WithMany()
+            .HasForeignKey(p => p.SportId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<TacticalPreset>()
+            .Property(p => p.CoachId).HasMaxLength(450);
+        builder.Entity<TacticalPreset>()
+            .Property(p => p.Name).HasMaxLength(60);
+        builder.Entity<TacticalPreset>()
+            .Property(p => p.Formation).HasMaxLength(16);
+        // One per (CoachId, SportId, normalized Name) + per-coach cap — service-
+        // enforced (no filtered index); index is for the owner-list query.
+        builder.Entity<TacticalPreset>()
+            .HasIndex(p => new { p.CoachId, p.SportId });
+        builder.Entity<LineupChangeAudit>()
+            .HasOne(a => a.Team)
+            .WithMany()
+            .HasForeignKey(a => a.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // Audits outlive the lineup they describe.
+        builder.Entity<LineupChangeAudit>()
+            .HasOne(a => a.Lineup)
+            .WithMany()
+            .HasForeignKey(a => a.LineupId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<LineupChangeAudit>()
+            .Property(a => a.KeyLabel).HasMaxLength(80);
+        builder.Entity<LineupChangeAudit>()
+            .Property(a => a.ChangedByUserId).HasMaxLength(450);
+        builder.Entity<LineupChangeAudit>()
+            .Property(a => a.ChangedByName).HasMaxLength(100);
+        builder.Entity<LineupChangeAudit>()
+            .Property(a => a.Action).HasMaxLength(20);
+        builder.Entity<LineupChangeAudit>()
+            .Property(a => a.Summary).HasMaxLength(500);
+        builder.Entity<LineupChangeAudit>()
+            .HasIndex(a => new { a.TeamId, a.CreatedAt });
+        builder.Entity<LineupChangeAudit>()
+            .HasIndex(a => a.LineupId);
 
         // --- Assessments ---
         builder.Entity<AssessmentPeriod>()

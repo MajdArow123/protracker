@@ -8,6 +8,13 @@ public class SaveLineupDtoValidator : AbstractValidator<SaveLineupDto>
     public SaveLineupDtoValidator()
     {
         RuleFor(x => x.MatchResultId).GreaterThan(0).When(x => x.MatchResultId.HasValue);
+        // Named lineups are team lineups only — a match lineup's key stays 2-D.
+        RuleFor(x => x.Name).MaximumLength(60);
+        RuleFor(x => x.Name)
+            .Must(n => string.IsNullOrWhiteSpace(n))
+            .WithMessage("A match lineup cannot also have a name.")
+            .When(x => x.MatchResultId.HasValue);
+        RuleFor(x => x.BaseVersion).GreaterThan(0).When(x => x.BaseVersion.HasValue);
         RuleFor(x => x.Formation).NotEmpty().MaximumLength(16);
         // Largest surface is soccer's XI; the server stays sport-agnostic beyond the cap.
         RuleFor(x => x.Slots).NotNull().Must(s => s.Count <= 11)
@@ -56,5 +63,29 @@ public class SetPieceAssignmentDtoValidator : AbstractValidator<SetPieceAssignme
     {
         RuleFor(x => x.Type).NotEmpty().MaximumLength(40);
         RuleFor(x => x.PlayerId).GreaterThan(0);
+    }
+}
+
+// Tactical presets (Phase 6): shape only — role/label keys are opaque frontend
+// catalog keys (the SlotKey precedent); sport/name uniqueness lives in the service.
+public class SaveTacticalPresetDtoValidator : AbstractValidator<SaveTacticalPresetDto>
+{
+    public SaveTacticalPresetDtoValidator()
+    {
+        RuleFor(x => x.SportId).GreaterThan(0);
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(60);
+        RuleFor(x => x.Formation).MaximumLength(16);
+        RuleFor(x => x.Roles!)
+            .Must(r => r.Count <= 11).WithMessage("At most 11 slot roles.")
+            .Must(r => r.All(kv =>
+                !string.IsNullOrWhiteSpace(kv.Key) && kv.Key.Length <= 16
+                && !string.IsNullOrWhiteSpace(kv.Value) && kv.Value.Length <= 40))
+            .WithMessage("Each role must map a slot key (≤16 chars) to a role key (≤40 chars).")
+            .When(x => x.Roles != null);
+        RuleFor(x => x.Labels!)
+            .Must(l => l.Count <= 6).WithMessage("At most 6 tactical labels.")
+            .Must(l => l.All(k => !string.IsNullOrWhiteSpace(k) && k.Length <= 40 && !k.Contains(',')))
+            .WithMessage("Each tactical label must be a non-empty key of at most 40 characters without commas.")
+            .When(x => x.Labels != null);
     }
 }

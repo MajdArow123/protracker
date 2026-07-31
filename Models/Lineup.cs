@@ -1,10 +1,19 @@
 namespace ProTracker.Models;
 
+/// <summary>Draft/published workflow state (Phase 6). Published = locked:
+/// upsert/delete 409 until an explicit, CanPublishLineup-gated unpublish.</summary>
+public enum LineupStatus
+{
+    Draft = 0,
+    Published = 1,
+}
+
 /// <summary>
-/// A saved team lineup (Phase 2 of the lineup view). Exactly one per
-/// (TeamId, MatchResultId) key, enforced in LineupService's upsert:
-///   MatchResultId == null  → the team's default XI (one per team)
-///   MatchResultId set      → the lineup for that specific match (one per match)
+/// A saved team lineup. Uniqueness is enforced in LineupService's transactional
+/// upsert (no filtered index — codebase rule):
+///   MatchResultId set      → one per (TeamId, MatchResultId); Name must be null
+///   MatchResultId == null  → one per (TeamId, normalized Name);
+///                            Name == null is the team's default XI
 /// Slot semantics (which keys exist, coordinates, formation shapes) are owned by
 /// the frontend; the server stores assignments and enforces data integrity only.
 /// </summary>
@@ -18,8 +27,28 @@ public class Lineup
     public int? MatchResultId { get; set; }
     public MatchResult? MatchResult { get; set; }
 
+    /// <summary>
+    /// Optional lineup name (Phase 6, e.g. "First Team", "Rotation"). Only on
+    /// team lineups (MatchResultId == null); part of the uniqueness key there,
+    /// compared trimmed + case-insensitively.
+    /// </summary>
+    public string? Name { get; set; }
+
     /// <summary>Formation key, e.g. "4-3-3". Informational — validated for shape only.</summary>
     public string Formation { get; set; } = string.Empty;
+
+    public LineupStatus Status { get; set; } = LineupStatus.Draft;
+
+    /// <summary>Set while Published; null again after unpublish.</summary>
+    public DateTime? PublishedAt { get; set; }
+
+    /// <summary>
+    /// Optimistic-concurrency version (Phase 6). Bumped on every save/publish/
+    /// unpublish; configured as an EF concurrency token, and saves must present
+    /// a matching BaseVersion — a stale or missing version is a 409, never a
+    /// silent clobber.
+    /// </summary>
+    public int Version { get; set; } = 1;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
