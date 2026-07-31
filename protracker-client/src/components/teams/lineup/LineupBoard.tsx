@@ -34,6 +34,9 @@ import {
   hasTacticalContent, positionFit, slotKeysOf, type TacticalState,
 } from './lineupTacticalLogic';
 import { fitMatrix, explainSuggestion, type SlotExplanation } from './lineupFitLogic';
+import { lineupApi } from '../../../api/lineupApi';
+import { classifyConflict, type ConflictInfo } from './lineupWorkflowLogic';
+import { SaveConflictModal, type ConflictIntent } from './SaveConflictModal';
 import { buildWarnings } from './lineupAnalysisLogic';
 import { SquadAnalysisPanel } from './SquadAnalysisPanel';
 import { ComparePlayersModal } from './ComparePlayersModal';
@@ -431,27 +434,85 @@ export function LineupBoard({
     else if (playerId != null) viewTap(playerId);
   };
 
-  const doSave = (matchId: number | null) => {
+  // ── Phase 6 save flow: BaseVersion echo + never-a-silent-clobber ──────────
+  // conflict != null renders the SaveConflictModal; matchId is the target the
+  // pending draft wanted to land on.
+  const [conflict, setConflict] = useState<null | { intent: ConflictIntent; info: ConflictInfo; matchId: number | null }>(null);
+
+  const mutateSave = (matchId: number | null, baseVersion: number | null) => {
+    if (!draft) return;
+    saveMutation.mutate(
+      // buildSaveInput is the write-through contract: EVERY tactical field is
+      // always in the payload (the server clears whatever is omitted), and the
+      // target carries baseVersion (null = creating — the caller decided).
+      buildSaveInput({ matchResultId: matchId, baseVersion }, draft.formationKey, draft.assignments, draft.tactical),
+      {
+        onSuccess: () => {
+          setSaveOpen(false);
+          setConflict(null);
+          stopEdit();
+          setMatchContext(matchId);
+          addToast(t('teams.lineupSaved', 'Lineup saved'), 'success');
+        },
+        onError: err => {
+          if ((err as { status?: number }).status === 409) {
+            // The row moved (or vanished, or is published) under us — refetch
+            // and classify; the dialog resolves it, never a silent clobber.
+            void openConflict('conflict', matchId);
+            return;
+          }
+          addToast(err instanceof Error ? err.message : t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
+        },
+      },
+    );
+  };
+
+  const openConflict = async (intent: ConflictIntent, matchId: number | null) => {
+    try {
+      const row = await lineupApi.get(teamId, matchId);
+      setSaveOpen(false);
+      setConflict({ intent, info: classifyConflict(row), matchId });
+    } catch {
+      addToast(t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
+    }
+  };
+
+  const doSave = async (matchId: number | null) => {
     if (!draft) return;
     const errors = validateLineup(draft.assignments, formation, rosterIds);
     if (errors.length > 0) {
       addToast(t('teams.lineupInvalid', 'This lineup has invalid entries.'), 'error');
       return;
     }
-    saveMutation.mutate(
-      // buildSaveInput is the write-through contract: EVERY tactical field is
-      // always in the payload (the server clears whatever is omitted).
-      buildSaveInput(matchId, draft.formationKey, draft.assignments, draft.tactical),
-      {
-        onSuccess: () => {
-          setSaveOpen(false);
-          stopEdit();
-          setMatchContext(matchId);
-          addToast(t('teams.lineupSaved', 'Lineup saved'), 'success');
-        },
-        onError: err => addToast(err instanceof Error ? err.message : t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error'),
-      },
-    );
+    if (matchId === matchContext) {
+      // Same key the draft was hydrated from: echo the version we loaded
+      // (null = creating). Staleness is the server's call → 409 → dialog.
+      mutateSave(matchId, saved?.version ?? null);
+      return;
+    }
+    // Cross-target save: the draft was NOT based on this key's row, so an
+    // existing row there must be overwritten KNOWINGLY — fetch it first.
+    try {
+      const row = await lineupApi.get(teamId, matchId);
+      if (row == null) {
+        mutateSave(matchId, null);
+        return;
+      }
+      setSaveOpen(false);
+      setConflict({ intent: 'crossTarget', info: classifyConflict(row), matchId });
+    } catch {
+      addToast(t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
+    }
+  };
+
+  // Adopt the server's state and leave edit mode — an EXPLICIT discard.
+  const reloadLatest = () => {
+    const target = conflict?.matchId ?? matchContext;
+    setConflict(null);
+    stopEdit();
+    setMatchContext(target);
+    void savedQuery.refetch();
+    addToast(t('teams.lineupReloaded', 'Latest lineup loaded'), 'success');
   };
 
   const doReset = () => {
@@ -1001,8 +1062,21 @@ export function LineupBoard({
         matches={matches}
         initialMatchId={matchContext}
         saving={saveMutation.isPending}
-        onSave={doSave}
+        onSave={matchId => { void doSave(matchId); }}
       />
+
+      {conflict && (
+        <SaveConflictModal
+          isOpen
+          intent={conflict.intent}
+          info={conflict.info}
+          saving={saveMutation.isPending}
+          onOverwrite={() => mutateSave(conflict.matchId, conflict.info.currentVersion)}
+          onReload={reloadLatest}
+          onSaveAsNew={() => mutateSave(conflict.matchId, null)}
+          onClose={() => setConflict(null)}
+        />
+      )}
 
       <ConfirmModal
         isOpen={confirmDiscard != null}

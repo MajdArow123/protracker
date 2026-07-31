@@ -16,7 +16,7 @@ describe('buildSaveInput — the write-through contract', () => {
   // must ALWAYS carry the complete tactical state.
   it('includes captain/vice/notes/labels/roles/set pieces whenever set', () => {
     const assignments = { [K0]: 1, [K1]: 2, [K2]: 3 };
-    const input = buildSaveInput(7, '4-3-3', assignments, tactical({
+    const input = buildSaveInput({ matchResultId: 7, baseVersion: 3 }, '4-3-3', assignments, tactical({
       captainId: 1,
       viceCaptainId: 2,
       notes: '  Press high.  ',
@@ -26,6 +26,8 @@ describe('buildSaveInput — the write-through contract', () => {
     }));
 
     expect(input.matchResultId).toBe(7);
+    // Phase 6 pin: the echoed version rides every update payload.
+    expect(input.baseVersion).toBe(3);
     expect(input.formation).toBe('4-3-3');
     expect(input.captainPlayerId).toBe(1);
     expect(input.viceCaptainPlayerId).toBe(2);
@@ -41,13 +43,15 @@ describe('buildSaveInput — the write-through contract', () => {
   });
 
   it('always emits every tactical field — explicit null/empty, never omitted', () => {
-    const input = buildSaveInput(null, '4-3-3', { [K0]: 1 }, emptyTactical());
+    const input = buildSaveInput({ matchResultId: null, baseVersion: null }, '4-3-3', { [K0]: 1 }, emptyTactical());
     // Field PRESENCE is the contract: a missing key would silently wipe
     // nothing today but breaks the moment serialization skips undefined.
     expect(Object.keys(input)).toEqual(expect.arrayContaining([
-      'matchResultId', 'formation', 'captainPlayerId', 'viceCaptainPlayerId',
+      'matchResultId', 'baseVersion', 'formation', 'captainPlayerId', 'viceCaptainPlayerId',
       'notes', 'tacticalLabels', 'slots', 'setPieces',
     ]));
+    // Phase 6 pin: creating = an EXPLICIT null baseVersion (the caller decided).
+    expect(input.baseVersion).toBeNull();
     expect(input.captainPlayerId).toBeNull();
     expect(input.viceCaptainPlayerId).toBeNull();
     expect(input.notes).toBeNull();
@@ -57,7 +61,7 @@ describe('buildSaveInput — the write-through contract', () => {
   });
 
   it('blank notes normalize to null (server NullIfBlank parity)', () => {
-    expect(buildSaveInput(null, '4-3-3', {}, tactical({ notes: '   ' })).notes).toBeNull();
+    expect(buildSaveInput({ matchResultId: null, baseVersion: null }, '4-3-3', {}, tactical({ notes: '   ' })).notes).toBeNull();
   });
 });
 

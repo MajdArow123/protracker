@@ -19,8 +19,17 @@ export interface LineupDto {
   id: number;
   teamId: number;
   matchResultId: number | null;
+  /** Named team lineup (Phase 6); null on the default XI and on match lineups. */
+  name: string | null;
   formation: string;
+  /** Enum name: 'Draft' | 'Published'. Published = locked server-side (edit/delete 409). */
+  status: string;
+  publishedAt: string | null;
+  /** Optimistic-concurrency version — echo as baseVersion on save. */
+  version: number;
   updatedAt: string;
+  /** Display name of the last editor; null if unknown. */
+  updatedByName: string | null;
   captainPlayerId: number | null;
   viceCaptainPlayerId: number | null;
   notes: string | null;
@@ -35,6 +44,13 @@ export interface LineupDto {
 // (lineupTacticalLogic), never by hand.
 export interface SaveLineupInput {
   matchResultId?: number | null;
+  /**
+   * REQUIRED (Phase 6, never a silent clobber): null = "I'm creating this
+   * lineup"; a number = "I'm updating THAT version". Stale, missing-on-existing
+   * and set-against-a-deleted-row all 409 server-side; the conflict flow
+   * (classifyConflict + dialog) resolves them — never silently.
+   */
+  baseVersion: number | null;
   formation: string;
   captainPlayerId: number | null;
   viceCaptainPlayerId: number | null;

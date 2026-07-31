@@ -138,9 +138,17 @@ export function sameTactical(a: TacticalState, b: TacticalState): boolean {
  * Build the complete PUT payload. Every tactical field is always present —
  * a value when set, an explicit null/empty when not — because the server
  * clears whatever is omitted. Asserted by lineupTacticalLogic.test.ts.
+ *
+ * Phase 6: the target carries `baseVersion` (REQUIRED — null only when
+ * creating; the caller decides, the compiler enforces the decision).
  */
+export interface SaveTarget {
+  matchResultId: number | null;
+  baseVersion: number | null;
+}
+
 export function buildSaveInput(
-  matchResultId: number | null,
+  target: SaveTarget,
   formationKey: string,
   assignments: Assignments,
   tactical: TacticalState,
@@ -160,7 +168,8 @@ export function buildSaveInput(
 
   const trimmed = tactical.notes.trim();
   return {
-    matchResultId,
+    matchResultId: target.matchResultId,
+    baseVersion: target.baseVersion,
     formation: formationKey,
     captainPlayerId: tactical.captainId,
     viceCaptainPlayerId: tactical.viceCaptainId,
