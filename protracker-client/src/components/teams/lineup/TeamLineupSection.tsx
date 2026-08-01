@@ -28,12 +28,14 @@ interface Props {
   players: Player[];
   injuredIds: Set<number>;
   canManage: boolean;
+  /** Mirror of canPublishLineup — the server stays the real gate. */
+  canPublish: boolean;
 }
 
 // Lineup tab shell: loads the roster's evidence scores in ONE batch request
 // (priming the per-player caches the rest of the app shares), then renders the
 // editable board (Phase 2) or the read-only tennis ladder.
-export function TeamLineupSection({ teamId, sportId, sportName, players, injuredIds, canManage }: Props) {
+export function TeamLineupSection({ teamId, sportId, sportName, players, injuredIds, canManage, canPublish }: Props) {
   const { t } = useTranslation();
   const L = useDynamicLabels();
   const navigate = useNavigate();
@@ -179,6 +181,7 @@ export function TeamLineupSection({ teamId, sportId, sportName, players, injured
           failedIds={batch.isError ? new Set(players.map(p => p.id)) : new Set()}
           injuredIds={injuredIds}
           canManage={canManage}
+          canPublish={canPublish}
         />
       ) : (
         <div className="max-w-2xl">

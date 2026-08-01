@@ -144,6 +144,8 @@ export function sameTactical(a: TacticalState, b: TacticalState): boolean {
  */
 export interface SaveTarget {
   matchResultId: number | null;
+  /** Named team lineup (Phase 6); REQUIRED-null on default and match lineups. */
+  name: string | null;
   baseVersion: number | null;
 }
 
@@ -169,6 +171,7 @@ export function buildSaveInput(
   const trimmed = tactical.notes.trim();
   return {
     matchResultId: target.matchResultId,
+    name: target.name,
     baseVersion: target.baseVersion,
     formation: formationKey,
     captainPlayerId: tactical.captainId,

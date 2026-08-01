@@ -16,7 +16,7 @@ describe('buildSaveInput — the write-through contract', () => {
   // must ALWAYS carry the complete tactical state.
   it('includes captain/vice/notes/labels/roles/set pieces whenever set', () => {
     const assignments = { [K0]: 1, [K1]: 2, [K2]: 3 };
-    const input = buildSaveInput({ matchResultId: 7, baseVersion: 3 }, '4-3-3', assignments, tactical({
+    const input = buildSaveInput({ matchResultId: 7, name: null, baseVersion: 3 }, '4-3-3', assignments, tactical({
       captainId: 1,
       viceCaptainId: 2,
       notes: '  Press high.  ',
@@ -43,15 +43,17 @@ describe('buildSaveInput — the write-through contract', () => {
   });
 
   it('always emits every tactical field — explicit null/empty, never omitted', () => {
-    const input = buildSaveInput({ matchResultId: null, baseVersion: null }, '4-3-3', { [K0]: 1 }, emptyTactical());
+    const input = buildSaveInput({ matchResultId: null, name: null, baseVersion: null }, '4-3-3', { [K0]: 1 }, emptyTactical());
     // Field PRESENCE is the contract: a missing key would silently wipe
     // nothing today but breaks the moment serialization skips undefined.
     expect(Object.keys(input)).toEqual(expect.arrayContaining([
-      'matchResultId', 'baseVersion', 'formation', 'captainPlayerId', 'viceCaptainPlayerId',
+      'matchResultId', 'name', 'baseVersion', 'formation', 'captainPlayerId', 'viceCaptainPlayerId',
       'notes', 'tacticalLabels', 'slots', 'setPieces',
     ]));
-    // Phase 6 pin: creating = an EXPLICIT null baseVersion (the caller decided).
+    // Phase 6 pin: creating = an EXPLICIT null baseVersion (the caller decided),
+    // and the name key rides every payload (null on default/match lineups).
     expect(input.baseVersion).toBeNull();
+    expect(input.name).toBeNull();
     expect(input.captainPlayerId).toBeNull();
     expect(input.viceCaptainPlayerId).toBeNull();
     expect(input.notes).toBeNull();
@@ -61,7 +63,7 @@ describe('buildSaveInput — the write-through contract', () => {
   });
 
   it('blank notes normalize to null (server NullIfBlank parity)', () => {
-    expect(buildSaveInput({ matchResultId: null, baseVersion: null }, '4-3-3', {}, tactical({ notes: '   ' })).notes).toBeNull();
+    expect(buildSaveInput({ matchResultId: null, name: null, baseVersion: null }, '4-3-3', {}, tactical({ notes: '   ' })).notes).toBeNull();
   });
 });
 

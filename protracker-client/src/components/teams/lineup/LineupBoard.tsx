@@ -3,13 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import {
-  AlertTriangle, ChevronDown, ChevronUp, FlaskConical, HeartPulse, Pencil, Redo2, RotateCcw, Save, Trash2, Undo2, X,
+  AlertTriangle, BadgeCheck, ChevronDown, ChevronUp, FlaskConical, HeartPulse, Lock, Pencil, Redo2, RotateCcw, Save, Send, Trash2, Undo2, X,
 } from 'lucide-react';
 import { useIsMobile, useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useIsRtl } from '../../../hooks/useIsRtl';
 import { useLocaleFormat } from '../../../hooks/useLocaleFormat';
 import { useTeamMatches } from '../../../hooks/useMatches';
-import { useLineup, useSaveLineup, useResetLineup } from '../../../hooks/useLineup';
+import { useLineup, useSaveLineup, useResetLineup, useTeamLineups, useSetLineupStatus } from '../../../hooks/useLineup';
 import { useToast } from '../../../context/ToastContext';
 import { ConfirmModal } from '../../ui/Modal';
 import { Skeleton } from '../../ui/Skeleton';
@@ -35,7 +35,12 @@ import {
 } from './lineupTacticalLogic';
 import { fitMatrix, explainSuggestion, type SlotExplanation } from './lineupFitLogic';
 import { lineupApi } from '../../../api/lineupApi';
-import { classifyConflict, type ConflictInfo } from './lineupWorkflowLogic';
+import {
+  classifyConflict, contextRequestParams, contextToSaveTarget, sameContext, canEditLineup,
+  type ConflictInfo, type LineupContext, type PresetApplyResult,
+} from './lineupWorkflowLogic';
+import { LineupAuditPanel } from './LineupAuditPanel';
+import { PresetManager } from './PresetManager';
 import { SaveConflictModal, type ConflictIntent } from './SaveConflictModal';
 import { buildWarnings } from './lineupAnalysisLogic';
 import { SquadAnalysisPanel } from './SquadAnalysisPanel';
@@ -58,6 +63,8 @@ interface Props {
   failedIds: Set<number>;
   injuredIds: Set<number>;
   canManage: boolean;
+  /** Mirror of canPublishLineup — the SERVER is the real gate (403 -> toast). */
+  canPublish: boolean;
 }
 
 // The editable lineup workspace: context selector (default XI / match),
@@ -67,7 +74,7 @@ interface Props {
 // history, save/attach chooser, reset. Honesty carries throughout: rating
 // chips render identically in edit mode.
 export function LineupBoard({
-  teamId, sportId, players, lineupPlayers, scoresById, failedIds, injuredIds, canManage,
+  teamId, sportId, players, lineupPlayers, scoresById, failedIds, injuredIds, canManage, canPublish,
 }: Props) {
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormat();
@@ -79,12 +86,22 @@ export function LineupBoard({
   const layout = layoutForSport(sportId)!;
   const formations = formationsForSport(sportId);
 
-  // Which lineup is on screen: null = team default, number = that match's.
-  const [matchContext, setMatchContext] = useState<number | null>(null);
-  const savedQuery = useLineup(teamId, matchContext);
+  // Which lineup is on screen (Phase 6 typed context: default | named | match).
+  const [context, setContext] = useState<LineupContext>({ kind: 'default' });
+  const savedQuery = useLineup(teamId, context);
   const { data: matches = [] } = useTeamMatches(teamId);
+  const lineupsList = useTeamLineups(teamId);
   const saveMutation = useSaveLineup(teamId);
   const resetMutation = useResetLineup(teamId);
+  const statusMutation = useSetLineupStatus(teamId);
+  const namedNames = useMemo(
+    () => (lineupsList.data ?? []).filter(l => l.matchResultId == null && l.name != null).map(l => l.name!),
+    [lineupsList.data],
+  );
+  // <select> serialization: '' = default, 'm:{id}' = match, 'n:{name}' = named.
+  const contextValue = context.kind === 'default' ? '' : context.kind === 'match' ? `m:${context.matchId}` : `n:${context.name}`;
+  const parseContextValue = (v: string): LineupContext =>
+    v === '' ? { kind: 'default' } : v.startsWith('m:') ? { kind: 'match', matchId: Number(v.slice(2)) } : { kind: 'named', name: v.slice(2) };
 
   // Draft + undo/redo history. null = not editing (view mode).
   const [history, dispatch] = useReducer(draftReducer, null);
@@ -309,10 +326,10 @@ export function LineupBoard({
     else action();
   };
 
-  const switchContext = (next: number | null) => {
+  const switchContext = (next: LineupContext) => {
     guardDirty(() => {
       stopEdit();
-      setMatchContext(next);
+      setContext(next);
     });
   };
 
@@ -437,28 +454,28 @@ export function LineupBoard({
   // ── Phase 6 save flow: BaseVersion echo + never-a-silent-clobber ──────────
   // conflict != null renders the SaveConflictModal; matchId is the target the
   // pending draft wanted to land on.
-  const [conflict, setConflict] = useState<null | { intent: ConflictIntent; info: ConflictInfo; matchId: number | null }>(null);
+  const [conflict, setConflict] = useState<null | { intent: ConflictIntent; info: ConflictInfo; target: LineupContext }>(null);
 
-  const mutateSave = (matchId: number | null, baseVersion: number | null) => {
+  const mutateSave = (target: LineupContext, baseVersion: number | null) => {
     if (!draft) return;
     saveMutation.mutate(
       // buildSaveInput is the write-through contract: EVERY tactical field is
       // always in the payload (the server clears whatever is omitted), and the
-      // target carries baseVersion (null = creating — the caller decided).
-      buildSaveInput({ matchResultId: matchId, baseVersion }, draft.formationKey, draft.assignments, draft.tactical),
+      // target carries the key + baseVersion (null = creating — the caller decided).
+      buildSaveInput({ ...contextToSaveTarget(target), baseVersion }, draft.formationKey, draft.assignments, draft.tactical),
       {
         onSuccess: () => {
           setSaveOpen(false);
           setConflict(null);
           stopEdit();
-          setMatchContext(matchId);
+          setContext(target);
           addToast(t('teams.lineupSaved', 'Lineup saved'), 'success');
         },
         onError: err => {
           if ((err as { status?: number }).status === 409) {
             // The row moved (or vanished, or is published) under us — refetch
             // and classify; the dialog resolves it, never a silent clobber.
-            void openConflict('conflict', matchId);
+            void openConflict('conflict', target);
             return;
           }
           addToast(err instanceof Error ? err.message : t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
@@ -467,39 +484,39 @@ export function LineupBoard({
     );
   };
 
-  const openConflict = async (intent: ConflictIntent, matchId: number | null) => {
+  const openConflict = async (intent: ConflictIntent, target: LineupContext) => {
     try {
-      const row = await lineupApi.get(teamId, matchId);
+      const row = await lineupApi.get(teamId, contextRequestParams(target));
       setSaveOpen(false);
-      setConflict({ intent, info: classifyConflict(row), matchId });
+      setConflict({ intent, info: classifyConflict(row), target });
     } catch {
       addToast(t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
     }
   };
 
-  const doSave = async (matchId: number | null) => {
+  const doSave = async (target: LineupContext) => {
     if (!draft) return;
     const errors = validateLineup(draft.assignments, formation, rosterIds);
     if (errors.length > 0) {
       addToast(t('teams.lineupInvalid', 'This lineup has invalid entries.'), 'error');
       return;
     }
-    if (matchId === matchContext) {
+    if (sameContext(target, context)) {
       // Same key the draft was hydrated from: echo the version we loaded
       // (null = creating). Staleness is the server's call → 409 → dialog.
-      mutateSave(matchId, saved?.version ?? null);
+      mutateSave(target, saved?.version ?? null);
       return;
     }
     // Cross-target save: the draft was NOT based on this key's row, so an
     // existing row there must be overwritten KNOWINGLY — fetch it first.
     try {
-      const row = await lineupApi.get(teamId, matchId);
+      const row = await lineupApi.get(teamId, contextRequestParams(target));
       if (row == null) {
-        mutateSave(matchId, null);
+        mutateSave(target, null);
         return;
       }
       setSaveOpen(false);
-      setConflict({ intent: 'crossTarget', info: classifyConflict(row), matchId });
+      setConflict({ intent: 'crossTarget', info: classifyConflict(row), target });
     } catch {
       addToast(t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
     }
@@ -507,16 +524,43 @@ export function LineupBoard({
 
   // Adopt the server's state and leave edit mode — an EXPLICIT discard.
   const reloadLatest = () => {
-    const target = conflict?.matchId ?? matchContext;
+    const target = conflict?.target ?? context;
     setConflict(null);
     stopEdit();
-    setMatchContext(target);
+    setContext(target);
     void savedQuery.refetch();
     addToast(t('teams.lineupReloaded', 'Latest lineup loaded'), 'success');
   };
 
+  // Publish / unpublish — explicit, confirmed, audited server-side. The UI
+  // only MIRRORS canPublishLineup; a stale grant still 403s into the toast.
+  const [confirmPublish, setConfirmPublish] = useState<null | boolean>(null); // true = publish, false = unpublish
+  const setStatus = (publish: boolean) => {
+    if (!saved) return;
+    statusMutation.mutate(
+      { lineupId: saved.id, publish },
+      {
+        onSuccess: () => {
+          setConfirmPublish(null);
+          addToast(publish ? t('teams.lineupPublished', 'Lineup published') : t('teams.lineupUnpublished', 'Lineup unpublished'), 'success');
+        },
+        onError: err => {
+          setConfirmPublish(null);
+          addToast(err instanceof Error ? err.message : t('teams.lineupSaveFailed', 'Could not save the lineup'), 'error');
+        },
+      },
+    );
+  };
+
+  // Preset apply — ONE reducer step (one undo), announced like every commit.
+  const applyPreset = (result: PresetApplyResult, presetName: string) => {
+    dispatch({ type: 'apply', draft: { formationKey: result.formationKey, assignments: result.assignments, tactical: result.tactical } });
+    setSelection(null);
+    setAnnouncement(t('teams.presetApplied', 'Preset "{{name}}" applied', { name: presetName }));
+  };
+
   const doReset = () => {
-    resetMutation.mutate(matchContext, {
+    resetMutation.mutate(context, {
       onSuccess: () => {
         setConfirmReset(false);
         addToast(t('teams.lineupResetDone', 'Back to the suggested lineup'), 'success');
@@ -699,15 +743,24 @@ export function LineupBoard({
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <div className="relative">
             <select
-              value={matchContext ?? ''}
-              onChange={e => switchContext(e.target.value ? Number(e.target.value) : null)}
+              value={contextValue}
+              onChange={e => switchContext(parseContextValue(e.target.value))}
               className="appearance-none ps-3 pe-8 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-900 dark:text-white cursor-pointer"
               aria-label={t('teams.lineupContext', 'Lineup for')}
             >
               <option value="">{t('teams.lineupDefaultXi', 'Default XI')}</option>
-              {matches.map(m => (
-                <option key={m.id} value={m.id}>{matchLabel(m.id)}</option>
-              ))}
+              {namedNames.length > 0 && (
+                <optgroup label={t('teams.lineupNamedGroup', 'Named lineups')}>
+                  {namedNames.map(n => (
+                    <option key={n} value={`n:${n}`}>{n}</option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label={t('teams.lineupMatchGroup', 'Matches')}>
+                {matches.map(m => (
+                  <option key={m.id} value={`m:${m.id}`}>{matchLabel(m.id)}</option>
+                ))}
+              </optgroup>
             </select>
             <ChevronDown size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
           </div>
@@ -715,9 +768,23 @@ export function LineupBoard({
             {formation.key}
           </span>
           {saved ? (
-            <span className="text-[11px] text-gray-500 dark:text-gray-400">
-              {t('teams.lineupSavedMeta', 'Saved · {{date}}', { date: formatDate(saved.updatedAt, { month: 'short', day: 'numeric' }) })}
-            </span>
+            <>
+              {saved.status === 'Published' ? (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
+                  <BadgeCheck size={12} aria-hidden />
+                  {t('teams.lineupStatusPublished', 'Published')}
+                </span>
+              ) : (
+                <span className="px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 dark:text-gray-400 text-[11px] font-bold">
+                  {t('teams.lineupStatusDraft', 'Draft')}
+                </span>
+              )}
+              <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                {saved.updatedByName
+                  ? t('teams.lineupSavedMetaBy', 'Saved · {{date}} · {{name}}', { date: formatDate(saved.updatedAt, { month: 'short', day: 'numeric' }), name: saved.updatedByName })
+                  : t('teams.lineupSavedMeta', 'Saved · {{date}}', { date: formatDate(saved.updatedAt, { month: 'short', day: 'numeric' }) })}
+              </span>
+            </>
           ) : (
             <span className="text-[11px] text-gray-500 dark:text-gray-400">
               {t('teams.lineupSuggestedMeta', 'Suggested — auto-arranged by rating, not saved')}
@@ -743,7 +810,28 @@ export function LineupBoard({
           )}
           {canManage && !editing && (
             <>
-              {saved && (
+              {saved && canPublish && (
+                saved.status === 'Published' ? (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmPublish(false)}
+                    disabled={statusMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-300 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Undo2 size={13} /> {t('teams.lineupUnpublish', 'Unpublish')}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmPublish(true)}
+                    disabled={statusMutation.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    <Send size={13} /> {t('teams.lineupPublish', 'Publish')}
+                  </button>
+                )
+              )}
+              {saved && canEditLineup(saved.status) && (
                 <button
                   type="button"
                   onClick={() => setConfirmReset(true)}
@@ -752,13 +840,20 @@ export function LineupBoard({
                   <Trash2 size={13} /> {t('teams.lineupResetSaved', 'Remove saved')}
                 </button>
               )}
-              <button
-                type="button"
-                onClick={startEdit}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <Pencil size={13} /> {t('teams.lineupEdit', 'Edit lineup')}
-              </button>
+              {canEditLineup(saved?.status) ? (
+                <button
+                  type="button"
+                  onClick={startEdit}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  <Pencil size={13} /> {t('teams.lineupEdit', 'Edit lineup')}
+                </button>
+              ) : (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+                  <Lock size={13} aria-hidden />
+                  {t('teams.lineupLockedHint', 'Published — unpublish to edit')}
+                </span>
+              )}
             </>
           )}
           {editing && (
@@ -1017,11 +1112,19 @@ export function LineupBoard({
             tactical={draft.tactical}
             onChange={applyTactical}
           />
+          <PresetManager
+            sportId={sportId}
+            draft={draft}
+            formations={formations}
+            nameOf={nameOf}
+            onApply={applyPreset}
+          />
         </div>
       )}
       {!editing && saved && hasTacticalContent(baseline.tactical) && (
         <TacticsSummary sportId={sportId} tactical={baseline.tactical} nameOf={nameOf} />
       )}
+      {!editing && <LineupAuditPanel teamId={teamId} />}
       </div>
 
       {/* Player Inspector (view mode only): desktop inline panel… */}
@@ -1056,13 +1159,27 @@ export function LineupBoard({
       )}
 
       <SaveLineupModal
-        key={`${saveOpen}-${matchContext ?? 'default'}`}
+        key={`${saveOpen}-${contextValue}`}
         isOpen={saveOpen}
         onClose={() => setSaveOpen(false)}
         matches={matches}
-        initialMatchId={matchContext}
+        namedNames={namedNames}
+        initialContext={context}
         saving={saveMutation.isPending}
-        onSave={matchId => { void doSave(matchId); }}
+        onSave={target => { void doSave(target); }}
+      />
+
+      <ConfirmModal
+        isOpen={confirmPublish != null}
+        onClose={() => setConfirmPublish(null)}
+        onConfirm={() => setStatus(confirmPublish === true)}
+        title={confirmPublish === true
+          ? t('teams.lineupPublishTitle', 'Publish this lineup?')
+          : t('teams.lineupUnpublishTitle', 'Unpublish this lineup?')}
+        message={confirmPublish === true
+          ? t('teams.lineupPublishBody', 'A published lineup is locked — editing and removal stay disabled until it is unpublished.')
+          : t('teams.lineupUnpublishBody', 'The lineup goes back to Draft and can be edited again.')}
+        isLoading={statusMutation.isPending}
       />
 
       {conflict && (
@@ -1071,9 +1188,9 @@ export function LineupBoard({
           intent={conflict.intent}
           info={conflict.info}
           saving={saveMutation.isPending}
-          onOverwrite={() => mutateSave(conflict.matchId, conflict.info.currentVersion)}
+          onOverwrite={() => mutateSave(conflict.target, conflict.info.currentVersion)}
           onReload={reloadLatest}
-          onSaveAsNew={() => mutateSave(conflict.matchId, null)}
+          onSaveAsNew={() => mutateSave(conflict.target, null)}
           onClose={() => setConflict(null)}
         />
       )}

@@ -110,6 +110,7 @@ export function TeamDetailPage() {
   // Head coaches get null-safe "all true" via the backend; assistants get their stored perms.
   const canManageTeam = !isCoach || (myPerms?.canManageTeam ?? false);
   const canManagePlayers = !isCoach || (myPerms?.canManagePlayers ?? false);
+  const canPublishLineup = !isCoach || (myPerms?.canPublishLineup ?? false);
   const canAssess = !isCoach || (myPerms?.canAssessPlayers ?? false);
   const { data: team, isLoading } = useTeam(teamId);
   const { data: allPlayers = [] } = usePlayers();
@@ -369,7 +370,7 @@ export function TeamDetailPage() {
 
       {teamTab === 'lineup' && (
         <div className="p-4 lg:p-6">
-          <TeamLineupSection teamId={teamId} sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} canManage={canManageTeam} />
+          <TeamLineupSection teamId={teamId} sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} canManage={canManageTeam} canPublish={canPublishLineup} />
         </div>
       )}
 
