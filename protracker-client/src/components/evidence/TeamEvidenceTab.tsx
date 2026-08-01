@@ -80,15 +80,21 @@ export function TeamEvidenceTab({ teamId, sportId, teamName }: Props) {
   const callouts = [
     status.playersNeedingTests > 0 && {
       icon: FlaskConical,
-      text: t('evidence.teamNeedTests', '{{count}} players have no objective test in the last 30 days', { count: status.playersNeedingTests }),
+      text: status.playersNeedingTests === 1
+        ? t('evidence.teamNeedTestsOne', '{{count}} player has no objective test in the last 30 days', { count: status.playersNeedingTests })
+        : t('evidence.teamNeedTests', '{{count}} players have no objective test in the last 30 days', { count: status.playersNeedingTests }),
     },
     status.playersWithoutMatchStats > 0 && {
       icon: BarChart2,
-      text: t('evidence.teamNoMatchStats', '{{count}} players have no match stats recorded', { count: status.playersWithoutMatchStats }),
+      text: status.playersWithoutMatchStats === 1
+        ? t('evidence.teamNoMatchStatsOne', '{{count}} player has no match stats recorded', { count: status.playersWithoutMatchStats })
+        : t('evidence.teamNoMatchStats', '{{count}} players have no match stats recorded', { count: status.playersWithoutMatchStats }),
     },
     status.playersWithoutEvidence > 0 && {
       icon: AlertTriangle,
-      text: t('evidence.teamNoEvidence', '{{count}} players have no evidence at all', { count: status.playersWithoutEvidence }),
+      text: status.playersWithoutEvidence === 1
+        ? t('evidence.teamNoEvidenceOne', '{{count}} player has no evidence at all', { count: status.playersWithoutEvidence })
+        : t('evidence.teamNoEvidence', '{{count}} players have no evidence at all', { count: status.playersWithoutEvidence }),
     },
   ].filter(Boolean) as { icon: typeof FlaskConical; text: string }[];
 

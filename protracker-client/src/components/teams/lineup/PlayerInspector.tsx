@@ -246,7 +246,9 @@ export function PlayerInspectorBody({ player, rating, loadFailed, breakdown, inj
                       <span>
                         {t('teams.inspectorLatest', 'Latest')}{' '}
                         <span className="font-semibold text-gray-700 dark:text-gray-300" dir="ltr">{row.latest.value} {row.unit}</span>
-                        {' · '}{t('teams.inspectorTestsCount', '{{count}} tests', { count: row.testCount })}
+                        {' · '}{row.testCount === 1
+                          ? t('teams.inspectorTestsCountOne', '{{count}} test', { count: row.testCount })
+                          : t('teams.inspectorTestsCount', '{{count}} tests', { count: row.testCount })}
                       </span>
                       <span>{formatDate(row.latest.testedAt, { month: 'short', day: 'numeric' })}</span>
                     </div>

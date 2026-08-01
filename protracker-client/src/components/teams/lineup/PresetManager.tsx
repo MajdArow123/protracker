@@ -164,8 +164,15 @@ export function PresetManager({ sportId, draft, formations, nameOf, onApply }: P
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">{p.name}</p>
                     <p className="text-[11px] text-gray-400 dark:text-gray-500">
-                      {[p.formation, t('teams.presetMeta', '{{roles}} roles · {{labels}} labels', { roles: Object.keys(p.roles).length, labels: p.labels.length })]
-                        .filter(Boolean).join(' · ')}
+                      {[
+                        p.formation,
+                        Object.keys(p.roles).length === 1
+                          ? t('teams.presetMetaRolesOne', '{{count}} role', { count: 1 })
+                          : t('teams.presetMetaRoles', '{{count}} roles', { count: Object.keys(p.roles).length }),
+                        p.labels.length === 1
+                          ? t('teams.presetMetaLabelsOne', '{{count}} label', { count: 1 })
+                          : t('teams.presetMetaLabels', '{{count}} labels', { count: p.labels.length }),
+                      ].filter(Boolean).join(' · ')}
                     </p>
                   </div>
                   <button
