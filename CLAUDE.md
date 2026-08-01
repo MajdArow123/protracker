@@ -656,7 +656,27 @@ History (one line each; full detail in git history + blueprint):
   Railway public DB URL; final counts lineups/presets/audits 0/0/0; lineup GET
   `{data:null}` before AND after). **The BaseVersion live-inconsistency (UI saving
   without BaseVersion → unexplained 409s) is CLOSED** — every save echoes it now.
-  Pre-ship gates: build + oxlint clean, vitest 271/271, i18n drift 0/0/0.
+  Pre-ship gates: build + oxlint clean, vitest 271/271, i18n drift 0/0/0; dotnet
+  172/172 re-confirmed post-ship. Hebrew RTL pass done on the workflow chrome
+  (picker/chips/save-modal/audit panel mirror; pitch stays LTR; audit summaries
+  backend-English by design; probe draft deleted + audit rows SQL-cleaned after —
+  counts 0/0/0). 390px browser pass blocked (fullscreen window won't resize) —
+  covered by the still-open device/emulator mobile pass.
+- **Post-Phase-6 QA round** (`7a4e50c` + `1380b62`, both prod-verified): CountUp
+  animation-latch fix — the start latch was a component-lifetime ref, freezing stat
+  cards at 0/0.0 whenever `value` changed after the first animation (StrictMode dev,
+  cached-then-refetch prod); latch now per-effect-run, re-animates from the shown
+  number; 3 regression tests drive the real rAF/IO path (all fail on old code);
+  blast radius = every CountUp consumer. Verified live as Lucas Ward (6/9.7/10.0
+  matching Latest Scores; the QA-reported "best 10.0" was REAL data — top of scale).
+  Real singular forms ("1 test", "1 player has…", "1 role · 1 label") ×5 locales via
+  the manual One/Other convention — **i18next `_one`/`_other` suffix keys return RAW
+  KEYS for ar counts 0/2/3+ and he count 2 (no `_other` fallback, verified against
+  v26) — don't use them**; verified live ("1 player has no match stats recorded" on
+  the team Evidence tab). Stale Phase-3-probe notification deleted via API (204,
+  list 0/0). QA's "radar axis shows category key" NOT reproducible: every radar
+  (Player/Team/Compare/Public/Parent) feeds `SportStatCategory.Name` display names
+  and the ComparePlayers series set `name=`; needs the exact screen to act on.
 - Lineup program Phase 6 BACKEND deployed earlier (`49a6122` +
   plumbing `69fb3d1`) — signed off at the migration checkpoint, sequenced backend-first:
   Railway ran `AddLineupWorkflow` (deploy success via GitHub deployments API, health
