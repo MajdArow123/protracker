@@ -412,6 +412,14 @@ History (one line each; full detail in git history + blueprint):
   pinned in `LineupWorkflowMigrationTests`). NOTE: this work was found 11 days stale
   and uncommitted in the lineup-phase5 worktree (a parallel session started it without
   a checkpoint), was audited against the approved spec, completed, and landed.
+- **Program Phase 6 FRONTEND** (BaseVersion echo `1cf4442` + workflow UI `1b9f8a3`):
+  publish/unpublish with confirm dialogs + Draft/Published status chips ("Published —
+  unpublish to edit" locked edit button); named-lineup picker (native select: Default
+  XI / named / recent matches) + save-as-named in `SaveLineupModal` (three-target
+  choice, 10-cap counter); `LineupAuditPanel` "Lineup history" (collapsible, renders
+  backend `LineupDiffSummarizer` summaries verbatim); `PresetManager` (save current /
+  apply with client-side diff preview modal / edit / delete, honest scope note);
+  BaseVersion echoed on every save; 409 → reload-vs-overwrite conflict UX.
 
 **Lineup pinned contracts (rulings — do not violate):**
 
@@ -534,19 +542,10 @@ History (one line each; full detail in git history + blueprint):
   deleted-elsewhere 409 were explicitly signed off.
 
 **Still open (lineup):**
-- **Phase 6 FRONTEND (next)**: publish/unpublish UI, named-lineup picker (`GET
-  /api/teams/{id}/lineups`), audit panel (`GET .../lineup-audit`), preset manager +
-  client-side apply-diff into the draft, 409-conflict resolution UX (reload vs
-  overwrite), and BaseVersion echo on save (`SaveLineupDto.BaseVersion` — the current
-  UI saves without it, which now 409s on existing rows: ship the frontend before
-  coaches re-save existing lineups, or they'll hit unexplained conflicts; prod has
-  ZERO saved lineups today, so nothing is currently affected).
-
 - True upcoming-fixture planning — needs a scheduled/played concept on matches; today a
   "future match" is a 0-0 `MatchResult` that renders as a Draw.
 - Per-match lineup surfacing on the Matches tab.
 - Per-slot **Instructions UI** (column + DTO shipped in Phase 3, UI deferred per ruling).
-- Blueprint Phase 6: lineup Status/Version/presets/audit.
 - Real-finger long-press drag untested (CDP synthesizes mouse only) — run a
   device/emulator mobile pass (the Phase 0 deploy note is still pending);
   `@dnd-kit/core` is the documented fallback if iOS touch-drag fights back (the commit
@@ -645,7 +644,20 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Lineup program Phase 6 BACKEND COMPLETE and deployed** (`49a6122` +
+- **Latest: Lineup program Phase 6 COMPLETE end-to-end** — frontend workflow UI
+  deployed (`1b9f8a3`, after BaseVersion echo `1cf4442`): Vercel deploy success via
+  GitHub deployments API, prod-smoked on City FC U18 as coach (draft save v1 →
+  publish confirm → Published chip + "unpublish to edit" locked edit + DELETE 409
+  server-verified → unpublish → 4-4-2 named lineup "Probe Rotation" via three-target
+  SaveLineupModal → picker lists Default XI/named/matches → audit panel rendered all
+  real diff summaries → preset saved/applied with client-side diff preview modal
+  "Formation 4-4-2 → 4-3-3"). All probe artifacts removed (lineups + preset DELETE
+  204s, probe audit rows — incl. 3 leftovers from a Jul 31 §1 probe — SQL-deleted via
+  Railway public DB URL; final counts lineups/presets/audits 0/0/0; lineup GET
+  `{data:null}` before AND after). **The BaseVersion live-inconsistency (UI saving
+  without BaseVersion → unexplained 409s) is CLOSED** — every save echoes it now.
+  Pre-ship gates: build + oxlint clean, vitest 271/271, i18n drift 0/0/0.
+- Lineup program Phase 6 BACKEND deployed earlier (`49a6122` +
   plumbing `69fb3d1`) — signed off at the migration checkpoint, sequenced backend-first:
   Railway ran `AddLineupWorkflow` (deploy success via GitHub deployments API, health
   200), prod-verified live: schema present (SQL sweep — zero pre-existing lineups, so
@@ -656,7 +668,6 @@ History (one line each; full detail in git history + blueprint):
   (assistant role 204, account self-deleted → login 401, audit + invite rows
   SQL-deleted via Railway public DB URL; final counts lineups/presets/audits 0/0/0).
   Post-merge suites: dotnet 172/172, vitest 243/243, build + oxlint clean.
-  **Phase 6 frontend (workflow UI) not started — see Still open (lineup).**
 - Lineup program Phase 5 COMPLETE and deployed (`dcbf0fa`) — squad analysis
   panel + player comparison; built in a worktree, signed off at checkpoint, Vercel
   deploy verified via GitHub's deployments API, prod-smoked on City FC U18 (pinned
