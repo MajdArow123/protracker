@@ -31,6 +31,11 @@ npx oxlint src           # lint
 npx vitest run           # frontend unit tests (src/test/*.test.ts[x], jsdom) — RUN BEFORE
                           # SHIPPING frontend changes; build+oxlint alone once let a commit
                           # land that broke LoginPage tests (placeholder→label markup change)
+node scripts/check-i18n-drift.mjs     # the 0/0/0 locale gate (committed since Phase 8)
+node scripts/check-bundle-budget.mjs  # after build: pdf-lazy + eager-size gate (Phase 8)
+npx playwright test      # e2e vs local backend + built frontend on the dedicated
+                          # protracker_e2e DB (create once: psql -h 127.0.0.1 -p 5544
+                          # -d postgres -c "CREATE DATABASE protracker_e2e;")
 
 # EF Core migrations (from project root)
 dotnet ef migrations add <Name> --project ProTracker.csproj --startup-project ProTracker.csproj -o Data/Migrations
@@ -323,9 +328,9 @@ silently 0 before**), landing redesign (How-it-works / evidence showcase / prici
 Landing fully localized (+79 keys × 5 locales). Language switcher is **flag-free**
 (flags denote countries, not languages) — `short` codes on the trigger, native names as
 aria-labels. Deliberate-English tokens (tech-stack items, demo credentials) wrapped
-`dir="ltr"`; feature-card badge uses `end-4` (RTL-safe). **OPEN: design-audit finding
-#10 (fabricated testimonials + README-style About content)** — this pass translated
-that content, it did not remove it.
+`dir="ltr"`; feature-card badge uses `end-4` (RTL-safe). Design-audit finding #10
+(fabricated testimonials + false About stat) was CLOSED in Phase 8 — testimonials
+replaced by the `landing.honesty.*` guarantees section.
 
 ## Demo showcase seeder (live on production — condensed)
 
@@ -714,9 +719,73 @@ History (one line each; full detail in git history + blueprint):
   `TeamDetailPage.tsx`, and elsewhere (same values, different names).
   `utils/sportColors` exists for public pages — worth consolidating if touched again.
 
+## Phase 8 — CI, bundle guard, e2e, landing honesty (`b0ce67b`/`f7e9056`/`4c80258`/`3ff11bf`/`e4487aa`)
+
+- **GitHub Actions CI is live** (`.github/workflows/ci.yml`, badge in README): 4 parallel
+  jobs on push-to-main + PR, all hard gates, NO deploy steps (Vercel/Railway keep their
+  own triggers). Runtimes: backend ~3m15s, frontend ~50s, i18n-drift ~9s, e2e ~5m —
+  fine on every push. **Pushing workflow files needs the gh token's `workflow` OAuth
+  scope** (`gh auth refresh -h github.com -s workflow`, interactive; was granted 2026-08-02).
+- **Backend CI job needs NO Postgres service**: `ProTrackerWebApplicationFactory` swaps
+  SQLite at the DI level, proven by running the suite in a clean `git archive` tree with
+  no database and no `appsettings.Development.json` (committed `appsettings.json`
+  placeholders suffice). The **e2e job DOES have a postgres:16 service container** — it
+  boots the real app, which registers Npgsql unconditionally.
+- **i18n drift gate committed**: `protracker-client/scripts/check-i18n-drift.mjs`
+  (key-set + `{{interpolation}}` equality vs en.json; the previously ad-hoc 0/0/0 number).
+- **Bundle budget guard**: `protracker-client/scripts/check-bundle-budget.mjs` runs after
+  every build (locally + CI). Gate 1: chunks containing the PDF engine (identified by the
+  `%PDF-` CONTENT marker — filename greps false-positive on dynamic importers) must never
+  appear in the entry's static closure, the modulepreload list, or any route chunk's
+  static closure; zero marker hits also fails (self-test vs marker rot). Gate 2: total
+  eager JS (entry + static closure) ≤ **1,200,000 bytes — set ~9% above the measured
+  post-7b baseline of 1,102,974 B so drift trips long before the 2.3 MB regression
+  recurs. (The "904 KB" figure earlier in this file = the same state counting only the
+  modulepreload links, excluding the entry chunk.)** Proven both ways: reintroducing the
+  manualChunks pdf-vendor rule → guard FAILED (pdf chunk in eager graph, exit 1);
+  reverted → PASS. Parses rolldown's emitted `from"./x.js"` (static) vs `` import(`./x.js`) ``
+  (dynamic) edges.
+- **Playwright e2e** (`protracker-client/e2e/`, `npx playwright test`, CI job on push+PR):
+  4 specs covering the previously hand-verified flows — coach schedule-fixture
+  ("—"+Upcoming, never 0-0 Draw) → record result → **evidence auto-import asserted via
+  API** (`isAutoImported` entry — the sync is best-effort server-side, so a green rating
+  POST alone proves nothing); lineup from match (`?tab=lineup&matchId=`) → real
+  previous-meeting data → draft → publish → edit/delete 409s server-verified; athlete
+  dashboard CountUp non-zero (7a4e50c net) + wellbeing wizard; Hebrew RTL scoreline
+  `dir="ltr"` on an asymmetric 3 - 1. Every spec registers its own accounts/data
+  (unique emails) and deletes its team in afterAll — never prod, never prod seeds.
+  **Harness gotchas (pinned)**: backend `reuseExistingServer: false` (a dev server on
+  8080 would silently write to protracker_dev); the webServer REBUILDS the frontend with
+  `VITE_API_URL=http://localhost:8080` (a stale dist bakes in the Railway URL from
+  `.env.production` and would hit prod); **the backend reads the JWT from HttpOnly
+  cookies too, so Playwright's shared request cookie jar downgrades coach Bearer calls
+  after `register-athlete` sets athlete cookies — that call runs in an isolated request
+  context** (observed as unexplained 403s); vitest `include` is scoped to `src/` so it
+  never swallows e2e specs; formation chips are `role="radio"`, and the board Save
+  button's accessible name grows to "Save Unsaved changes" when dirty (aria-label on
+  the amber dot).
+- **SQLitePCLRaw.bundle_e_sqlite3 pinned to 2.1.12** in ProTracker.Tests (GHSA-2m69-gcr7-jv3q,
+  vulnerable ≤2.1.11): it's transitive via EF Sqlite, and **no EF 9.0.x release raises
+  the floor** (9.0.18 still declares >=2.1.10) — the direct pin is the only fix on EF 9.
+- **Landing testimonials replaced (design-audit finding #10 CLOSED)**: the four invented
+  coaches/quotes are gone from all 5 locales; same visual treatment now renders an
+  "Honest by design" section with four REAL code-enforced guarantees (no invented
+  numbers / fixtures never fake 0-0 / confidence visible / athlete-owned privacy).
+  Capability section chosen over a Lucas-Ward "case study" — that arc is fictional
+  seeded data, and a demo-labelled invented athlete is still endorsement-shaped.
+  About stat "34 Backend Tests" (false; actual 194 and drifting) → "5 Languages"
+  (true, stable). Keys: `landing.testimonials.*` removed, `landing.honesty.*` added,
+  `statTests`→`statLanguages`; drift 0/0/0.
+- **oxlint carries 21 pre-existing warnings** (10 react-hooks exhaustive-deps in
+  PlayerFormPage/TeamFormPage/PlayerDetailPage/GoalsPage/DrillLibraryPage, 11
+  react only-export-components fast-refresh notes) — inventoried for a user
+  fix-vs-accept decision, not silently accepted; oxlint exits 0 on warnings so CI
+  passes either way.
 ## Current status
 
-- **Latest: Phase 7b final polish shipped** (4 commits `638a631`/`46c2837`/
+- **Latest: Phase 8 shipped** — see its section above. CI green on real pushes,
+  e2e 4/4 locally, bundle guard live, finding #10 closed.
+- **Phase 7b final polish shipped** (4 commits `638a631`/`46c2837`/
   `cca03a3`/`7b785e0`): global `MotionConfig reducedMotion="user"` + CSS
   reduced-motion sweep + interaction timings verified in the 150–300ms band
   (2 outliers clamped; entrances/progress fills/bell wiggle deliberately
@@ -815,7 +884,7 @@ History (one line each; full detail in git history + blueprint):
 - Demo showcase dataset live on production; `SEED_ADMIN_TOKEN` removed from Railway
   (endpoint 403s — re-enable procedure above).
 - Landing localization deployed (`aefb526` + `3e0180d`); design-audit finding #10
-  (fabricated testimonials/About) still open.
+  (fabricated testimonials/About) closed in Phase 8.
 - Phase G complete end-to-end: S1–S5, accuracy round, continuations S4 (`dd426df` —
   real 3-test history correctly gated "Too varied to call"), S5 (`cf282bd` —
   marker-on-tick geometry DOM-asserted), S6 (`d7d98d0`+`037d63e` — Railway
