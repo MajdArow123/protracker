@@ -66,6 +66,11 @@ builder.Services.AddControllers()
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>() ?? new JwtSettings();
 
+// Fail closed before anything can issue a token: production must never fall through to the
+// placeholder key committed in appsettings.json (it is public, so tokens signed with it are
+// forgeable). Dev/test keep the convenience default.
+JwtSettings.EnsureProductionSigningKey(jwtSettings.SigningKey, builder.Environment.IsProduction());
+
 // Adds a "Bearer" scheme alongside Identity's existing cookie scheme (which stays the
 // default for the MVC pages). API controllers opt into this scheme explicitly via
 // [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)].
