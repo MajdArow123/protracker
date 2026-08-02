@@ -573,10 +573,42 @@ History (one line each; full detail in git history + blueprint):
   after create; name unique per (coach, sport); cap 20/coach. All caps + the
   deleted-elsewhere 409 were explicitly signed off.
 
+- **Program Phase 7a — match context on scheduled-vs-played** (`5b0cb58` backend +
+  `f986d19` frontend, migration `AddMatchScheduling`): resolved the fixtures honesty
+  gate with option (a) — `MatchResult.Status` (`Played=0` default / `Scheduled=1`) +
+  coach-entered `OpponentFormation`/`ScoutingNotes` (3 additive columns, drop-only
+  Down, both-provider-pinned in `MatchSchedulingMigrationTests`). **A Scheduled
+  fixture has NO score: DB keeps non-nullable 0-0 dead data, the DTO masks
+  `result`/`homeScore`/`awayScore`/`ourScore`/`opponentScore`/`scoreDisplay`/
+  `setScores` to null at read — a future match can never render as a 0-0 Draw.**
+  Guards: rating a Scheduled match → 400 (also blocks evidence auto-import by
+  construction — public profiles can't leak fixtures since they derive from
+  ratings); Played→Scheduled with ratings → 409 (ratings are evidence of play);
+  legacy no-`status` payloads unchanged (a REAL played 0-0 is still honestly a
+  Draw). Frontend: Record-result/Schedule-fixture form toggle (schedule hides
+  scores), "—"+Upcoming chip rows (Record-result action replaces Rate/stats),
+  solo same treatment (solo "Matches" tile counts Played only), lineup
+  `MatchContextPanel` (recorded facts + previous meetings DERIVED from Played
+  history only via pure `previousMeetings` + badged coach plan), picker splits
+  Upcoming fixtures/Recent results (`groupMatchesForPicker`), "Lineup for this
+  match" row action + `?matchId=` deep link (read once on mount, server
+  re-validates), published roster-drift banner (`publishedRosterDrift` — a
+  published lineup never silently changes). Scorelines got `dir="ltr"` (bidi
+  rendered "0 - 1" as "1 - 0" in RTL — pre-existing, caught in the Hebrew pass).
+
+**Phase 7a pinned rules:**
+- **Previous meetings** count only `status === 'Played'` rows vs the same
+  normalized opponent name, dated ≤ the reference match, excluding it — a
+  Scheduled row is never a meeting; zero history renders an explicit empty line.
+- **Opponent plan is coach-entered**: always rendered with the coach-entered
+  `SourceBadge`, never as recorded fact. Visible to the team (opponent prep, not
+  player-private notes).
+- W-D-L chips/records everywhere must exclude Scheduled (they filter on
+  `result === 'Win'|'Draw'|'Loss'`, null-safe by construction — keep it that way).
+
 **Still open (lineup):**
-- True upcoming-fixture planning — needs a scheduled/played concept on matches; today a
-  "future match" is a 0-0 `MatchResult` that renders as a Draw.
-- Per-match lineup surfacing on the Matches tab.
+- Per-match lineup surfacing could go deeper (row action + deep link shipped in
+  7a; a lineup-status chip per match row is a possible follow-on).
 - Per-slot **Instructions UI** (column + DTO shipped in Phase 3, UI deferred per ruling).
 - Real-finger long-press drag untested (CDP synthesizes mouse only) — run a
   device/emulator mobile pass (the Phase 0 deploy note is still pending);
@@ -684,7 +716,24 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Lucas Ward 6-month demo arc seeded on production** (see its section
+- **Latest: Lineup program Phase 7a COMPLETE and deployed** (`5b0cb58` backend →
+  Railway probe → `f986d19` frontend → Vercel success via GitHub deployments
+  API). Migration checkpoint honored (diff + both-provider up/down + guard tests
+  presented before any commit; user signed off). Railway probed BOTH ways:
+  scheduled fixture → all score fields null (never a Draw) → delete pristine
+  (14/14, zero remnants), AND existing played rows byte-identical on real prod
+  data (City FC W-D-L 5-4-5 intact, real draws still Draw; basketball
+  spot-checked). Prod-smoked in browser as coach on City FC U18: schedule
+  fixture → "—"+Upcoming (never 0-0 Draw) → Lineup-from-match → context panel
+  showed the REAL 3-3 Jul 11 previous meeting + badged scouting note → deleted,
+  matches 14 before/after, statuses all Played, lineup GET null. Hebrew RTL pass
+  done on form/rows/context panel (found+fixed the pre-existing RTL scoreline
+  reversal). Gates: dotnet 194/194, vitest 285/285, build + oxlint clean, i18n
+  drift 0/0/0. **Phase 7b (final polish) is next**: reduced-motion global
+  MotionConfig, 150–300ms timing audit, deep-link route-fade profiling, WCAG
+  2.2 AA sweep, real-device mobile pass, COSMETIC-7 pool strings (fix) /
+  COSMETIC-6 shell-club "(you)" (leave, documented).
+- **Lucas Ward 6-month demo arc seeded on production** (see its section
   above) — raw inputs via authenticated API as coach + Lucas plus scoped SQL,
   engine recomputed everything, script assertion pass green (11/11 confidence
   targets, 8/8 "Improving" trends), browser-verified in both roles with
