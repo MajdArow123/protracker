@@ -91,3 +91,38 @@ export function preloadDashboard(role: 'Coach' | 'Athlete' | 'Parent' | 'SoloAth
   else if (role === 'SoloAthlete') import('../pages/dashboard/SoloDashboardPage');
   else import('../pages/dashboard/PlayerDashboardPage');
 }
+
+// ── Deep-link route-chunk warming (Phase 7b) ─────────────────────────────────
+// On a cold deep link the route chunk used to download only AFTER the auth
+// check resolved (ProtectedRoute gates the lazy import), serializing
+// shell → auth/me → route chunk → data into a ~1.5–2s skeleton. Kicking the
+// import off at module evaluation runs it IN PARALLEL with auth/me; React.lazy
+// then resolves instantly from the module cache. Best-effort by design: an
+// unknown path warms nothing, a failed import is swallowed (lazy() retries).
+const ROUTE_WARMERS: [RegExp, () => Promise<unknown>][] = [
+  [/^\/teams\/\d+/, () => import('../pages/teams/TeamDetailPage')],
+  [/^\/teams\/?$/, () => import('../pages/teams/TeamsPage')],
+  [/^\/players\/\d+/, () => import('../pages/players/PlayerDetailPage')],
+  [/^\/players\/?$/, () => import('../pages/players/PlayersPage')],
+  [/^\/reports\/team\//, () => import('../pages/reports/TeamReportPage')],
+  [/^\/reports\/player\//, () => import('../pages/reports/PlayerReportPage')],
+  [/^\/reports/, () => import('../pages/reports/ReportsPage')],
+  [/^\/messages/, () => import('../pages/messages/MessagesPage')],
+  [/^\/notifications/, () => import('../pages/notifications/NotificationsPage')],
+  [/^\/tasks/, () => import('../pages/tasks/TasksPage')],
+  [/^\/goals/, () => import('../pages/goals/GoalsPage')],
+  [/^\/drills/, () => import('../pages/drills/DrillLibraryPage')],
+  [/^\/leagues\/\d+/, () => import('../pages/leagues/LeagueDetailPage')],
+  [/^\/leagues/, () => import('../pages/leagues/LeaguesPage')],
+  [/^\/coaches\/?$/, () => import('../pages/public/CoachMarketplacePage')],
+  [/^\/login/, () => import('../pages/auth/LoginPage')],
+];
+
+export function warmRouteChunk(pathname: string): void {
+  const hit = ROUTE_WARMERS.find(([pattern]) => pattern.test(pathname));
+  if (hit) void hit[1]().catch(() => { /* lazy() will retry on render */ });
+}
+
+if (typeof window !== 'undefined') {
+  warmRouteChunk(window.location.pathname);
+}
