@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,14 +26,44 @@ export function Modal({
 }: Props) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
+  const titleId = useId();
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handle = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
+      // Minimal focus trap (WCAG 2.4.3): Tab cycles within the dialog.
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusables = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const active = document.activeElement;
+        if (!panelRef.current.contains(active)) {
+          e.preventDefault();
+          first.focus();
+        } else if (e.shiftKey && active === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     document.addEventListener('keydown', handle);
     return () => document.removeEventListener('keydown', handle);
   }, [onClose]);
+
+  // Move focus into the dialog on open; hand it back to the opener on close.
+  useEffect(() => {
+    if (!isOpen) return;
+    const opener = document.activeElement as HTMLElement | null;
+    panelRef.current?.focus();
+    return () => opener?.focus?.();
+  }, [isOpen]);
 
   // Bottom-sheet on mobile (slide up, rounded top only); centered scale/fade on desktop.
   const panelMotion = isMobile
@@ -53,13 +83,18 @@ export function Modal({
           <motion.div
             {...panelMotion}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className={`w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col sm:max-h-[88vh] ${
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            tabIndex={-1}
+            className={`w-full ${sizes[size]} bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-xl shadow-xl flex flex-col sm:max-h-[88vh] focus:outline-none ${
               size === 'xl' ? 'max-h-[100dvh] h-[100dvh] sm:h-auto rounded-t-none sm:rounded-xl pt-[env(safe-area-inset-top)] sm:pt-0' : 'max-h-[92vh]'
             }`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 id={titleId} className="text-lg font-semibold text-gray-900 dark:text-white">
                 {title}
               </h2>
               <button
