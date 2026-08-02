@@ -1470,25 +1470,13 @@
       "p3": "From AI-generated nutrition plans to injury recovery programs, every feature is designed to save coaches time while giving athletes the personalized attention they need to reach their potential.",
       "statSports": "Sports Supported",
       "statAi": "AI Features",
-      "statTests": "Backend Tests",
       "statBuilt": "Built in",
       "builtWith": "Built with",
       "techBackend": "Backend",
       "techFrontend": "Frontend",
       "techAi": "AI",
-      "techHosting": "Hosting"
-    },
-    "testimonials": {
-      "title": "Coaches and athletes love ProTracker",
-      "subtitle": "From full squads to solo grinders — join the players already transforming their game.",
-      "marcusQuote": "ProTracker completely changed how I manage my squad. The assessment tools and AI plans save me hours every week.",
-      "marcusRole": "Head Coach, City FC",
-      "sarahQuote": "The nutrition tracking and injury management features are incredible. My athletes are performing at their peak.",
-      "sarahRole": "Performance Coach",
-      "carlosQuote": "I've tried many platforms, but nothing comes close to ProTracker's depth of analytics and ease of use.",
-      "carlosRole": "Academy Director",
-      "aishaQuote": "Perfect for recreational players who want to take their game seriously without being on a formal team. I track everything myself — and it just works.",
-      "aishaRole": "Solo Athlete"
+      "techHosting": "Hosting",
+      "statLanguages": "Languages"
     },
     "contact": {
       "titleA": "Get in",
@@ -1508,6 +1496,18 @@
       "title": "Ready to elevate your program?",
       "subtitle": "Start tracking, analyzing, and winning today. It's free to get started.",
       "button": "Get Started Free"
+    },
+    "honesty": {
+      "athletePrivacyDesc": "Private goals and journal entries are visible to the athlete alone — not even their coach can read them.",
+      "athletePrivacyTitle": "Athlete-owned privacy",
+      "confidenceShownDesc": "Every score carries its confidence level. Thin data is flagged as thin — never dressed up as certainty.",
+      "confidenceShownTitle": "Confidence, out loud",
+      "honestFixturesDesc": "An upcoming match is \"Upcoming\" — never a fabricated 0-0 scoreline. Results exist only after the game is played.",
+      "honestFixturesTitle": "Fixtures stay honest",
+      "noFakeNumbersDesc": "Missing data shows as \"—\", never as a fake zero. A rating only appears when real recorded evidence sits behind it.",
+      "noFakeNumbersTitle": "No invented numbers",
+      "subtitle": "No invented praise, no manufactured hype — just the data rules ProTracker enforces for every team.",
+      "title": "Honest by design"
     }
   },
   "profile": {

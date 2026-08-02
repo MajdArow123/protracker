@@ -1470,25 +1470,13 @@
       "p3": "Des plans de nutrition IA aux programmes de récupération, chaque fonction fait gagner du temps aux coachs et offre aux athlètes une attention personnalisée.",
       "statSports": "Sports pris en charge",
       "statAi": "Fonctions IA",
-      "statTests": "Tests backend",
       "statBuilt": "Créé en",
       "builtWith": "Construit avec",
       "techBackend": "Backend",
       "techFrontend": "Frontend",
       "techAi": "IA",
-      "techHosting": "Hébergement"
-    },
-    "testimonials": {
-      "title": "Coachs et athlètes adorent ProTracker",
-      "subtitle": "Des effectifs complets aux athlètes solo — rejoignez ceux qui transforment déjà leur jeu.",
-      "marcusQuote": "ProTracker a transformé ma gestion d'effectif ; les outils d'évaluation et les plans IA me font gagner des heures chaque semaine.",
-      "marcusRole": "Entraîneur principal, City FC",
-      "sarahQuote": "Le suivi nutritionnel et la gestion des blessures sont incroyables ; mes athlètes sont au sommet.",
-      "sarahRole": "Coach performance",
-      "carlosQuote": "J'ai essayé bien des plateformes, mais rien n'égale la profondeur d'analyse et la simplicité de ProTracker.",
-      "carlosRole": "Directeur d'académie",
-      "aishaQuote": "Parfait pour les joueurs amateurs qui veulent progresser sans équipe officielle ; je suis tout moi-même — et ça marche.",
-      "aishaRole": "Athlète solo"
+      "techHosting": "Hébergement",
+      "statLanguages": "Langues"
     },
     "contact": {
       "titleA": "Entrons en",
@@ -1508,6 +1496,18 @@
       "title": "Prêt à faire passer votre programme au niveau supérieur ?",
       "subtitle": "Commencez à suivre, analyser et gagner dès aujourd'hui. C'est gratuit pour démarrer.",
       "button": "Commencer gratuitement"
+    },
+    "honesty": {
+      "athletePrivacyDesc": "Les objectifs privés et le journal ne sont visibles que par l'athlète — même son coach ne peut pas les lire.",
+      "athletePrivacyTitle": "Confidentialité de l'athlète",
+      "confidenceShownDesc": "Chaque score porte son niveau de confiance. Des données minces sont signalées comme telles — jamais déguisées en certitude.",
+      "confidenceShownTitle": "La confiance, affichée",
+      "honestFixturesDesc": "Un match à venir est « À venir » — jamais un score 0-0 fabriqué. Les résultats n'existent qu'une fois le match joué.",
+      "honestFixturesTitle": "Des matchs à venir honnêtes",
+      "noFakeNumbersDesc": "Les données manquantes s'affichent « — », jamais un faux zéro. Une note n'apparaît que lorsqu'elle repose sur des preuves réellement enregistrées.",
+      "noFakeNumbersTitle": "Aucun chiffre inventé",
+      "subtitle": "Pas d'éloges inventés ni de battage artificiel — seulement les règles de données que ProTracker applique pour chaque équipe.",
+      "title": "Honnête par conception"
     }
   },
   "profile": {

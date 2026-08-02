@@ -4,10 +4,10 @@ import { motion, type Variants } from 'framer-motion';
 import { clsx } from 'clsx';
 import {
   Activity, BarChart3, Brain, Salad, ShieldAlert,
-  Trophy, Zap, TrendingUp, Star, ChevronRight, Dumbbell,
+  Trophy, Zap, TrendingUp, ChevronRight, Dumbbell,
   Target, Heart, CheckCircle, Circle, CheckSquare, MessageSquare,
   CalendarDays, HeartPulse, Code2, Globe, Shield, User, UsersRound, Search,
-  ClipboardList, FlaskConical, ShieldCheck, Check,
+  ClipboardList, FlaskConical, ShieldCheck, Check, CalendarClock, Gauge, Lock,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useDynamicLabels } from '../i18n/dynamicLabels';
@@ -86,7 +86,7 @@ const ROLE_PATHS = [
 const ABOUT_STATS = [
   { value: 5, suffix: '', label: 'Sports Supported', labelKey: 'landing.about.statSports' },
   { value: 10, suffix: '+', label: 'AI Features', labelKey: 'landing.about.statAi' },
-  { value: 34, suffix: '', label: 'Backend Tests', labelKey: 'landing.about.statTests' },
+  { value: 5, suffix: '', label: 'Languages', labelKey: 'landing.about.statLanguages' },
   { value: 2026, suffix: '', label: 'Built in', labelKey: 'landing.about.statBuilt', countUp: false },
 ];
 
@@ -119,49 +119,40 @@ const STATS = [
   { value: 'AI-Powered', valueKey: 'landing.stats.aiValue', label: 'Insights', labelKey: 'landing.stats.insights', icon: Brain },
 ];
 
-const TESTIMONIALS = [
+// Real, code-enforced product guarantees — this section replaced fabricated
+// testimonials (design-audit finding #10). Every claim below is a pinned,
+// test-backed behavior; don't add a card unless the product actually enforces it.
+const HONESTY_CARDS = [
   {
-    key: 'marcus',
-    name: 'Marcus Johnson',
-    role: 'Head Coach, City FC',
-    sport: 'Football',
-    quote: 'ProTracker completely changed how I manage my squad. The assessment tools and AI plans save me hours every week.',
-    avatar: 'MJ',
-    stars: 5,
+    key: 'noFakeNumbers',
+    icon: ShieldCheck,
+    title: 'No invented numbers',
+    desc: 'Missing data shows as "—", never as a fake zero. A rating only appears when real recorded evidence sits behind it.',
   },
   {
-    key: 'sarah',
-    name: 'Sarah Williams',
-    role: 'Performance Coach',
-    sport: 'Basketball',
-    quote: 'The nutrition tracking and injury management features are incredible. My athletes are performing at their peak.',
-    avatar: 'SW',
-    stars: 5,
+    key: 'honestFixtures',
+    icon: CalendarClock,
+    title: 'Fixtures stay honest',
+    desc: 'An upcoming match is "Upcoming" — never a fabricated 0-0 scoreline. Results exist only after the game is played.',
   },
   {
-    key: 'carlos',
-    name: 'Carlos Rivera',
-    role: 'Academy Director',
-    sport: 'Tennis',
-    quote: 'I\'ve tried many platforms, but nothing comes close to ProTracker\'s depth of analytics and ease of use.',
-    avatar: 'CR',
-    stars: 5,
+    key: 'confidenceShown',
+    icon: Gauge,
+    title: 'Confidence, out loud',
+    desc: 'Every score carries its confidence level. Thin data is flagged as thin — never dressed up as certainty.',
   },
   {
-    key: 'aisha',
-    name: 'Aisha Diallo',
-    role: 'Solo Athlete',
-    sport: 'Basketball',
-    quote: 'Perfect for recreational players who want to take their game seriously without being on a formal team. I track everything myself — and it just works.',
-    avatar: 'AD',
-    stars: 5,
+    key: 'athletePrivacy',
+    icon: Lock,
+    title: 'Athlete-owned privacy',
+    desc: 'Private goals and journal entries are visible to the athlete alone — not even their coach can read them.',
   },
 ];
 
 export function LandingPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  // Alias for map callbacks whose parameter is named `t` (tech stack, testimonials)
+  // Alias for map callbacks whose parameter is named `t` (tech stack)
   // — the documented shadowing gotcha.
   const tr = t;
   const L = useDynamicLabels();
@@ -648,7 +639,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
+      {/* Honesty guarantees (replaced fabricated testimonials — audit finding #10) */}
       <section className="py-24">
         <div className="max-w-6xl mx-auto px-6">
           <motion.div
@@ -658,14 +649,14 @@ export function LandingPage() {
             variants={fadeUp}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl font-black tracking-tight mb-3">{t('landing.testimonials.title', 'Coaches and athletes love ProTracker')}</h2>
-            <p className="text-gray-400">{t('landing.testimonials.subtitle', 'From full squads to solo grinders — join the players already transforming their game.')}</p>
+            <h2 className="text-3xl font-black tracking-tight mb-3">{t('landing.honesty.title', 'Honest by design')}</h2>
+            <p className="text-gray-400">{t('landing.honesty.subtitle', 'No invented praise, no manufactured hype — just the data rules ProTracker enforces for every team.')}</p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {TESTIMONIALS.map((t, i) => (
+            {HONESTY_CARDS.map((c, i) => (
               <motion.div
-                key={t.name}
+                key={c.key}
                 custom={i}
                 initial="hidden"
                 whileInView="show"
@@ -673,21 +664,11 @@ export function LandingPage() {
                 variants={fadeUp}
                 className="p-6 rounded-2xl bg-gray-900/50 border border-gray-800"
               >
-                <div className="flex mb-4">
-                  {Array.from({ length: t.stars }).map((_, j) => (
-                    <Star key={j} size={14} className="text-amber-400 fill-amber-400" />
-                  ))}
+                <div className="w-10 h-10 rounded-xl bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400 mb-4">
+                  <c.icon size={18} />
                 </div>
-                <p className="text-gray-300 text-sm leading-relaxed mb-6">"{tr(`landing.testimonials.${t.key}Quote`, t.quote)}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-indigo-600/30 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-sm flex-shrink-0">
-                    {t.avatar}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-white text-sm">{t.name}</p>
-                    <p className="text-xs text-gray-500">{tr(`landing.testimonials.${t.key}Role`, t.role)} · {L.sport(t.sport)}</p>
-                  </div>
-                </div>
+                <p className="font-semibold text-white text-sm mb-2">{t(`landing.honesty.${c.key}Title`, c.title)}</p>
+                <p className="text-gray-300 text-sm leading-relaxed">{t(`landing.honesty.${c.key}Desc`, c.desc)}</p>
               </motion.div>
             ))}
           </div>

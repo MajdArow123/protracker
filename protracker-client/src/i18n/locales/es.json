@@ -1470,25 +1470,13 @@
       "p3": "De los planes de nutrición con IA a los programas de recuperación, cada función ahorra tiempo al entrenador y da al atleta la atención personalizada que necesita.",
       "statSports": "Deportes compatibles",
       "statAi": "Funciones de IA",
-      "statTests": "Pruebas de backend",
       "statBuilt": "Creado en",
       "builtWith": "Construido con",
       "techBackend": "Backend",
       "techFrontend": "Frontend",
       "techAi": "IA",
-      "techHosting": "Alojamiento"
-    },
-    "testimonials": {
-      "title": "Entrenadores y atletas aman ProTracker",
-      "subtitle": "De plantillas completas a atletas solitarios — únete a quienes ya transforman su juego.",
-      "marcusQuote": "ProTracker cambió por completo cómo gestiono mi plantilla; las evaluaciones y los planes de IA me ahorran horas cada semana.",
-      "marcusRole": "Primer entrenador, City FC",
-      "sarahQuote": "El seguimiento nutricional y la gestión de lesiones son increíbles; mis atletas rinden al máximo.",
-      "sarahRole": "Entrenadora de rendimiento",
-      "carlosQuote": "He probado muchas plataformas, pero nada se acerca a la profundidad analítica y facilidad de uso de ProTracker.",
-      "carlosRole": "Director de academia",
-      "aishaQuote": "Perfecto para jugadores recreativos que quieren tomarse el juego en serio sin un equipo formal; yo misma lo registro todo — y simplemente funciona.",
-      "aishaRole": "Atleta solitaria"
+      "techHosting": "Alojamiento",
+      "statLanguages": "Idiomas"
     },
     "contact": {
       "titleA": "Ponte en",
@@ -1508,6 +1496,18 @@
       "title": "¿Listo para elevar tu programa?",
       "subtitle": "Empieza a seguir, analizar y ganar hoy. Empezar es gratis.",
       "button": "Empieza gratis"
+    },
+    "honesty": {
+      "athletePrivacyDesc": "Las metas privadas y el diario solo los ve el atleta; ni siquiera su entrenador puede leerlos.",
+      "athletePrivacyTitle": "Privacidad del atleta",
+      "confidenceShownDesc": "Cada puntuación lleva su nivel de confianza. Los datos escasos se marcan como escasos, nunca se disfrazan de certeza.",
+      "confidenceShownTitle": "La confianza, a la vista",
+      "honestFixturesDesc": "Un partido próximo aparece como «Próximo», nunca como un 0-0 fabricado. Los resultados solo existen después de jugarse el partido.",
+      "honestFixturesTitle": "Partidos por jugar, honestos",
+      "noFakeNumbersDesc": "Los datos ausentes se muestran como «—», nunca como un cero falso. Una valoración solo aparece cuando hay evidencia real registrada detrás.",
+      "noFakeNumbersTitle": "Sin números inventados",
+      "subtitle": "Sin elogios inventados ni bombo artificial: solo las reglas de datos que ProTracker aplica para cada equipo.",
+      "title": "Honesto por diseño"
     }
   },
   "profile": {
