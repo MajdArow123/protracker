@@ -360,6 +360,38 @@ parents, solo demo Riley Chen) and verified across all four roles; gap-fill `087
   the seeding-week date, player-detail Training/Matches tabs render raw ISO dates
   (pre-existing product formatting, not seed data).
 
+## Lucas Ward 6-month demo arc (live on production)
+
+Lucas Ward (player 5, City FC U18) carries a seeded 6-month progression
+(Feb 3–Aug 1 2026): ~50 objective tests across 8 metrics, 7 backdated matches
+(Lucas-only ratings → real auto-import + recalc), monthly coach evals + self-
+assessments, a hamstring-strain arc (Apr 13 → FullyRecovered May 8, completed
+template recovery plan), ~70 wellbeing check-ins, 12 journal entries, 2 achieved
+goals + milestones/progress on the 4 active ones, 10 tasks (8 completed), 38
+attendance rows. Result (engine-computed, never written directly): 11/11 metrics
+scored — VeryHigh on Passing/Shooting/Stamina/Dribbling/Defending, High on the
+rest; all 8 tested metrics read "Improving"; lineup chip 7.5 confident.
+
+- **Scripts**: `scripts/lucas_6mo_seed.py` (idempotent — natural-key pre-checks +
+  `ON CONFLICT DO NOTHING`; `--dry-run` prints the full write plan + verbatim SQL)
+  and `scripts/lucas_6mo_teardown.py` (consumes
+  `scripts/lucas_6mo_seed.manifest.json`, restores the baseline recorded inside it;
+  has `--dry-run`). Both need `PROD_DB_URL` (Railway Postgres service
+  `DATABASE_PUBLIC_URL`) for their SQL phase — API writes use Bearer tokens for
+  coach.soccer / lucas.ward (provenance is server-stamped from the caller).
+- **Mechanism ruling**: evidence tables/matches/assessments/injuries/goals-progress/
+  training sessions accept backdated dates via the API; `WellbeingCheckin.Date` and
+  `JournalEntry.EntryDate` are server-stamped (journal's DTO `EntryDate` is dead
+  code) → SQL inserts; task/goal/recovery timestamps + `InjuryRecord.RecoveredDate`
+  → SQL fix-ups. Evidence writes do NOT auto-recalc (except match-rating save) —
+  always finish with `POST /api/evidence-scores/calculate/{playerId}`.
+- **Untouched**: every pre-existing row (incl. the 3.75s Speed outlier — combined
+  trend still clears R²≥0.3 → "Improving"), the 2 open July injuries, other
+  players. Team-visible side effects (accepted): 7 historical matches on the
+  Matches tab / W-D-L chips, only Lucas rated, fictional opponents.
+- Team-1 squad card now shows Weak Foot/Positioning as "Thin data · 1/24" (only
+  Lucas has them) — honest by design, not a bug.
+
 ## Lineup program
 
 **`protracker-client/LINEUP_BLUEPRINT.md` is the authoritative roadmap** (note: lives in
@@ -652,7 +684,13 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Lineup program Phase 6 COMPLETE end-to-end** — frontend workflow UI
+- **Latest: Lucas Ward 6-month demo arc seeded on production** (see its section
+  above) — raw inputs via authenticated API as coach + Lucas plus scoped SQL,
+  engine recomputed everything, script assertion pass green (11/11 confidence
+  targets, 8/8 "Improving" trends), browser-verified in both roles with
+  screenshots; scripts + manifest committed, teardown documented and dry-run
+  proven BEFORE seeding.
+- Lineup program Phase 6 COMPLETE end-to-end — frontend workflow UI
   deployed (`1b9f8a3`, after BaseVersion echo `1cf4442`): Vercel deploy success via
   GitHub deployments API, prod-smoked on City FC U18 as coach (draft save v1 →
   publish confirm → Published chip + "unpublish to edit" locked edit + DELETE 409

@@ -1,0 +1,1182 @@
+{
+ "seededAt": "2026-08-02T12:47:00.439016+00:00",
+ "playerId": 5,
+ "baseline": {
+  "objectiveTests": 7,
+  "matchStats": 6,
+  "coachEvals": 26,
+  "selfAssessments": 3,
+  "evidenceScores": {
+   "Agility": "Low",
+   "Ball Control": "Low",
+   "Defending": "Medium",
+   "Dribbling": "Low",
+   "Passing": "VeryHigh",
+   "Shooting": "VeryHigh",
+   "Speed": "High",
+   "Stamina": "VeryHigh",
+   "Tactical Awareness": "Low"
+  },
+  "wellbeing": 30,
+  "goals": 4,
+  "goalCurrentValues": {
+   "Enhance Shooting Conversion to 9.5": 8.0,
+   "Advance Passing Accuracy to 9.5": 8.0,
+   "Optimize Agility and Change of Direction to 9.5": 8.0,
+   "Elevate Match Performance to 9.0": 7.0
+  },
+  "matches": 7,
+  "injuries": 2,
+  "tasks": 7,
+  "trainingSessions": 5,
+  "nutritionItems": 1
+ },
+ "created": {
+  "objectiveTests": [
+   {
+    "id": 2380,
+    "metric": "Speed",
+    "testedAt": "2026-02-07",
+    "value": 4.45
+   },
+   {
+    "id": 2381,
+    "metric": "Speed",
+    "testedAt": "2026-03-07",
+    "value": 4.36
+   },
+   {
+    "id": 2382,
+    "metric": "Speed",
+    "testedAt": "2026-04-04",
+    "value": 4.28
+   },
+   {
+    "id": 2383,
+    "metric": "Speed",
+    "testedAt": "2026-04-25",
+    "value": 4.34
+   },
+   {
+    "id": 2384,
+    "metric": "Speed",
+    "testedAt": "2026-05-23",
+    "value": 4.18
+   },
+   {
+    "id": 2385,
+    "metric": "Speed",
+    "testedAt": "2026-06-13",
+    "value": 4.12
+   },
+   {
+    "id": 2386,
+    "metric": "Speed",
+    "testedAt": "2026-07-25",
+    "value": 4.0
+   },
+   {
+    "id": 2387,
+    "metric": "Agility",
+    "testedAt": "2026-02-07",
+    "value": 5.05
+   },
+   {
+    "id": 2388,
+    "metric": "Agility",
+    "testedAt": "2026-03-07",
+    "value": 4.95
+   },
+   {
+    "id": 2389,
+    "metric": "Agility",
+    "testedAt": "2026-04-04",
+    "value": 4.85
+   },
+   {
+    "id": 2390,
+    "metric": "Agility",
+    "testedAt": "2026-04-25",
+    "value": 4.95
+   },
+   {
+    "id": 2391,
+    "metric": "Agility",
+    "testedAt": "2026-05-23",
+    "value": 4.75
+   },
+   {
+    "id": 2392,
+    "metric": "Agility",
+    "testedAt": "2026-06-13",
+    "value": 4.65
+   },
+   {
+    "id": 2393,
+    "metric": "Agility",
+    "testedAt": "2026-07-18",
+    "value": 4.55
+   },
+   {
+    "id": 2394,
+    "metric": "Stamina",
+    "testedAt": "2026-02-07",
+    "value": 2650
+   },
+   {
+    "id": 2395,
+    "metric": "Stamina",
+    "testedAt": "2026-03-07",
+    "value": 2780
+   },
+   {
+    "id": 2396,
+    "metric": "Stamina",
+    "testedAt": "2026-04-04",
+    "value": 2900
+   },
+   {
+    "id": 2397,
+    "metric": "Stamina",
+    "testedAt": "2026-04-25",
+    "value": 2750
+   },
+   {
+    "id": 2398,
+    "metric": "Stamina",
+    "testedAt": "2026-05-23",
+    "value": 3000
+   },
+   {
+    "id": 2399,
+    "metric": "Stamina",
+    "testedAt": "2026-07-18",
+    "value": 3260
+   },
+   {
+    "id": 2400,
+    "metric": "Passing",
+    "testedAt": "2026-02-07",
+    "value": 76
+   },
+   {
+    "id": 2401,
+    "metric": "Passing",
+    "testedAt": "2026-03-07",
+    "value": 79
+   },
+   {
+    "id": 2402,
+    "metric": "Passing",
+    "testedAt": "2026-04-04",
+    "value": 82
+   },
+   {
+    "id": 2403,
+    "metric": "Passing",
+    "testedAt": "2026-05-09",
+    "value": 80
+   },
+   {
+    "id": 2404,
+    "metric": "Passing",
+    "testedAt": "2026-05-30",
+    "value": 85
+   },
+   {
+    "id": 2405,
+    "metric": "Passing",
+    "testedAt": "2026-06-20",
+    "value": 89
+   },
+   {
+    "id": 2406,
+    "metric": "Shooting",
+    "testedAt": "2026-02-07",
+    "value": 55
+   },
+   {
+    "id": 2407,
+    "metric": "Shooting",
+    "testedAt": "2026-03-07",
+    "value": 60
+   },
+   {
+    "id": 2408,
+    "metric": "Shooting",
+    "testedAt": "2026-04-04",
+    "value": 64
+   },
+   {
+    "id": 2409,
+    "metric": "Shooting",
+    "testedAt": "2026-05-09",
+    "value": 60
+   },
+   {
+    "id": 2410,
+    "metric": "Shooting",
+    "testedAt": "2026-05-30",
+    "value": 70
+   },
+   {
+    "id": 2411,
+    "metric": "Shooting",
+    "testedAt": "2026-06-20",
+    "value": 77
+   },
+   {
+    "id": 2412,
+    "metric": "Ball Control",
+    "testedAt": "2026-02-07",
+    "value": 48
+   },
+   {
+    "id": 2413,
+    "metric": "Ball Control",
+    "testedAt": "2026-03-07",
+    "value": 55
+   },
+   {
+    "id": 2414,
+    "metric": "Ball Control",
+    "testedAt": "2026-04-04",
+    "value": 62
+   },
+   {
+    "id": 2415,
+    "metric": "Ball Control",
+    "testedAt": "2026-05-09",
+    "value": 58
+   },
+   {
+    "id": 2416,
+    "metric": "Ball Control",
+    "testedAt": "2026-05-30",
+    "value": 70
+   },
+   {
+    "id": 2417,
+    "metric": "Ball Control",
+    "testedAt": "2026-06-27",
+    "value": 78
+   },
+   {
+    "id": 2418,
+    "metric": "Ball Control",
+    "testedAt": "2026-07-18",
+    "value": 85
+   },
+   {
+    "id": 2419,
+    "metric": "Defending",
+    "testedAt": "2026-02-14",
+    "value": 50
+   },
+   {
+    "id": 2420,
+    "metric": "Defending",
+    "testedAt": "2026-03-14",
+    "value": 54
+   },
+   {
+    "id": 2421,
+    "metric": "Defending",
+    "testedAt": "2026-04-11",
+    "value": 57
+   },
+   {
+    "id": 2422,
+    "metric": "Defending",
+    "testedAt": "2026-05-16",
+    "value": 56
+   },
+   {
+    "id": 2423,
+    "metric": "Defending",
+    "testedAt": "2026-06-06",
+    "value": 61
+   },
+   {
+    "id": 2424,
+    "metric": "Defending",
+    "testedAt": "2026-07-18",
+    "value": 66
+   },
+   {
+    "id": 2425,
+    "metric": "Dribbling",
+    "testedAt": "2026-02-14",
+    "value": 55
+   },
+   {
+    "id": 2426,
+    "metric": "Dribbling",
+    "testedAt": "2026-03-14",
+    "value": 58
+   },
+   {
+    "id": 2427,
+    "metric": "Dribbling",
+    "testedAt": "2026-04-11",
+    "value": 62
+   },
+   {
+    "id": 2428,
+    "metric": "Dribbling",
+    "testedAt": "2026-05-16",
+    "value": 60
+   },
+   {
+    "id": 2429,
+    "metric": "Dribbling",
+    "testedAt": "2026-06-06",
+    "value": 66
+   },
+   {
+    "id": 2430,
+    "metric": "Dribbling",
+    "testedAt": "2026-07-18",
+    "value": 71
+   }
+  ],
+  "matches": [
+   {
+    "id": 106,
+    "date": "2026-02-14",
+    "opponent": "Riverside United"
+   },
+   {
+    "id": 107,
+    "date": "2026-02-28",
+    "opponent": "Harbor Town FC"
+   },
+   {
+    "id": 108,
+    "date": "2026-03-14",
+    "opponent": "Oakfield Rangers"
+   },
+   {
+    "id": 109,
+    "date": "2026-03-28",
+    "opponent": "Millbrook Athletic"
+   },
+   {
+    "id": 110,
+    "date": "2026-04-11",
+    "opponent": "Stonebridge FC"
+   },
+   {
+    "id": 111,
+    "date": "2026-05-16",
+    "opponent": "Riverside United"
+   },
+   {
+    "id": 112,
+    "date": "2026-05-30",
+    "opponent": "Harbor Town FC"
+   }
+  ],
+  "coachEvals": [
+   {
+    "id": 9284,
+    "metric": "Speed",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9285,
+    "metric": "Stamina",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9286,
+    "metric": "Passing",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9287,
+    "metric": "Shooting",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9288,
+    "metric": "Defending",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9289,
+    "metric": "Ball Control",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9290,
+    "metric": "Agility",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9291,
+    "metric": "Tactical Awareness",
+    "date": "2026-02-10"
+   },
+   {
+    "id": 9292,
+    "metric": "Speed",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9293,
+    "metric": "Stamina",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9294,
+    "metric": "Passing",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9295,
+    "metric": "Shooting",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9296,
+    "metric": "Defending",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9297,
+    "metric": "Ball Control",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9298,
+    "metric": "Agility",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9299,
+    "metric": "Tactical Awareness",
+    "date": "2026-03-10"
+   },
+   {
+    "id": 9300,
+    "metric": "Speed",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9301,
+    "metric": "Stamina",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9302,
+    "metric": "Passing",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9303,
+    "metric": "Shooting",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9304,
+    "metric": "Defending",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9305,
+    "metric": "Ball Control",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9306,
+    "metric": "Agility",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9307,
+    "metric": "Tactical Awareness",
+    "date": "2026-04-24"
+   },
+   {
+    "id": 9308,
+    "metric": "Speed",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9309,
+    "metric": "Stamina",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9310,
+    "metric": "Passing",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9311,
+    "metric": "Shooting",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9312,
+    "metric": "Defending",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9313,
+    "metric": "Ball Control",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9314,
+    "metric": "Agility",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9315,
+    "metric": "Tactical Awareness",
+    "date": "2026-05-20"
+   },
+   {
+    "id": 9316,
+    "metric": "Dribbling",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 9317,
+    "metric": "Positioning",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 9318,
+    "metric": "Weak Foot",
+    "date": "2026-07-20"
+   }
+  ],
+  "injury": {
+   "id": 78,
+   "planId": 58,
+   "exerciseIds": [
+    381,
+    382,
+    383,
+    384,
+    385,
+    386,
+    387
+   ],
+   "milestoneIds": [
+    213,
+    212,
+    211,
+    214
+   ]
+  },
+  "tasks": [
+   {
+    "id": 1431,
+    "title": "Finishing drills: 50 shots after training",
+    "due": "2026-02-20",
+    "completed": true,
+    "createdAt": "2026-02-14",
+    "completedAt": "2026-02-19"
+   },
+   {
+    "id": 1432,
+    "title": "Watch derby footage and note pressing triggers",
+    "due": "2026-03-05",
+    "completed": true,
+    "createdAt": "2026-02-27",
+    "completedAt": "2026-03-04"
+   },
+   {
+    "id": 1433,
+    "title": "Gym: lower-body strength block",
+    "due": "2026-03-19",
+    "completed": true,
+    "createdAt": "2026-03-13",
+    "completedAt": "2026-03-18"
+   },
+   {
+    "id": 1434,
+    "title": "Book hamstring physio assessment",
+    "due": "2026-04-16",
+    "completed": true,
+    "createdAt": "2026-04-10",
+    "completedAt": "2026-04-15"
+   },
+   {
+    "id": 1435,
+    "title": "Daily rehab band routine - week 1",
+    "due": "2026-04-24",
+    "completed": true,
+    "createdAt": "2026-04-18",
+    "completedAt": "2026-04-23"
+   },
+   {
+    "id": 1436,
+    "title": "Daily rehab band routine - week 2",
+    "due": "2026-05-01",
+    "completed": true,
+    "createdAt": "2026-04-25",
+    "completedAt": "2026-04-30"
+   },
+   {
+    "id": 1437,
+    "title": "Return-to-run progression with physio",
+    "due": "2026-05-08",
+    "completed": true,
+    "createdAt": "2026-05-02",
+    "completedAt": "2026-05-07"
+   },
+   {
+    "id": 1438,
+    "title": "First-touch wall work, 15 min daily",
+    "due": "2026-05-28",
+    "completed": true,
+    "createdAt": "2026-05-22",
+    "completedAt": "2026-05-27"
+   },
+   {
+    "id": 1439,
+    "title": "Weak-foot finishing session",
+    "due": "2026-06-11",
+    "completed": false,
+    "createdAt": "2026-06-05",
+    "completedAt": null
+   },
+   {
+    "id": 1440,
+    "title": "Sprint mechanics video review with coach",
+    "due": "2026-06-24",
+    "completed": true,
+    "createdAt": "2026-06-18",
+    "completedAt": "2026-06-23"
+   }
+  ],
+  "trainingSessions": [
+   {
+    "id": 151,
+    "date": "2026-02-03"
+   },
+   {
+    "id": 152,
+    "date": "2026-02-06"
+   },
+   {
+    "id": 153,
+    "date": "2026-02-10"
+   },
+   {
+    "id": 154,
+    "date": "2026-02-13"
+   },
+   {
+    "id": 155,
+    "date": "2026-02-17"
+   },
+   {
+    "id": 156,
+    "date": "2026-02-20"
+   },
+   {
+    "id": 157,
+    "date": "2026-02-24"
+   },
+   {
+    "id": 158,
+    "date": "2026-02-27"
+   },
+   {
+    "id": 159,
+    "date": "2026-03-03"
+   },
+   {
+    "id": 160,
+    "date": "2026-03-06"
+   },
+   {
+    "id": 161,
+    "date": "2026-03-10"
+   },
+   {
+    "id": 162,
+    "date": "2026-03-13"
+   },
+   {
+    "id": 163,
+    "date": "2026-03-17"
+   },
+   {
+    "id": 164,
+    "date": "2026-03-20"
+   },
+   {
+    "id": 165,
+    "date": "2026-03-24"
+   },
+   {
+    "id": 166,
+    "date": "2026-03-27"
+   },
+   {
+    "id": 167,
+    "date": "2026-03-31"
+   },
+   {
+    "id": 168,
+    "date": "2026-04-03"
+   },
+   {
+    "id": 169,
+    "date": "2026-04-07"
+   },
+   {
+    "id": 170,
+    "date": "2026-04-10"
+   },
+   {
+    "id": 171,
+    "date": "2026-04-14"
+   },
+   {
+    "id": 172,
+    "date": "2026-04-17"
+   },
+   {
+    "id": 173,
+    "date": "2026-04-21"
+   },
+   {
+    "id": 174,
+    "date": "2026-04-24"
+   },
+   {
+    "id": 175,
+    "date": "2026-04-28"
+   },
+   {
+    "id": 176,
+    "date": "2026-05-01"
+   },
+   {
+    "id": 177,
+    "date": "2026-05-05"
+   },
+   {
+    "id": 178,
+    "date": "2026-05-08"
+   },
+   {
+    "id": 179,
+    "date": "2026-05-12"
+   },
+   {
+    "id": 180,
+    "date": "2026-05-15"
+   },
+   {
+    "id": 181,
+    "date": "2026-05-19"
+   },
+   {
+    "id": 182,
+    "date": "2026-05-22"
+   },
+   {
+    "id": 183,
+    "date": "2026-05-26"
+   },
+   {
+    "id": 184,
+    "date": "2026-05-29"
+   },
+   {
+    "id": 185,
+    "date": "2026-06-02"
+   },
+   {
+    "id": 186,
+    "date": "2026-06-05"
+   },
+   {
+    "id": 187,
+    "date": "2026-06-09"
+   },
+   {
+    "id": 188,
+    "date": "2026-06-12"
+   }
+  ],
+  "selfAssessments": [
+   {
+    "id": 552,
+    "metric": "Speed",
+    "date": "2026-02-12"
+   },
+   {
+    "id": 553,
+    "metric": "Stamina",
+    "date": "2026-02-12"
+   },
+   {
+    "id": 554,
+    "metric": "Passing",
+    "date": "2026-02-12"
+   },
+   {
+    "id": 555,
+    "metric": "Shooting",
+    "date": "2026-02-12"
+   },
+   {
+    "id": 556,
+    "metric": "Agility",
+    "date": "2026-02-12"
+   },
+   {
+    "id": 557,
+    "metric": "Ball Control",
+    "date": "2026-02-12"
+   },
+   {
+    "id": 558,
+    "metric": "Speed",
+    "date": "2026-03-12"
+   },
+   {
+    "id": 559,
+    "metric": "Stamina",
+    "date": "2026-03-12"
+   },
+   {
+    "id": 560,
+    "metric": "Passing",
+    "date": "2026-03-12"
+   },
+   {
+    "id": 561,
+    "metric": "Shooting",
+    "date": "2026-03-12"
+   },
+   {
+    "id": 562,
+    "metric": "Agility",
+    "date": "2026-03-12"
+   },
+   {
+    "id": 563,
+    "metric": "Ball Control",
+    "date": "2026-03-12"
+   },
+   {
+    "id": 564,
+    "metric": "Stamina",
+    "date": "2026-04-20"
+   },
+   {
+    "id": 565,
+    "metric": "Passing",
+    "date": "2026-04-20"
+   },
+   {
+    "id": 566,
+    "metric": "Shooting",
+    "date": "2026-04-20"
+   },
+   {
+    "id": 567,
+    "metric": "Speed",
+    "date": "2026-05-22"
+   },
+   {
+    "id": 568,
+    "metric": "Stamina",
+    "date": "2026-05-22"
+   },
+   {
+    "id": 569,
+    "metric": "Passing",
+    "date": "2026-05-22"
+   },
+   {
+    "id": 570,
+    "metric": "Shooting",
+    "date": "2026-05-22"
+   },
+   {
+    "id": 571,
+    "metric": "Agility",
+    "date": "2026-05-22"
+   },
+   {
+    "id": 572,
+    "metric": "Ball Control",
+    "date": "2026-05-22"
+   },
+   {
+    "id": 573,
+    "metric": "Speed",
+    "date": "2026-06-22"
+   },
+   {
+    "id": 574,
+    "metric": "Stamina",
+    "date": "2026-06-22"
+   },
+   {
+    "id": 575,
+    "metric": "Passing",
+    "date": "2026-06-22"
+   },
+   {
+    "id": 576,
+    "metric": "Shooting",
+    "date": "2026-06-22"
+   },
+   {
+    "id": 577,
+    "metric": "Agility",
+    "date": "2026-06-22"
+   },
+   {
+    "id": 578,
+    "metric": "Ball Control",
+    "date": "2026-06-22"
+   },
+   {
+    "id": 579,
+    "metric": "Tactical Awareness",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 580,
+    "metric": "Positioning",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 581,
+    "metric": "Weak Foot",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 582,
+    "metric": "Dribbling",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 583,
+    "metric": "Defending",
+    "date": "2026-07-20"
+   },
+   {
+    "id": 584,
+    "metric": "Speed",
+    "date": "2026-07-20"
+   }
+  ],
+  "goals": {
+   "new": {
+    "Come back stronger from the hamstring strain": {
+     "id": 308,
+     "new": true
+    },
+    "Break 4.05s on the 30m sprint": {
+     "id": 309,
+     "new": true
+    }
+   },
+   "existingAddons": {
+    "Enhance Shooting Conversion to 9.5": {
+     "goalId": 6,
+     "milestones": [
+      {
+       "id": 606,
+       "title": "Hit 8.5 in an assessment",
+       "achievedAt": "2026-07-15T18:00:00Z"
+      },
+      {
+       "id": 607,
+       "title": "Shooting test above 85%",
+       "achievedAt": null
+      }
+     ],
+     "progress": [
+      {
+       "id": 913,
+       "recordedAt": "2026-07-18T10:00:00Z"
+      },
+      {
+       "id": 914,
+       "recordedAt": "2026-07-28T10:00:00Z"
+      }
+     ],
+     "priorCurrentValue": 8.0
+    },
+    "Advance Passing Accuracy to 9.5": {
+     "goalId": 5,
+     "milestones": [
+      {
+       "id": 608,
+       "title": "90%+ in a passing test",
+       "achievedAt": "2026-07-18T18:00:00Z"
+      }
+     ],
+     "progress": [
+      {
+       "id": 915,
+       "recordedAt": "2026-07-18T10:00:00Z"
+      },
+      {
+       "id": 916,
+       "recordedAt": "2026-07-30T10:00:00Z"
+      }
+     ],
+     "priorCurrentValue": 8.0
+    },
+    "Optimize Agility and Change of Direction to 9.5": {
+     "goalId": 7,
+     "milestones": [
+      {
+       "id": 609,
+       "title": "Sub-4.6s shuttle",
+       "achievedAt": "2026-07-18T18:00:00Z"
+      },
+      {
+       "id": 610,
+       "title": "Sub-4.5s shuttle",
+       "achievedAt": null
+      }
+     ],
+     "progress": [
+      {
+       "id": 917,
+       "recordedAt": "2026-07-20T10:00:00Z"
+      }
+     ],
+     "priorCurrentValue": 8.0
+    },
+    "Elevate Match Performance to 9.0": {
+     "goalId": 4,
+     "milestones": [
+      {
+       "id": 611,
+       "title": "Match rating 8.5+",
+       "achievedAt": null
+      }
+     ],
+     "progress": [
+      {
+       "id": 918,
+       "recordedAt": "2026-07-12T10:00:00Z"
+      }
+     ],
+     "priorCurrentValue": 7.0
+    }
+   }
+  },
+  "nutritionItems": [
+   {
+    "id": 59,
+    "specificItem": "High-protein breakfast options"
+   },
+   {
+    "id": 60,
+    "specificItem": "No caffeine after 6pm"
+   }
+  ],
+  "weeklyNutritionPlan": {
+   "id": 2,
+   "preExisting": true
+  }
+ },
+ "sql": {
+  "wellbeingDates": [
+   "2026-02-02",
+   "2026-02-04",
+   "2026-02-06",
+   "2026-02-07",
+   "2026-02-09",
+   "2026-02-11",
+   "2026-02-13",
+   "2026-02-16",
+   "2026-02-18",
+   "2026-02-20",
+   "2026-02-21",
+   "2026-02-23",
+   "2026-02-25",
+   "2026-02-27",
+   "2026-03-02",
+   "2026-03-04",
+   "2026-03-06",
+   "2026-03-07",
+   "2026-03-09",
+   "2026-03-11",
+   "2026-03-13",
+   "2026-03-16",
+   "2026-03-18",
+   "2026-03-20",
+   "2026-03-21",
+   "2026-03-23",
+   "2026-03-25",
+   "2026-03-27",
+   "2026-03-30",
+   "2026-04-01",
+   "2026-04-03",
+   "2026-04-04",
+   "2026-04-06",
+   "2026-04-08",
+   "2026-04-10",
+   "2026-04-13",
+   "2026-04-15",
+   "2026-04-17",
+   "2026-04-18",
+   "2026-04-20",
+   "2026-04-22",
+   "2026-04-24",
+   "2026-04-27",
+   "2026-04-29",
+   "2026-05-01",
+   "2026-05-02",
+   "2026-05-04",
+   "2026-05-06",
+   "2026-05-08",
+   "2026-05-11",
+   "2026-05-13",
+   "2026-05-15",
+   "2026-05-16",
+   "2026-05-18",
+   "2026-05-20",
+   "2026-05-22",
+   "2026-05-25",
+   "2026-05-27",
+   "2026-05-29",
+   "2026-05-30",
+   "2026-06-01",
+   "2026-06-03",
+   "2026-06-05",
+   "2026-06-08",
+   "2026-06-10",
+   "2026-06-12",
+   "2026-06-13",
+   "2026-06-15",
+   "2026-06-17",
+   "2026-06-19"
+  ],
+  "journalDates": [
+   "2026-02-03",
+   "2026-02-21",
+   "2026-03-08",
+   "2026-03-25",
+   "2026-04-14",
+   "2026-04-22",
+   "2026-05-02",
+   "2026-05-17",
+   "2026-05-31",
+   "2026-06-10",
+   "2026-06-21",
+   "2026-07-01"
+  ]
+ }
+}

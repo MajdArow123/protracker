@@ -5,3 +5,4 @@ obj/
 app.db
 appsettings.Development.json
 .gstack/
+scripts/*.generated.sql
