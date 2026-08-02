@@ -6,6 +6,7 @@
 
 [![Live Demo](https://img.shields.io/badge/▶_Live_Demo-protracker--iota.vercel.app-22c55e?style=for-the-badge)](https://protracker-iota.vercel.app)
 
+[![CI](https://github.com/MajdArow123/protracker/actions/workflows/ci.yml/badge.svg)](https://github.com/MajdArow123/protracker/actions/workflows/ci.yml)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![.NET](https://img.shields.io/badge/.NET-9.0-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
