@@ -54,6 +54,14 @@ function initialTab(isCoach: boolean): TeamTab {
   return 'overview';
 }
 
+// ?matchId= deep link (Phase 7a): open the lineup tab already keyed to a match.
+// Read once on mount; the server re-validates team ownership of the id.
+function initialLineupMatchId(): number | null {
+  const raw = new URLSearchParams(window.location.search).get('matchId');
+  const id = raw == null ? NaN : Number(raw);
+  return Number.isInteger(id) && id > 0 ? id : null;
+}
+
 const SPORT_HEADER_COLORS: Record<string, string> = {
   Football: 'from-green-600 via-emerald-600 to-green-700',
   Soccer: 'from-green-600 via-emerald-600 to-green-700',
@@ -120,6 +128,8 @@ export function TeamDetailPage() {
   const deleteTeam = useDeleteTeam();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [teamTab, setTeamTab] = useState<TeamTab>(() => initialTab(isCoach));
+  // Match the lineup tab opens keyed to (deep link or "Lineup" on a match row).
+  const [lineupMatchId, setLineupMatchId] = useState<number | null>(() => initialLineupMatchId());
   const heightUnit = getStoredHeightUnit();
   const weightUnit = getStoredWeightUnit();
 
@@ -370,7 +380,7 @@ export function TeamDetailPage() {
 
       {teamTab === 'lineup' && (
         <div className="p-4 lg:p-6">
-          <TeamLineupSection teamId={teamId} sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} canManage={canManageTeam} canPublish={canPublishLineup} />
+          <TeamLineupSection teamId={teamId} sportId={team.sportId} sportName={team.sportName} players={teamPlayers} injuredIds={injuredIds} canManage={canManageTeam} canPublish={canPublishLineup} initialMatchId={lineupMatchId} />
         </div>
       )}
 
@@ -382,7 +392,8 @@ export function TeamDetailPage() {
 
       {teamTab === 'matches' && (
         <div className="p-4 lg:p-6">
-          <TeamMatchesSection teamId={teamId} sportName={team.sportName} sportId={team.sportId} players={teamPlayers.map(p => ({ id: p.id, name: p.fullName }))} isCoach={isCoach} />
+          <TeamMatchesSection teamId={teamId} sportName={team.sportName} sportId={team.sportId} players={teamPlayers.map(p => ({ id: p.id, name: p.fullName }))} isCoach={isCoach}
+            onOpenLineup={isCoach ? (matchId) => { setLineupMatchId(matchId); setTeamTab('lineup'); } : undefined} />
         </div>
       )}
 

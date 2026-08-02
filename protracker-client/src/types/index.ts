@@ -1008,24 +1008,34 @@ export interface PlayerMatchRating {
   scoreFormat?: ScoreFormat | null;
 }
 
+// Scheduled = an upcoming fixture: it has NO score, and every score/outcome
+// field below is null — the API masks them so a future match can never render
+// as a 0-0 Draw (Phase 7a fixtures honesty gate).
+export type MatchStatus = 'Played' | 'Scheduled';
+
 export interface MatchResult {
   id: number;
   teamId: number;
   teamName: string;
   opponentName: string;
   matchDate: string;
-  homeScore: number;
-  awayScore: number;
+  status: MatchStatus;
+  homeScore: number | null;
+  awayScore: number | null;
   isHome: boolean;
-  ourScore: number;
-  opponentScore: number;
-  result: MatchOutcome;
+  ourScore: number | null;
+  opponentScore: number | null;
+  result: MatchOutcome | null;
   scoreFormat: ScoreFormat;
   setScores?: string | null;
-  scoreDisplay: string;
+  scoreDisplay: string | null;
   venue?: string | null;
   competition?: string | null;
   notes?: string | null;
+  // Coach-entered opponent plan — render with the coach-entered SourceBadge,
+  // never as recorded fact.
+  opponentFormation?: string | null;
+  scoutingNotes?: string | null;
   ratings: PlayerMatchRating[];
 }
 

@@ -37,8 +37,11 @@ import { fitMatrix, explainSuggestion, type SlotExplanation } from './lineupFitL
 import { lineupApi } from '../../../api/lineupApi';
 import {
   classifyConflict, contextRequestParams, contextToSaveTarget, sameContext, canEditLineup,
+  publishedRosterDrift,
   type ConflictInfo, type LineupContext, type PresetApplyResult,
 } from './lineupWorkflowLogic';
+import { groupMatchesForPicker } from './matchContextLogic';
+import { MatchContextPanel } from './MatchContextPanel';
 import { LineupAuditPanel } from './LineupAuditPanel';
 import { PresetManager } from './PresetManager';
 import { SaveConflictModal, type ConflictIntent } from './SaveConflictModal';
@@ -65,6 +68,8 @@ interface Props {
   canManage: boolean;
   /** Mirror of canPublishLineup — the SERVER is the real gate (403 -> toast). */
   canPublish: boolean;
+  /** Mount already keyed to this match (deep link / build-from-match); the server re-validates ownership. */
+  initialMatchId?: number | null;
 }
 
 // The editable lineup workspace: context selector (default XI / match),
@@ -74,7 +79,7 @@ interface Props {
 // history, save/attach chooser, reset. Honesty carries throughout: rating
 // chips render identically in edit mode.
 export function LineupBoard({
-  teamId, sportId, players, lineupPlayers, scoresById, failedIds, injuredIds, canManage, canPublish,
+  teamId, sportId, players, lineupPlayers, scoresById, failedIds, injuredIds, canManage, canPublish, initialMatchId,
 }: Props) {
   const { t } = useTranslation();
   const { formatDate } = useLocaleFormat();
@@ -87,7 +92,8 @@ export function LineupBoard({
   const formations = formationsForSport(sportId);
 
   // Which lineup is on screen (Phase 6 typed context: default | named | match).
-  const [context, setContext] = useState<LineupContext>({ kind: 'default' });
+  const [context, setContext] = useState<LineupContext>(() =>
+    initialMatchId != null ? { kind: 'match', matchId: initialMatchId } : { kind: 'default' });
   const savedQuery = useLineup(teamId, context);
   const { data: matches = [] } = useTeamMatches(teamId);
   const lineupsList = useTeamLineups(teamId);
@@ -153,6 +159,18 @@ export function LineupBoard({
     const tactical = saved ? hydrateTactical(saved, assignments, rosterIds) : emptyTactical();
     return { formationKey: formation.key, assignments, tactical };
   }, [saved, sportId, rosterIds, lineupPlayers]);
+
+  // Phase 7a: picker groups (a fixture is never listed as a result), the match
+  // the board is keyed to, and the published roster-drift warning ("a published
+  // lineup never silently changes" — hydration's silent drop becomes explicit).
+  const pickerGroups = useMemo(() => groupMatchesForPicker(matches), [matches]);
+  const contextMatch = context.kind === 'match'
+    ? matches.find(m => m.id === context.matchId) ?? null
+    : null;
+  const rosterDrift = useMemo(
+    () => (saved && saved.status === 'Published' ? publishedRosterDrift(saved, rosterIds) : []),
+    [saved, rosterIds],
+  );
 
   const current = draft ?? baseline;
   const formation: FormationDef = formationOrDefault(sportId, current.formationKey)!;
@@ -756,11 +774,20 @@ export function LineupBoard({
                   ))}
                 </optgroup>
               )}
-              <optgroup label={t('teams.lineupMatchGroup', 'Matches')}>
-                {matches.map(m => (
-                  <option key={m.id} value={`m:${m.id}`}>{matchLabel(m.id)}</option>
-                ))}
-              </optgroup>
+              {pickerGroups.upcoming.length > 0 && (
+                <optgroup label={t('teams.lineupUpcomingGroup', 'Upcoming fixtures')}>
+                  {pickerGroups.upcoming.map(m => (
+                    <option key={m.id} value={`m:${m.id}`}>{matchLabel(m.id)}</option>
+                  ))}
+                </optgroup>
+              )}
+              {pickerGroups.recent.length > 0 && (
+                <optgroup label={t('teams.lineupRecentGroup', 'Recent results')}>
+                  {pickerGroups.recent.map(m => (
+                    <option key={m.id} value={`m:${m.id}`}>{matchLabel(m.id)}</option>
+                  ))}
+                </optgroup>
+              )}
             </select>
             <ChevronDown size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
           </div>
@@ -905,6 +932,21 @@ export function LineupBoard({
           )}
         </div>
       </div>
+
+      {/* Phase 7a: real match context when the board is keyed to a match */}
+      {contextMatch && <MatchContextPanel match={contextMatch} allMatches={matches} />}
+
+      {/* Published roster drift — a published lineup must never silently change */}
+      {rosterDrift.length > 0 && (
+        <div className="mb-3 flex items-start gap-2 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-3 py-2.5 text-xs text-amber-800 dark:text-amber-300" role="alert">
+          <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" aria-hidden />
+          <span>
+            {rosterDrift.length === 1
+              ? t('teams.lineupDriftOne', 'This published lineup references 1 player who is no longer in the squad — their slot now shows empty. Review and republish.')
+              : t('teams.lineupDriftOther', 'This published lineup references {{count}} players who are no longer in the squad — their slots now show empty. Review and republish.', { count: rosterDrift.length })}
+          </span>
+        </div>
+      )}
 
       {/* Formation picker with miniature previews (single-formation sports get none) */}
       {editing && formations.length > 1 && (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Star, Trophy, BarChart2 } from 'lucide-react';
+import { Plus, ChevronDown, ChevronUp, Pencil, Trash2, Star, Trophy, BarChart2, CalendarPlus, ClipboardEdit, LayoutGrid } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -10,7 +10,8 @@ import { SkeletonCard } from '../ui/Skeleton';
 import { ConfirmModal } from '../ui/Modal';
 import { useToast } from '../../context/ToastContext';
 import { useTeamMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, useSaveMatchRatings } from '../../hooks/useMatches';
-import type { MatchResult, MatchOutcome, PlayerMatchRating } from '../../types';
+import type { MatchResult, MatchOutcome, MatchStatus, PlayerMatchRating } from '../../types';
+import { SourceBadge } from '../ui/SourceBadge';
 import type { RatingInput } from '../../api/matchesApi';
 import { statFieldsForSport, scoreLabelsForSport, setDetailConfig, scoreUnit, parseStatJson } from '../../utils/matchSport';
 import { MatchStatsQuickEntryModal } from '../evidence/MatchStatsQuickEntryModal';
@@ -34,8 +35,11 @@ function statValue(r: PlayerMatchRating, key: string): number {
 }
 
 // ── Log / edit match modal ───────────────────────────────────────────────────
-function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }: {
-  teamId: number; sportName?: string; match: MatchResult | null; isOpen: boolean; onClose: () => void; onCreated: (m: MatchResult) => void;
+function LogMatchModal({ teamId, sportName, match, recordResult, isOpen, onClose, onCreated }: {
+  teamId: number; sportName?: string; match: MatchResult | null;
+  /** Opening a Scheduled fixture to record its result — pre-flips the mode to Played. */
+  recordResult?: boolean;
+  isOpen: boolean; onClose: () => void; onCreated: (m: MatchResult) => void;
 }) {
   const { t: tr } = useTranslation();
   const { addToast } = useToast();
@@ -47,6 +51,7 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
 
   const [opponentName, setOpponent] = useState('');
   const [matchDate, setMatchDate] = useState('');
+  const [status, setStatus] = useState<MatchStatus>('Played');
   const [isHome, setIsHome] = useState(true);
   const [ourScore, setOurScore] = useState('0');
   const [oppScore, setOppScore] = useState('0');
@@ -54,7 +59,11 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
   const [competition, setCompetition] = useState('League');
   const [venue, setVenue] = useState('');
   const [notes, setNotes] = useState('');
+  const [opponentFormation, setOpponentFormation] = useState('');
+  const [scoutingNotes, setScoutingNotes] = useState('');
   const [error, setError] = useState('');
+
+  const scheduled = status === 'Scheduled';
 
   useEffect(() => {
     if (!isOpen) return;
@@ -62,18 +71,23 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
     if (match) {
       setOpponent(match.opponentName);
       setMatchDate(match.matchDate.split('T')[0]);
+      // "Record result" on a fixture opens straight in Played mode.
+      setStatus(recordResult ? 'Played' : match.status);
       setIsHome(match.isHome);
-      setOurScore(String(match.ourScore));
-      setOppScore(String(match.opponentScore));
+      setOurScore(String(match.ourScore ?? 0));
+      setOppScore(String(match.opponentScore ?? 0));
       setSetScores(match.setScores ?? '');
       setCompetition(match.competition ?? 'League');
       setVenue(match.venue ?? '');
       setNotes(match.notes ?? '');
+      setOpponentFormation(match.opponentFormation ?? '');
+      setScoutingNotes(match.scoutingNotes ?? '');
     } else {
-      setOpponent(''); setMatchDate(new Date().toISOString().split('T')[0]); setIsHome(true);
+      setOpponent(''); setMatchDate(new Date().toISOString().split('T')[0]); setStatus('Played'); setIsHome(true);
       setOurScore('0'); setOppScore('0'); setSetScores(''); setCompetition('League'); setVenue(''); setNotes('');
+      setOpponentFormation(''); setScoutingNotes('');
     }
-  }, [isOpen, match]);
+  }, [isOpen, match, recordResult]);
 
   async function handleSubmit() {
     if (!opponentName.trim()) { setError(tr('matches.errOpponentRequired', 'Opponent is required')); return; }
@@ -83,13 +97,17 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
     const payload = {
       opponentName: opponentName.trim(),
       matchDate,
+      status,
       isHome,
-      homeScore: isHome ? our : opp,
-      awayScore: isHome ? opp : our,
-      setScores: setCfg.enabled && setScores.trim() ? setScores.trim() : undefined,
+      // A fixture has no score — the backend ignores these, send honest zeros.
+      homeScore: scheduled ? 0 : (isHome ? our : opp),
+      awayScore: scheduled ? 0 : (isHome ? opp : our),
+      setScores: !scheduled && setCfg.enabled && setScores.trim() ? setScores.trim() : undefined,
       competition: competition.trim() || undefined,
       venue: venue.trim() || undefined,
       notes: notes.trim() || undefined,
+      opponentFormation: opponentFormation.trim() || undefined,
+      scoutingNotes: scoutingNotes.trim() || undefined,
     };
     try {
       if (isEdit && match) {
@@ -98,7 +116,7 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
         onClose();
       } else {
         const created = await createMatch.mutateAsync({ teamId, data: payload });
-        addToast(tr('matches.matchLogged', 'Match logged'), 'success');
+        addToast(scheduled ? tr('matches.fixtureScheduled', 'Fixture scheduled') : tr('matches.matchLogged', 'Match logged'), 'success');
         onCreated(created);
       }
     } catch (err) {
@@ -111,6 +129,16 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? tr('matches.editMatch', 'Edit Match') : tr('matches.logMatch', 'Log Match')}>
       <div className="space-y-4">
+        {/* Record a played result vs schedule an upcoming fixture (Phase 7a). */}
+        <div className="flex gap-2" role="radiogroup" aria-label={tr('matches.matchMode', 'Match type')}>
+          {([['Played', tr('matches.modeRecord', 'Record result'), Trophy], ['Scheduled', tr('matches.modeSchedule', 'Schedule fixture'), CalendarPlus]] as const).map(([val, label, Icon]) => (
+            <button key={val} type="button" role="radio" aria-checked={status === val} onClick={() => setStatus(val)}
+              className={clsx('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer',
+                status === val ? 'bg-indigo-600 text-white border-transparent' : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400')}>
+              <Icon size={14} aria-hidden /> {label}
+            </button>
+          ))}
+        </div>
         <Input label={tr('matches.opponent', 'Opponent')} value={opponentName} onChange={e => setOpponent(e.target.value)} placeholder={tr('matches.opponentPlaceholder', 'e.g. Rovers FC')} />
         <div className="grid grid-cols-2 gap-3">
           <Input label={tr('common.date', 'Date')} type="date" value={matchDate} onChange={e => setMatchDate(e.target.value)} />
@@ -127,12 +155,20 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Input label={labels.for} type="number" min={0} value={ourScore} onChange={e => setOurScore(e.target.value)} />
-          <Input label={labels.against} type="number" min={0} value={oppScore} onChange={e => setOppScore(e.target.value)} />
-        </div>
-        {setCfg.enabled && (
-          <Input label={setCfg.label} value={setScores} onChange={e => setSetScores(e.target.value)} placeholder={setCfg.placeholder} />
+        {scheduled ? (
+          <p className="text-xs text-gray-500 dark:text-gray-400 rounded-xl bg-gray-50 dark:bg-gray-800/60 px-3 py-2">
+            {tr('matches.scheduleHint', 'No score yet — this saves an upcoming fixture. Record the result after the match is played.')}
+          </p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Input label={labels.for} type="number" min={0} value={ourScore} onChange={e => setOurScore(e.target.value)} />
+              <Input label={labels.against} type="number" min={0} value={oppScore} onChange={e => setOppScore(e.target.value)} />
+            </div>
+            {setCfg.enabled && (
+              <Input label={setCfg.label} value={setScores} onChange={e => setSetScores(e.target.value)} placeholder={setCfg.placeholder} />
+            )}
+          </>
         )}
         <div className="grid grid-cols-2 gap-3">
           <Input label={tr('matches.competition', 'Competition')} value={competition} onChange={e => setCompetition(e.target.value)} placeholder={tr('matches.competitionPlaceholder', 'League / Cup')} />
@@ -143,10 +179,31 @@ function LogMatchModal({ teamId, sportName, match, isOpen, onClose, onCreated }:
           <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder={tr('matches.notesPlaceholder', 'Match summary…')}
             className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
         </div>
+
+        {/* Opponent plan — a coach's preparation, badged so it never reads as recorded fact. */}
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-3 space-y-3">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{tr('matches.opponentPlan', 'Opponent plan')}</span>
+            <SourceBadge source="coach-entered" size="xs" />
+          </div>
+          <Input label={tr('matches.opponentFormation', 'Opponent formation (optional)')} value={opponentFormation}
+            onChange={e => setOpponentFormation(e.target.value)} placeholder={tr('matches.opponentFormationPlaceholder', 'e.g. 4-4-2')} maxLength={20} />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{tr('matches.scoutingNotes', 'Scouting notes (optional)')}</label>
+            <textarea value={scoutingNotes} onChange={e => setScoutingNotes(e.target.value)} rows={2} maxLength={2000}
+              placeholder={tr('matches.scoutingPlaceholder', 'Strengths, weaknesses, set-piece threats…')}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
+          </div>
+        </div>
+
         {error && <p className="text-sm text-red-500">{error}</p>}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={onClose}>{tr('common.cancel', 'Cancel')}</Button>
-          <Button onClick={handleSubmit} isLoading={saving}>{isEdit ? tr('matches.saveChanges', 'Save Changes') : tr('matches.logMatchAndRate', 'Log Match & Add Ratings')}</Button>
+          <Button onClick={handleSubmit} isLoading={saving}>
+            {isEdit
+              ? tr('matches.saveChanges', 'Save Changes')
+              : scheduled ? tr('matches.scheduleFixture', 'Schedule Fixture') : tr('matches.logMatchAndRate', 'Log Match & Add Ratings')}
+          </Button>
         </div>
       </div>
     </Modal>
@@ -238,7 +295,11 @@ function RateMatchModal({ match, sportName, players, isOpen, onClose }: {
 }
 
 // ── Section ──────────────────────────────────────────────────────────────────
-export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoach }: { teamId: number; sportName?: string; sportId?: number; players: PlayerOption[]; isCoach: boolean; }) {
+export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoach, onOpenLineup }: {
+  teamId: number; sportName?: string; sportId?: number; players: PlayerOption[]; isCoach: boolean;
+  /** Open the lineup tab keyed to this match (Phase 7a build-from-match flow). */
+  onOpenLineup?: (matchId: number) => void;
+}) {
   const { t: tr } = useTranslation();
   const L = useDynamicLabels();
   const { formatDate } = useLocaleFormat();
@@ -250,6 +311,8 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
 
   const [logOpen, setLogOpen] = useState(false);
   const [editMatch, setEditMatch] = useState<MatchResult | null>(null);
+  // "Record result" on a fixture: same modal, opened in Played mode.
+  const [recordResult, setRecordResult] = useState(false);
   const [rateMatch, setRateMatch] = useState<MatchResult | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<MatchResult | null>(null);
@@ -281,16 +344,30 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
       ) : (
         <div className="space-y-3">
           {matches.map(m => {
-            const rs = RESULT_STYLES[m.result];
+            const upcoming = m.status === 'Scheduled';
+            const rs = m.result ? RESULT_STYLES[m.result] : null;
             const isOpen = expanded === m.id;
             const unit = scoreUnit(m.scoreFormat);
-            const canExpand = m.ratings.length > 0 || !!m.setScores;
+            const canExpand = m.ratings.length > 0 || !!m.setScores || !!m.scoutingNotes || !!m.opponentFormation;
             return (
               <div key={m.id} className="rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden">
                 <div className="flex items-center gap-4 p-4">
                   <div className="text-center flex-shrink-0 w-20">
-                    <p className={clsx('text-2xl font-black tabular-nums', rs.score)}>{m.ourScore} - {m.opponentScore}</p>
-                    <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', rs.badge)}>{L.status(m.result)}{unit ? ` · ${unit}` : ''}</span>
+                    {upcoming || !rs ? (
+                      <>
+                        {/* An unplayed fixture has NO score — "—", never 0-0. */}
+                        <p className="text-2xl font-black tabular-nums text-gray-300 dark:text-gray-600" aria-hidden>—</p>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">
+                          {tr('matches.upcoming', 'Upcoming')}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {/* dir=ltr: bidi reorders "0 - 1" into "1 - 0" in RTL locales — a reversed scoreline */}
+                        <p className={clsx('text-2xl font-black tabular-nums', rs.score)} dir="ltr">{m.ourScore} - {m.opponentScore}</p>
+                        <span className={clsx('text-[10px] font-bold px-2 py-0.5 rounded-full', rs.badge)}>{L.status(m.result!)}{unit ? ` · ${unit}` : ''}</span>
+                      </>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 dark:text-white truncate">
@@ -305,14 +382,30 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
                   <div className="flex items-center gap-1 flex-shrink-0">
                     {isCoach && (
                       <>
-                        <button onClick={() => setRateMatch(m)} className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">{tr('matches.ratePlayers', 'Rate Players')}</button>
-                        {sportId != null && (
-                          <button onClick={() => setStatsMatch(m)} title={tr('evidence.addPlayerStats', 'Add player stats')} aria-label={tr('evidence.addPlayerStats', 'Add player stats')}
-                            className="p-1.5 rounded-lg text-gray-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all cursor-pointer">
-                            <BarChart2 size={14} />
+                        {/* An unplayed fixture can't be rated or given stats (server 400s) — offer "Record result" instead. */}
+                        {upcoming ? (
+                          <button onClick={() => { setEditMatch(m); setRecordResult(true); setLogOpen(true); }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-400 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">
+                            <ClipboardEdit size={13} aria-hidden /> {tr('matches.recordResult', 'Record result')}
+                          </button>
+                        ) : (
+                          <>
+                            <button onClick={() => setRateMatch(m)} className="px-2.5 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 text-gray-700 dark:text-gray-300 text-xs font-semibold transition-all cursor-pointer whitespace-nowrap">{tr('matches.ratePlayers', 'Rate Players')}</button>
+                            {sportId != null && (
+                              <button onClick={() => setStatsMatch(m)} title={tr('evidence.addPlayerStats', 'Add player stats')} aria-label={tr('evidence.addPlayerStats', 'Add player stats')}
+                                className="p-1.5 rounded-lg text-gray-400 hover:text-sky-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-all cursor-pointer">
+                                <BarChart2 size={14} />
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {onOpenLineup && (
+                          <button onClick={() => onOpenLineup(m.id)} title={tr('matches.openLineup', 'Lineup for this match')} aria-label={tr('matches.openLineup', 'Lineup for this match')}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer">
+                            <LayoutGrid size={14} />
                           </button>
                         )}
-                        <button onClick={() => { setEditMatch(m); setLogOpen(true); }} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Pencil size={14} /></button>
+                        <button onClick={() => { setEditMatch(m); setRecordResult(false); setLogOpen(true); }} className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all cursor-pointer"><Pencil size={14} /></button>
                         <button onClick={() => setDeleteTarget(m)} className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all cursor-pointer"><Trash2 size={14} /></button>
                       </>
                     )}
@@ -326,6 +419,20 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
 
                 {isOpen && (
                   <div className="border-t border-gray-100 dark:border-gray-800 px-4 py-3 overflow-x-auto">
+                    {(m.scoutingNotes || m.opponentFormation) && (
+                      <div className="mb-2 rounded-xl bg-gray-50 dark:bg-gray-800/60 p-3">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{tr('matches.opponentPlan', 'Opponent plan')}</span>
+                          <SourceBadge source="coach-entered" size="xs" />
+                        </div>
+                        {m.opponentFormation && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            <span className="font-semibold">{tr('matches.opponentFormationLabel', 'Formation:')}</span> <span dir="ltr">{m.opponentFormation}</span>
+                          </p>
+                        )}
+                        {m.scoutingNotes && <p className="text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{m.scoutingNotes}</p>}
+                      </div>
+                    )}
                     {m.setScores && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                         <span className="font-semibold">{tr('matches.setScoresLabel', 'Set scores:')}</span> {m.setScores}
@@ -363,9 +470,13 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
 
       {isCoach && (
         <>
-          <LogMatchModal teamId={teamId} sportName={sportName} match={editMatch} isOpen={logOpen}
-            onClose={() => { setLogOpen(false); setEditMatch(null); }}
-            onCreated={(m) => { setLogOpen(false); setRateMatch(m); }} />
+          <LogMatchModal teamId={teamId} sportName={sportName} match={editMatch} recordResult={recordResult} isOpen={logOpen}
+            onClose={() => { setLogOpen(false); setEditMatch(null); setRecordResult(false); }}
+            onCreated={(m) => {
+              setLogOpen(false); setEditMatch(null); setRecordResult(false);
+              // A fixture has nothing to rate yet — never open the ratings modal on it.
+              if (m.status !== 'Scheduled') setRateMatch(m);
+            }} />
           <RateMatchModal match={rateMatchLive} sportName={sportName} players={players} isOpen={!!rateMatch} onClose={() => setRateMatch(null)} />
 
           {/* Evidence: manual per-player match stats (for matches without ratings) */}

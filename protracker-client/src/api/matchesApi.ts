@@ -1,9 +1,11 @@
 import api from './axiosInstance';
-import type { MatchResult, PlayerMatchRating } from '../types';
+import type { MatchResult, MatchStatus, PlayerMatchRating } from '../types';
 
 export interface CreateMatchInput {
   opponentName: string;
   matchDate: string;
+  /** Omitted = Played (backend default). Scheduled = upcoming fixture, scores ignored. */
+  status?: MatchStatus;
   homeScore: number;
   awayScore: number;
   isHome: boolean;
@@ -11,6 +13,8 @@ export interface CreateMatchInput {
   venue?: string;
   competition?: string;
   notes?: string;
+  opponentFormation?: string;
+  scoutingNotes?: string;
 }
 
 export interface RatingInput {

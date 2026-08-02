@@ -10,6 +10,7 @@ import {
   MAX_NAMED_LINEUPS,
   applyPresetToDraft,
   computePresetDiff,
+  publishedRosterDrift,
   type LineupContext,
   type PresetContent,
   type DraftLike,
@@ -233,5 +234,36 @@ describe('preset apply-diff', () => {
     const preset: PresetContent = { formation: '4-4-2', roles: { GK: 'sweeperKeeper', D2: 'stopper' }, labels: ['counter'] };
     const once = applyPresetToDraft(draft433(), preset, SOCCER_FORMATIONS);
     expect(computePresetDiff(once, preset, SOCCER_FORMATIONS)).toEqual([]);
+  });
+});
+
+describe('publishedRosterDrift', () => {
+  const roster = new Set([1, 2, 3, 4]);
+
+  it('is empty when every referenced player is on the roster', () => {
+    expect(publishedRosterDrift({
+      slots: [{ slotKey: 'GK', playerId: 1 }, { slotKey: 'D1', playerId: 2 }],
+      captainPlayerId: 1,
+      viceCaptainPlayerId: 2,
+      setPieces: [{ type: 'penalties', playerId: 3 }],
+    }, roster)).toEqual([]);
+  });
+
+  it('reports departed slot players, captains, and set-piece takers — unique and sorted', () => {
+    expect(publishedRosterDrift({
+      slots: [{ slotKey: 'GK', playerId: 9 }, { slotKey: 'D1', playerId: 2 }, { slotKey: 'D2', playerId: 9 }],
+      captainPlayerId: 7,
+      viceCaptainPlayerId: null,
+      setPieces: [{ type: 'penalties', playerId: 8 }, { type: 'cornersLeft', playerId: 7 }],
+    }, roster)).toEqual([7, 8, 9]);
+  });
+
+  it('handles a lineup with no tactical references', () => {
+    expect(publishedRosterDrift({
+      slots: [{ slotKey: 'GK', playerId: 5 }],
+      captainPlayerId: null,
+      viceCaptainPlayerId: null,
+      setPieces: [],
+    }, roster)).toEqual([5]);
   });
 });

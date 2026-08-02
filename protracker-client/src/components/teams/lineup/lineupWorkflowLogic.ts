@@ -121,6 +121,36 @@ export function canEditLineup(status: string | null | undefined): boolean {
   return status !== 'Published';
 }
 
+// ── Published roster drift (Phase 7a) ────────────────────────────────────────
+
+/** The player references a SAVED lineup row carries (wire shape of LineupDto). */
+export interface SavedLineupRefs {
+  slots: { slotKey: string; playerId: number }[];
+  captainPlayerId: number | null;
+  viceCaptainPlayerId: number | null;
+  setPieces: { type: string; playerId: number }[];
+}
+
+/**
+ * Players a saved lineup references that are no longer on the live roster
+ * (departed/transferred — hydration silently drops them into empty slots).
+ * For a PUBLISHED lineup that silence violates the "a published lineup never
+ * silently changes" rule, so the UI must surface this as an explicit warning
+ * ("review and republish") whenever it is non-empty. Deterministic: unique
+ * ids, ascending. Hydration behavior itself is unchanged.
+ */
+export function publishedRosterDrift(
+  saved: SavedLineupRefs,
+  rosterIds: ReadonlySet<number>,
+): number[] {
+  const referenced = new Set<number>();
+  for (const s of saved.slots) referenced.add(s.playerId);
+  if (saved.captainPlayerId != null) referenced.add(saved.captainPlayerId);
+  if (saved.viceCaptainPlayerId != null) referenced.add(saved.viceCaptainPlayerId);
+  for (const sp of saved.setPieces) referenced.add(sp.playerId);
+  return [...referenced].filter(id => !rosterIds.has(id)).sort((a, b) => a - b);
+}
+
 // ── Named-lineup cap ─────────────────────────────────────────────────────────
 
 export const MAX_NAMED_LINEUPS = 10;
