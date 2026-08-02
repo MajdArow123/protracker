@@ -23,7 +23,7 @@ export function RouteProgressBar() {
           initial={{ scaleX: 0, opacity: 1 }}
           animate={{ scaleX: 1, opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ scaleX: { duration: 0.4, ease: 'easeOut' }, opacity: { duration: 0.2 } }}
+          transition={{ scaleX: { duration: 0.3, ease: 'easeOut' }, opacity: { duration: 0.2 } }}
         />
       )}
     </AnimatePresence>

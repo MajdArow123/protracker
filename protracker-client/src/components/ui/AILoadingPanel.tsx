@@ -101,7 +101,7 @@ export function AILoadingPanel({
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.4 }}
+              transition={{ duration: 0.3 }}
               className="text-sm text-violet-600 dark:text-violet-400"
             >
               {currentMsg}

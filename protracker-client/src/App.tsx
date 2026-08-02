@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { MotionConfig } from 'framer-motion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
@@ -173,6 +174,10 @@ function AppRoutes() {
 export default function App() {
   return (
     <ErrorBoundary>
+      {/* reducedMotion="user": every framer-motion animation app-wide honors the
+          OS prefers-reduced-motion setting (transform/layout animations are
+          skipped; opacity still animates per framer's a11y model). */}
+      <MotionConfig reducedMotion="user">
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <ToastProvider>
@@ -191,6 +196,7 @@ export default function App() {
         </ThemeProvider>
         {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }

@@ -140,13 +140,13 @@ html.dark .skeleton {
 }
 @media (prefers-reduced-motion: reduce) {
   .skeleton::after { animation: none; }
-}
-
-/* Top-of-page route loading bar (GitHub-style). */
-@keyframes route-bar {
-  0% { transform: translateX(-100%); }
-  60% { transform: translateX(-20%); }
-  100% { transform: translateX(0%); }
+  /* Decorative floats stop entirely; the chart-tooltip fade keeps its opacity
+     step but loses the translate (fade-only is the reduced-motion contract). */
+  .animate-float, .animate-float-delay, .animate-float-delay-2 { animation: none; }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }
 
 .animate-float {
