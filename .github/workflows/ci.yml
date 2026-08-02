@@ -44,6 +44,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Type-check + build
         run: npm run build
+      - name: Bundle budget guard (PDF stays lazy, eager JS <= 1.2 MB)
+        run: node scripts/check-bundle-budget.mjs
       - name: Lint
         run: npx oxlint src
       - name: Unit tests
