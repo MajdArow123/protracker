@@ -608,6 +608,14 @@ History (one line each; full detail in git history + blueprint):
 - **Identity password rules set explicitly** in `Program.cs`: min 8, one uppercase, one
   digit — lowercase/non-alphanumeric NOT required. Matches the frontend strength meter.
   Changing options doesn't invalidate existing hashes.
+- **Prod secrets live ONLY in Railway env vars** — `appsettings.json` values are
+  placeholders/empty and must never be the effective prod value. The dangerous case is
+  a WORKING placeholder (the old JWT DEV-ONLY key), not an empty one: empty fails
+  loudly, a working default fails SILENTLY. Anything security-load-bearing (signing
+  keys) must fail-fast on boot if it's still the placeholder in Production — the
+  `Program.cs` JWT guard (`6a2e495`) is the pattern; extend it to any future such
+  secret. Testing a Production-only boot guard requires `dotnet run
+  --no-launch-profile` (`launchSettings.json` forces Development and masks the guard).
 - **`npx tsc --noEmit -p tsconfig.json` is a SILENT NO-OP.** Root `tsconfig.json` is a
   solution file (`"files": []`). Always verify with **`npm run build`** or
   `npx tsc -p tsconfig.app.json --noEmit`.
