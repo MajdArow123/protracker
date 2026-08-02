@@ -33,19 +33,25 @@ public class MatchResultDto
     public string TeamName { get; set; } = "";
     public string OpponentName { get; set; } = "";
     public DateTime MatchDate { get; set; }
-    public int HomeScore { get; set; }
-    public int AwayScore { get; set; }
+    public MatchStatus Status { get; set; }
+    // Score/outcome fields are null on a Scheduled fixture — an unplayed match has no
+    // score, and the API never asserts one (the stored 0-0 is masked here, at read).
+    public int? HomeScore { get; set; }
+    public int? AwayScore { get; set; }
     public bool IsHome { get; set; }
-    public int OurScore { get; set; }
-    public int OpponentScore { get; set; }
-    public MatchOutcome Result { get; set; }
+    public int? OurScore { get; set; }
+    public int? OpponentScore { get; set; }
+    public MatchOutcome? Result { get; set; }
     public ScoreFormat ScoreFormat { get; set; }
     public string? SetScores { get; set; }
     // Convenience "our - opp" string (frontend may render richer, sport-specific views).
-    public string ScoreDisplay { get; set; } = "";
+    public string? ScoreDisplay { get; set; }
     public string? Venue { get; set; }
     public string? Competition { get; set; }
     public string? Notes { get; set; }
+    // Coach-entered opponent plan — badged coach-entered in the UI, never recorded fact.
+    public string? OpponentFormation { get; set; }
+    public string? ScoutingNotes { get; set; }
     public List<PlayerMatchRatingDto> Ratings { get; set; } = new();
 }
 
@@ -53,6 +59,9 @@ public class CreateMatchResultDto
 {
     public string OpponentName { get; set; } = "";
     public DateTime MatchDate { get; set; }
+    // Played (default — pre-Phase-7 clients omit it) records a result; Scheduled
+    // creates an upcoming fixture whose score fields are ignored.
+    public MatchStatus Status { get; set; } = MatchStatus.Played;
     public int HomeScore { get; set; }
     public int AwayScore { get; set; }
     public bool IsHome { get; set; }
@@ -60,6 +69,8 @@ public class CreateMatchResultDto
     public string? Venue { get; set; }
     public string? Competition { get; set; }
     public string? Notes { get; set; }
+    public string? OpponentFormation { get; set; }
+    public string? ScoutingNotes { get; set; }
     // Solo matches only: "how did I play?" (1-10) — stored as the athlete's own PlayerMatchRating.
     public decimal? PersonalRating { get; set; }
 }

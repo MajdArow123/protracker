@@ -58,14 +58,20 @@ public class MatchService : IMatchService
             TeamId = teamId,
             OpponentName = dto.OpponentName.Trim(),
             MatchDate = dto.MatchDate,
-            HomeScore = dto.HomeScore,
-            AwayScore = dto.AwayScore,
+            Status = dto.Status,
+            // A Scheduled fixture has no score — zero the stored columns (masked to
+            // null at the DTO layer) rather than persisting whatever the client sent.
+            HomeScore = dto.Status == MatchStatus.Scheduled ? 0 : dto.HomeScore,
+            AwayScore = dto.Status == MatchStatus.Scheduled ? 0 : dto.AwayScore,
             IsHome = dto.IsHome,
             ScoreFormat = MatchResult.FormatForSport(sportId),
-            SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim(),
+            SetScores = dto.Status == MatchStatus.Scheduled || string.IsNullOrWhiteSpace(dto.SetScores)
+                ? null : dto.SetScores.Trim(),
             Venue = dto.Venue,
             Competition = dto.Competition,
             Notes = dto.Notes,
+            OpponentFormation = NormalizeOptional(dto.OpponentFormation),
+            ScoutingNotes = NormalizeOptional(dto.ScoutingNotes),
         };
         _context.MatchResults.Add(match);
         await _context.SaveChangesAsync();
@@ -87,19 +93,28 @@ public class MatchService : IMatchService
     public async Task<MatchResultDto> CreateForSelfAsync(ClaimsPrincipal user, CreateMatchResultDto dto)
     {
         var player = await _access.RequireOwnPlayerAsync(user);
+
+        // An unplayed fixture has no performance to rate — reject before writing anything.
+        if (dto.PersonalRating is not null && dto.Status == MatchStatus.Scheduled)
+            throw new ValidationApiException("A scheduled fixture cannot be rated — record the result first.");
+
         var match = new MatchResult
         {
             PlayerId = player.Id,
             OpponentName = dto.OpponentName.Trim(),
             MatchDate = dto.MatchDate,
-            HomeScore = dto.HomeScore,
-            AwayScore = dto.AwayScore,
+            Status = dto.Status,
+            HomeScore = dto.Status == MatchStatus.Scheduled ? 0 : dto.HomeScore,
+            AwayScore = dto.Status == MatchStatus.Scheduled ? 0 : dto.AwayScore,
             IsHome = dto.IsHome,
             ScoreFormat = MatchResult.FormatForSport(player.SportId),
-            SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim(),
+            SetScores = dto.Status == MatchStatus.Scheduled || string.IsNullOrWhiteSpace(dto.SetScores)
+                ? null : dto.SetScores.Trim(),
             Venue = dto.Venue,
             Competition = dto.Competition,
             Notes = dto.Notes,
+            OpponentFormation = NormalizeOptional(dto.OpponentFormation),
+            ScoutingNotes = NormalizeOptional(dto.ScoutingNotes),
         };
         _context.MatchResults.Add(match);
         await _context.SaveChangesAsync();
@@ -135,19 +150,29 @@ public class MatchService : IMatchService
         var match = await LoadMatchAsync(matchId);
         await EnsureCanManageMatchAsync(user, match);
 
+        // Recorded ratings are evidence the match was played — reverting it to a
+        // fixture would orphan them as performances of a match that "never happened".
+        if (match.Status == MatchStatus.Played && dto.Status == MatchStatus.Scheduled && match.Ratings.Count > 0)
+            throw new ConflictApiException(
+                "This match has recorded player ratings — remove them before reverting it to a scheduled fixture.");
+
         match.OpponentName = dto.OpponentName.Trim();
         match.MatchDate = dto.MatchDate;
-        match.HomeScore = dto.HomeScore;
-        match.AwayScore = dto.AwayScore;
+        match.Status = dto.Status;
+        match.HomeScore = dto.Status == MatchStatus.Scheduled ? 0 : dto.HomeScore;
+        match.AwayScore = dto.Status == MatchStatus.Scheduled ? 0 : dto.AwayScore;
         match.IsHome = dto.IsHome;
         // Keep score format aligned with the team's/player's sport (in case older rows predate it).
         match.ScoreFormat = MatchResult.FormatForSport(
             match.Team?.SportId
             ?? await _context.Players.Where(p => p.Id == match.PlayerId).Select(p => p.SportId).FirstOrDefaultAsync());
-        match.SetScores = string.IsNullOrWhiteSpace(dto.SetScores) ? null : dto.SetScores.Trim();
+        match.SetScores = dto.Status == MatchStatus.Scheduled || string.IsNullOrWhiteSpace(dto.SetScores)
+            ? null : dto.SetScores.Trim();
         match.Venue = dto.Venue;
         match.Competition = dto.Competition;
         match.Notes = dto.Notes;
+        match.OpponentFormation = NormalizeOptional(dto.OpponentFormation);
+        match.ScoutingNotes = NormalizeOptional(dto.ScoutingNotes);
         await _context.SaveChangesAsync();
         return ToDto(match);
     }
@@ -164,6 +189,11 @@ public class MatchService : IMatchService
     {
         var match = await LoadMatchAsync(matchId);
         await EnsureCanManageMatchAsync(user, match);
+
+        // An unplayed fixture has no performances to rate. This also keeps the
+        // evidence auto-import honest for free (it only runs from this path).
+        if (match.Status == MatchStatus.Scheduled)
+            throw new ValidationApiException("A scheduled fixture cannot be rated — record the result first.");
 
         // Only players on this match's team (or the solo owner themselves) may be rated.
         var teamPlayerIds = match.PlayerId != null
@@ -330,6 +360,10 @@ public class MatchService : IMatchService
 
     private static MatchResultDto ToDto(MatchResult m)
     {
+        // A Scheduled fixture has no score: every score/outcome field is null —
+        // the API must never assert a result that wasn't recorded (a 0-0 future
+        // match rendering as a Draw is exactly the fabrication this prevents).
+        var isScheduled = m.Status == MatchStatus.Scheduled;
         var ourScore = m.IsHome ? m.HomeScore : m.AwayScore;
         var oppScore = m.IsHome ? m.AwayScore : m.HomeScore;
         var result = ourScore > oppScore ? MatchOutcome.Win : ourScore == oppScore ? MatchOutcome.Draw : MatchOutcome.Loss;
@@ -341,23 +375,29 @@ public class MatchService : IMatchService
             TeamName = m.Team?.Name ?? "",
             OpponentName = m.OpponentName,
             MatchDate = m.MatchDate,
-            HomeScore = m.HomeScore,
-            AwayScore = m.AwayScore,
+            Status = m.Status,
+            HomeScore = isScheduled ? null : m.HomeScore,
+            AwayScore = isScheduled ? null : m.AwayScore,
             IsHome = m.IsHome,
-            OurScore = ourScore,
-            OpponentScore = oppScore,
-            Result = result,
+            OurScore = isScheduled ? null : ourScore,
+            OpponentScore = isScheduled ? null : oppScore,
+            Result = isScheduled ? null : result,
             ScoreFormat = m.ScoreFormat,
-            SetScores = m.SetScores,
-            ScoreDisplay = $"{ourScore} - {oppScore}",
+            SetScores = isScheduled ? null : m.SetScores,
+            ScoreDisplay = isScheduled ? null : $"{ourScore} - {oppScore}",
             Venue = m.Venue,
             Competition = m.Competition,
             Notes = m.Notes,
+            OpponentFormation = m.OpponentFormation,
+            ScoutingNotes = m.ScoutingNotes,
             Ratings = (m.Ratings ?? new List<PlayerMatchRating>())
                 .OrderByDescending(r => r.Rating)
                 .Select(ToRatingDto).ToList(),
         };
     }
+
+    private static string? NormalizeOptional(string? value) =>
+        string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static PlayerMatchRatingDto ToRatingDto(PlayerMatchRating r) => new()
     {

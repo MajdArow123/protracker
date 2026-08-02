@@ -19,6 +19,16 @@ public enum ScoreFormat
     GamesAndSets  // Tennis — "2 - 1" sets (+ SetScores game detail)
 }
 
+// Scheduled-vs-played distinction (Phase 7 / blueprint §5b #1). A Scheduled row is
+// an upcoming fixture: it has NO score — the stored 0-0 is masked to null at the
+// DTO layer and never surfaces as a result. Every pre-Phase-7 row is truthfully
+// Played (migration default 0).
+public enum MatchStatus
+{
+    Played = 0,
+    Scheduled = 1
+}
+
 // A team-level game result. Distinct from MatchPerformance (a single player's
 // per-match rating with no team match entity). Individual ratings hang off this
 // via PlayerMatchRating.
@@ -52,6 +62,13 @@ public class MatchResult
     public string? Venue { get; set; }
     public string? Competition { get; set; }
     public string? Notes { get; set; }
+
+    public MatchStatus Status { get; set; } = MatchStatus.Played;
+
+    // Coach-entered opponent plan (Phase 7 match context). Presented in the UI with
+    // the coach-entered source badge — a plan, never a recorded fact.
+    public string? OpponentFormation { get; set; }
+    public string? ScoutingNotes { get; set; }
 
     public List<PlayerMatchRating> Ratings { get; set; } = new();
 
