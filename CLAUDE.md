@@ -716,7 +716,27 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Lineup program Phase 7a COMPLETE and deployed** (`5b0cb58` backend →
+- **Latest: Phase 7b final polish shipped** (4 commits `638a631`/`46c2837`/
+  `cca03a3`/`7b785e0`): global `MotionConfig reducedMotion="user"` + CSS
+  reduced-motion sweep + interaction timings verified in the 150–300ms band
+  (2 outliers clamped; entrances/progress fills/bell wiggle deliberately
+  exempt; LandingPage untouched). **Deep-link fade root-caused with numbers**:
+  (1) the manual `pdf-vendor` chunk made rolldown hoist a shared jsx-runtime
+  helper into it → the whole 1.4 MB PDF stack was in the entry's modulepreload
+  on EVERY page load (pinned rule violated silently) — manual rule removed,
+  rolldown auto-isolates the dynamic-only stack, eager preload 2.3 MB→904 KB,
+  live-verified pdf never loads; (2) `warmRouteChunk(pathname)` at lazyPages
+  module scope — deep-linked route chunk downloads in parallel with auth/me
+  instead of after it (measured: route chunk 1389ms-after-auth → starts before
+  auth/me). Modal gained dialog semantics (role/aria-modal/labelledby) + focus
+  trap + focus restore (app-wide, every dialog inherits). COSMETIC-7 fixed
+  (sport-matched `TaskTitlesFor(sportId)` pools; determinism preserved —
+  one rng draw per task); COSMETIC-6 left documented (the "(you)" chip is
+  truthful). 390px pass done live on prod (matches rows, lineup board,
+  context panel). **Still user-assisted: the real-device iOS touch-drag
+  long-press check** (CDP synthesizes mouse only); `@dnd-kit/core` remains
+  the documented fallback.
+- **Lineup program Phase 7a COMPLETE and deployed** (`5b0cb58` backend →
   Railway probe → `f986d19` frontend → Vercel success via GitHub deployments
   API). Migration checkpoint honored (diff + both-provider up/down + guard tests
   presented before any commit; user signed off). Railway probed BOTH ways:
