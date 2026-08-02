@@ -936,7 +936,7 @@ public class DemoShowcaseSeeder
                 {
                     CoachId = coach.Id,
                     PlayerId = p.Id,
-                    Title = rng.Pick(ShowcasePools.TaskTitles),
+                    Title = rng.Pick(ShowcasePools.TaskTitlesFor(p.SportId)),
                     Priority = (TaskPriority)rng.Next(0, 3),
                     Category = (TaskCategory)rng.Next(0, 6),
                     DueDate = due,

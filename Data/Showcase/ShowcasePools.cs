@@ -36,14 +36,73 @@ public static class ShowcasePools
         "Hold concentration for the full 90", "Own set-piece delivery",
     };
 
-    public static readonly string[] TaskTitles =
+    // Task titles are sport-matched (COSMETIC-7): a basketball player must never
+    // be assigned "Crossing drill with the U15 wingers". TaskTitlesFor(sportId)
+    // returns shared + sport-specific; the seeder still makes exactly ONE rng
+    // draw per task, so determinism and idempotence are unchanged.
+    public static readonly string[] TaskTitlesShared =
+    {
+        "Video review: last match positioning", "Core stability circuit",
+        "Recovery jog + stretching 30min", "Mobility circuit — 20 min",
+        "Film study: opponent tendencies", "Sleep + hydration log for the week",
+    };
+
+    public static readonly string[] TaskTitlesSoccer =
     {
         "Cone dribbling ladder — 3 sets", "Wall passes, 100 each foot",
-        "Shuttle sprints 5x30m", "Video review: last match positioning",
-        "Core stability circuit", "Crossing drill with the U15 wingers",
+        "Shuttle sprints 5x30m", "Crossing drill with the U15 wingers",
         "Finishing session: far-post runs", "Defensive shape walkthrough",
-        "Recovery jog + stretching 30min", "Penalty routine — 20 reps",
+        "Penalty routine — 20 reps", "First-touch box drill — 15 min",
     };
+
+    public static readonly string[] TaskTitlesBasketball =
+    {
+        "Free throws — 50 makes", "Form shooting: 5 spots",
+        "Defensive slides ladder — 3 sets", "Pick-and-roll reads walkthrough",
+        "Ball-handling circuit — 15 min", "Catch-and-shoot: 40 threes",
+        "Box-out reps with a partner", "Full-court conditioning 10x",
+    };
+
+    public static readonly string[] TaskTitlesVolleyball =
+    {
+        "Serve receive — 40 reps", "Blocking footwork ladder",
+        "Setter connection reps — 30 min", "Float serve targets — 25 makes",
+        "Approach timing drill", "Pepper warm-up routine — 15 min",
+        "Defensive digs circuit", "Jump-serve technique review",
+    };
+
+    public static readonly string[] TaskTitlesBeach =
+    {
+        "Sand sprints 8x20m", "Serve targets in wind — 25 reps",
+        "Pokey and cut-shot practice", "Block-or-peel decision drill",
+        "Passing platform reps — 40", "Two-touch transition drill",
+        "Hand-setting control — 20 min", "Short-court control game",
+    };
+
+    public static readonly string[] TaskTitlesTennis =
+    {
+        "First-serve targets — 30 makes", "Cross-court forehand ladder",
+        "Split-step timing drill", "Second-serve kick practice — 20 min",
+        "Volley reflex wall drill", "Baseline consistency: 50-ball rally",
+        "Return positioning walkthrough", "Slice approach + net drill",
+    };
+
+    public static string[] TaskTitlesFor(int sportId)
+    {
+        var specific = sportId switch
+        {
+            1 => TaskTitlesSoccer,
+            2 => TaskTitlesBasketball,
+            3 => TaskTitlesVolleyball,
+            4 => TaskTitlesBeach,
+            5 => TaskTitlesTennis,
+            _ => TaskTitlesSoccer,
+        };
+        var pool = new string[TaskTitlesShared.Length + specific.Length];
+        TaskTitlesShared.CopyTo(pool, 0);
+        specific.CopyTo(pool, TaskTitlesShared.Length);
+        return pool;
+    }
 
     public static readonly string[] AnnouncementTitles =
     {
