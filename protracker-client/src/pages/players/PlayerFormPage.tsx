@@ -151,25 +151,35 @@ export function PlayerFormPage() {
       setFtVal(ft);
       setInVal(inches);
       setLbVal(kgToLb(weightKg));
-    } else if (!isEdit && lockedSport && !values.sportId) {
+    }
+    // Deliberate init-only sync: deps are the LOAD triggers; adding values.sportId
+    // would re-apply the sport lock on every user edit. Accept, don't "fix".
+    else if (!isEdit && lockedSport && !values.sportId) {
       setValues(v => ({ ...v, sportId: lockedSport.id }));
     }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [player, isEdit, lockedSport?.id]);
 
   // Sync ft/in when switching to cm (in case user typed in cm mode)
   useEffect(() => {
+    // Fires only on the unit TOGGLE and reads the latest heightCm at that instant;
+    // adding it would re-sync (and clobber the ft/in inputs) on every keystroke. Accept, don't "fix".
     if (heightUnit === 'ftin' && values.heightCm) {
       const { ft, inches } = cmToFtIn(values.heightCm);
       setFtVal(ft);
       setInVal(inches);
     }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [heightUnit]);
 
   // Sync lb when switching to lb
   useEffect(() => {
+    // Fires only on the unit TOGGLE and reads the latest weightKg at that instant;
+    // adding it would re-sync (and clobber the lb input) on every keystroke. Accept, don't "fix".
     if (weightUnit === 'lb' && values.weightKg) {
       setLbVal(kgToLb(values.weightKg));
     }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [weightUnit]);
 
   const set = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {

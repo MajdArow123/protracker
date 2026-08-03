@@ -63,9 +63,13 @@ export function TeamFormPage() {
         foundedYear: team.foundedYear?.toString() ?? '',
         description: team.description ?? '',
       });
-    } else if (!isEdit && lockedSport && !values.sportId) {
+    }
+    // Deliberate init-only sync: deps are the LOAD triggers; adding values.sportId
+    // would re-apply the sport lock on every user edit. Accept, don't "fix".
+    else if (!isEdit && lockedSport && !values.sportId) {
       setValues(v => ({ ...v, sportId: lockedSport.id }));
     }
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [team, isEdit, lockedSport?.id]);
 
   const set = (field: keyof FormValues) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {

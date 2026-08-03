@@ -27,6 +27,10 @@ import { staggerContainer, staggerItem } from '../../utils/animations';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 const PAGE_SIZE = 12;
+
+// Stable fallback: an inline `?? []` mints a new array every render, which
+// defeats every useMemo keyed on `allDrills`.
+const NO_DRILLS: Drill[] = [];
 const DURATIONS: { value: DurationFilter; key: string; label: string }[] = [
   { value: 'any', key: 'drills.durAny', label: 'Any' }, { value: 'under10', key: 'drills.durUnder10', label: 'Under 10 min' },
   { value: '10to20', key: 'drills.dur10to20', label: '10–20 min' }, { value: 'over20', key: 'drills.durOver20', label: '20+ min' },
@@ -79,7 +83,7 @@ export function DrillLibraryPage() {
     sport: effectiveSportId, search: search.trim() || undefined,
     favorited: favoritesOnly, mine: tab === 'mine', pageSize: 200,
   }, sportReady);
-  const allDrills = data?.items ?? [];
+  const allDrills = data?.items ?? NO_DRILLS;
 
   const filtered = useMemo(() => allDrills.filter(d =>
     (categories.size === 0 || categories.has(d.category)) &&

@@ -20,6 +20,10 @@ import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
 const FILTERS: GoalFilter[] = ['All', 'Active', 'Achieved', 'Paused'];
 
+// Stable fallback: an inline `?? []` mints a new array every render, which
+// defeats every useMemo keyed on `goals`.
+const NO_GOALS: PersonalGoal[] = [];
+
 export function GoalsPage() {
   const { t } = useTranslation();
   const L = useDynamicLabels();
@@ -40,7 +44,7 @@ export function GoalsPage() {
   const myGoalsQuery = useMyGoals(!isCoach);
   const playerGoalsQuery = usePlayerGoals(isCoach ? activePlayerId : undefined, isCoach);
   const goalsQuery = isCoach ? playerGoalsQuery : myGoalsQuery;
-  const goals = goalsQuery.data ?? [];
+  const goals = goalsQuery.data ?? NO_GOALS;
 
   const [filter, setFilter] = useState<GoalFilter>('All');
   const [formOpen, setFormOpen] = useState(false);

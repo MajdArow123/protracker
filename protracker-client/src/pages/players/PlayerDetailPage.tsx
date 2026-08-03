@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -191,10 +191,13 @@ export function PlayerDetailPage() {
     return { playerId, injuryDate: injuryForm.injuryDate, injuryType: injuryForm.injuryType, bodyPart: injuryForm.bodyPart || undefined, severity: injuryForm.severity as InjuryRecord['severity'], recoveryStatus: injuryForm.recoveryStatus as InjuryRecord['recoveryStatus'], notes: injuryForm.notes || undefined, treatmentPlan: injuryForm.treatmentPlan || undefined, expectedReturnDate: injuryForm.expectedReturnDate || undefined };
   }
 
-  const autoSaveInjury = useCallback(async () => {
+  // Plain function by design: useAutoSave reads its saveFn through a ref, so
+  // callback identity is irrelevant — a useCallback here only implies a
+  // stability that nothing consumes.
+  async function autoSaveInjury() {
     if (!editingInjury || !injuryForm.injuryType.trim()) return;
     await updateInjury.mutateAsync({ id: editingInjury.id, data: buildInjuryPayload() });
-  }, [editingInjury, injuryForm]);
+  }
 
   const { status: injurySaveStatus, flush: flushInjury } = useAutoSave(!!editingInjury, injuryForm, autoSaveInjury);
 
@@ -217,12 +220,12 @@ export function PlayerDetailPage() {
     return { playerId, matchDate: matchForm.matchDate, opponent: matchForm.opponent, performanceRating: rating, notes: matchForm.notes || undefined, sportSpecificStats: matchForm.sportSpecificStats || undefined };
   }
 
-  const autoSaveMatch = useCallback(async () => {
+  async function autoSaveMatch() {
     if (!editingMatch || !matchForm.opponent.trim()) return;
     const rating = Number(matchForm.performanceRating);
     if (isNaN(rating) || rating < 1 || rating > 10) return;
     await updateMatch.mutateAsync({ id: editingMatch.id, data: buildMatchPayload() });
-  }, [editingMatch, matchForm]);
+  }
 
   const { status: matchSaveStatus, flush: flushMatch } = useAutoSave(!!editingMatch, matchForm, autoSaveMatch);
 
@@ -247,12 +250,12 @@ export function PlayerDetailPage() {
     return { playerId, teamId: Number(trainingForm.teamId), date: trainingForm.date, durationMinutes: duration, attendanceStatus: trainingForm.attendanceStatus as TrainingSession['attendanceStatus'], notes: trainingForm.notes || undefined };
   }
 
-  const autoSaveSession = useCallback(async () => {
+  async function autoSaveSession() {
     if (!editingSession || !trainingForm.teamId) return;
     const duration = Number(trainingForm.durationMinutes);
     if (isNaN(duration) || duration < 1 || duration > 300) return;
     await updateSession.mutateAsync({ id: editingSession.id, data: buildSessionPayload() });
-  }, [editingSession, trainingForm]);
+  }
 
   const { status: sessionSaveStatus, flush: flushSession } = useAutoSave(!!editingSession, trainingForm, autoSaveSession);
 
