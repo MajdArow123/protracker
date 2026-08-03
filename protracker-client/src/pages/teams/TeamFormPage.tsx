@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { PageSpinner } from '../../components/ui/Spinner';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useSports } from '../../hooks/useSports';
 import { useTeam, useTeams, useCreateTeam, useUpdateTeam } from '../../hooks/useTeams';
 import { useAutoSave } from '../../hooks/useAutoSave';

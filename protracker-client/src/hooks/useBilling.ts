@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { billingApi } from '../api/billingApi';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import type { BillingInfo } from '../types';
 
 // Coach billing info (plan, limits, usage). Only coaches have billing.

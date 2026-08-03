@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import { ArrowRight, Camera, ChevronDown, Loader2, PartyPopper, Ruler, Salad, ShieldAlert, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { EditableAvatar } from './ProfileAvatar';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useUpdateProfile, useCompleteOnboarding } from '../../hooks/useProfile';
 import { usePlayerNutritionProfile, useCreateProfileItem, useDeleteProfileItem } from '../../hooks/useNutrition';
 import type { Profile } from '../../api/profileApi';

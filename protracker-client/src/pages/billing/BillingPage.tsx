@@ -10,7 +10,7 @@ import { DashboardSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { useBilling } from '../../hooks/useBilling';
 import { billingApi } from '../../api/billingApi';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { BillingPlanName } from '../../types';
 
 interface PlanCard {

@@ -3,8 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../context/AuthContext';
-import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/useAuth';
+import { useToast } from '../context/useToast';
 import { isPushSupported, currentPermission, enablePush } from '../push/pushManager';
 
 // One-time, dismissible prompt to enable browser notifications. Deliberately NOT shown

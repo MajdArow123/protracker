@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Share2, Check } from 'lucide-react';
 import { usePublicProfileSettings } from '../../hooks/usePublicProfile';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 
 // Small "Share My Progress" action for the athlete/solo dashboards. Renders nothing unless
 // the athlete has made their public profile live.

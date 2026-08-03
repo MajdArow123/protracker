@@ -9,7 +9,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Modal, ConfirmModal } from '../ui/Modal';
 import { EmptyState } from '../ui/EmptyState';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import {
   useSeasons, useSeasonSummary, useCreateSeason, useUpdateSeason, useDeleteSeason, useLinkPeriod,
 } from '../../hooks/useSeasons';

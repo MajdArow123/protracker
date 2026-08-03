@@ -11,7 +11,7 @@ import { Input } from '../ui/Input';
 import { EmptyState } from '../ui/EmptyState';
 import { AILoadingPanel } from '../ui/AILoadingPanel';
 import { Spinner } from '../ui/Spinner';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import {
   useInjuryRecoveryPlan, usePlayerRecoveryPlan, useGenerateRecoveryPlan, useCreateRecoveryPlan,
   useAddExercise, useUpdateExercise, useDeleteExercise, useCompleteExercise,

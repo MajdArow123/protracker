@@ -1,24 +1,10 @@
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { ScoreRing } from '../charts/ScoreRing';
-import { scoreTone, SCORE_TONE_HEX } from '../charts/chartColors';
+import { scoreColor, scoreLabel } from './scoreDisplay';
 
 // Shared between the coach AssessmentPage and the solo self-assessment page so the
 // slider/ring UX stays identical for both flows.
-
-export function scoreColor(score: number) {
-  return SCORE_TONE_HEX[scoreTone(score)];
-}
-
-const SCORE_LABELS = {
-  green: { text: 'Good', key: 'scoreGood', cls: 'text-green-500 bg-green-500/10' },
-  amber: { text: 'Fair', key: 'scoreFair', cls: 'text-amber-500 bg-amber-500/10' },
-  red: { text: 'Low', key: 'scoreLow', cls: 'text-red-500 bg-red-500/10' },
-} as const;
-
-export function scoreLabel(score: number) {
-  return SCORE_LABELS[scoreTone(score)];
-}
 
 interface ScoreSliderProps {
   name: string;

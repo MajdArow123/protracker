@@ -12,7 +12,7 @@ import { BenchmarkProfileCard } from './BenchmarkProfileCard';
 import { SquadPerformanceCard } from './SquadPerformanceCard';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useTeamEvidenceStatus, useSportMetrics } from '../../hooks/useEvidence';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 
 interface Props {
   teamId: number;

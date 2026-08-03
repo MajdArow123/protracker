@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { Activity, Lock, Eye, EyeOff, AlertCircle, Users, ArrowLeft } from 'lucide-react';
 import { parentApi } from '../../api/parentApi';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { Spinner } from '../../components/ui/Spinner';
 import type { ParentInviteInfo } from '../../types';
 

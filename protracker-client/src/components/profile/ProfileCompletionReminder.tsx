@@ -8,7 +8,7 @@ import type { ProfileCompletion } from '../../utils/profileCompletion';
 const DISMISS_KEY = 'protracker_completion_reminder_dismissed';
 const DISMISS_DAYS = 7;
 
-export function isReminderDismissed(): boolean {
+function isReminderDismissed(): boolean {
   try {
     const raw = localStorage.getItem(DISMISS_KEY);
     if (!raw) return false;

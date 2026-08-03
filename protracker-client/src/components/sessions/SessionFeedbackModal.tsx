@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Star, CalendarDays, AlertTriangle } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useSubmitSessionFeedback } from '../../hooks/useSessionFeedback';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import type { ScheduledSession, SessionFeedback } from '../../types';

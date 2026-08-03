@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowRight, Bookmark, ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
 import { Modal, ConfirmModal } from '../../ui/Modal';
 import { Button } from '../../ui/Button';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { useTacticalPresets, useTacticalPresetMutations } from '../../../hooks/useLineup';
 import type { TacticalPresetDto } from '../../../api/lineupApi';
 import type { FormationDef } from './lineupFormations';

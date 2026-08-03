@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Scale, Info } from 'lucide-react';
 import { Select } from '../ui/Select';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import {
   useBenchmarkProfiles, useTeamBenchmarkProfile, useSetTeamBenchmarkProfile,

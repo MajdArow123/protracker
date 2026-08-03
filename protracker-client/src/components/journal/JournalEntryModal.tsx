@@ -4,7 +4,7 @@ import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useUpsertJournal, useUpdateJournal } from '../../hooks/useJournal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { MOODS, MOOD_CONFIG, randomPrompt, parseTags } from './journalUtils';
 import type { JournalPrompt } from './journalUtils';
 import type { JournalEntry, JournalMood } from '../../types';

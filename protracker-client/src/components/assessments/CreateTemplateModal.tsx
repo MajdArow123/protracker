@@ -5,7 +5,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useCreateTemplate, useUpdateTemplate } from '../../hooks/useAssessmentTemplates';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { StatCategory, AssessmentTemplate } from '../../types';
 
 interface Props {

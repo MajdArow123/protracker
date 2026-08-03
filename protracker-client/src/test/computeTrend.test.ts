@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeTrend } from '../components/evidence/MetricTrendSummary';
+import { computeTrend } from '../components/evidence/metricTrend';
 import type { ObjectiveTestResult } from '../types';
 
 // computeTrend only reads testedAt + normalizedScore; everything else is stub.

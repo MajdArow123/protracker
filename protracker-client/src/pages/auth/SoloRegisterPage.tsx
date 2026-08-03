@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { soloApi, type SoloSportOption, type SkillLevel, type TrainingFrequency } from '../../api/soloApi';
 import type { DietaryRestrictionInput } from '../../api/joinApi';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { Spinner } from '../../components/ui/Spinner';
 import { preloadDashboard } from '../../routes/lazyPages';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

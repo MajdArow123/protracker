@@ -4,7 +4,7 @@ import { Sparkles, ClipboardList, FlaskConical, Map } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { AILoadingPanel } from '../ui/AILoadingPanel';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useGenerateEvidenceAnalysis } from '../../hooks/useAI';
 import type { EvidenceAnalysis } from '../../types';
 

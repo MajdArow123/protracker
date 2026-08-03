@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useToggleDrillFavorite, useDeleteDrill, useDrill } from '../../hooks/useDrills';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import {
   CATEGORY_BADGE, CATEGORY_LABEL, DIFFICULTY_BADGE, sportBadge, SPORT_SHORT, instructionSteps,
 } from './drillUtils';

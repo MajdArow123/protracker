@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useCoachPublicView } from '../../hooks/useCoachMarketplace';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { RequestConnectionModal } from '../../components/coaches/RequestConnectionModal';
 import { CoachReviewsSection } from '../../components/coaches/CoachReviewsSection';
 import { Spinner } from '../../components/ui/Spinner';

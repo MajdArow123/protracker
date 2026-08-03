@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Check, X } from 'lucide-react';
 import { clsx } from 'clsx';
-import { scoreColor } from '../assessments/ScoreWidgets';
+import { scoreColor } from '../assessments/scoreDisplay';
 import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, toSliderStep, translateEvidenceItem } from './evidenceUtils';
 import { TestFreshnessBanner } from './TestFreshnessBanner';
 import type { EvidenceBasedScore } from '../../types';

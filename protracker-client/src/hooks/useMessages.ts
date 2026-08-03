@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 import { messagesApi } from '../api/messagesApi';
 
 export function useConversations(enabled = true) {

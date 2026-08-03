@@ -5,7 +5,7 @@ import { Plus, ChevronLeft, ChevronRight, Pencil, Trash2, CalendarDays, MapPin, 
 import { Modal, ConfirmModal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useTeamSessions, useCreateSession, useUpdateSession, useDeleteSession } from '../../hooks/useSessions';
 import { useSoloSessions, useCreateSoloSession } from '../../hooks/useSolo';
 import { CoachSessionFeedbackPanel } from './CoachSessionFeedbackPanel';

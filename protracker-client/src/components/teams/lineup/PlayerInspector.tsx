@@ -23,7 +23,7 @@ import { positionAbbr } from './lineupLayouts';
 import { wellbeingRecency, topTrends } from './inspectorLogic';
 import { computeStanding, type StandingBand } from '../../evidence/benchmarkStanding';
 import { SCORE_TONE_HEX, scoreTone } from '../../charts/chartColors';
-import type { TrendState } from '../../evidence/MetricTrendSummary';
+import type { TrendState } from '../../evidence/metricTrend';
 import type { CategoryStat, RatingState } from './lineupLogic';
 import type { Player } from '../../../types';
 

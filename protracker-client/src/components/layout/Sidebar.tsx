@@ -6,8 +6,8 @@ import {
   ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake, Medal, Bell,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../context/AuthContext';
-import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/useAuth';
+import { useToast } from '../../context/useToast';
 import { useTeams } from '../../hooks/useTeams';
 import { useUnreadNotificationCount } from '../../hooks/useNotifications';
 import { useUnreadMessageCount } from '../../hooks/useMessages';

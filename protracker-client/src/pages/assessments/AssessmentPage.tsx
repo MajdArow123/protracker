@@ -9,7 +9,7 @@ import { Button } from '../../components/ui/Button';
 import { Select } from '../../components/ui/Select';
 import { Input } from '../../components/ui/Input';
 import { PageSpinner, Spinner } from '../../components/ui/Spinner';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { usePlayer } from '../../hooks/usePlayers';
 import { useStatCategories } from '../../hooks/useSports';
 import { useAssessmentPeriods, useCreateAssessmentPeriod } from '../../hooks/useAssessmentPeriods';
@@ -19,7 +19,8 @@ import { ArrowLeft, Plus, Trash2, TrendingUp, TrendingDown, Minus, Calendar, Tro
 import { assessmentsApi } from '../../api/assessmentsApi';
 import { useQueryClient } from '@tanstack/react-query';
 import { clsx } from 'clsx';
-import { ScoreSlider, OverallScoreRing, scoreColor } from '../../components/assessments/ScoreWidgets';
+import { ScoreSlider, OverallScoreRing } from '../../components/assessments/ScoreWidgets';
+import { scoreColor } from '../../components/assessments/scoreDisplay';
 import { AssessmentTemplateBar } from '../../components/assessments/AssessmentTemplateBar';
 import { EvidencePanel } from '../../components/evidence/EvidencePanel';
 import { useSportMetrics, usePlayerEvidenceScores } from '../../hooks/useEvidence';

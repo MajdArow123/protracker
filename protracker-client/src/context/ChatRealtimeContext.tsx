@@ -1,19 +1,9 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from './AuthContext';
+import { useAuth } from './useAuth';
 import { startChatConnection, stopChatConnection, getChatConnection } from '../realtime/chatConnection';
 import type { Message } from '../types';
-
-interface ChatRealtimeValue {
-  connected: boolean;
-  onlineUsers: Set<string>;
-  isOnline: (userId: string) => boolean;
-  typingUsers: Set<string>;      // users currently typing to me
-  sendTyping: (otherUserId: string) => void;
-  stopTyping: (otherUserId: string) => void;
-}
-
-const ChatRealtimeContext = createContext<ChatRealtimeValue | null>(null);
+import { ChatRealtimeContext, type ChatRealtimeValue } from './useChatRealtime';
 
 export function ChatRealtimeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
@@ -126,20 +116,4 @@ export function ChatRealtimeProvider({ children }: { children: ReactNode }) {
   };
 
   return <ChatRealtimeContext.Provider value={value}>{children}</ChatRealtimeContext.Provider>;
-}
-
-export function useChatRealtime(): ChatRealtimeValue {
-  const ctx = useContext(ChatRealtimeContext);
-  if (!ctx) {
-    // Safe no-op fallback so components can call it even if the provider is absent.
-    return {
-      connected: false,
-      onlineUsers: new Set(),
-      isOnline: () => false,
-      typingUsers: new Set(),
-      sendTyping: () => {},
-      stopTyping: () => {},
-    };
-  }
-  return ctx;
 }

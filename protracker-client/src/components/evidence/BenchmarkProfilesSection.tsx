@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Modal, ConfirmModal } from '../ui/Modal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import {
   useBenchmarkProfiles, useCreateBenchmarkProfile, useUpdateBenchmarkProfile, useDeleteBenchmarkProfile,
 } from '../../hooks/useBenchmarks';

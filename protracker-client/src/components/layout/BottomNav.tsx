@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { Home, Users, Shield, CheckSquare, MessageSquare, TrendingUp, Salad, Heart, Dumbbell, User } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useUnreadMessageCount } from '../../hooks/useMessages';
 
 interface Item {

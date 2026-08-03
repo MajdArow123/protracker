@@ -6,7 +6,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useStatCategories } from '../../hooks/useSports';
 import { useCreateGoal, useUpdateGoal } from '../../hooks/useGoals';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { CATEGORY_ORDER, PRIORITY_ORDER, CATEGORY_BADGE, PRIORITY_BADGE } from './goalUtils';
 import type { PersonalGoal, GoalCategory, GoalPriority } from '../../types';
 import type { CreateGoalMilestoneInput } from '../../api/goalsApi';

@@ -6,7 +6,7 @@ import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
 import { usePlayer } from '../../hooks/usePlayers';
 import { EvidenceDashboardTab } from '../../components/evidence/EvidenceDashboardTab';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';
 import { PageSpinner } from '../../components/ui/Spinner';

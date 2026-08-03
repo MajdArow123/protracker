@@ -1,8 +1,8 @@
 import { Menu, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
+import { useAuth } from '../../context/useAuth';
+import { useTheme } from '../../context/useTheme';
 import { useLocation, Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
 import { NotificationBell } from './NotificationBell';

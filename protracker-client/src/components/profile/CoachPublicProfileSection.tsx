@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Store, Lock, Copy, Check, ExternalLink } from 'lucide-react';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useSports } from '../../hooks/useSports';
 import { useCoachPublicSettings, useUpdateCoachPublicProfile } from '../../hooks/useCoachMarketplace';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

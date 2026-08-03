@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-import { useToast } from '../../context/ToastContext';
-import type { ToastType } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
+import type { ToastType } from '../../context/useToast';
 
 const icons: Record<ToastType, typeof CheckCircle> = {
   success: CheckCircle,

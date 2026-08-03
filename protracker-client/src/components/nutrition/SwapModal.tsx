@@ -6,7 +6,7 @@ import { clsx } from 'clsx';
 import type { PlannedMealItem, EquivalentFood } from '../../types';
 import { useSwapMealItem } from '../../hooks/useNutrition';
 import { useEquivalentFoods } from '../../hooks/useReports';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 
 type MatchQuality = 'good' | 'similar' | 'different';
 

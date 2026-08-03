@@ -19,7 +19,7 @@ import { useDrills } from '../../hooks/useDrills';
 import { useSports } from '../../hooks/useSports';
 import { usePlayers, useMyPlayer } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import type { Drill, DrillCategory, DrillDifficulty } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';

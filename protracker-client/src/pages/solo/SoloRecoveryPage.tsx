@@ -8,7 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonCard } from '../../components/ui/Skeleton';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useMyPlayerId } from '../../hooks/useDashboard';
 import { useInjuries, useCreateInjury, useUpdateInjury, useDeleteInjury, useRecoverInjury } from '../../hooks/useInjuries';
 import { usePlayerRecoveryPlan } from '../../hooks/useRecovery';

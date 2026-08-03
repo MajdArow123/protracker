@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Star } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useSports } from '../../hooks/useSports';
 import { useSubmitReview } from '../../hooks/useCoachReviews';

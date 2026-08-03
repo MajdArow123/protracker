@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { useGeneratePerformanceInsights } from '../../hooks/useAI';
 import { useBilling } from '../../hooks/useBilling';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { Card } from '../../components/ui/Card';

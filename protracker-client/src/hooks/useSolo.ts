@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { soloApi, type SoloProfile } from '../api/soloApi';
 import type { CreateSessionInput } from '../api/sessionsApi';
 import type { CreateMatchInput } from '../api/matchesApi';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 export function useSoloProfile() {
   const { user } = useAuth();

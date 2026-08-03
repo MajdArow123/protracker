@@ -22,7 +22,7 @@ import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { StatCard } from '../../components/dashboard/StatCard';
 import { MiniRadar } from '../../components/charts/MiniRadar';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { clsx } from 'clsx';

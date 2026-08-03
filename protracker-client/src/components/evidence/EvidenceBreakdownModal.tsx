@@ -4,7 +4,7 @@ import { FlaskConical, BarChart2, UserCheck, User, Lightbulb, HelpCircle } from 
 import { TestProtocolModal } from './TestProtocolModal';
 import { clsx } from 'clsx';
 import { Modal } from '../ui/Modal';
-import { scoreColor } from '../assessments/ScoreWidgets';
+import { scoreColor } from '../assessments/scoreDisplay';
 import { EvidencePanel } from './EvidencePanel';
 import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, translateEvidenceItem } from './evidenceUtils';
 import { TestFreshnessBanner } from './TestFreshnessBanner';

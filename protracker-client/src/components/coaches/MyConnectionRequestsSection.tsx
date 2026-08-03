@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Handshake, Copy, Check, Clock, ArrowRight } from 'lucide-react';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { ConfirmModal } from '../ui/Modal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useMyRequests, useWithdrawRequest } from '../../hooks/useConnections';
 import type { MyConnectionRequest, ConnectionRequestStatus } from '../../types';
 

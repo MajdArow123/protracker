@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import { CreateTemplateModal } from './CreateTemplateModal';
 import { useAssessmentTemplates, useDeleteTemplate } from '../../hooks/useAssessmentTemplates';
 import { assessmentTemplatesApi } from '../../api/assessmentTemplatesApi';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { StatCategory, AssessmentTemplate, AppliedTemplate } from '../../types';
 
 interface Props {

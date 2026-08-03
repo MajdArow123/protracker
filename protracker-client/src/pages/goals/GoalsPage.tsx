@@ -13,7 +13,7 @@ import { AIGoalSuggestionsModal } from '../../components/goals/AIGoalSuggestions
 import { matchesFilter, type GoalFilter } from '../../components/goals/goalUtils';
 import { useMyGoals, usePlayerGoals } from '../../hooks/useGoals';
 import { useMyPlayer, usePlayers } from '../../hooks/usePlayers';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import type { PersonalGoal } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

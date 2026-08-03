@@ -4,7 +4,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useAssignDrill } from '../../hooks/useDrills';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { CATEGORY_LABEL, CATEGORY_BADGE, DIFFICULTY_BADGE } from './drillUtils';
 import type { Drill, TaskPriority } from '../../types';
 import { useTranslation } from 'react-i18next';

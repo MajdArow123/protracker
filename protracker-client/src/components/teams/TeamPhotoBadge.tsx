@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import { Camera, Shield } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useUploadTeamPhoto } from '../../hooks/useProfile';
 
 const ACCEPTED = ['image/jpeg', 'image/png', 'image/webp'];

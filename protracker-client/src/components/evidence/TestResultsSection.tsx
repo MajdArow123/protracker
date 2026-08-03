@@ -8,7 +8,7 @@ import { clsx } from 'clsx';
 import { Card } from '../ui/Card';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonChart } from '../ui/Skeleton';
-import { scoreColor } from '../assessments/ScoreWidgets';
+import { scoreColor } from '../assessments/scoreDisplay';
 import { scoreTone, SCORE_TONE_HEX, CHART_GRID, AXIS_TICK } from '../charts/chartColors';
 import { TooltipContent } from '../charts/TooltipContent';
 import { MetricTrendSummary } from './MetricTrendSummary';

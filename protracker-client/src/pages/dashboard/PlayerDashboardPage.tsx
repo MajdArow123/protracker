@@ -30,7 +30,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { Sparkline } from '../../components/charts/Sparkline';
 import { StatCard } from '../../components/dashboard/StatCard';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {

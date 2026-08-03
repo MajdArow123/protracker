@@ -2,7 +2,7 @@ import { clsx } from 'clsx';
 import type { PlayerStatus } from '../../types';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 
-export const STATUS_STYLES: Record<PlayerStatus, string> = {
+const STATUS_STYLES: Record<PlayerStatus, string> = {
   Active: 'bg-green-500/15 text-green-500 border border-green-500/30',
   Injured: 'bg-red-500/15 text-red-500 border border-red-500/30',
   Suspended: 'bg-amber-500/15 text-amber-500 border border-amber-500/30',

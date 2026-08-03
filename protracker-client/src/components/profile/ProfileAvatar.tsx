@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Camera, Loader2, Trash2, Upload } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useUploadProfilePicture, useRemoveProfilePicture } from '../../hooks/useProfile';
 
 function getInitials(name: string) {

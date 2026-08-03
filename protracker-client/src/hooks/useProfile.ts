@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { profileApi, type ProfileUpdatePayload } from '../api/profileApi';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/useAuth';
 
 export function useProfile() {
   const { user } = useAuth();

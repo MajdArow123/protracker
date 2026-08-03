@@ -6,7 +6,7 @@ import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Modal } from '../ui/Modal';
 import { EmptyState } from '../ui/EmptyState';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { usePlayerParents, useInviteParent } from '../../hooks/useParent';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import type { ParentInviteResult } from '../../types';

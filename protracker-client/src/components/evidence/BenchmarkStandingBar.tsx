@@ -3,7 +3,7 @@ import { CheckCircle2 } from 'lucide-react';
 import { computeStanding, type BenchmarkAnchors } from './benchmarkStanding';
 import { scoreTone, SCORE_TONE_HEX } from '../charts/chartColors';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 interface Props {
   /** Latest raw test value. */

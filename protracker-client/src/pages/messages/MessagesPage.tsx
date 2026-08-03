@@ -3,7 +3,7 @@ import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
 import { Send, Search, MessageSquare, ArrowLeft } from 'lucide-react';
 import { useConversations, useContacts, useConversation, useSendMessage, useMarkConversationRead } from '../../hooks/useMessages';
-import { useChatRealtime } from '../../context/ChatRealtimeContext';
+import { useChatRealtime } from '../../context/useChatRealtime';
 import type { Conversation, MessageContact, Message } from '../../types';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Skeleton, SkeletonAvatar } from '../../components/ui/Skeleton';

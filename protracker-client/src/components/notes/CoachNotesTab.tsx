@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, Lock, Eye, StickyNote } from 'lucide-react';
 import { Modal, ConfirmModal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { EmptyState } from '../ui/EmptyState';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useCoachNotes, useCreateCoachNote, useUpdateCoachNote, useDeleteCoachNote } from '../../hooks/useCoachNotes';
 import type { CoachNote, CoachNoteCategory } from '../../types';
 

@@ -6,7 +6,7 @@ import { Modal, ConfirmModal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { EmptyState } from '../ui/EmptyState';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import {
   useTeamCoaches, useInviteCoach, useUpdateCoachPermissions, useRemoveCoach,
 } from '../../hooks/useTeamCoaches';

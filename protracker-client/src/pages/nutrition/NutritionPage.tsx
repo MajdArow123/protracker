@@ -11,7 +11,7 @@ import { Select } from '../../components/ui/Select';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { useAutoSave } from '../../hooks/useAutoSave';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { usePlayer } from '../../hooks/usePlayers';
 import {
   usePlayerNutritionProfile, useCreateProfileItem, useUpdateProfileItem, useDeleteProfileItem,

@@ -9,8 +9,8 @@ import {
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmModal } from '../../components/ui/Modal';
-import { useToast } from '../../context/ToastContext';
-import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/useToast';
+import { useAuth } from '../../context/useAuth';
 import { sportGradient } from '../../utils/sportColors';
 import {
   LEAGUE_STATUS_STYLES, MATCH_STATUS_STYLES, FORM_STYLES, formatLabel, scoreColumnLabels,

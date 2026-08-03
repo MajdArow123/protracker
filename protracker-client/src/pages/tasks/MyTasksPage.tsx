@@ -4,7 +4,7 @@ import { PageSpinner } from '../../components/ui/Spinner';
 import { TaskCard } from '../../components/tasks/TaskCard';
 import { bucketOf } from '../../components/tasks/taskUtils';
 import { useMyTasks, useCompleteTask, useIncompleteTask } from '../../hooks/useTasks';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { CheckCircle, CheckSquare, ChevronDown } from 'lucide-react';
 import { clsx } from 'clsx';
 import type { PlayerTask } from '../../types';

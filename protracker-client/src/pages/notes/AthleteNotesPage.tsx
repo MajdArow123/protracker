@@ -6,7 +6,7 @@ import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmModal } from '../../components/ui/Modal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useAthleteNotes, useDeleteAthleteNote } from '../../hooks/useAthleteNotes';
 import { AthleteNoteModal } from '../../components/athleteNotes/AthleteNoteModal';
 import { NOTE_CATEGORIES, NOTE_CATEGORY_STYLES, noteTitleOf } from '../../components/athleteNotes/noteMeta';

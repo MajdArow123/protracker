@@ -11,7 +11,7 @@ import {
   useAthleteInvites, useInviteAthlete,
 } from '../../hooks/useJoinCodes';
 import { joinUrlFor } from '../../api/joinApi';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { ConfirmModal } from '../ui/Modal';
 

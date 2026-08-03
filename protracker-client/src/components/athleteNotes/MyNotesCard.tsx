@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { clsx } from 'clsx';
 import { NotebookPen, Plus, ArrowRight, Lock } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useAthleteNotes, useCreateAthleteNote } from '../../hooks/useAthleteNotes';
 import { AthleteNoteModal } from './AthleteNoteModal';
 import { NOTE_CATEGORY_STYLES, noteTitleOf } from './noteMeta';

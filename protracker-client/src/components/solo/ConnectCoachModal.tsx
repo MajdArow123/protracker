@@ -7,7 +7,7 @@ import { joinApi, type JoinCodeInfo } from '../../api/joinApi';
 import { soloApi } from '../../api/soloApi';
 import { tokenStorage } from '../../api/axiosInstance';
 import { useSoloProfile } from '../../hooks/useSolo';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 
 // Same sport gradients used across the app.
 const SPORT_GRADIENTS: Record<string, string> = {

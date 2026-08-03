@@ -8,7 +8,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { AssignDrillModal } from './AssignDrillModal';
 import { CATEGORY_BADGE, CATEGORY_LABEL, DIFFICULTY_BADGE } from './drillUtils';
 import { useGenerateDrillRecommendations } from '../../hooks/useAI';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { Drill, DrillRecommendations } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

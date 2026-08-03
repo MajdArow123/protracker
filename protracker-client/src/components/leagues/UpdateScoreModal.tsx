@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useUpdateLeagueScore } from '../../hooks/useLeagues';
 import type { LeagueMatch } from '../../types';
 

@@ -7,7 +7,7 @@ import {
   Flame, MapPin, Pencil, Salad, Sparkles, Target, TrendingUp, Trophy, Users, X, Library,
 } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useMyPlayerId, usePlayerDashboard } from '../../hooks/useDashboard';
 import { usePlayerAssessments } from '../../hooks/useAssessments';
 import { useMyTasks } from '../../hooks/useTasks';

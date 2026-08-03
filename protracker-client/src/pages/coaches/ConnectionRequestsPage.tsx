@@ -8,7 +8,7 @@ import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useIncomingRequests, useAcceptRequest, useDeclineRequest } from '../../hooks/useConnections';
 import { sportBadge } from '../../utils/sportColors';
 import type { ConnectionRequest, ConnectionRequestStatus } from '../../types';

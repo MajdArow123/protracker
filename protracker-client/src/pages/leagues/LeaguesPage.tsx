@@ -6,7 +6,7 @@ import { Plus, Trophy, Search } from 'lucide-react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useSports } from '../../hooks/useSports';
 import { useTeams } from '../../hooks/useTeams';
 import { useMyPlayer } from '../../hooks/usePlayers';

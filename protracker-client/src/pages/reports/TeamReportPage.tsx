@@ -13,7 +13,7 @@ import { StatCard } from '../../components/dashboard/StatCard';
 import { CountUp } from '../../components/ui/CountUp';
 import { useGenerateTeamInsights } from '../../hooks/useAI';
 import { useBilling } from '../../hooks/useBilling';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { Card } from '../../components/ui/Card';
 import { EmptyState } from '../../components/ui/EmptyState';

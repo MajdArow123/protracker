@@ -16,7 +16,7 @@ import { ConfirmModal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, ClipboardList, TrendingUp, TrendingDown, Salad,

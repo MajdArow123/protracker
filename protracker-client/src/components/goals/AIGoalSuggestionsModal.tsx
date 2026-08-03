@@ -8,7 +8,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { CATEGORY_BADGE } from './goalUtils';
 import { useGenerateGoalSuggestions } from '../../hooks/useAI';
 import { useCreateGoal } from '../../hooks/useGoals';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { GoalSuggestion, GoalSuggestions } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

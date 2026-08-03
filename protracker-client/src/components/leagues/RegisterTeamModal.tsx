@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Shield } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useTeams } from '../../hooks/useTeams';
 import { useRegisterLeagueTeam } from '../../hooks/useLeagues';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

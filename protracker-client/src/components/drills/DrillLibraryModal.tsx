@@ -11,7 +11,7 @@ import { useDrills } from '../../hooks/useDrills';
 import { useSports } from '../../hooks/useSports';
 import { useTeams } from '../../hooks/useTeams';
 import { useMyPlayer } from '../../hooks/usePlayers';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import type { Drill } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

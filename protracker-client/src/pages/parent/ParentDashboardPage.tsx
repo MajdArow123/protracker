@@ -5,7 +5,7 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { CardListSkeleton } from '../../components/ui/Skeleton';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useChildren } from '../../hooks/useParent';
 import { clsx } from 'clsx';
 

@@ -8,7 +8,7 @@ import {
 import { useCoachDashboard } from '../../hooks/useDashboard';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useProfile, useUpdateProfile } from '../../hooks/useProfile';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { DetailSkeleton } from '../../components/ui/Skeleton';
 import { EditableAvatar } from '../../components/profile/ProfileAvatar';

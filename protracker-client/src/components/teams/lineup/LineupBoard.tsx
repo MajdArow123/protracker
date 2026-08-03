@@ -10,7 +10,7 @@ import { useIsRtl } from '../../../hooks/useIsRtl';
 import { useLocaleFormat } from '../../../hooks/useLocaleFormat';
 import { useTeamMatches } from '../../../hooks/useMatches';
 import { useLineup, useSaveLineup, useResetLineup, useTeamLineups, useSetLineupStatus } from '../../../hooks/useLineup';
-import { useToast } from '../../../context/ToastContext';
+import { useToast } from '../../../context/useToast';
 import { ConfirmModal } from '../../ui/Modal';
 import { Skeleton } from '../../ui/Skeleton';
 import { PlayerAvatar } from '../../players/PlayerAvatar';

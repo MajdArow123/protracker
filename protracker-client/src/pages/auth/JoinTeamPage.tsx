@@ -8,7 +8,7 @@ import {
   Lock, Mail, Phone, Plus, Ruler, Shield, Trash2, User, Users, Utensils, Weight, X,
 } from 'lucide-react';
 import { joinApi, type JoinCodeInfo, type DietaryRestrictionInput } from '../../api/joinApi';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { Spinner } from '../../components/ui/Spinner';
 import { preloadDashboard } from '../../routes/lazyPages';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

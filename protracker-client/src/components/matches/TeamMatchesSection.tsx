@@ -8,7 +8,7 @@ import { Input } from '../ui/Input';
 import { EmptyState } from '../ui/EmptyState';
 import { SkeletonCard } from '../ui/Skeleton';
 import { ConfirmModal } from '../ui/Modal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useTeamMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, useSaveMatchRatings } from '../../hooks/useMatches';
 import type { MatchResult, MatchOutcome, MatchStatus, PlayerMatchRating } from '../../types';
 import { SourceBadge } from '../ui/SourceBadge';

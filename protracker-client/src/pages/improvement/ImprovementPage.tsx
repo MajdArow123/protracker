@@ -7,7 +7,7 @@ import { PageSpinner } from '../../components/ui/Spinner';
 import { AutoSaveStatus } from '../../components/ui/AutoSaveStatus';
 import { AILoadingPanel } from '../../components/ui/AILoadingPanel';
 import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { usePlayer } from '../../hooks/usePlayers';
 import { usePlayerImprovementPlans, useCreateImprovementPlan, useUpdateImprovementPlan } from '../../hooks/useImprovement';
 import { useGenerateImprovementPlan } from '../../hooks/useAI';

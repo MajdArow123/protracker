@@ -9,7 +9,7 @@ import {
   Zap, BarChart2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { preloadDashboard } from '../../routes/lazyPages';
 
 type AuthTab = 'signin' | 'register';

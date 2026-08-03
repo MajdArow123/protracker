@@ -1,4 +1,4 @@
-import { computeTrend, type TrendState } from '../../evidence/MetricTrendSummary';
+import { computeTrend, type TrendState } from '../../evidence/metricTrend';
 import type { ObjectiveTestResult, WellbeingCheckin } from '../../../types';
 
 // Pure logic for the Player Inspector (Phase 2) — exported and unit-tested

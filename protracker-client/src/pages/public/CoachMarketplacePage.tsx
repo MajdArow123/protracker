@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Activity, Search, SlidersHorizontal, X, Users, ArrowRight } from 'lucide-react';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import { useSports } from '../../hooks/useSports';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/useAuth';
 import { useCoachMarketplaceInfinite } from '../../hooks/useCoachMarketplace';
 import { CoachCard } from '../../components/coaches/CoachCard';
 import { Spinner } from '../../components/ui/Spinner';

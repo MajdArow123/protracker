@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { SkeletonCard } from '../../components/ui/Skeleton';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useMyPlayerId } from '../../hooks/useDashboard';
 import { useSoloProfile, useSoloMatches, useCreateSoloMatch } from '../../hooks/useSolo';
 import { useUpdateMatch, useDeleteMatch, useSaveMatchRatings } from '../../hooks/useMatches';

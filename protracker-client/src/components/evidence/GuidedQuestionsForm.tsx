@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Button } from '../ui/Button';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useAddCoachEvaluation, useAddSelfAssessment } from '../../hooks/useEvidence';
 import { guidedQuestionsFor, ratingFromAnswers } from './guidedQuestions';
-import { scoreColor } from '../assessments/ScoreWidgets';
+import { scoreColor } from '../assessments/scoreDisplay';
 import type { SportMetricDefinition, EvidenceBasedScore } from '../../types';
 
 interface Props {

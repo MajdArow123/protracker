@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import { LoginPage } from '../pages/auth/LoginPage';
-import { AuthContext } from '../context/AuthContext';
+import { AuthContext } from '../context/useAuth';
 import type { User } from '../types';
 
 function renderLogin(login = vi.fn().mockResolvedValue({ id: '1', email: 'a@b.com', fullName: 'A', role: 'Coach' } as User)) {

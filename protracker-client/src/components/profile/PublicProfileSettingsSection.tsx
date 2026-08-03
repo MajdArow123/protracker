@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { Globe, Lock, Copy, Check, ExternalLink } from 'lucide-react';
 import { clsx } from 'clsx';
 import { usePublicProfileSettings, useUpdatePublicProfile } from '../../hooks/usePublicProfile';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { PublicProfileSettings } from '../../types';
 
 type ShowKey = 'showAssessments' | 'showGoals' | 'showJournal' | 'showMatchHistory';

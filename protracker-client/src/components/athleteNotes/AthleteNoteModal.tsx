@@ -4,7 +4,7 @@ import { Check, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { useCreateAthleteNote, useUpdateAthleteNote } from '../../hooks/useAthleteNotes';
 import { NOTE_CATEGORIES, NOTE_CATEGORY_STYLES } from './noteMeta';
 import type { AthleteNote, AthleteNoteCategory } from '../../types';

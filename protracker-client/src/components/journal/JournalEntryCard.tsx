@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Lock, Pencil, Trash2, ChevronDown, ChevronUp, Star, Lightbulb, Target } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useDeleteJournal } from '../../hooks/useJournal';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { MOOD_CONFIG, parseTags, dateKey } from './journalUtils';
 import type { JournalEntry } from '../../types';
 import { useTranslation } from 'react-i18next';

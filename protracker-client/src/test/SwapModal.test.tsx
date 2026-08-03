@@ -25,7 +25,7 @@ vi.mock('../hooks/useReports', () => ({
 vi.mock('../hooks/useNutrition', () => ({
   useSwapMealItem: () => ({ mutateAsync: vi.fn(), isPending: false }),
 }));
-vi.mock('../context/ToastContext', () => ({
+vi.mock('../context/useToast', () => ({
   useToast: () => ({ addToast: vi.fn() }),
 }));
 

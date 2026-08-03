@@ -10,7 +10,7 @@ import { EmptyState } from '../ui/EmptyState';
 import { PRIORITY_BADGE, CATEGORY_BADGE, PRIORITY_BORDER } from './taskUtils';
 import { useGenerateTaskSuggestions } from '../../hooks/useAI';
 import { useCreateTask } from '../../hooks/useTasks';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { TaskSuggestion, TaskSuggestions } from '../../types';
 import { useTranslation } from 'react-i18next';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';

@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { AlertTriangle, Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
-import { useToast } from '../../context/ToastContext';
-import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/useToast';
+import { useAuth } from '../../context/useAuth';
 import { useChangePassword } from '../../hooks/useProfile';
 import { profileApi } from '../../api/profileApi';
 

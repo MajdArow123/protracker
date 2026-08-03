@@ -4,7 +4,7 @@ import { RefreshCw, FlaskConical, BarChart2, UserCheck, User, ShieldCheck, Plus,
 import { clsx } from 'clsx';
 import { Button } from '../ui/Button';
 import { CardListSkeleton } from '../ui/Skeleton';
-import { scoreColor } from '../assessments/ScoreWidgets';
+import { scoreColor } from '../assessments/scoreDisplay';
 import { EvidenceBreakdownModal } from './EvidenceBreakdownModal';
 import { EvidenceAnalysisModal } from './EvidenceAnalysisModal';
 import { TestResultsSection } from './TestResultsSection';
@@ -14,7 +14,7 @@ import { confidenceBadgeClass, confidenceLabel, confidenceExplanation, overallCo
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useSportMetrics, usePlayerEvidenceScores, useRecalculateEvidence } from '../../hooks/useEvidence';
 import { usePlayerBenchmarks } from '../../hooks/useBenchmarks';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import type { SportMetricDefinition, EvidenceBasedScore } from '../../types';
 
 interface Props {

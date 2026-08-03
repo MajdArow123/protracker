@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAchieveGoal, useDeleteGoal, useAchieveMilestone } from '../../hooks/useGoals';
-import { useToast } from '../../context/ToastContext';
+import { useToast } from '../../context/useToast';
 import { GoalProgressChart } from './GoalProgressChart';
 import { GoalRecommendedDrills } from '../drills/GoalRecommendedDrills';
 import {
