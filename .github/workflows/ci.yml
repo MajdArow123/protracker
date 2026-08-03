@@ -46,8 +46,8 @@ jobs:
         run: npm run build
       - name: Bundle budget guard (PDF stays lazy, eager JS <= 1.2 MB)
         run: node scripts/check-bundle-budget.mjs
-      - name: Lint
-        run: npx oxlint src
+      - name: Lint (warnings fail the build)
+        run: npx oxlint --deny-warnings src
       - name: Unit tests
         run: npx vitest run
 
