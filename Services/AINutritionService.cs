@@ -290,7 +290,7 @@ public class AINutritionService : IAINutritionService
             + "  ]\n"
             + "}\n\n"
             + "CRITICAL: Never include foods that conflict with the hard allergies or lifestyle restrictions listed above.\n"
-            + "Include 3-5 realistic food items per meal with accurate macros for a {p.Sport.Name} athlete.\n"
+            + $"Include 3-5 realistic food items per meal with accurate macros for a {p.Sport.Name} athlete.\n"
             + "All numbers must be integers. Return ONLY the JSON object, nothing else.";
     }
 
