@@ -793,13 +793,9 @@ History (one line each; full detail in git history + blueprint):
   (cost real time)**: the directive must sit directly above the DEPENDENCY-ARRAY
   line (`}, [deps]);`), not the reported line and not the hook line; ESLint's
   `-- reason` suffix is NOT supported — reason goes in a separate comment.
-  Remaining: **11 react only-export-components warnings, DEFERRED to Phase 9**
-  (context/component file splits belong with structural work) — in AuthContext ×2,
-  ToastContext ×2, ThemeContext, ChatRealtimeContext, ScoreWidgets ×2,
-  MetricTrendSummary, PlayerStatusBadge, ProfileCompletionReminder. **Once Phase 9
-  clears them, flip the CI lint step to fail on warnings** (`oxlint --deny-warnings`)
-  — today oxlint exits 0 on warnings, so the step is informational, the same
-  decorative-gate problem the pdf rule and the i18n number had.
+  The 11 react only-export-components warnings were cleared in Phase 9 §2a and the
+  CI lint step was flipped to `oxlint --deny-warnings` in Phase 9 §3 (proven red +
+  green on real pushes) — the decorative-gate follow-up recorded here is CLOSED.
 ## Phase 9 — structural cleanup
 
 - **§1 AIController split (landed)**: the 1,395-line `AIController` is gone. Four thin
@@ -840,6 +836,13 @@ History (one line each; full detail in git history + blueprint):
   DELIBERATELY — they carry the `data-drop-*` drag contract, e2e-pinned accessible
   names, and the unverified iOS touch-drag path; extracting them would have meant
   threading interlocked state through hook boundaries (behavior risk), not moving code.
+- **§3 lint gate is REAL (closes the Phase 8 follow-up)**: the CI lint step is now
+  `npx oxlint --deny-warnings src` — warnings fail the build. Proven both ways on
+  real pushes: a deliberate only-export-components warning (`698bda8`) turned CI red
+  at the Lint step, its removal turned CI green. Gotcha: the react rule's
+  allowConstantExport is on — `export const X = 1` from a component file does NOT
+  warn (constant primitives are fine for fast refresh); an object/function export
+  does. Local pre-ship lint should match CI: `npx oxlint --deny-warnings src`.
 
 ## Current status
 

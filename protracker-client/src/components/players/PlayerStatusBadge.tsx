@@ -29,6 +29,3 @@ export function PlayerStatusBadge({ status, hideActive = false, size = 'xs' }: {
     </span>
   );
 }
-
-// Phase 9 §3 gate proof: deliberate lint warning — reverted in the next commit.
-export const LINT_GATE_PROBE = { deliberate: true };
