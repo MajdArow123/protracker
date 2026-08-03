@@ -820,6 +820,26 @@ History (one line each; full detail in git history + blueprint):
   throw `BadRequestApiException` (new, 400 with verbatim message — the frontend reads
   the same `message` string as before; `ValidationApiException` would have swapped in
   its generic message). No route or wire-format changes.
+- **§1 follow-up bug fix (`3b324cf`)**: the daily nutrition-guidance prompt sent the
+  literal `{p.Sport.Name}` (missing `$` prefix, pre-existing — moved verbatim in the
+  split, caught by the user). Backend-wide sweep for expression-like braces in
+  non-interpolated strings found no other occurrence.
+- **§2 frontend splits (landed, 3 commits)**: (a) all 11 only-export-components
+  warnings cleared — `oxlint src` now reports **0**. Context objects + hooks moved to
+  `src/context/useAuth.ts`/`useToast.ts`/`useTheme.ts`/`useChatRealtime.ts` (providers
+  stay in the `*Context.tsx` files — import `useAuth` etc. from the hook modules, NOT
+  from the provider files); `scoreColor`/`scoreLabel` → `assessments/scoreDisplay.ts`;
+  `computeTrend`/`TrendState` → `evidence/metricTrend.ts` (all S4 gates travel with
+  it); `STATUS_STYLES` + `isReminderDismissed` had zero external consumers →
+  un-exported in place, no new files. (b) `types/index.ts` (1,844 lines) carved into
+  25 domain modules with `index.ts` as a barrel — zero import-site changes anywhere;
+  export set proven identical (195 names diffed before/after). Add new types to the
+  matching domain file, never to the barrel. (c) LineupBoard 1,260 → 1,041 lines via
+  verbatim-JSX extraction of `LineupActionBar` + `LineupBenchPanel` only. The
+  pitch/slot map, drag wiring, reducer lifecycle, and save/conflict flow stayed put
+  DELIBERATELY — they carry the `data-drop-*` drag contract, e2e-pinned accessible
+  names, and the unverified iOS touch-drag path; extracting them would have meant
+  threading interlocked state through hook boundaries (behavior risk), not moving code.
 
 ## Current status
 
