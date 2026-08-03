@@ -764,6 +764,12 @@ History (one line each; full detail in git history + blueprint):
   never swallows e2e specs; formation chips are `role="radio"`, and the board Save
   button's accessible name grows to "Save Unsaved changes" when dirty (aria-label on
   the amber dot).
+- **E2e runs on PUSH (not PR-only) — deliberate**: this repo commits straight to
+  main, so a PR-only gate would never fire. Tradeoff accepted: e2e failures surface
+  only AFTER the code is on main and after Vercel/Railway have already started
+  deploying (CI is verification, not a deploy gate). **Revisit if the workflow ever
+  moves to PRs** — then PR-gating e2e (and possibly the other jobs) becomes the
+  better shape.
 - **SQLitePCLRaw.bundle_e_sqlite3 pinned to 2.1.12** in ProTracker.Tests (GHSA-2m69-gcr7-jv3q,
   vulnerable ≤2.1.11): it's transitive via EF Sqlite, and **no EF 9.0.x release raises
   the floor** (9.0.18 still declares >=2.1.10) — the direct pin is the only fix on EF 9.
@@ -776,11 +782,24 @@ History (one line each; full detail in git history + blueprint):
   About stat "34 Backend Tests" (false; actual 194 and drifting) → "5 Languages"
   (true, stable). Keys: `landing.testimonials.*` removed, `landing.honesty.*` added,
   `statTests`→`statLanguages`; drift 0/0/0.
-- **oxlint carries 21 pre-existing warnings** (10 react-hooks exhaustive-deps in
-  PlayerFormPage/TeamFormPage/PlayerDetailPage/GoalsPage/DrillLibraryPage, 11
-  react only-export-components fast-refresh notes) — inventoried for a user
-  fix-vs-accept decision, not silently accepted; oxlint exits 0 on warnings so CI
-  passes either way.
+- **oxlint warnings: user ruled on all 21** (post-Phase-8 round). The 10
+  exhaustive-deps are resolved: 4 form-page init/unit-toggle effects ACCEPTED with
+  reasoned `oxlint-disable-next-line` comments (the reasons exist to stop a future
+  session from "fixing" deliberate behavior — don't remove them); 3 PlayerDetailPage
+  autosave useCallbacks DELETED (useAutoSave reads saveFn through a ref — identity
+  is irrelevant, the wrapper implied stability nothing consumed); 3 unstable-array
+  useMemo inputs fixed via module-level `NO_GOALS`/`NO_DRILLS` empty-array constants
+  (an inline `?? []` mints a new array every render). **oxlint suppression gotchas
+  (cost real time)**: the directive must sit directly above the DEPENDENCY-ARRAY
+  line (`}, [deps]);`), not the reported line and not the hook line; ESLint's
+  `-- reason` suffix is NOT supported — reason goes in a separate comment.
+  Remaining: **11 react only-export-components warnings, DEFERRED to Phase 9**
+  (context/component file splits belong with structural work) — in AuthContext ×2,
+  ToastContext ×2, ThemeContext, ChatRealtimeContext, ScoreWidgets ×2,
+  MetricTrendSummary, PlayerStatusBadge, ProfileCompletionReminder. **Once Phase 9
+  clears them, flip the CI lint step to fail on warnings** (`oxlint --deny-warnings`)
+  — today oxlint exits 0 on warnings, so the step is informational, the same
+  decorative-gate problem the pdf rule and the i18n number had.
 ## Current status
 
 - **Latest: Phase 8 shipped** — see its section above. CI green on real pushes,
