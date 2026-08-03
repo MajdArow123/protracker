@@ -800,6 +800,27 @@ History (one line each; full detail in git history + blueprint):
   clears them, flip the CI lint step to fail on warnings** (`oxlint --deny-warnings`)
   — today oxlint exits 0 on warnings, so the step is informational, the same
   decorative-gate problem the pdf rule and the i18n number had.
+## Phase 9 — structural cleanup
+
+- **§1 AIController split (landed)**: the 1,395-line `AIController` is gone. Four thin
+  controllers (25–37 lines each, route+auth+delegate only) under the unchanged
+  `[Route("api/ai")]` prefix — `AIPlayerDevelopmentController` (improvement-plan,
+  task-suggestions, goal-suggestions, drill-recommendations), `AINutritionController`
+  (nutrition-guidance, weekly-nutrition-plan), `AIRecoveryController` (recovery-plan),
+  `AIInsightsController` (performance-insights, evidence-analysis, team-insights).
+  All prompt builders, parsers, and orchestration moved verbatim into per-domain
+  services (`AIPlayerDevelopmentService`/`AINutritionService`/`AIRecoveryService`/
+  `AIInsightsService`); the shared evidence block lives once in
+  `AIEvidenceContextService` (`BuildAsync` + static `FitnessText`/`PromptBlock`).
+  **Billing gate**: extracted to `Filters/AiBillingGateAttribute` (IAsyncActionFilter
+  resolving `IBillingService` from RequestServices), applied explicitly on each AI
+  controller class — `AiBillingGateTests` pins 402 on ALL TEN endpoints via a
+  fresh Free-plan coach hitting a bogus id (402-not-404 proves the filter runs before
+  the action), plus Pro-coach-passes and solo-bypass controls. Parse failures now
+  throw `BadRequestApiException` (new, 400 with verbatim message — the frontend reads
+  the same `message` string as before; `ValidationApiException` would have swapped in
+  its generic message). No route or wire-format changes.
+
 ## Current status
 
 - **Latest: Phase 8 shipped** — see its section above. CI green on real pushes,

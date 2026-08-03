@@ -32,6 +32,14 @@ public class ConflictApiException : Exception
     public ConflictApiException(string message) : base(message) { }
 }
 
+// 400 with the message passed through verbatim (unlike ValidationApiException's generic
+// message + errors list). Used for AI-output parse failures where the frontend surfaces
+// the message directly and the user's remedy is to retry.
+public class BadRequestApiException : Exception
+{
+    public BadRequestApiException(string message) : base(message) { }
+}
+
 public class ValidationApiException : Exception
 {
     public List<string> Errors { get; }

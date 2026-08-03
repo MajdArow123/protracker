@@ -236,6 +236,13 @@ builder.Services.AddScoped<ILineupService, LineupService>();
 builder.Services.AddScoped<ITacticalPresetService, TacticalPresetService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 builder.Services.AddScoped<IMealSuggestionService, MealSuggestionService>();
+// AI domain services (Phase 9 split of the former AIController) — shared evidence
+// context + one service per AI controller.
+builder.Services.AddScoped<IAIEvidenceContextService, AIEvidenceContextService>();
+builder.Services.AddScoped<IAIPlayerDevelopmentService, AIPlayerDevelopmentService>();
+builder.Services.AddScoped<IAINutritionService, AINutritionService>();
+builder.Services.AddScoped<IAIRecoveryService, AIRecoveryService>();
+builder.Services.AddScoped<IAIInsightsService, AIInsightsService>();
 // On-demand demo showcase seeding (token-gated endpoint; see DemoShowcaseSeeder).
 builder.Services.AddScoped<ProTracker.Data.Showcase.DemoShowcaseSeeder>();
 
