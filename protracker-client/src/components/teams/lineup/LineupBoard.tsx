@@ -2,9 +2,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
-import {
-  AlertTriangle, BadgeCheck, ChevronDown, ChevronUp, FlaskConical, HeartPulse, Lock, Pencil, Redo2, RotateCcw, Save, Send, Trash2, Undo2, X,
-} from 'lucide-react';
+import { AlertTriangle, FlaskConical } from 'lucide-react';
 import { useIsMobile, useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useIsRtl } from '../../../hooks/useIsRtl';
 import { useLocaleFormat } from '../../../hooks/useLocaleFormat';
@@ -13,17 +11,15 @@ import { useLineup, useSaveLineup, useResetLineup, useTeamLineups, useSetLineupS
 import { useToast } from '../../../context/useToast';
 import { ConfirmModal } from '../../ui/Modal';
 import { Skeleton } from '../../ui/Skeleton';
-import { PlayerAvatar } from '../../players/PlayerAvatar';
-import { PlayerStatusBadge } from '../../players/PlayerStatusBadge';
 import { SportSurface } from './PitchSurface';
-import { LineupPlayerCard, RatingChip } from './LineupPlayerCard';
+import { LineupPlayerCard } from './LineupPlayerCard';
 import { StatPopover } from './StatPopover';
 import { SaveLineupModal } from './SaveLineupModal';
 import { PlayerInspectorPanel } from './PlayerInspector';
 import { InspectorSheet } from './InspectorSheet';
 import { DragGhost } from './DragGhost';
 import { FormationPreview } from './FormationPreview';
-import { layoutForSport, positionAbbr } from './lineupLayouts';
+import { layoutForSport } from './lineupLayouts';
 import { formationsForSport, formationOrDefault, type FormationDef } from './lineupFormations';
 import {
   suggestedAssignments, hydrateAssignments, remapFormation, formationChangeSummary,
@@ -36,12 +32,14 @@ import {
 import { fitMatrix, explainSuggestion, type SlotExplanation } from './lineupFitLogic';
 import { lineupApi } from '../../../api/lineupApi';
 import {
-  classifyConflict, contextRequestParams, contextToSaveTarget, sameContext, canEditLineup,
+  classifyConflict, contextRequestParams, contextToSaveTarget, sameContext,
   publishedRosterDrift,
   type ConflictInfo, type LineupContext, type PresetApplyResult,
 } from './lineupWorkflowLogic';
 import { groupMatchesForPicker } from './matchContextLogic';
 import { MatchContextPanel } from './MatchContextPanel';
+import { LineupActionBar } from './LineupActionBar';
+import { LineupBenchPanel } from './LineupBenchPanel';
 import { LineupAuditPanel } from './LineupAuditPanel';
 import { PresetManager } from './PresetManager';
 import { SaveConflictModal, type ConflictIntent } from './SaveConflictModal';
@@ -621,7 +619,6 @@ export function LineupBoard({
     ? formation.slots.find(s => current.assignments[s.key] === hoverId) ?? null
     : null;
   const selectedSlotOccupied = selection?.kind === 'slot' && current.assignments[selection.key] != null;
-  const benchAreaHover = drag?.hoverTarget?.kind === 'benchArea';
 
   // Phase 4: while a player is selected or dragged, other slots wear their fit
   // for THAT player (icon + text, never color alone). Pure read — tap/drag
@@ -663,87 +660,24 @@ export function LineupBoard({
       }
     : null;
 
-  const benchSection = benchPlayers.length > 0 && (
-    <div
-      data-drop-bench-area
-      className={clsx(
-        'mt-5 rounded-xl transition-shadow',
-        editing && 'lg:mt-0 lg:w-72 lg:flex-shrink-0 lg:sticky lg:top-14',
-        benchAreaHover && 'ring-2 ring-emerald-400',
-      )}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <h4 className="text-sm font-bold text-gray-900 dark:text-white">
-          {t('teams.lineupBench', 'Bench')} <span className="text-gray-400 font-medium">({benchPlayers.length})</span>
-        </h4>
-        {editing && (
-          <button
-            type="button"
-            onClick={() => setPanelCollapsed(c => !c)}
-            aria-expanded={!panelCollapsed}
-            aria-label={panelCollapsed ? t('teams.lineupExpandBench', 'Expand bench panel') : t('teams.lineupCollapseBench', 'Collapse bench panel')}
-            className="hidden lg:inline-flex p-1.5 rounded-full text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
-          >
-            {panelCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-          </button>
-        )}
-      </div>
-      <div
-        className={clsx(
-          'flex sm:grid sm:grid-cols-2 gap-2 overflow-x-auto sm:overflow-visible snap-x snap-mandatory sm:snap-none scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0',
-          editing ? 'lg:grid-cols-1' : 'lg:grid-cols-3',
-          editing && panelCollapsed && 'lg:hidden',
-        )}
-      >
-        {benchPlayers.map(lp => {
-          const p = playerById.get(lp.id);
-          if (!p) return null;
-          const isSelected = selection?.kind === 'bench' && selection.playerId === lp.id;
-          const isDropTarget = drag?.hoverTarget?.kind === 'bench' && drag.hoverTarget.playerId === lp.id;
-          const isDragSource = drag?.source.kind === 'bench' && drag.source.playerId === lp.id;
-          return (
-            <div key={lp.id} data-drop-bench={lp.id} className="relative min-w-[72%] sm:min-w-0 snap-start">
-              <button
-                type="button"
-                onClick={() => tap({ kind: 'bench', playerId: lp.id }, lp.id)}
-                onPointerDown={editing ? e => armDrag(e, { kind: 'bench', playerId: lp.id }, lp.id) : undefined}
-                onMouseEnter={() => setHoverId(lp.id)}
-                onMouseLeave={() => setHoverId(null)}
-                aria-pressed={isSelected}
-                className={clsx(
-                  'w-full flex items-center gap-2.5 p-2.5 rounded-xl transition-colors cursor-pointer text-start',
-                  isDragSource && 'opacity-40',
-                  isDropTarget
-                    ? 'bg-emerald-500/15 ring-2 ring-emerald-400'
-                    : isSelected
-                      ? 'bg-indigo-500/15 ring-2 ring-indigo-400'
-                      : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700',
-                )}
-              >
-                <PlayerAvatar name={p.fullName} imageUrl={p.profileImageUrl} sportId={p.sportId} size={34} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate flex items-center gap-1.5">
-                    {p.jerseyNumber != null && <span className="text-indigo-500 font-black">#{p.jerseyNumber}</span>}
-                    <span className="truncate">{p.fullName}</span>
-                    {injuredIds.has(p.id) && <AlertTriangle size={12} className="text-red-400 flex-shrink-0" />}
-                  </p>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-                    {positionAbbr(p.positionId, t)}
-                    {p.status && p.status !== 'Active' && <PlayerStatusBadge status={p.status} />}
-                  </p>
-                </div>
-                <RatingChip rating={lp.rating} loadFailed={failedIds.has(lp.id)} />
-              </button>
-              {!isMobile && !editing && hoverId === lp.id && (
-                <div className="absolute bottom-full mb-2 start-0 z-30 w-64 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-xl p-3 pointer-events-none">
-                  {renderPopoverBody(lp.id, false)}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+  const benchSection = (
+    <LineupBenchPanel
+      benchPlayers={benchPlayers}
+      playerById={playerById}
+      editing={editing}
+      panelCollapsed={panelCollapsed}
+      onToggleCollapsed={() => setPanelCollapsed(c => !c)}
+      selection={selection}
+      drag={drag}
+      injuredIds={injuredIds}
+      failedIds={failedIds}
+      isMobile={isMobile}
+      hoverId={hoverId}
+      onHoverChange={setHoverId}
+      onTap={tap}
+      onArmDrag={armDrag}
+      renderPopover={id => renderPopoverBody(id, false)}
+    />
   );
 
   return (
@@ -751,187 +685,34 @@ export function LineupBoard({
       {/* A11y: every commit (tap, drag, undo/redo, formation) is announced. */}
       <div aria-live="polite" role="status" className="sr-only">{announcement}</div>
 
-      {/* Context + action bar (sticky while editing — the workspace shell) */}
-      <div
-        className={clsx(
-          'flex flex-wrap items-center justify-between gap-2 mb-3',
-          editing && 'sticky top-0 z-20 py-2 -mx-2 px-2 rounded-xl bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm',
-        )}
-      >
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <div className="relative">
-            <select
-              value={contextValue}
-              onChange={e => switchContext(parseContextValue(e.target.value))}
-              className="appearance-none ps-3 pe-8 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-semibold text-gray-900 dark:text-white cursor-pointer"
-              aria-label={t('teams.lineupContext', 'Lineup for')}
-            >
-              <option value="">{t('teams.lineupDefaultXi', 'Default XI')}</option>
-              {namedNames.length > 0 && (
-                <optgroup label={t('teams.lineupNamedGroup', 'Named lineups')}>
-                  {namedNames.map(n => (
-                    <option key={n} value={`n:${n}`}>{n}</option>
-                  ))}
-                </optgroup>
-              )}
-              {pickerGroups.upcoming.length > 0 && (
-                <optgroup label={t('teams.lineupUpcomingGroup', 'Upcoming fixtures')}>
-                  {pickerGroups.upcoming.map(m => (
-                    <option key={m.id} value={`m:${m.id}`}>{matchLabel(m.id)}</option>
-                  ))}
-                </optgroup>
-              )}
-              {pickerGroups.recent.length > 0 && (
-                <optgroup label={t('teams.lineupRecentGroup', 'Recent results')}>
-                  {pickerGroups.recent.map(m => (
-                    <option key={m.id} value={`m:${m.id}`}>{matchLabel(m.id)}</option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-            <ChevronDown size={13} className="absolute end-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
-          </div>
-          <span className="px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
-            {formation.key}
-          </span>
-          {saved ? (
-            <>
-              {saved.status === 'Published' ? (
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
-                  <BadgeCheck size={12} aria-hidden />
-                  {t('teams.lineupStatusPublished', 'Published')}
-                </span>
-              ) : (
-                <span className="px-2 py-0.5 rounded-full bg-gray-500/10 text-gray-500 dark:text-gray-400 text-[11px] font-bold">
-                  {t('teams.lineupStatusDraft', 'Draft')}
-                </span>
-              )}
-              <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                {saved.updatedByName
-                  ? t('teams.lineupSavedMetaBy', 'Saved · {{date}} · {{name}}', { date: formatDate(saved.updatedAt, { month: 'short', day: 'numeric' }), name: saved.updatedByName })
-                  : t('teams.lineupSavedMeta', 'Saved · {{date}}', { date: formatDate(saved.updatedAt, { month: 'short', day: 'numeric' }) })}
-              </span>
-            </>
-          ) : (
-            <span className="text-[11px] text-gray-500 dark:text-gray-400">
-              {t('teams.lineupSuggestedMeta', 'Suggested — auto-arranged by rating, not saved')}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          {!editing && (
-            <button
-              type="button"
-              onClick={() => setOverlay(o => !o)}
-              aria-pressed={overlay}
-              className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors cursor-pointer',
-                overlay
-                  ? 'bg-rose-500/10 border-rose-300 dark:border-rose-800 text-rose-600 dark:text-rose-400'
-                  : 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200',
-              )}
-            >
-              <HeartPulse size={13} /> {t('teams.lineupSquadHealth', 'Squad health')}
-            </button>
-          )}
-          {canManage && !editing && (
-            <>
-              {saved && canPublish && (
-                saved.status === 'Published' ? (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmPublish(false)}
-                    disabled={statusMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-emerald-300 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    <Undo2 size={13} /> {t('teams.lineupUnpublish', 'Unpublish')}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setConfirmPublish(true)}
-                    disabled={statusMutation.isPending}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    <Send size={13} /> {t('teams.lineupPublish', 'Publish')}
-                  </button>
-                )
-              )}
-              {saved && canEditLineup(saved.status) && (
-                <button
-                  type="button"
-                  onClick={() => setConfirmReset(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-                >
-                  <Trash2 size={13} /> {t('teams.lineupResetSaved', 'Remove saved')}
-                </button>
-              )}
-              {canEditLineup(saved?.status) ? (
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors cursor-pointer"
-                >
-                  <Pencil size={13} /> {t('teams.lineupEdit', 'Edit lineup')}
-                </button>
-              ) : (
-                <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 text-xs font-semibold">
-                  <Lock size={13} aria-hidden />
-                  {t('teams.lineupLockedHint', 'Published — unpublish to edit')}
-                </span>
-              )}
-            </>
-          )}
-          {editing && (
-            <>
-              <button
-                type="button"
-                onClick={doUndo}
-                disabled={!canUndo(history)}
-                title={`${t('teams.lineupUndo', 'Undo')} (Ctrl+Z)`}
-                aria-label={t('teams.lineupUndo', 'Undo')}
-                className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-              >
-                <Undo2 size={13} />
-              </button>
-              <button
-                type="button"
-                onClick={doRedo}
-                disabled={!canRedo(history)}
-                title={`${t('teams.lineupRedo', 'Redo')} (Ctrl+Shift+Z)`}
-                aria-label={t('teams.lineupRedo', 'Redo')}
-                className="p-2 rounded-full border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
-              >
-                <Redo2 size={13} />
-              </button>
-              <button
-                type="button"
-                onClick={resetToSuggested}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-              >
-                <RotateCcw size={13} /> {t('teams.lineupResetSuggested', 'Reset to suggested XI')}
-              </button>
-              <button
-                type="button"
-                onClick={() => guardDirty(stopEdit)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors cursor-pointer"
-              >
-                <X size={13} /> {t('common.cancel', 'Cancel')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setSaveOpen(true)}
-                disabled={saveMutation.isPending}
-                className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold transition-colors cursor-pointer"
-              >
-                <Save size={13} /> {t('common.save', 'Save')}
-                {dirty && <span className="absolute -top-0.5 -end-0.5 w-2.5 h-2.5 rounded-full bg-amber-400 border-2 border-white dark:border-gray-900" aria-label={t('teams.lineupUnsaved', 'Unsaved changes')} />}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
+      {/* Context + action bar */}
+      <LineupActionBar
+        contextValue={contextValue}
+        onSwitchContext={v => switchContext(parseContextValue(v))}
+        namedNames={namedNames}
+        pickerGroups={pickerGroups}
+        matchLabel={matchLabel}
+        formationKey={formation.key}
+        saved={saved}
+        editing={editing}
+        dirty={dirty}
+        canManage={canManage}
+        canPublish={canPublish}
+        overlay={overlay}
+        onToggleOverlay={() => setOverlay(o => !o)}
+        statusPending={statusMutation.isPending}
+        savePending={saveMutation.isPending}
+        undoEnabled={canUndo(history)}
+        redoEnabled={canRedo(history)}
+        onRequestPublish={setConfirmPublish}
+        onRequestResetSaved={() => setConfirmReset(true)}
+        onStartEdit={startEdit}
+        onUndo={doUndo}
+        onRedo={doRedo}
+        onResetToSuggested={resetToSuggested}
+        onCancelEdit={() => guardDirty(stopEdit)}
+        onOpenSave={() => setSaveOpen(true)}
+      />
 
       {/* Phase 7a: real match context when the board is keyed to a match */}
       {contextMatch && <MatchContextPanel match={contextMatch} allMatches={matches} />}
