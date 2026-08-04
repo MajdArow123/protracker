@@ -56,15 +56,17 @@ export interface AssessmentPeriod {
 
 export interface Season {
   id: number;
-  // One participating team (the queried team when known) — seasons are account-owned
-  // and can span several teams (SeasonTeam rows on the backend).
-  teamId: number;
-  teamName: string;
+  // TEMPORARY wire-compat shim (teamId/teamName/isActive) — removed in Phase 10 S5 when
+  // the Seasons UI moves to account level. Seasons are account-owned and can span several
+  // teams: teamId/teamName come from the season's SINGLE participating team and are null
+  // when it has more than one; isActive derives from status === 'Active' (overlapping
+  // active seasons are allowed).
+  teamId: number | null;
+  teamName: string | null;
   name: string;
   startDate: string;
   endDate: string;
   status: 'Draft' | 'Active' | 'Completed' | 'Archived';
-  // Derived on the backend: status === 'Active'. Overlapping active seasons are allowed.
   isActive: boolean;
   goals?: string | null;
   linkedPeriodCount: number;

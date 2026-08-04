@@ -3,15 +3,16 @@ namespace ProTracker.Dtos;
 public class SeasonDto
 {
     public int Id { get; set; }
-    // One participating team (the queried team when known) — wire compatibility with the
-    // single-team era. Seasons are account-owned and can span several teams.
-    public int TeamId { get; set; }
-    public string TeamName { get; set; } = "";
+    // TEMPORARY wire-compat shim (TeamId/TeamName/IsActive) for the single-team-era UI —
+    // remove in Phase 10 S5 when the Seasons UI moves to account level. TeamId/TeamName
+    // derive from the season's SINGLE SeasonTeam row and are null when it has more than
+    // one (never "the first row"); IsActive derives from Status == Active.
+    public int? TeamId { get; set; }
+    public string? TeamName { get; set; }
     public string Name { get; set; } = "";
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public string Status { get; set; } = "";
-    // Derived: Status == Active. Kept for the existing UI.
     public bool IsActive { get; set; }
     public string? Goals { get; set; }
     public int LinkedPeriodCount { get; set; }

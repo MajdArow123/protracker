@@ -40,7 +40,7 @@ public class SeasonService : ISeasonService
             .OrderByDescending(s => s.Status == SeasonStatus.Active).ThenByDescending(s => s.StartDate)
             .ToListAsync();
         var counts = await LinkedPeriodCountsAsync(seasons.Select(s => s.Id).ToList());
-        return seasons.Select(s => ToDto(s, counts.GetValueOrDefault(s.Id), preferredTeamId: teamId)).ToList();
+        return seasons.Select(s => ToDto(s, counts.GetValueOrDefault(s.Id))).ToList();
     }
 
     public async Task<SeasonDto?> GetCurrentForTeamAsync(ClaimsPrincipal user, int teamId)
@@ -57,7 +57,7 @@ public class SeasonService : ISeasonService
             .FirstOrDefaultAsync();
         if (season == null) return null;
         var count = await _context.AssessmentPeriods.CountAsync(p => p.SeasonId == season.Id);
-        return ToDto(season, count, preferredTeamId: teamId);
+        return ToDto(season, count);
     }
 
     public async Task<List<SeasonDto>> GetActiveForOwnerAsync(ClaimsPrincipal user)
@@ -96,7 +96,7 @@ public class SeasonService : ISeasonService
 
         await _context.SaveChangesAsync();
         await _context.Entry(season).Collection(s => s.SeasonTeams).Query().Include(st => st.Team).LoadAsync();
-        return ToDto(season, 0, preferredTeamId: teamId);
+        return ToDto(season, 0);
     }
 
     public async Task<SeasonDto> UpdateAsync(ClaimsPrincipal user, int seasonId, CreateSeasonDto dto)
@@ -315,18 +315,17 @@ public class SeasonService : ISeasonService
             throw new ValidationApiException("End date must be on or after the start date.");
     }
 
-    // TeamId/TeamName describe ONE participating team (the queried team when known,
-    // otherwise the first participation row) — kept for wire compatibility with the
-    // single-team era; the participation list is authoritative.
-    private static SeasonDto ToDto(Season s, int linkedCount, int? preferredTeamId = null)
+    // TeamId/TeamName are the temporary wire-compat shim (see SeasonDto): derived from
+    // the season's single SeasonTeam row, explicitly null when the season spans more
+    // than one team — never a silently-picked first row. Removed in Phase 10 S5.
+    private static SeasonDto ToDto(Season s, int linkedCount)
     {
-        var st = s.SeasonTeams.FirstOrDefault(x => x.TeamId == preferredTeamId)
-            ?? s.SeasonTeams.OrderBy(x => x.Id).FirstOrDefault();
+        var st = s.SeasonTeams.Count == 1 ? s.SeasonTeams[0] : null;
         return new SeasonDto
         {
             Id = s.Id,
-            TeamId = st?.TeamId ?? 0,
-            TeamName = st?.Team?.Name ?? "",
+            TeamId = st?.TeamId,
+            TeamName = st?.Team?.Name,
             Name = s.Name,
             StartDate = s.StartDate,
             EndDate = s.EndDate,

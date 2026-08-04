@@ -239,7 +239,7 @@ export function CoachDashboardPage() {
             {activeSeasons.map(s => (
               <button
                 key={s.id}
-                onClick={() => navigate(`/teams/${s.teamId}`)}
+                onClick={() => { if (s.teamId != null) navigate(`/teams/${s.teamId}`); }}
                 className="text-left rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-900/20 dark:to-gray-900 p-4 hover:shadow-md transition-all cursor-pointer"
               >
                 <div className="flex items-center justify-between">

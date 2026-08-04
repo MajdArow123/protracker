@@ -871,9 +871,43 @@ History (one line each; full detail in git history + blueprint):
   BEFORE pushing the code, and drop/recreate protracker_dev + protracker_e2e (or
   give them the same INSERT).
 
+## Phase 10 — Seasons (in progress)
+
+- **S1a (landed `521154a` + shim follow-up): account-owned seasons.** `Season` reshaped:
+  `OwnerId` (backfilled from the team's coach, then required; governs create/edit/
+  lifecycle ONLY), `SeasonStatus` (Draft/Active/Completed/Archived — `SeasonStatus`
+  name chosen to avoid `LeagueStatus`/`LineupStatus` collisions), `TeamId`/`IsActive`
+  dropped. NEW `SeasonTeam` (participation, unique per (SeasonId, TeamId), per-season
+  `BenchmarkProfileId` — `Team.BenchmarkProfileId` stays the team default) and NEW
+  `SeasonRoster` (historical membership; deliberately NO unique (PlayerId, SeasonId) —
+  leave-and-rejoin makes two rows; **deliberately NOT backfilled** from `Player.TeamId`,
+  empty is the honest state until the S6 UI). `ApplicationUser.CurrentSeasonId` is the
+  explicit WRITE-RESOLUTION default (`POST /api/seasons/{id}/set-current`, owner-only)
+  — NOT the S5 view switcher; changing the view must never change where writes go.
+  **Overlapping Active seasons are allowed by design** — activating never deactivates.
+  READ access follows team participation (SeasonTeam → CoachTeamScope: assistants and
+  team athletes see seasons); `seasons/active` is owner-scoped. Migration
+  `SeasonAccountScoping` is hand-ordered (scaffold wrongly renamed TeamId→Status);
+  backfill SQL both-provider valid, pinned in `SeasonAccountScopingMigrationTests`.
+  Summary score query moved to the child side (plain join) — the old parent-side
+  SelectMany needed SQL APPLY, untranslatable on the SQLite test rig.
+- **SeasonDto wire-compat shim (REMOVE in S5)**: `TeamId`/`TeamName`/`IsActive` on
+  `SeasonDto` (and the TS `Season` type) exist only for the single-team-era UI.
+  TeamId/TeamName derive from the season's SINGLE SeasonTeam row and are **null when
+  it spans more than one team** (never a silently-picked first row); IsActive =
+  `Status == Active`. Remove them in Phase 10 S5 when the Seasons UI moves to account
+  level. The Seasons tab never reads them; the coach-dashboard strip null-guards its
+  navigate.
+- **S1a rollback window**: the migration's `Down()` cannot restore a post-migration
+  season that has NO participation row (old `TeamId` was NOT NULL), so it deletes it
+  (linked periods unlink via SetNull). Rollback is therefore safe only until the
+  first season is created on production under the new schema.
+
 ## Current status
 
-- **Latest: Phase 9 structural cleanup COMPLETE** — see its section above.
+- **Latest: Phase 10 S1a landed** (account-owned seasons — see the Phase 10 section
+  above). S1b NOT started.
+- **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with
   rationale + additive-rebaseline technique recorded (§4). CI green on every push.
