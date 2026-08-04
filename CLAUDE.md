@@ -923,6 +923,21 @@ History (one line each; full detail in git history + blueprint):
   SeasonId, remove the type from `SkippedTypes` alongside adding the index. Pinned
   in `SeasonScopingColumnsMigrationTests`; `Down()` proven a genuine clean rollback
   on both providers.
+- **S2 (landed): `ISeasonResolver`/`SeasonResolver`** (`Services/SeasonResolver.cs`,
+  DI-registered but consumed by nothing until S3). Pure lookup, two methods (the
+  spec's "overloads" both take `(int, DateTime)`, so they're named):
+  `ResolveForTeamAsync` (SeasonTeam participation + date ∈ [StartDate, EndDate],
+  inclusive both ends) and `ResolveForPlayerAsync` (**SeasonRoster ONLY** — the row
+  with `JoinedAt <= date <= LeftAt`/null; **NEVER routes through `Player.TeamId`**,
+  which is "where are they now" — the after-leaving regression test arms exactly
+  that trap). Null over guessing everywhere: no match, roster gap, after-leaving,
+  Archived (Draft/Active/Completed all resolvable — the S3 write guard decides
+  permission, not the resolver), and **ambiguity** (overlap is legal): >1 candidate
+  → null + LogWarning naming candidate ids — never silently pick one (S7 backfill
+  is the human resolution path). No writes, no side effects, no CurrentSeasonId
+  fallback (that's a UI write-default consumed in S3). 13 tests in
+  `SeasonResolverTests` (cases a–l + Completed/Draft-resolvable), all with
+  deliberately seeded 2030+ data.
 - **Season-scoping EXCLUSION rulings (Phase 10 — settled, do not re-ask)**:
   **League** is cross-account by construction (OrganizerId ≠ participating coaches'
   accounts) — ruled out of Phase 10 entirely. **PersonalGoal / JournalEntry /
