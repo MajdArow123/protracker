@@ -82,6 +82,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AthleteNote> AthleteNotes => Set<AthleteNote>();
     public DbSet<AssessmentPeriod> AssessmentPeriods => Set<AssessmentPeriod>();
     public DbSet<Season> Seasons => Set<Season>();
+    public DbSet<SeasonTeam> SeasonTeams => Set<SeasonTeam>();
+    public DbSet<SeasonRoster> SeasonRosters => Set<SeasonRoster>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
     public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
     public DbSet<TeamJoinCode> TeamJoinCodes => Set<TeamJoinCode>();
@@ -392,11 +394,67 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(a => a.SeasonId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // Seasons are account-owned; a coach must delete/transfer teams before deleting
+        // the account (ProfileService), after which cascading their seasons is safe.
         builder.Entity<Season>()
-            .HasOne(s => s.Team)
+            .HasOne(s => s.Owner)
             .WithMany()
-            .HasForeignKey(s => s.TeamId)
+            .HasForeignKey(s => s.OwnerId)
             .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<Season>()
+            .HasIndex(s => s.OwnerId);
+
+        // Deleting the season an account points at just clears the pointer.
+        builder.Entity<ApplicationUser>()
+            .HasOne<Season>()
+            .WithMany()
+            .HasForeignKey(u => u.CurrentSeasonId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.Entity<SeasonTeam>()
+            .HasOne(st => st.Season)
+            .WithMany(s => s.SeasonTeams)
+            .HasForeignKey(st => st.SeasonId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SeasonTeam>()
+            .HasOne(st => st.Team)
+            .WithMany()
+            .HasForeignKey(st => st.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        // Deleting a benchmark profile just un-calibrates the participation row.
+        builder.Entity<SeasonTeam>()
+            .HasOne(st => st.BenchmarkProfile)
+            .WithMany()
+            .HasForeignKey(st => st.BenchmarkProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<SeasonTeam>()
+            .HasIndex(st => new { st.SeasonId, st.TeamId })
+            .IsUnique();
+
+        builder.Entity<SeasonRoster>()
+            .HasOne(r => r.Player)
+            .WithMany()
+            .HasForeignKey(r => r.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SeasonRoster>()
+            .HasOne(r => r.Season)
+            .WithMany()
+            .HasForeignKey(r => r.SeasonId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SeasonRoster>()
+            .HasOne(r => r.Team)
+            .WithMany()
+            .HasForeignKey(r => r.TeamId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SeasonRoster>()
+            .HasOne(r => r.Position)
+            .WithMany()
+            .HasForeignKey(r => r.PositionId)
+            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<SeasonRoster>()
+            .HasIndex(r => new { r.PlayerId, r.SeasonId });
+        builder.Entity<SeasonRoster>()
+            .HasIndex(r => new { r.SeasonId, r.TeamId });
 
         // --- Parent portal ---
         builder.Entity<ParentLink>()

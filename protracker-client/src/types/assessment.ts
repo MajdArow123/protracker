@@ -56,11 +56,15 @@ export interface AssessmentPeriod {
 
 export interface Season {
   id: number;
+  // One participating team (the queried team when known) — seasons are account-owned
+  // and can span several teams (SeasonTeam rows on the backend).
   teamId: number;
   teamName: string;
   name: string;
   startDate: string;
   endDate: string;
+  status: 'Draft' | 'Active' | 'Completed' | 'Archived';
+  // Derived on the backend: status === 'Active'. Overlapping active seasons are allowed.
   isActive: boolean;
   goals?: string | null;
   linkedPeriodCount: number;

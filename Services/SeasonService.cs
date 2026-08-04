@@ -11,12 +11,13 @@ public interface ISeasonService
 {
     Task<List<SeasonDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId);
     Task<SeasonDto?> GetCurrentForTeamAsync(ClaimsPrincipal user, int teamId);
-    Task<List<SeasonDto>> GetActiveForCoachAsync(ClaimsPrincipal user);
+    Task<List<SeasonDto>> GetActiveForOwnerAsync(ClaimsPrincipal user);
     Task<SeasonDto> CreateAsync(ClaimsPrincipal user, int teamId, CreateSeasonDto dto);
     Task<SeasonDto> UpdateAsync(ClaimsPrincipal user, int seasonId, CreateSeasonDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int seasonId);
     Task<SeasonSummaryDto> GetSummaryAsync(ClaimsPrincipal user, int seasonId);
     Task LinkPeriodAsync(ClaimsPrincipal user, int seasonId, int periodId, bool link);
+    Task SetCurrentAsync(ClaimsPrincipal user, int seasonId);
 }
 
 public class SeasonService : ISeasonService
@@ -34,40 +35,40 @@ public class SeasonService : ISeasonService
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
         var seasons = await _context.Seasons
-            .Include(s => s.Team)
-            .Where(s => s.TeamId == teamId)
-            .OrderByDescending(s => s.IsActive).ThenByDescending(s => s.StartDate)
+            .Include(s => s.SeasonTeams).ThenInclude(st => st.Team)
+            .Where(s => s.SeasonTeams.Any(st => st.TeamId == teamId))
+            .OrderByDescending(s => s.Status == SeasonStatus.Active).ThenByDescending(s => s.StartDate)
             .ToListAsync();
-        var counts = await _context.AssessmentPeriods
-            .Where(p => p.SeasonId != null && seasons.Select(s => s.Id).Contains(p.SeasonId.Value))
-            .GroupBy(p => p.SeasonId!.Value)
-            .Select(g => new { SeasonId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SeasonId, x => x.Count);
-        return seasons.Select(s => ToDto(s, counts.GetValueOrDefault(s.Id))).ToList();
+        var counts = await LinkedPeriodCountsAsync(seasons.Select(s => s.Id).ToList());
+        return seasons.Select(s => ToDto(s, counts.GetValueOrDefault(s.Id), preferredTeamId: teamId)).ToList();
     }
 
     public async Task<SeasonDto?> GetCurrentForTeamAsync(ClaimsPrincipal user, int teamId)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
-        var season = await CurrentSeasonQuery(teamId).Include(s => s.Team).FirstOrDefaultAsync();
+        var today = DateTime.UtcNow;
+        // Active status wins; otherwise the season whose window contains today; otherwise none.
+        var season = await _context.Seasons
+            .Include(s => s.SeasonTeams).ThenInclude(st => st.Team)
+            .Where(s => s.SeasonTeams.Any(st => st.TeamId == teamId)
+                && (s.Status == SeasonStatus.Active || (s.StartDate <= today && s.EndDate >= today)))
+            .OrderByDescending(s => s.Status == SeasonStatus.Active)
+            .ThenByDescending(s => s.StartDate)
+            .FirstOrDefaultAsync();
         if (season == null) return null;
         var count = await _context.AssessmentPeriods.CountAsync(p => p.SeasonId == season.Id);
-        return ToDto(season, count);
+        return ToDto(season, count, preferredTeamId: teamId);
     }
 
-    public async Task<List<SeasonDto>> GetActiveForCoachAsync(ClaimsPrincipal user)
+    public async Task<List<SeasonDto>> GetActiveForOwnerAsync(ClaimsPrincipal user)
     {
-        var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
+        var userId = _access.RequireUserId(user);
         var seasons = await _context.Seasons
-            .Include(s => s.Team)
-            .Where(s => s.IsActive && teamIds.Contains(s.TeamId))
-            .OrderBy(s => s.Team.Name)
+            .Include(s => s.SeasonTeams).ThenInclude(st => st.Team)
+            .Where(s => s.OwnerId == userId && s.Status == SeasonStatus.Active)
+            .OrderByDescending(s => s.StartDate)
             .ToListAsync();
-        var counts = await _context.AssessmentPeriods
-            .Where(p => p.SeasonId != null && seasons.Select(s => s.Id).Contains(p.SeasonId.Value))
-            .GroupBy(p => p.SeasonId!.Value)
-            .Select(g => new { SeasonId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.SeasonId, x => x.Count);
+        var counts = await LinkedPeriodCountsAsync(seasons.Select(s => s.Id).ToList());
         return seasons.Select(s => ToDto(s, counts.GetValueOrDefault(s.Id))).ToList();
     }
 
@@ -76,29 +77,32 @@ public class SeasonService : ISeasonService
         await _access.EnsureCanAccessTeamAsync(user, teamId);
         Validate(dto);
 
+        var team = await _context.Teams.FirstOrDefaultAsync(t => t.Id == teamId)
+            ?? throw new NotFoundApiException($"Team {teamId} was not found.");
+
         var season = new Season
         {
-            TeamId = teamId,
+            OwnerId = _access.RequireUserId(user),
             Name = dto.Name.Trim(),
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
-            IsActive = dto.IsActive,
+            // Overlapping Active seasons are allowed — activating one never deactivates others.
+            Status = dto.IsActive ? SeasonStatus.Active : SeasonStatus.Draft,
             Goals = string.IsNullOrWhiteSpace(dto.Goals) ? null : dto.Goals.Trim(),
         };
+        // The team's current default profile becomes this season's starting profile.
+        season.SeasonTeams.Add(new SeasonTeam { TeamId = teamId, BenchmarkProfileId = team.BenchmarkProfileId });
         _context.Seasons.Add(season);
 
-        if (dto.IsActive)
-            await DeactivateOthersAsync(teamId, excludeId: null);
-
         await _context.SaveChangesAsync();
-        await _context.Entry(season).Reference(s => s.Team).LoadAsync();
-        return ToDto(season, 0);
+        await _context.Entry(season).Collection(s => s.SeasonTeams).Query().Include(st => st.Team).LoadAsync();
+        return ToDto(season, 0, preferredTeamId: teamId);
     }
 
     public async Task<SeasonDto> UpdateAsync(ClaimsPrincipal user, int seasonId, CreateSeasonDto dto)
     {
         var season = await LoadSeasonAsync(seasonId);
-        await _access.EnsureCanAccessTeamAsync(user, season.TeamId);
+        EnsureOwner(user, season);
         Validate(dto);
 
         season.Name = dto.Name.Trim();
@@ -106,9 +110,12 @@ public class SeasonService : ISeasonService
         season.EndDate = dto.EndDate;
         season.Goals = string.IsNullOrWhiteSpace(dto.Goals) ? null : dto.Goals.Trim();
 
-        if (dto.IsActive && !season.IsActive)
-            await DeactivateOthersAsync(season.TeamId, excludeId: season.Id);
-        season.IsActive = dto.IsActive;
+        // "Set active" only promotes THIS season; unchecking an Active season demotes it
+        // to Draft, and other statuses (Completed/Archived) are left alone.
+        if (dto.IsActive)
+            season.Status = SeasonStatus.Active;
+        else if (season.Status == SeasonStatus.Active)
+            season.Status = SeasonStatus.Draft;
 
         await _context.SaveChangesAsync();
         var count = await _context.AssessmentPeriods.CountAsync(p => p.SeasonId == season.Id);
@@ -118,20 +125,31 @@ public class SeasonService : ISeasonService
     public async Task DeleteAsync(ClaimsPrincipal user, int seasonId)
     {
         var season = await LoadSeasonAsync(seasonId);
-        await _access.EnsureCanAccessTeamAsync(user, season.TeamId);
+        EnsureOwner(user, season);
         _context.Seasons.Remove(season);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task SetCurrentAsync(ClaimsPrincipal user, int seasonId)
+    {
+        var season = await LoadSeasonAsync(seasonId);
+        EnsureOwner(user, season);
+        var userId = _access.RequireUserId(user);
+        var account = await _context.Users.FirstAsync(u => u.Id == userId);
+        account.CurrentSeasonId = season.Id;
         await _context.SaveChangesAsync();
     }
 
     public async Task LinkPeriodAsync(ClaimsPrincipal user, int seasonId, int periodId, bool link)
     {
         var season = await LoadSeasonAsync(seasonId);
-        await _access.EnsureCanAccessTeamAsync(user, season.TeamId);
+        EnsureOwner(user, season);
 
         var period = await _context.AssessmentPeriods.FirstOrDefaultAsync(p => p.Id == periodId)
             ?? throw new NotFoundApiException($"Assessment period {periodId} was not found.");
-        if (period.TeamId != season.TeamId)
-            throw new ValidationApiException("That assessment period belongs to a different team.");
+        // Player-scoped periods have TeamId null and never belong to a team season.
+        if (period.TeamId == null || !season.SeasonTeams.Any(st => st.TeamId == period.TeamId.Value))
+            throw new ValidationApiException("That assessment period belongs to a team outside this season.");
 
         period.SeasonId = link ? seasonId : null;
         await _context.SaveChangesAsync();
@@ -140,16 +158,19 @@ public class SeasonService : ISeasonService
     public async Task<SeasonSummaryDto> GetSummaryAsync(ClaimsPrincipal user, int seasonId)
     {
         var season = await LoadSeasonAsync(seasonId);
-        await _access.EnsureCanAccessTeamAsync(user, season.TeamId);
+        await EnsureCanReadAsync(user, season);
+        var teamIds = season.SeasonTeams.Select(st => st.TeamId).ToList();
 
-        // Prefer explicitly linked periods; if none are linked, fall back to any of the team's
-        // periods that start within the season window so a summary still appears.
+        // Prefer explicitly linked periods; if none are linked, fall back to any of the
+        // participating teams' periods that start within the season window so a summary
+        // still appears.
         var linkedIds = await _context.AssessmentPeriods
             .Where(p => p.SeasonId == seasonId)
             .Select(p => p.Id)
             .ToListAsync();
 
-        var periodsQuery = _context.AssessmentPeriods.Where(p => p.TeamId == season.TeamId);
+        var periodsQuery = _context.AssessmentPeriods
+            .Where(p => p.TeamId != null && teamIds.Contains(p.TeamId.Value));
         periodsQuery = linkedIds.Count > 0
             ? periodsQuery.Where(p => p.SeasonId == seasonId)
             : periodsQuery.Where(p => p.StartDate >= season.StartDate && p.StartDate <= season.EndDate);
@@ -157,15 +178,17 @@ public class SeasonService : ISeasonService
         var periods = await periodsQuery.OrderBy(p => p.StartDate).ToListAsync();
         var periodIds = periods.Select(p => p.Id).ToList();
 
-        // Pull every score in those periods once, then aggregate in memory.
-        var scores = await _context.PlayerAssessments
-            .Where(a => periodIds.Contains(a.AssessmentPeriodId))
-            .SelectMany(a => a.StatScores.Select(s => new
+        // Pull every score in those periods once, then aggregate in memory. Queried from
+        // the score side (a plain join): the previous parent-side SelectMany needed SQL
+        // APPLY, which the SQLite test provider can't translate.
+        var scores = await _context.PlayerStatScores
+            .Where(s => periodIds.Contains(s.PlayerAssessment.AssessmentPeriodId))
+            .Select(s => new
             {
-                a.AssessmentPeriodId,
+                s.PlayerAssessment.AssessmentPeriodId,
                 Category = s.SportStatCategory.Name,
                 Score = (double)s.Score,
-            }))
+            })
             .ToListAsync();
 
         var summary = new SeasonSummaryDto
@@ -239,27 +262,50 @@ public class SeasonService : ISeasonService
 
     // --- helpers ---
 
-    private IQueryable<Season> CurrentSeasonQuery(int teamId)
+    private async Task<Dictionary<int, int>> LinkedPeriodCountsAsync(List<int> seasonIds)
     {
-        var today = DateTime.UtcNow;
-        // Active flag wins; otherwise the season whose window contains today; otherwise none.
-        return _context.Seasons
-            .Where(s => s.TeamId == teamId && (s.IsActive || (s.StartDate <= today && s.EndDate >= today)))
-            .OrderByDescending(s => s.IsActive)
-            .ThenByDescending(s => s.StartDate);
-    }
-
-    private async Task DeactivateOthersAsync(int teamId, int? excludeId)
-    {
-        var others = await _context.Seasons
-            .Where(s => s.TeamId == teamId && s.IsActive && (excludeId == null || s.Id != excludeId))
-            .ToListAsync();
-        foreach (var o in others) o.IsActive = false;
+        if (seasonIds.Count == 0) return new Dictionary<int, int>();
+        return await _context.AssessmentPeriods
+            .Where(p => p.SeasonId != null && seasonIds.Contains(p.SeasonId.Value))
+            .GroupBy(p => p.SeasonId!.Value)
+            .Select(g => new { SeasonId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.SeasonId, x => x.Count);
     }
 
     private async Task<Season> LoadSeasonAsync(int seasonId) =>
-        await _context.Seasons.Include(s => s.Team).FirstOrDefaultAsync(s => s.Id == seasonId)
+        await _context.Seasons
+            .Include(s => s.SeasonTeams).ThenInclude(st => st.Team)
+            .FirstOrDefaultAsync(s => s.Id == seasonId)
         ?? throw new NotFoundApiException($"Season {seasonId} was not found.");
+
+    // OwnerId governs create/edit/lifecycle only.
+    private void EnsureOwner(ClaimsPrincipal user, Season season)
+    {
+        if (user.IsInRole("Admin")) return;
+        if (season.OwnerId != _access.RequireUserId(user))
+            throw new ForbiddenApiException("Only the season's owner can change it.");
+    }
+
+    // Read access follows team participation (assistant coaches and athletes on a
+    // participating team can read), with the owner always able to read their own season.
+    private async Task EnsureCanReadAsync(ClaimsPrincipal user, Season season)
+    {
+        if (user.IsInRole("Admin")) return;
+        if (season.OwnerId == _access.RequireUserId(user)) return;
+        foreach (var teamId in season.SeasonTeams.Select(st => st.TeamId))
+        {
+            try
+            {
+                await _access.EnsureCanAccessTeamAsync(user, teamId);
+                return;
+            }
+            catch (ForbiddenApiException)
+            {
+                // Not this team — try the next participating team.
+            }
+        }
+        throw new ForbiddenApiException("You do not have access to this season.");
+    }
 
     private static void Validate(CreateSeasonDto dto)
     {
@@ -269,16 +315,25 @@ public class SeasonService : ISeasonService
             throw new ValidationApiException("End date must be on or after the start date.");
     }
 
-    private static SeasonDto ToDto(Season s, int linkedCount) => new()
+    // TeamId/TeamName describe ONE participating team (the queried team when known,
+    // otherwise the first participation row) — kept for wire compatibility with the
+    // single-team era; the participation list is authoritative.
+    private static SeasonDto ToDto(Season s, int linkedCount, int? preferredTeamId = null)
     {
-        Id = s.Id,
-        TeamId = s.TeamId,
-        TeamName = s.Team?.Name ?? "",
-        Name = s.Name,
-        StartDate = s.StartDate,
-        EndDate = s.EndDate,
-        IsActive = s.IsActive,
-        Goals = s.Goals,
-        LinkedPeriodCount = linkedCount,
-    };
+        var st = s.SeasonTeams.FirstOrDefault(x => x.TeamId == preferredTeamId)
+            ?? s.SeasonTeams.OrderBy(x => x.Id).FirstOrDefault();
+        return new SeasonDto
+        {
+            Id = s.Id,
+            TeamId = st?.TeamId ?? 0,
+            TeamName = st?.Team?.Name ?? "",
+            Name = s.Name,
+            StartDate = s.StartDate,
+            EndDate = s.EndDate,
+            Status = s.Status.ToString(),
+            IsActive = s.Status == SeasonStatus.Active,
+            Goals = s.Goals,
+            LinkedPeriodCount = linkedCount,
+        };
+    }
 }

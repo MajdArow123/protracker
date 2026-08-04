@@ -3,11 +3,15 @@ namespace ProTracker.Dtos;
 public class SeasonDto
 {
     public int Id { get; set; }
+    // One participating team (the queried team when known) — wire compatibility with the
+    // single-team era. Seasons are account-owned and can span several teams.
     public int TeamId { get; set; }
     public string TeamName { get; set; } = "";
     public string Name { get; set; } = "";
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
+    public string Status { get; set; } = "";
+    // Derived: Status == Active. Kept for the existing UI.
     public bool IsActive { get; set; }
     public string? Goals { get; set; }
     public int LinkedPeriodCount { get; set; }

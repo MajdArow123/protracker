@@ -22,4 +22,9 @@ public class ApplicationUser : IdentityUser
 
     // Set once the athlete finishes (or skips) the first-login onboarding flow.
     public bool HasCompletedOnboarding { get; set; }
+
+    // WRITE-RESOLUTION default only: the season new records attach to when none is
+    // specified. This is NOT the UI season switcher — that is a separate view filter,
+    // and changing the view must never change where new records are written.
+    public int? CurrentSeasonId { get; set; }
 }
