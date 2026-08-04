@@ -1,0 +1,4 @@
+# EF Core migrations are generated code — keep them out of the repo language
+# stats and collapsed by default in diffs. (Phase 9 §4: squash rejected; this
+# captures the only real benefit for free.)
+Data/Migrations/** linguist-generated=true

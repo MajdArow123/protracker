@@ -842,7 +842,34 @@ History (one line each; full detail in git history + blueprint):
   at the Lint step, its removal turned CI green. Gotcha: the react rule's
   allowConstantExport is on — `export const X = 1` from a component file does NOT
   warn (constant primitives are fine for fast refresh); an object/function export
-  does. Local pre-ship lint should match CI: `npx oxlint --deny-warnings src`.
+  does — a const-primitive probe would have falsely "proven" the gate while it let
+  real warnings through. Local pre-ship lint should match CI:
+  `npx oxlint --deny-warnings src`.
+- **§4 migration squash: DECIDED AGAINST (user-accepted recommendation, 2026-08-04).**
+  The 48-migration history (~190k lines) stays. Why: it's generated code with zero
+  runtime cost — a fresh DB applies the whole chain in seconds, backend CI time is
+  test execution not migrations, and EF tooling shows no slowdown at this length.
+  Squashing would have required a manual rebaseline against populated prod data AND
+  **deleted the four `*MigrationTests` anchors** (Lineup/TacticalLayer/
+  MatchScheduling/LineupWorkflow roll back to NAMED migrations on both providers —
+  the names cease to exist post-squash), contradicting the pinned "prove up/down on
+  both providers, pin permanently" convention. Repo-stats noise is handled for free:
+  `.gitattributes` marks `Data/Migrations/**` linguist-generated. **Re-evaluation
+  triggers** (revisit only if one occurs): database-provider change; an EF
+  major-version migration that struggles with the chain; measurable `dotnet ef`
+  tooling slowdown; the chain reaching several hundred migrations.
+  **If a trigger ever fires, use the ADDITIVE-REBASELINE technique** (the valuable
+  part — don't rediscover it): EF computes pending migrations as assembly-migrations
+  minus history rows and IGNORES unknown history rows, so after generating the
+  squashed migration, `INSERT` its single row into `__EFMigrationsHistory`
+  (ProductVersion copied from an existing row) and **never delete the old rows** —
+  old code sees all its ids applied (no-op), new code sees its id applied (no-op),
+  both directions of a deploy/revert stay symmetric no-ops, and the stale rows ARE
+  the rollback path. Prove schema identity first (two fresh DBs, old chain vs
+  squashed, `pg_dump --schema-only` diff must be zero, on Npgsql AND the SQLite test
+  provider), take a `pg_dump -Fc` backup with a PROVEN restore, rebaseline prod
+  BEFORE pushing the code, and drop/recreate protracker_dev + protracker_e2e (or
+  give them the same INSERT).
 
 ## Current status
 
