@@ -873,7 +873,11 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Phase 8 shipped** — see its section above. CI green on real pushes,
+- **Latest: Phase 9 structural cleanup COMPLETE** — see its section above.
+  AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
+  `--deny-warnings` proven red+green (§3), migration squash decided against with
+  rationale + additive-rebaseline technique recorded (§4). CI green on every push.
+- **Phase 8 shipped** — see its section above. CI green on real pushes,
   e2e 4/4 locally, bundle guard live, finding #10 closed.
 - **Phase 7b final polish shipped** (4 commits `638a631`/`46c2837`/
   `cca03a3`/`7b785e0`): global `MotionConfig reducedMotion="user"` + CSS
