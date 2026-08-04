@@ -17,6 +17,10 @@ public class ScheduledSession
 {
     public int Id { get; set; }
 
+    // Phase 10 season scoping (S1b): additive only — nothing reads or writes this yet.
+    // Populated by the S2 write-resolver; null on every pre-existing row.
+    public int? SeasonId { get; set; }
+
     // Exactly one of TeamId / PlayerId is set: team sessions are the coach flow,
     // player-scoped sessions belong to a solo athlete.
     public int? TeamId { get; set; }

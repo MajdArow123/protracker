@@ -21,6 +21,10 @@ public class Lineup
 {
     public int Id { get; set; }
 
+    // Phase 10 season scoping (S1b): additive only — nothing reads or writes this yet.
+    // Populated by the S2 write-resolver; null on every pre-existing row.
+    public int? SeasonId { get; set; }
+
     public int TeamId { get; set; }
     public Team Team { get; set; } = null!;
 

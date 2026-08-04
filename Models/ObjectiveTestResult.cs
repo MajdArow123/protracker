@@ -15,6 +15,16 @@ public class ObjectiveTestResult
 {
     public int Id { get; set; }
 
+    // Phase 10 season scoping (S1b): additive only — nothing reads or writes this yet.
+    // Populated by the S2 write-resolver; null on every pre-existing row.
+    public int? SeasonId { get; set; }
+
+    // Phase 10 benchmark provenance (S1b): SNAPSHOT of the benchmark profile in effect
+    // when this row was produced — Team.BenchmarkProfileId is mutable with no history,
+    // so this column is what enforces the ruling that scores stay calibrated against
+    // the profile in effect at the time. Nothing populates it yet; wiring is S3.
+    public int? BenchmarkProfileId { get; set; }
+
     public int PlayerId { get; set; }
     public Player Player { get; set; } = null!;
 

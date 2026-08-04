@@ -902,6 +902,35 @@ History (one line each; full detail in git history + blueprint):
   season that has NO participation row (old `TeamId` was NOT NULL), so it deletes it
   (linked periods unlink via SetNull). Rollback is therefore safe only until the
   first season is created on production under the new schema.
+- **S1b (landed): nullable season scoping columns + benchmark provenance.** Additive
+  `SeasonId int?` (FK → Season, SET NULL) on ten tables: MatchResult, PlayerAssessment,
+  ObjectiveTestResult, EvidenceBasedScore, MatchPerformance, Lineup, TrainingPlan,
+  ImprovementPlan, TrainingSession, ScheduledSession. Nothing reads or writes them yet
+  (S2 resolver); no cross-entity constraints (SeasonId vs TeamId/OwnerId is the
+  resolver's job, not the database's). `BenchmarkProfileId int?` (FK → BenchmarkProfile,
+  SET NULL) on EvidenceBasedScore + ObjectiveTestResult are **provenance SNAPSHOTS**,
+  not live lookups — Team.BenchmarkProfileId is mutable with no history, so these
+  columns are what enforce "scores stay calibrated against the profile in effect at
+  the time"; wiring is S3. **Index ruling**: SeasonId indexed ONLY on the five tables
+  S4 filters (MatchResult/PlayerAssessment/ObjectiveTestResult/EvidenceBasedScore/
+  MatchPerformance) — the other five (Lineup/TrainingPlan/ImprovementPlan/
+  TrainingSession/ScheduledSession) are suppressed via `SkipSeasonIdIndexConvention`
+  in `ApplicationDbContext.ConfigureConventions` (EF's FK-index convention re-creates
+  removed indexes, so it's REPLACED with a subclass that declines creation — a plain
+  RemoveIndex is a silent no-op). **REMEMBER in S4**: that convention is a GLOBAL
+  hook carrying a local ruling, and its failure mode is SILENT (missing index →
+  slow query, never a wrong answer) — if S4 starts filtering one of the five by
+  SeasonId, remove the type from `SkippedTypes` alongside adding the index. Pinned
+  in `SeasonScopingColumnsMigrationTests`; `Down()` proven a genuine clean rollback
+  on both providers.
+- **Season-scoping EXCLUSION rulings (Phase 10 — settled, do not re-ask)**:
+  **League** is cross-account by construction (OrganizerId ≠ participating coaches'
+  accounts) — ruled out of Phase 10 entirely. **PersonalGoal / JournalEntry /
+  WellbeingCheckin / InjuryRecord** are span-bearing athlete-owned records
+  (span-vs-snapshot rule): they extend across time and don't belong to one season —
+  report on them by WINDOW OVERLAP at read time, never by FK. **PlayerStatScore**
+  derives its season from PlayerAssessmentId — a column would create two answers to
+  one question.
 
 ## Current status
 

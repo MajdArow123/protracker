@@ -36,6 +36,10 @@ public class MatchResult
 {
     public int Id { get; set; }
 
+    // Phase 10 season scoping (S1b): additive only — nothing reads or writes this yet.
+    // Populated by the S2 write-resolver; null on every pre-existing row.
+    public int? SeasonId { get; set; }
+
     // Exactly one of TeamId / PlayerId is set: team matches are the coach flow,
     // player-scoped matches are logged by a solo athlete for themselves.
     public int? TeamId { get; set; }

@@ -260,3 +260,101 @@ public class SeasonAccountScopingMigrationTests : IClassFixture<ProTrackerWebApp
         return await cmd.ExecuteScalarAsync();
     }
 }
+
+// Phase 10 S1b: the SeasonScopingColumns migration is purely additive (nullable
+// SeasonId on ten tables + BenchmarkProfileId provenance snapshots on two) and must
+// apply AND roll back cleanly on the SQLite test provider too. Pins: every
+// pre-existing row keeps NULL in the new columns, SeasonId is indexed ONLY on the
+// five tables S4 will filter (MatchResult, PlayerAssessment, ObjectiveTestResult,
+// EvidenceBasedScore, MatchPerformance), and Down() is a genuine clean rollback —
+// additive nullable columns have no excuse for a best-effort one.
+public class SeasonScopingColumnsMigrationTests : IClassFixture<ProTrackerWebApplicationFactory>
+{
+    private readonly ProTrackerWebApplicationFactory _factory;
+    private const string PreviousMigration = "20260804145204_SeasonAccountScoping";
+
+    private static readonly string[] SeasonIdTables =
+    {
+        "MatchResults", "PlayerAssessments", "ObjectiveTestResults", "EvidenceBasedScores",
+        "MatchPerformances", "Lineups", "TrainingPlans", "ImprovementPlans",
+        "TrainingSessions", "ScheduledSessions",
+    };
+
+    private static readonly string[] IndexedTables =
+    {
+        "MatchResults", "PlayerAssessments", "ObjectiveTestResults", "EvidenceBasedScores",
+        "MatchPerformances",
+    };
+
+    public SeasonScopingColumnsMigrationTests(ProTrackerWebApplicationFactory factory)
+    {
+        _factory = factory;
+    }
+
+    [Fact]
+    public async Task SeasonScopingColumns_is_additive_indexed_per_ruling_and_rolls_back_cleanly()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var migrator = db.GetService<IMigrator>();
+
+        foreach (var table in SeasonIdTables)
+        {
+            Assert.True(await ColumnExistsAsync(db, table, "SeasonId"), $"{table}.SeasonId missing");
+            var shouldIndex = IndexedTables.Contains(table);
+            Assert.Equal(shouldIndex, await IndexExistsAsync(db, table, $"IX_{table}_SeasonId"));
+        }
+        foreach (var table in new[] { "ObjectiveTestResults", "EvidenceBasedScores" })
+            Assert.True(await ColumnExistsAsync(db, table, "BenchmarkProfileId"), $"{table}.BenchmarkProfileId missing");
+
+        // Seeded rows predate the columns: every one must read NULL, never a value.
+        var seeded = Convert.ToInt64(await ScalarAsync(db, "SELECT COUNT(*) FROM PlayerAssessments"));
+        Assert.True(seeded > 0, "expected seeded PlayerAssessments");
+        Assert.Equal(0L, Convert.ToInt64(await ScalarAsync(db,
+            "SELECT COUNT(*) FROM PlayerAssessments WHERE SeasonId IS NOT NULL")));
+
+        // --- Down: a genuine clean rollback (no data surgery, columns just go) ---
+        await migrator.MigrateAsync(PreviousMigration);
+        foreach (var table in SeasonIdTables)
+            Assert.False(await ColumnExistsAsync(db, table, "SeasonId"), $"{table}.SeasonId not dropped");
+        foreach (var table in new[] { "ObjectiveTestResults", "EvidenceBasedScores" })
+            Assert.False(await ColumnExistsAsync(db, table, "BenchmarkProfileId"));
+
+        // A row written under the old schema comes back NULL-scoped after re-apply.
+        await db.Database.ExecuteSqlRawAsync(
+            "INSERT INTO MatchResults (TeamId, OpponentName, MatchDate, HomeScore, AwayScore, IsHome, ScoreFormat, Status) " +
+            "VALUES (1, 'S1b PreMigration FC', '2026-01-01 00:00:00', 1, 0, 1, 0, 0)");
+
+        await migrator.MigrateAsync();
+        Assert.True(await ColumnExistsAsync(db, "MatchResults", "SeasonId"));
+        var scoped = await ScalarAsync(db,
+            "SELECT SeasonId FROM MatchResults WHERE OpponentName = 'S1b PreMigration FC' LIMIT 1");
+        Assert.True(scoped is null or DBNull, $"expected NULL SeasonId, got '{scoped}'");
+
+        await db.Database.ExecuteSqlRawAsync(
+            "DELETE FROM MatchResults WHERE OpponentName = 'S1b PreMigration FC'");
+    }
+
+    private static async Task<bool> ColumnExistsAsync(ApplicationDbContext db, string table, string column)
+    {
+        var result = await ScalarAsync(db,
+            $"SELECT COUNT(*) FROM pragma_table_info('{table}') WHERE name='{column}'");
+        return Convert.ToInt64(result) > 0;
+    }
+
+    private static async Task<bool> IndexExistsAsync(ApplicationDbContext db, string table, string index)
+    {
+        var result = await ScalarAsync(db,
+            $"SELECT COUNT(*) FROM sqlite_master WHERE type='index' AND tbl_name='{table}' AND name='{index}'");
+        return Convert.ToInt64(result) > 0;
+    }
+
+    private static async Task<object?> ScalarAsync(ApplicationDbContext db, string sql)
+    {
+        var conn = db.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) await conn.OpenAsync();
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        return await cmd.ExecuteScalarAsync();
+    }
+}

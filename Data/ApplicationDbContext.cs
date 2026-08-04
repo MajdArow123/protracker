@@ -19,6 +19,51 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
         configurationBuilder.Properties<DateTime?>().HaveConversion<UtcNullableDateTimeConverter>();
+        // The FK-index convention re-creates any index it finds missing for an FK
+        // (it reacts to index-removed events), so post-hoc removal can't win. The
+        // documented mechanism for skipping specific convention indexes is replacing
+        // the convention with one that declines to create them.
+        configurationBuilder.Conventions.Replace<
+            Microsoft.EntityFrameworkCore.Metadata.Conventions.ForeignKeyIndexConvention>(
+            sp => new SkipSeasonIdIndexConvention(
+                Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+                    .GetRequiredService<Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure.ProviderConventionSetBuilderDependencies>(sp)));
+    }
+
+    // Phase 10 S1b ruling: SeasonId is indexed only where S4 will filter by it
+    // (MatchResult, PlayerAssessment, ObjectiveTestResult, EvidenceBasedScore,
+    // MatchPerformance). The five types EXCLUDED here — Lineup, TrainingPlan,
+    // ImprovementPlan, TrainingSession, ScheduledSession — keep the FK but get no
+    // index; S4 reconsiders them if its query shapes justify it. Note this is a
+    // GLOBAL convention carrying a local ruling, and its failure mode is silent
+    // (a missing index means a slow query, never a wrong answer) — if S4 adds
+    // filtering on one of these types, remove it from SkippedTypes too.
+    private sealed class SkipSeasonIdIndexConvention
+        : Microsoft.EntityFrameworkCore.Metadata.Conventions.ForeignKeyIndexConvention
+    {
+        private static readonly Type[] SkippedTypes =
+        {
+            typeof(Lineup), typeof(TrainingPlan), typeof(ImprovementPlan),
+            typeof(TrainingSession), typeof(ScheduledSession),
+        };
+
+        public SkipSeasonIdIndexConvention(
+            Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure.ProviderConventionSetBuilderDependencies dependencies)
+            : base(dependencies)
+        {
+        }
+
+        protected override Microsoft.EntityFrameworkCore.Metadata.IConventionIndex? CreateIndex(
+            IReadOnlyList<Microsoft.EntityFrameworkCore.Metadata.IConventionProperty> properties,
+            bool unique,
+            Microsoft.EntityFrameworkCore.Metadata.Builders.IConventionEntityTypeBuilder entityTypeBuilder)
+        {
+            if (properties.Count == 1
+                && properties[0].Name == "SeasonId"
+                && SkippedTypes.Contains(entityTypeBuilder.Metadata.ClrType))
+                return null;
+            return base.CreateIndex(properties, unique, entityTypeBuilder);
+        }
     }
 
     private class UtcDateTimeConverter : ValueConverter<DateTime, DateTime>
@@ -455,6 +500,42 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(r => new { r.PlayerId, r.SeasonId });
         builder.Entity<SeasonRoster>()
             .HasIndex(r => new { r.SeasonId, r.TeamId });
+
+        // --- Phase 10 S1b: season scoping columns (additive, nullable, no reads/writes
+        // yet — the S2 resolver populates them). All FK -> Season with SET NULL so
+        // deleting a season un-scopes records instead of deleting them. No cross-entity
+        // consistency constraints (SeasonId vs TeamId/OwnerId) — that's the resolver's
+        // job, not the database's. Indexed only where S4 will filter (MatchResult,
+        // PlayerAssessment, ObjectiveTestResult, EvidenceBasedScore, MatchPerformance);
+        // the convention FK index is stripped on the other five below.
+        void SeasonScope<T>(Microsoft.EntityFrameworkCore.ModelBuilder b) where T : class =>
+            b.Entity<T>().HasOne(typeof(Season), null)
+                .WithMany()
+                .HasForeignKey("SeasonId")
+                .OnDelete(DeleteBehavior.SetNull);
+        SeasonScope<MatchResult>(builder);
+        SeasonScope<PlayerAssessment>(builder);
+        SeasonScope<ObjectiveTestResult>(builder);
+        SeasonScope<EvidenceBasedScore>(builder);
+        SeasonScope<MatchPerformance>(builder);
+        SeasonScope<Lineup>(builder);
+        SeasonScope<TrainingPlan>(builder);
+        SeasonScope<ImprovementPlan>(builder);
+        SeasonScope<TrainingSession>(builder);
+        SeasonScope<ScheduledSession>(builder);
+        // (The skipped-index rule for Lineup/TrainingPlan/ImprovementPlan/
+        // TrainingSession/ScheduledSession lives in SkipSeasonIdIndexConvention —
+        // it must run at model finalization, after the FK-index convention.)
+
+        // Benchmark provenance snapshots (S1b): the profile in effect when the row was
+        // produced. SET NULL — deleting a profile un-calibrates, never deletes evidence.
+        // Nothing populates these yet; wiring is S3.
+        builder.Entity<ObjectiveTestResult>()
+            .HasOne<BenchmarkProfile>().WithMany().HasForeignKey(t => t.BenchmarkProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
+        builder.Entity<EvidenceBasedScore>()
+            .HasOne<BenchmarkProfile>().WithMany().HasForeignKey(s => s.BenchmarkProfileId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // --- Parent portal ---
         builder.Entity<ParentLink>()
