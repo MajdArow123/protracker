@@ -75,6 +75,31 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
         (await soccer.DeleteAsync($"/api/seasons/{mine.Id}")).EnsureSuccessStatusCode();
     }
 
+    // S2.1 follow-up regression: EndDate is stored midnight UTC, so the old instant
+    // comparison (EndDate >= UtcNow) silently dropped a season on its FINAL day. The
+    // season is deliberately non-Active so only the day-granular window branch can
+    // find it.
+    [Fact]
+    public async Task Current_season_still_found_on_the_final_day_of_its_range()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var today = DateTime.UtcNow.Date;
+        var season = await CreateAsync(coach, TestAuth.SoccerTeamId, new CreateSeasonDto
+        {
+            Name = "Final Day Probe",
+            StartDate = today.AddDays(-30),
+            EndDate = today, // midnight this morning — the bug shape
+            IsActive = false,
+        });
+
+        var current = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current"))!.Data;
+        Assert.NotNull(current);
+        Assert.Equal(season.Id, current!.Id);
+
+        (await coach.DeleteAsync($"/api/seasons/{season.Id}")).EnsureSuccessStatusCode();
+    }
+
     [Fact]
     public async Task Assistant_coach_reads_via_participation_but_cannot_edit_unowned_season()
     {

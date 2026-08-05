@@ -944,9 +944,13 @@ History (one line each; full detail in git history + blueprint):
   column**, Npgsql won't translate it) and correct even against non-midnight
   STORED values (test-pinned). Kills the latent "EndDate 00:00 vs UtcNow on the
   final season day → null" bug. Join-day counts wholly (JoinedAt 18:00 on day X
-  still covers all of day X — documented + test-pinned). **The same latent
-  UtcNow-vs-midnight pattern still exists in `SeasonService.GetCurrentForTeamAsync`**
-  (reported, deliberately untouched in S2.1). (2) Resolver returns
+  still covers all of day X — documented + test-pinned). The same latent
+  UtcNow-vs-midnight pattern in `SeasonService.GetCurrentForTeamAsync` was fixed in
+  the S2.1 follow-up commit (same half-open pattern + final-day regression test in
+  `SeasonScopingTests`; solution-wide sweep found no other live comparison of
+  Season/SeasonRoster date columns against now — the `SeasonAccountScoping`
+  migration's one-shot `CURRENT_TIMESTAMP` status backfill is landed/applied and
+  deliberately left alone). (2) Resolver returns
   **`SeasonResolution`** (readonly record struct: `Outcome`
   Resolved/NoCoveringSeason/Ambiguous, `SeasonId`, `CandidateSeasonIds` — sorted,
   populated only on Ambiguous) so callers can branch on ambiguity vs absence;

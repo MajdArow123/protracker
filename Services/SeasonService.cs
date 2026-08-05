@@ -46,12 +46,17 @@ public class SeasonService : ISeasonService
     public async Task<SeasonDto?> GetCurrentForTeamAsync(ClaimsPrincipal user, int teamId)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
-        var today = DateTime.UtcNow;
+        // Day-granular window check (the S2.1 rule): boundaries are DAYS and the stored
+        // values are midnight UTC, so comparing the raw UtcNow instant would drop a
+        // season on its final day. Same sargable half-open pattern as SeasonResolver —
+        // no .Date on the column (Npgsql won't translate it on timestamptz).
+        var dayStart = DateTime.UtcNow.Date;
+        var nextDay = dayStart.AddDays(1);
         // Active status wins; otherwise the season whose window contains today; otherwise none.
         var season = await _context.Seasons
             .Include(s => s.SeasonTeams).ThenInclude(st => st.Team)
             .Where(s => s.SeasonTeams.Any(st => st.TeamId == teamId)
-                && (s.Status == SeasonStatus.Active || (s.StartDate <= today && s.EndDate >= today)))
+                && (s.Status == SeasonStatus.Active || (s.StartDate < nextDay && s.EndDate >= dayStart)))
             .OrderByDescending(s => s.Status == SeasonStatus.Active)
             .ThenByDescending(s => s.StartDate)
             .FirstOrDefaultAsync();
