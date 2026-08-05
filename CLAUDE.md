@@ -925,19 +925,45 @@ History (one line each; full detail in git history + blueprint):
   on both providers.
 - **S2 (landed): `ISeasonResolver`/`SeasonResolver`** (`Services/SeasonResolver.cs`,
   DI-registered but consumed by nothing until S3). Pure lookup, two methods (the
-  spec's "overloads" both take `(int, DateTime)`, so they're named):
+  spec's "overloads" share a parameter shape, so they're named):
   `ResolveForTeamAsync` (SeasonTeam participation + date ∈ [StartDate, EndDate],
   inclusive both ends) and `ResolveForPlayerAsync` (**SeasonRoster ONLY** — the row
   with `JoinedAt <= date <= LeftAt`/null; **NEVER routes through `Player.TeamId`**,
   which is "where are they now" — the after-leaving regression test arms exactly
-  that trap). Null over guessing everywhere: no match, roster gap, after-leaving,
+  that trap). Honest non-answers everywhere: no match, roster gap, after-leaving,
   Archived (Draft/Active/Completed all resolvable — the S3 write guard decides
   permission, not the resolver), and **ambiguity** (overlap is legal): >1 candidate
-  → null + LogWarning naming candidate ids — never silently pick one (S7 backfill
-  is the human resolution path). No writes, no side effects, no CurrentSeasonId
-  fallback (that's a UI write-default consumed in S3). 13 tests in
-  `SeasonResolverTests` (cases a–l + Completed/Draft-resolvable), all with
-  deliberately seeded 2030+ data.
+  → never silently pick one (S7 backfill is the human resolution path). No writes,
+  no side effects, no CurrentSeasonId fallback (that's a UI write-default consumed
+  in S3). Tests in `SeasonResolverTests`, all with deliberately seeded 2030+ data.
+- **S2.1 (landed): resolver hardening.** (1) **Season boundaries are DAYS, not
+  instants** (UI collects date-only; rows store midnight UTC via the global
+  converter): public signature now takes `DateOnly`; internally day-granular
+  half-open comparisons (`StartDate < nextDayStart && EndDate >= dayStart`, roster
+  analogous) — translatable on both providers (**no `.Date` on a timestamptz
+  column**, Npgsql won't translate it) and correct even against non-midnight
+  STORED values (test-pinned). Kills the latent "EndDate 00:00 vs UtcNow on the
+  final season day → null" bug. Join-day counts wholly (JoinedAt 18:00 on day X
+  still covers all of day X — documented + test-pinned). **The same latent
+  UtcNow-vs-midnight pattern still exists in `SeasonService.GetCurrentForTeamAsync`**
+  (reported, deliberately untouched in S2.1). (2) Resolver returns
+  **`SeasonResolution`** (readonly record struct: `Outcome`
+  Resolved/NoCoveringSeason/Ambiguous, `SeasonId`, `CandidateSeasonIds` — sorted,
+  populated only on Ambiguous) so callers can branch on ambiguity vs absence;
+  ambiguity warning log wording unchanged; Archived filters BEFORE ambiguity
+  counting (→ NoCoveringSeason). (3) **Id-existence guards**: a nonexistent
+  team/player id (e.g. a playerId passed to the team method — both are bare ints;
+  no strongly-typed id wrappers exist in this codebase, deliberately not
+  introduced) → NoCoveringSeason + warning naming the method and id, never a
+  plausible wrong answer. 19 tests in `SeasonResolverTests` (a–l +
+  Completed/Draft + m/n boundary-day instants + o join-day + stored-non-midnight
+  + 2 guards).
+- **Open for S3 — Draft seasons participate in resolution**: per S2's ruling,
+  Draft seasons are resolvable, so a stale Draft season whose provisional dates
+  overlap a real Active season makes an otherwise valid lookup return Ambiguous.
+  This is a known, accepted consequence. S3 must decide whether Draft seasons
+  participate in resolution — and that decision belongs to the CALLER's filter,
+  not the resolver (resolver behaviour stays as-is).
 - **Season-scoping EXCLUSION rulings (Phase 10 — settled, do not re-ask)**:
   **League** is cross-account by construction (OrganizerId ≠ participating coaches'
   accounts) — ruled out of Phase 10 entirely. **PersonalGoal / JournalEntry /
