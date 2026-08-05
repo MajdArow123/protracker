@@ -1,5 +1,6 @@
 import api from './axiosInstance';
 import type { ImprovementPlan, NutritionGuidance, TaskSuggestions, GoalSuggestions, DrillRecommendations, EvidenceAnalysis } from '../types';
+import { localDateString } from '../utils/localDate';
 
 export interface AIInsights {
   insights: string[];
@@ -8,7 +9,10 @@ export interface AIInsights {
 
 export const aiApi = {
   generateImprovementPlan: async (playerId: number): Promise<ImprovementPlan> => {
-    const res = await api.post<ImprovementPlan>(`/api/ai/improvement-plan/${playerId}`);
+    // Local calendar date drives the plan's season stamp (S2.2 ruling).
+    const res = await api.post<ImprovementPlan>(`/api/ai/improvement-plan/${playerId}`, undefined, {
+      params: { date: localDateString() },
+    });
     return res.data;
   },
 

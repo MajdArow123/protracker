@@ -978,6 +978,51 @@ History (one line each; full detail in git history + blueprint):
   America/Toronto 23:30 where the two dates differ). No i18n string added: the
   frontend always sends a valid date, so the 400 path is developer/tamper-only
   and surfaces no user-visible text.
+- **S3 (landed): season stamping on create paths.** RULING (binding): **a create
+  NEVER fails because of season resolution** — resolution is metadata, the record is
+  the user's data and must always be saved. Resolved → SeasonId set;
+  NoCoveringSeason → SeasonId null, silent (normal off-season case); Ambiguous →
+  SeasonId null PLUS a non-blocking `SeasonNotice`
+  (`SeasonResolutionNoticeDto { Code: "AmbiguousSeason", CandidateSeasonIds }`) on
+  the create RESPONSE only — never blocks, never errors; resolver's warning log
+  unchanged. **`Services/SeasonStamper.cs` (`ISeasonStamper`) is the ONLY sanctioned
+  way for a create path to consult the resolver** — it maps every outcome including
+  thrown exceptions to a stamp (exception → LogError + null stamp, save proceeds;
+  test-pinned with a throwing resolver). Resolution happens once per create, in the
+  service layer. Wired paths (11): team match + solo match (`MatchService`, own
+  MatchDate; team/player context), assessment (`AssessmentService`, DateRecorded,
+  player context via SeasonRoster — the (g)-shaped trap is test-pinned), objective
+  test (`EvidenceService`, TestedAt, player), evidence scores
+  (`EvidenceScoringEngine`, both calc methods + restamp in its upsert), match
+  performance (player, own MatchDate), match lineups (`LineupService`, create-only,
+  match's date, team context; **default-XI/named lineups are templates — never
+  stamped**), training session (team context — the record pins its own TeamId, so
+  that + its own Date is historically exact), scheduled sessions team+solo
+  (**`CreateScheduledSessionDto.LocalDate`** = client's local date of StartTime,
+  `ClientLocalDate.Resolve` anchored to StartTime's UTC date ±1, fallback = UTC date
+  part), improvement plans manual+AI (**`CreateImprovementPlanDto.LocalDate`** /
+  `?date=` on the AI endpoint, UTC-today anchor). `Common/ClientLocalDate.cs` is the
+  shared S2.2 parser (SeasonService uses it too). Frontend sends local dates from
+  calendar fields (`SessionModal` sends the datetime-local input's date slice;
+  improvement/AI apis send `localDateString()`); TS types gained
+  `seasonNotice?: SeasonResolutionNotice` (8 types + `LineupDto`) — **UI rendering
+  of the notice is deliberately deferred** (no consumer yet, no i18n keys). All
+  8 player-context paths resolve null until S6 lands rosters (honest by design).
+  EvidenceBasedScore ruling (verbatim): "EvidenceBasedScore.SeasonId records WHEN
+  the score was computed, not which season the underlying evidence belongs to; a
+  recalc today over a rolling 90-day window that reaches into a prior season is
+  still stamped with today's season. S4 must not present it as per-season
+  performance." Engine recalcs are server-triggered → UTC-today fallback is the
+  sanctioned date source there. Excluded: `TrainingPlansController.Create`
+  (**unreachable in production** — no `MapControllerRoute`/`AddControllersWithViews`
+  in Program.cs, controller has no route attributes; deletion proposed as a separate
+  commit), default-XI/named lineups, and the settled §3 exclusions. Draft seasons
+  still participate in create-time resolution (no caller filter was added — the
+  Draft-overlap open item below stands). 19 tests in `SeasonStampingTests`.
+- **Open for S3+ — stale SeasonId on date-changing updates (ruling recorded)**:
+  updates that change a record's date (e.g. editing a match's MatchDate) leave a
+  stale SeasonId. DECIDED: re-resolve on date-changing updates, scheduled as its
+  own step AFTER S3 — S3 stays creates-only as specified.
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare

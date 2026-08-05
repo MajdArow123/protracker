@@ -26,14 +26,16 @@ public class MatchService : IMatchService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IEvidenceScoringEngine _evidence;
+    private readonly ISeasonStamper _seasons;
     private readonly ILogger<MatchService> _logger;
 
     public MatchService(ApplicationDbContext context, IAccessControlService access,
-        IEvidenceScoringEngine evidence, ILogger<MatchService> logger)
+        IEvidenceScoringEngine evidence, ISeasonStamper seasons, ILogger<MatchService> logger)
     {
         _context = context;
         _access = access;
         _evidence = evidence;
+        _seasons = seasons;
         _logger = logger;
     }
 
@@ -73,10 +75,15 @@ public class MatchService : IMatchService
             OpponentFormation = NormalizeOptional(dto.OpponentFormation),
             ScoutingNotes = NormalizeOptional(dto.ScoutingNotes),
         };
+        // Season stamping is metadata and never blocks the save (S3 ruling).
+        var stamp = await _seasons.ForTeamAsync(teamId, DateOnly.FromDateTime(dto.MatchDate));
+        match.SeasonId = stamp.SeasonId;
         _context.MatchResults.Add(match);
         await _context.SaveChangesAsync();
         await _context.Entry(match).Reference(m => m.Team).LoadAsync();
-        return ToDto(match);
+        var result = ToDto(match);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     public async Task<List<MatchResultDto>> GetMySoloMatchesAsync(ClaimsPrincipal user)
@@ -116,6 +123,10 @@ public class MatchService : IMatchService
             OpponentFormation = NormalizeOptional(dto.OpponentFormation),
             ScoutingNotes = NormalizeOptional(dto.ScoutingNotes),
         };
+        // Player-context stamping resolves via SeasonRoster only; a solo athlete has no
+        // roster rows, so this is NoCoveringSeason (null) today — honest, never blocking.
+        var stamp = await _seasons.ForPlayerAsync(player.Id, DateOnly.FromDateTime(dto.MatchDate));
+        match.SeasonId = stamp.SeasonId;
         _context.MatchResults.Add(match);
         await _context.SaveChangesAsync();
 
@@ -131,7 +142,9 @@ public class MatchService : IMatchService
             await _context.SaveChangesAsync();
         }
 
-        return ToDto(await LoadMatchAsync(match.Id));
+        var result = ToDto(await LoadMatchAsync(match.Id));
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     // Team matches require team access; personal (solo) matches require player ownership.

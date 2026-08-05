@@ -24,6 +24,9 @@ public class CreateAssessmentPeriodDto
 public class PlayerAssessmentDto
 {
     public int Id { get; set; }
+    // Set only on a CREATE response when season resolution was Ambiguous — a
+    // non-blocking nudge (Phase 10 S3); null on reads and on clean resolutions.
+    public SeasonResolutionNoticeDto? SeasonNotice { get; set; }
     public int PlayerId { get; set; }
     public int AssessmentPeriodId { get; set; }
     public string AssessmentPeriodName { get; set; } = "";

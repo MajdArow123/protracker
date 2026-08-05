@@ -19,9 +19,12 @@ public class MatchPerformanceService : IMatchPerformanceService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ISeasonStamper _seasons;
 
-    public MatchPerformanceService(ApplicationDbContext context, IAccessControlService access)
+    public MatchPerformanceService(ApplicationDbContext context, IAccessControlService access,
+        ISeasonStamper seasons)
     {
+        _seasons = seasons;
         _context = context;
         _access = access;
     }
@@ -38,6 +41,8 @@ public class MatchPerformanceService : IMatchPerformanceService
     {
         await _access.EnsureCanAccessPlayerAsync(user, dto.PlayerId);
 
+        // Player-context season stamp on the match's own date — metadata, never blocks (S3).
+        var stamp = await _seasons.ForPlayerAsync(dto.PlayerId, DateOnly.FromDateTime(dto.MatchDate));
         var match = new MatchPerformance
         {
             PlayerId = dto.PlayerId,
@@ -45,11 +50,14 @@ public class MatchPerformanceService : IMatchPerformanceService
             Opponent = dto.Opponent,
             PerformanceRating = dto.PerformanceRating,
             Notes = dto.Notes,
-            SportSpecificStats = dto.SportSpecificStats
+            SportSpecificStats = dto.SportSpecificStats,
+            SeasonId = stamp.SeasonId,
         };
         _context.MatchPerformances.Add(match);
         await _context.SaveChangesAsync();
-        return ToDto(match);
+        var result = ToDto(match);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     public async Task<MatchPerformanceDto> UpdateAsync(ClaimsPrincipal user, int id, CreateMatchPerformanceDto dto)

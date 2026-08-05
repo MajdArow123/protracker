@@ -1,5 +1,6 @@
 import api from './axiosInstance';
 import type { ImprovementPlan } from '../types';
+import { localDateString } from '../utils/localDate';
 
 export const improvementApi = {
   getPlayerPlans: async (playerId: number): Promise<ImprovementPlan[]> => {
@@ -9,7 +10,11 @@ export const improvementApi = {
     return res.data;
   },
   createPlan: async (data: Partial<ImprovementPlan>): Promise<ImprovementPlan> => {
-    const res = await api.post<ImprovementPlan>('/api/improvement-plans', data);
+    // Local calendar date drives the plan's season stamp (S2.2 ruling).
+    const res = await api.post<ImprovementPlan>('/api/improvement-plans', {
+      ...data,
+      localDate: localDateString(),
+    });
     return res.data;
   },
   updatePlan: async (

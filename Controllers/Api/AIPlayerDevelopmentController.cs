@@ -19,9 +19,11 @@ public class AIPlayerDevelopmentController : ApiControllerBase
         _service = service;
     }
 
+    // date = the client's LOCAL calendar date (yyyy-MM-dd, S2.2 ruling) — season
+    // stamp for the generated plan; UTC today when absent.
     [HttpPost("improvement-plan/{playerId}")]
-    public async Task<ActionResult> GenerateImprovementPlan(int playerId)
-        => Success(await _service.GenerateImprovementPlanAsync(User, playerId));
+    public async Task<ActionResult> GenerateImprovementPlan(int playerId, [FromQuery] string? date = null)
+        => Success(await _service.GenerateImprovementPlanAsync(User, playerId, date));
 
     [HttpPost("task-suggestions/{playerId}")]
     public async Task<ActionResult> GenerateTaskSuggestions(int playerId)

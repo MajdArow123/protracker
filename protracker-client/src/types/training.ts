@@ -1,7 +1,10 @@
+import type { SeasonResolutionNotice } from './assessment';
+
 export type AttendanceStatus = 'Present' | 'Absent' | 'Late' | 'Excused';
 
 export interface TrainingSession {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   playerId: number;
   teamId: number;
   date: string;
@@ -86,6 +89,7 @@ export interface SessionFeedbackAnalytics {
 
 export interface ScheduledSession {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   teamId: number;
   teamName: string;
   title: string;

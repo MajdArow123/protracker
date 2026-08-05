@@ -39,10 +39,12 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
     public const int ObjectiveFreshDays = 60;
 
     private readonly ApplicationDbContext _context;
+    private readonly ISeasonStamper _seasons;
 
-    public EvidenceScoringEngine(ApplicationDbContext context)
+    public EvidenceScoringEngine(ApplicationDbContext context, ISeasonStamper seasons)
     {
         _context = context;
+        _seasons = seasons;
     }
 
     // ─── Pure calculation (unit-testable statics) ────────────────────────────
@@ -248,6 +250,11 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         var score = Compute(playerId, def, bundle, assessmentId, BenchmarkFor(overrides, def.Id));
         if (score == null) return null;
 
+        // SeasonId records WHEN the score was computed (recalcs are server-triggered,
+        // so the UTC-today fallback is the sanctioned date source here) — not which
+        // season the underlying 90-day evidence window belongs to.
+        var stamp = await _seasons.ForPlayerAsync(playerId, DateOnly.FromDateTime(DateTime.UtcNow));
+        score.SeasonId = stamp.SeasonId;
         await UpsertAsync(score);
         await _context.SaveChangesAsync();
         return score;
@@ -264,11 +271,14 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
 
         var bundle = await LoadEvidenceAsync(playerId, metricDefinitionId: null);
         var overrides = await GetBenchmarkOverridesAsync(playerId);
+        // One stamp per recalc run — see the note in CalculateScoreAsync.
+        var stamp = await _seasons.ForPlayerAsync(playerId, DateOnly.FromDateTime(DateTime.UtcNow));
         var results = new List<EvidenceBasedScore>();
         foreach (var def in defs)
         {
             var score = Compute(playerId, def, bundle, assessmentId: null, BenchmarkFor(overrides, def.Id));
             if (score == null) continue;
+            score.SeasonId = stamp.SeasonId;
             await UpsertAsync(score);
             results.Add(score);
         }
@@ -512,6 +522,8 @@ public class EvidenceScoringEngine : IEvidenceScoringEngine
         existing.Explanation = score.Explanation;
         existing.LastObjectiveTestAt = score.LastObjectiveTestAt;
         existing.LastCalculatedAt = score.LastCalculatedAt;
+        // Restamped on every recalc — the column tracks when the score was computed.
+        existing.SeasonId = score.SeasonId;
         // Callers get the up-to-date row back (with the persisted Id).
         score.Id = existing.Id;
         score.CreatedAt = existing.CreatedAt;

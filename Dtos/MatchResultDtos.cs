@@ -27,6 +27,9 @@ public class PlayerMatchRatingDto
 public class MatchResultDto
 {
     public int Id { get; set; }
+    // Set only on a CREATE response when season resolution was Ambiguous — a
+    // non-blocking nudge (Phase 10 S3); null on reads and on clean resolutions.
+    public SeasonResolutionNoticeDto? SeasonNotice { get; set; }
     // Null for a solo athlete's personal match.
     public int? TeamId { get; set; }
     public int? PlayerId { get; set; }

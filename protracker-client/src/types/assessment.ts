@@ -37,6 +37,7 @@ export interface AppliedTemplate {
 
 export interface PlayerAssessment {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   playerId: number;
   assessmentPeriodId: number;
   assessmentPeriodName: string;
@@ -52,6 +53,14 @@ export interface AssessmentPeriod {
   endDate: string;
   teamId: number;
   seasonId?: number | null;
+}
+
+// Phase 10 S3: attached to a create response when season resolution was Ambiguous —
+// the record saved fine (seasonId null on it); this is a non-blocking nudge to fix the
+// overlapping season dates. Absent/null on reads and clean resolutions.
+export interface SeasonResolutionNotice {
+  code: string; // "AmbiguousSeason"
+  candidateSeasonIds: number[];
 }
 
 export interface Season {

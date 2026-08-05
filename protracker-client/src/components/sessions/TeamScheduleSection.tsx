@@ -93,6 +93,9 @@ function SessionModal({ teamId, solo, session, defaultDate, isOpen, onClose }: {
       title: title.trim(),
       sessionType,
       startTime: new Date(startTime).toISOString(),
+      // The datetime-local input's date part IS the user's local calendar date —
+      // never derive this from toISOString() (S2.2 ruling).
+      localDate: startTime.slice(0, 10),
       durationMinutes: Number(durationMinutes) || 0,
       location: location.trim() || undefined,
       focus: focus.trim() || undefined,

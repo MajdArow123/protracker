@@ -1,3 +1,5 @@
+import type { SeasonResolutionNotice } from './assessment';
+
 export type MatchOutcome = 'Win' | 'Draw' | 'Loss';
 export type ScoreFormat = 'Goals' | 'Points' | 'Sets' | 'GamesAndSets';
 
@@ -26,6 +28,7 @@ export type MatchStatus = 'Played' | 'Scheduled';
 
 export interface MatchResult {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   teamId: number;
   teamName: string;
   opponentName: string;
@@ -52,6 +55,7 @@ export interface MatchResult {
 
 export interface MatchPerformance {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   playerId: number;
   matchDate: string;
   opponent: string;

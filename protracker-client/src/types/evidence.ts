@@ -1,3 +1,5 @@
+import type { SeasonResolutionNotice } from './assessment';
+
 // ── Evidence-based assessments (Phase G) ─────────────────────────────────────
 export type MetricCategory = 'Physical' | 'Technical' | 'Tactical' | 'Mental' | 'Positional';
 export type MetricInputType = 'Timer' | 'Weight' | 'Distance' | 'Percentage' | 'Count' | 'Rating' | 'Boolean';
@@ -31,6 +33,7 @@ export interface SportMetricDefinition {
 
 export interface ObjectiveTestResult {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   playerId: number;
   metricDefinitionId: number;
   metricName: string;

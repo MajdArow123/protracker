@@ -5,6 +5,10 @@ export interface CreateSessionInput {
   title: string;
   sessionType: SessionType;
   startTime: string;
+  // The user's LOCAL calendar date of startTime (yyyy-MM-dd) — drives season
+  // resolution. Built from the datetime-local input's date part, NEVER from
+  // toISOString() (S2.2 ruling: UTC conversion shifts evening users a day).
+  localDate?: string;
   durationMinutes: number;
   location?: string;
   focus?: string;

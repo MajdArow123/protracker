@@ -10,7 +10,9 @@ namespace ProTracker.Services;
 
 public interface IAIPlayerDevelopmentService
 {
-    Task<ImprovementPlanDto> GenerateImprovementPlanAsync(ClaimsPrincipal user, int playerId);
+    // date: the client's local calendar date (S2.2, yyyy-MM-dd) — drives the season
+    // stamp on the generated plan; UTC today when absent.
+    Task<ImprovementPlanDto> GenerateImprovementPlanAsync(ClaimsPrincipal user, int playerId, string? date = null);
     Task<TaskSuggestionsDto> GenerateTaskSuggestionsAsync(ClaimsPrincipal user, int playerId);
     Task<GoalSuggestionsDto> GenerateGoalSuggestionsAsync(ClaimsPrincipal user, int playerId);
     Task<DrillRecommendationsDto> GenerateDrillRecommendationsAsync(ClaimsPrincipal user, int playerId);
@@ -26,6 +28,7 @@ public class AIPlayerDevelopmentService : IAIPlayerDevelopmentService
     private readonly IAccessControlService _access;
     private readonly IAIEvidenceContextService _evidence;
     private readonly IDrillService _drills;
+    private readonly ISeasonStamper _seasons;
     private readonly ILogger<AIPlayerDevelopmentService> _logger;
 
     public AIPlayerDevelopmentService(
@@ -34,6 +37,7 @@ public class AIPlayerDevelopmentService : IAIPlayerDevelopmentService
         IAccessControlService access,
         IAIEvidenceContextService evidence,
         IDrillService drills,
+        ISeasonStamper seasons,
         ILogger<AIPlayerDevelopmentService> logger)
     {
         _context = context;
@@ -41,14 +45,17 @@ public class AIPlayerDevelopmentService : IAIPlayerDevelopmentService
         _access = access;
         _evidence = evidence;
         _drills = drills;
+        _seasons = seasons;
         _logger = logger;
     }
 
     // ─── Improvement Plan ────────────────────────────────────────────────────
 
-    public async Task<ImprovementPlanDto> GenerateImprovementPlanAsync(ClaimsPrincipal user, int playerId)
+    public async Task<ImprovementPlanDto> GenerateImprovementPlanAsync(ClaimsPrincipal user, int playerId, string? date = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
+        // Parse before the (slow, billable) AI call so a malformed date fails fast.
+        var planDate = ClientLocalDate.ResolveToday(date);
 
         var player = await LoadPlayerAsync(playerId);
         var latestAssessment = await LoadLatestAssessmentAsync(playerId);
@@ -70,6 +77,8 @@ public class AIPlayerDevelopmentService : IAIPlayerDevelopmentService
         try
         {
             var root = JsonDocument.Parse(raw).RootElement;
+            // Player-context season stamp — metadata, never blocks the save (S3).
+            var stamp = await _seasons.ForPlayerAsync(playerId, planDate);
             var plan = new ImprovementPlan
             {
                 PlayerId = playerId,
@@ -80,10 +89,13 @@ public class AIPlayerDevelopmentService : IAIPlayerDevelopmentService
                 SportSpecificDrills = GetStr(root, "sportSpecificDrills"),
                 PositionFocus = GetStr(root, "positionFocus"),
                 CoachNotes = GetStr(root, "coachNotes"),
+                SeasonId = stamp.SeasonId,
             };
             _context.ImprovementPlans.Add(plan);
             await _context.SaveChangesAsync();
-            return PlanToDto(plan);
+            var result = PlanToDto(plan);
+            result.SeasonNotice = stamp.Notice;
+            return result;
         }
         catch (Exception ex) when (ex is not BadRequestApiException)
         {

@@ -65,3 +65,12 @@ public class SeasonCategoryTrendDto
     public double EndAverage { get; set; }
     public double Improvement { get; set; }
 }
+
+// Phase 10 S3: attached to a create RESPONSE when season resolution was Ambiguous —
+// the record saved fine (SeasonId null); this is a non-blocking nudge so the UI can
+// tell the coach to fix the overlapping season dates. Never an error, never blocks.
+public class SeasonResolutionNoticeDto
+{
+    public string Code { get; set; } = "AmbiguousSeason";
+    public List<int> CandidateSeasonIds { get; set; } = new();
+}

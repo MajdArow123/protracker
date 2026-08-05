@@ -29,14 +29,16 @@ public class AssessmentService : IAssessmentService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IPersonalGoalService _goals;
+    private readonly ISeasonStamper _seasons;
     private readonly ILogger<AssessmentService> _logger;
 
     public AssessmentService(ApplicationDbContext context, IAccessControlService access,
-        IPersonalGoalService goals, ILogger<AssessmentService> logger)
+        IPersonalGoalService goals, ISeasonStamper seasons, ILogger<AssessmentService> logger)
     {
         _context = context;
         _access = access;
         _goals = goals;
+        _seasons = seasons;
         _logger = logger;
     }
 
@@ -184,12 +186,17 @@ public class AssessmentService : IAssessmentService
             await EnsureCanAccessPeriodAsync(user, period);
         }
 
+        // Player-context season stamp (SeasonRoster, never Player.TeamId) — metadata
+        // only, never blocks the save (S3 ruling).
+        var stamp = await _seasons.ForPlayerAsync(dto.PlayerId, DateOnly.FromDateTime(dto.DateRecorded));
+
         var assessment = new PlayerAssessment
         {
             PlayerId = dto.PlayerId,
             AssessmentPeriodId = period.Id,
             DateRecorded = dto.DateRecorded,
-            Notes = dto.Notes
+            Notes = dto.Notes,
+            SeasonId = stamp.SeasonId,
         };
         _context.PlayerAssessments.Add(assessment);
         await _context.SaveChangesAsync();
@@ -217,7 +224,9 @@ public class AssessmentService : IAssessmentService
         await CaptureEvidenceFromAssessmentAsync(user, assessment, categoryScores);
 
         assessment.AssessmentPeriod = period;
-        return await GetAssessmentByIdAsync(user, assessment.Id);
+        var result = await GetAssessmentByIdAsync(user, assessment.Id);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     // Creates assessments for many players in one transaction (bulk "assess full team"). Reuses

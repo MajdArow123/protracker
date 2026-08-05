@@ -20,11 +20,13 @@ public class TrainingSessionService : ITrainingSessionService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ISeasonStamper _seasons;
 
-    public TrainingSessionService(ApplicationDbContext context, IAccessControlService access)
+    public TrainingSessionService(ApplicationDbContext context, IAccessControlService access, ISeasonStamper seasons)
     {
         _context = context;
         _access = access;
+        _seasons = seasons;
     }
 
     public async Task<List<TrainingSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
@@ -48,6 +50,9 @@ public class TrainingSessionService : ITrainingSessionService
         await _access.EnsureCanAccessTeamAsync(user, dto.TeamId);
         await _access.EnsureCanAccessPlayerAsync(user, dto.PlayerId);
 
+        // Team-context season stamp — the record pins its own TeamId, so resolving on
+        // that + the session's date is historically exact. Metadata, never blocks (S3).
+        var stamp = await _seasons.ForTeamAsync(dto.TeamId, DateOnly.FromDateTime(dto.Date));
         var session = new TrainingSession
         {
             PlayerId = dto.PlayerId,
@@ -55,11 +60,14 @@ public class TrainingSessionService : ITrainingSessionService
             Date = dto.Date,
             DurationMinutes = dto.DurationMinutes,
             Notes = dto.Notes,
-            AttendanceStatus = dto.AttendanceStatus
+            AttendanceStatus = dto.AttendanceStatus,
+            SeasonId = stamp.SeasonId,
         };
         _context.TrainingSessions.Add(session);
         await _context.SaveChangesAsync();
-        return ToDto(session);
+        var result = ToDto(session);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     public async Task<TrainingSessionDto> UpdateAsync(ClaimsPrincipal user, int id, CreateTrainingSessionDto dto)

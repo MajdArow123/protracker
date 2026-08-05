@@ -1,5 +1,8 @@
+import type { SeasonResolutionNotice } from './assessment';
+
 export interface ImprovementPlan {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   playerId: number;
   createdDate: string;
   weeklyGoals?: string | null;

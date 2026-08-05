@@ -32,11 +32,13 @@ public class LineupService : ILineupService
 
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ISeasonStamper _seasons;
 
-    public LineupService(ApplicationDbContext context, IAccessControlService access)
+    public LineupService(ApplicationDbContext context, IAccessControlService access, ISeasonStamper seasons)
     {
         _context = context;
         _access = access;
+        _seasons = seasons;
     }
 
     public async Task<LineupDto?> GetAsync(ClaimsPrincipal user, int teamId, int? matchResultId, string? name)
@@ -143,6 +145,7 @@ public class LineupService : ILineupService
         if (existing.Count > 1) _context.Lineups.RemoveRange(existing.Skip(1));
 
         LineupSnapshot? before = null;
+        var seasonStamp = default(SeasonStamp);
         var created = lineup == null;
         if (lineup == null)
         {
@@ -158,6 +161,16 @@ public class LineupService : ILineupService
                     throw new ValidationApiException($"A team can have at most {MaxNamedLineupsPerTeam} named lineups.");
             }
             lineup = new Lineup { TeamId = teamId, MatchResultId = key.MatchResultId };
+            // Season stamping (S3, create only): a MATCH lineup is a dated event —
+            // stamp from the match's date. Default-XI and named lineups are reusable
+            // templates with no honest date to resolve against, so they stay null.
+            if (key.MatchResultId is int stampMatchId)
+            {
+                var matchDate = await _context.MatchResults
+                    .Where(m => m.Id == stampMatchId).Select(m => m.MatchDate).FirstAsync();
+                seasonStamp = await _seasons.ForTeamAsync(teamId, DateOnly.FromDateTime(matchDate));
+                lineup.SeasonId = seasonStamp.SeasonId;
+            }
             _context.Lineups.Add(lineup);
         }
         else
@@ -221,7 +234,9 @@ public class LineupService : ILineupService
         }
 
         await tx.CommitAsync();
-        return ToDto(lineup, changedByName);
+        var result = ToDto(lineup, changedByName);
+        result.SeasonNotice = seasonStamp.Notice;
+        return result;
     }
 
     public async Task DeleteAsync(ClaimsPrincipal user, int teamId, int? matchResultId, string? name)

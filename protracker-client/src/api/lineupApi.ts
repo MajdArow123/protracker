@@ -1,5 +1,5 @@
 import api from './axiosInstance';
-import type { PagedResult } from '../types';
+import type { PagedResult, SeasonResolutionNotice } from '../types';
 
 export interface LineupSlotDto {
   slotKey: string;
@@ -18,6 +18,7 @@ export interface SetPieceDto {
 
 export interface LineupDto {
   id: number;
+  seasonNotice?: SeasonResolutionNotice | null;
   teamId: number;
   matchResultId: number | null;
   /** Named team lineup (Phase 6); null on the default XI and on match lineups. */

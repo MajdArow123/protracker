@@ -43,12 +43,15 @@ public class EvidenceService : IEvidenceService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IEvidenceScoringEngine _engine;
+    private readonly ISeasonStamper _seasons;
 
-    public EvidenceService(ApplicationDbContext context, IAccessControlService access, IEvidenceScoringEngine engine)
+    public EvidenceService(ApplicationDbContext context, IAccessControlService access,
+        IEvidenceScoringEngine engine, ISeasonStamper seasons)
     {
         _context = context;
         _access = access;
         _engine = engine;
+        _seasons = seasons;
     }
 
     public async Task<List<SportMetricDefinitionDto>> GetMetricDefinitionsAsync(int sportId)
@@ -86,11 +89,16 @@ public class EvidenceService : IEvidenceService
             Notes = dto.Notes,
             AssessmentId = dto.AssessmentId,
         };
+        // Player-context season stamp on the test's own date — metadata, never blocks (S3).
+        var stamp = await _seasons.ForPlayerAsync(dto.PlayerId, DateOnly.FromDateTime(test.TestedAt));
+        test.SeasonId = stamp.SeasonId;
         _context.ObjectiveTestResults.Add(test);
         await _context.SaveChangesAsync();
 
         var overrides = await _engine.GetBenchmarkOverridesAsync(dto.PlayerId);
-        return ToTestDto(test, def, Override(overrides, def.Id));
+        var result = ToTestDto(test, def, Override(overrides, def.Id));
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     public async Task<List<ObjectiveTestResultDto>> GetObjectiveTestsAsync(ClaimsPrincipal user, int playerId, int? metricDefinitionId = null)

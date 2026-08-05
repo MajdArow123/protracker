@@ -18,11 +18,14 @@ public class ImprovementPlanService : IImprovementPlanService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ISeasonStamper _seasons;
 
-    public ImprovementPlanService(ApplicationDbContext context, IAccessControlService access)
+    public ImprovementPlanService(ApplicationDbContext context, IAccessControlService access,
+        ISeasonStamper seasons)
     {
         _context = context;
         _access = access;
+        _seasons = seasons;
     }
 
     public async Task<List<ImprovementPlanDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId)
@@ -37,6 +40,9 @@ public class ImprovementPlanService : IImprovementPlanService
     {
         await _access.EnsureCanAccessPlayerAsync(user, dto.PlayerId);
 
+        // A plan has no record date; "today" is the client's local date (S2.2), UTC
+        // today as fallback. Player-context stamp; metadata, never blocks (S3).
+        var stamp = await _seasons.ForPlayerAsync(dto.PlayerId, ClientLocalDate.ResolveToday(dto.LocalDate));
         var plan = new ImprovementPlan
         {
             PlayerId = dto.PlayerId,
@@ -45,11 +51,14 @@ public class ImprovementPlanService : IImprovementPlanService
             SkillTargets = dto.SkillTargets,
             SportSpecificDrills = dto.SportSpecificDrills,
             PositionFocus = dto.PositionFocus,
-            CoachNotes = dto.CoachNotes
+            CoachNotes = dto.CoachNotes,
+            SeasonId = stamp.SeasonId,
         };
         _context.ImprovementPlans.Add(plan);
         await _context.SaveChangesAsync();
-        return ToDto(plan);
+        var result = ToDto(plan);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     public async Task<ImprovementPlanDto> UpdateAsync(ClaimsPrincipal user, int id, CreateImprovementPlanDto dto)

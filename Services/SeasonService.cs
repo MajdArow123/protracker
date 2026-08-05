@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using ProTracker.Common;
@@ -53,7 +52,7 @@ public class SeasonService : ISeasonService
         // server-derived UTC today is a fallback only. DateTime.UtcNow.Date is wrong for
         // every user west of UTC in the evening (a Toronto coach at 9pm on a season's
         // final day would lose that season) and east of UTC in the morning.
-        var today = ResolveToday(date);
+        var today = ClientLocalDate.ResolveToday(date);
         // Day-granular window check (the S2.1 rule): boundaries are DAYS and the stored
         // values are midnight UTC, so comparing a raw instant would drop a season on
         // its final day. Same sargable half-open pattern as SeasonResolver — no .Date
@@ -274,25 +273,6 @@ public class SeasonService : ISeasonService
     }
 
     // --- helpers ---
-
-    // Parses the client-supplied local date. Malformed input is a 400, never a silent
-    // fallback. Range-capped to UTC today ±1 day: no real timezone offset exceeds
-    // ±14h, so anything wider is a bad caller or tampering — do NOT widen this window
-    // (an unbounded date param on an endpoint named /current is a different feature).
-    private static DateOnly ResolveToday(string? date)
-    {
-        var utcToday = DateOnly.FromDateTime(DateTime.UtcNow);
-        if (string.IsNullOrWhiteSpace(date)) return utcToday;
-
-        if (!DateOnly.TryParseExact(date, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                DateTimeStyles.None, out var parsed))
-            throw new BadRequestApiException("date must be an ISO date in yyyy-MM-dd format.");
-
-        if (Math.Abs(parsed.DayNumber - utcToday.DayNumber) > 1)
-            throw new BadRequestApiException("date must be within one day of the current UTC date.");
-
-        return parsed;
-    }
 
     private async Task<Dictionary<int, int>> LinkedPeriodCountsAsync(List<int> seasonIds)
     {

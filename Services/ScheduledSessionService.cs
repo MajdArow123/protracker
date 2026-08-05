@@ -23,11 +23,13 @@ public class ScheduledSessionService : IScheduledSessionService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ISeasonStamper _seasons;
 
-    public ScheduledSessionService(ApplicationDbContext context, IAccessControlService access)
+    public ScheduledSessionService(ApplicationDbContext context, IAccessControlService access, ISeasonStamper seasons)
     {
         _context = context;
         _access = access;
+        _seasons = seasons;
     }
 
     public async Task<List<ScheduledSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
@@ -75,6 +77,12 @@ public class ScheduledSessionService : IScheduledSessionService
     public async Task<ScheduledSessionDto> CreateForSelfAsync(ClaimsPrincipal user, CreateScheduledSessionDto dto)
     {
         var player = await _access.RequireOwnPlayerAsync(user);
+        // Season resolution uses the client's LOCAL date of the session (S2.2 ruling —
+        // the UTC date part of StartTime is only the fallback). Player-context stamp;
+        // metadata, never blocks (S3).
+        var sessionDate = ClientLocalDate.Resolve(dto.LocalDate,
+            DateOnly.FromDateTime(dto.StartTime), "the session's start date");
+        var stamp = await _seasons.ForPlayerAsync(player.Id, sessionDate);
         var session = new ScheduledSession
         {
             PlayerId = player.Id,
@@ -85,15 +93,22 @@ public class ScheduledSessionService : IScheduledSessionService
             Location = dto.Location,
             Focus = dto.Focus,
             Notes = dto.Notes,
+            SeasonId = stamp.SeasonId,
         };
         _context.ScheduledSessions.Add(session);
         await _context.SaveChangesAsync();
-        return ToDto(session);
+        var result = ToDto(session);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     public async Task<ScheduledSessionDto> CreateAsync(ClaimsPrincipal user, int teamId, CreateScheduledSessionDto dto)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
+        // Team-context stamp on the client's LOCAL session date (see CreateForSelfAsync).
+        var sessionDate = ClientLocalDate.Resolve(dto.LocalDate,
+            DateOnly.FromDateTime(dto.StartTime), "the session's start date");
+        var stamp = await _seasons.ForTeamAsync(teamId, sessionDate);
         var session = new ScheduledSession
         {
             TeamId = teamId,
@@ -104,11 +119,14 @@ public class ScheduledSessionService : IScheduledSessionService
             Location = dto.Location,
             Focus = dto.Focus,
             Notes = dto.Notes,
+            SeasonId = stamp.SeasonId,
         };
         _context.ScheduledSessions.Add(session);
         await _context.SaveChangesAsync();
         await _context.Entry(session).Reference(s => s.Team).LoadAsync();
-        return ToDto(session);
+        var result = ToDto(session);
+        result.SeasonNotice = stamp.Notice;
+        return result;
     }
 
     // Team sessions require team access; personal sessions require player ownership.
