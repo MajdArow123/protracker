@@ -18,8 +18,11 @@ public class SeasonsController : ApiControllerBase
     [HttpGet("teams/{teamId}/seasons")]
     public async Task<ActionResult> GetForTeam(int teamId) => Success(await _service.GetForTeamAsync(User, teamId));
 
+    // date = the client's LOCAL calendar date (yyyy-MM-dd), UTC today when absent —
+    // see the ruling in SeasonService.GetCurrentForTeamAsync.
     [HttpGet("teams/{teamId}/seasons/current")]
-    public async Task<ActionResult> GetCurrent(int teamId) => Success(await _service.GetCurrentForTeamAsync(User, teamId));
+    public async Task<ActionResult> GetCurrent(int teamId, [FromQuery] string? date = null) =>
+        Success(await _service.GetCurrentForTeamAsync(User, teamId, date));
 
     // The account's Active seasons (owner-scoped) — powers the dashboard "current season" strip.
     [HttpGet("seasons/active")]

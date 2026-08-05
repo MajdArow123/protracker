@@ -962,6 +962,30 @@ History (one line each; full detail in git history + blueprint):
   plausible wrong answer. 19 tests in `SeasonResolverTests` (a–l +
   Completed/Draft + m/n boundary-day instants + o join-day + stored-non-midnight
   + 2 guards).
+- **S2.2 (landed): LOCAL-DATE RULING — "today" is the USER'S local calendar date,
+  supplied by the client; server-derived UTC today is a FALLBACK only.** Reason:
+  single-region app, the browser already knows the correct date, and
+  `DateTime.UtcNow.Date` is wrong for every user west of UTC in the evening (a
+  Toronto coach at 9pm on a season's final day would lose it). **Every S3 call
+  site that needs "today" must follow this ruling.** Mechanics:
+  `GET /seasons/current?date=yyyy-MM-dd` — absent → UTC-today fallback (existing
+  callers unchanged); malformed → 400 verbatim via `BadRequestApiException`;
+  range-capped to **UTC today ±1 day — do NOT widen** (no real timezone offset
+  exceeds ±14h; an unbounded date on /current would be a different feature).
+  Frontend `utils/localDate.ts` `localDateString()` builds from LOCAL calendar
+  fields (getFullYear/getMonth/getDate) — **NEVER `toISOString()`**, whose UTC
+  conversion reintroduces the exact bug (test-pinned with a real
+  America/Toronto 23:30 where the two dates differ). No i18n string added: the
+  frontend always sends a valid date, so the 400 path is developer/tamper-only
+  and surfaces no user-visible text.
+- **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
+  summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
+  create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
+  Season dates against OTHER stored/DTO dates and are currently correct ONLY
+  because the sole write path is `<input type="date">` producing midnight values.
+  If any later phase writes a Season date from another source (import, script,
+  richer client), both become silently wrong — normalize them to day-granular
+  comparisons at that point.
 - **Open for S3 — Draft seasons participate in resolution**: per S2's ruling,
   Draft seasons are resolvable, so a stale Draft season whose provisional dates
   overlap a real Active season makes an otherwise valid lookup return Ambiguous.

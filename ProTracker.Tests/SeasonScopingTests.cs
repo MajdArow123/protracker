@@ -100,6 +100,86 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
         (await coach.DeleteAsync($"/api/seasons/{season.Id}")).EnsureSuccessStatusCode();
     }
 
+    // RULING: "today" is the user's LOCAL date supplied via ?date=; UTC today is only
+    // the no-param fallback. An Auckland coach's local tomorrow (relative to UTC) must
+    // find a season that UTC today would miss. The season is non-Active so only the
+    // window branch can find it.
+    [Fact]
+    public async Task Supplied_date_wins_over_utc_today()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var tomorrow = DateTime.UtcNow.Date.AddDays(1);
+        var season = await CreateAsync(coach, TestAuth.SoccerTeamId, new CreateSeasonDto
+        {
+            Name = "Tomorrow-Only Probe",
+            StartDate = tomorrow,
+            EndDate = tomorrow,
+            IsActive = false,
+        });
+
+        var withDate = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current?date={tomorrow:yyyy-MM-dd}"))!.Data;
+        Assert.Equal(season.Id, withDate?.Id);
+
+        // No date → UTC-today fallback, which is outside the window: behaviour unchanged.
+        var withoutDate = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current"))!.Data;
+        Assert.Null(withoutDate);
+
+        (await coach.DeleteAsync($"/api/seasons/{season.Id}")).EnsureSuccessStatusCode();
+    }
+
+    // The evening-user case the ruling exists for: a Toronto coach at 9pm — UTC has
+    // already rolled to tomorrow, but their local date is still the season's final
+    // day. Supplying that local date must keep the season current.
+    [Fact]
+    public async Task Season_ending_local_today_is_still_current_after_utc_rolls_over()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var localToday = DateTime.UtcNow.Date.AddDays(-1); // user's clock hasn't reached UTC's date yet
+        var season = await CreateAsync(coach, TestAuth.SoccerTeamId, new CreateSeasonDto
+        {
+            Name = "Evening User Probe",
+            StartDate = localToday.AddDays(-30),
+            EndDate = localToday,
+            IsActive = false,
+        });
+
+        var current = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current?date={localToday:yyyy-MM-dd}"))!.Data;
+        Assert.NotNull(current);
+        Assert.Equal(season.Id, current!.Id);
+
+        (await coach.DeleteAsync($"/api/seasons/{season.Id}")).EnsureSuccessStatusCode();
+    }
+
+    // Malformed date → 400 with a clear message, never a silent fallback.
+    [Fact]
+    public async Task Malformed_current_season_date_is_400()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var response = await coach.GetAsync(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current?date=not-a-date");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    // The date is range-capped to UTC today ±1 day (no real timezone offset exceeds
+    // that) — anything wider is a bad caller or tampering, in both directions.
+    [Fact]
+    public async Task Out_of_range_current_season_date_is_400_in_both_directions()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var utcToday = DateTime.UtcNow.Date;
+
+        var tooFarAhead = await coach.GetAsync(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current?date={utcToday.AddDays(2):yyyy-MM-dd}");
+        Assert.Equal(HttpStatusCode.BadRequest, tooFarAhead.StatusCode);
+
+        var tooFarBehind = await coach.GetAsync(
+            $"/api/teams/{TestAuth.SoccerTeamId}/seasons/current?date={utcToday.AddDays(-2):yyyy-MM-dd}");
+        Assert.Equal(HttpStatusCode.BadRequest, tooFarBehind.StatusCode);
+    }
+
     [Fact]
     public async Task Assistant_coach_reads_via_participation_but_cannot_edit_unowned_season()
     {

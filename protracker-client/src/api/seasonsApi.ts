@@ -1,11 +1,18 @@
 import api from './axiosInstance';
 import type { Season, CreateSeasonInput, SeasonSummary } from '../types';
+import { localDateString } from '../utils/localDate';
 
 export const seasonsApi = {
   getForTeam: (teamId: number) =>
     api.get<Season[]>(`/api/teams/${teamId}/seasons`).then(r => r.data),
+  // "Current" is relative to the USER'S local date (Phase 10 ruling) — the server's
+  // UTC today is only a fallback for callers that omit the param.
   getCurrent: (teamId: number) =>
-    api.get<Season | null>(`/api/teams/${teamId}/seasons/current`).then(r => r.data),
+    api
+      .get<Season | null>(`/api/teams/${teamId}/seasons/current`, {
+        params: { date: localDateString() },
+      })
+      .then(r => r.data),
   getActive: () =>
     api.get<Season[]>('/api/seasons/active').then(r => r.data),
   create: (teamId: number, data: CreateSeasonInput) =>
