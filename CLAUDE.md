@@ -1015,8 +1015,11 @@ History (one line each; full detail in git history + blueprint):
   performance." Engine recalcs are server-triggered → UTC-today fallback is the
   sanctioned date source there. Excluded: `TrainingPlansController.Create`
   (**unreachable in production** — no `MapControllerRoute`/`AddControllersWithViews`
-  in Program.cs, controller has no route attributes; deletion proposed as a separate
-  commit), default-XI/named lineups, and the settled §3 exclusions. Draft seasons
+  in Program.cs, controller has no route attributes; controller + its five Razor
+  views DELETED in the follow-up commit — the other four conventional-routed MVC
+  controllers (Home/TaskItems/Coach/Dashboard) and the shared Views infrastructure
+  are equally unreachable but were left in place, out of that commit's scope),
+  default-XI/named lineups, and the settled §3 exclusions. Draft seasons
   still participate in create-time resolution (no caller filter was added — the
   Draft-overlap open item below stands). 19 tests in `SeasonStampingTests`.
 - **Open for S3+ — stale SeasonId on date-changing updates (ruling recorded)**:
