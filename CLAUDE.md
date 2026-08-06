@@ -1016,9 +1016,12 @@ History (one line each; full detail in git history + blueprint):
   sanctioned date source there. Excluded: `TrainingPlansController.Create`
   (**unreachable in production** — no `MapControllerRoute`/`AddControllersWithViews`
   in Program.cs, controller has no route attributes; controller + its five Razor
-  views DELETED in the follow-up commit — the other four conventional-routed MVC
-  controllers (Home/TaskItems/Coach/Dashboard) and the shared Views infrastructure
-  are equally unreachable but were left in place, out of that commit's scope),
+  views DELETED in the follow-up commit; the other four conventional-routed MVC
+  controllers (Home/TaskItems/Coach/Dashboard) + the ENTIRE Views/ tree were deleted
+  in the commit after that — the legacy MVC surface is fully gone. Leftovers by
+  ruling: `Models/ErrorViewModel.cs` is orphaned (models untouched); wwwroot's
+  Bootstrap/site assets were never served (no UseStaticFiles); no Razor cleanup
+  needed in Program.cs — `AddControllers()` never registered a view engine),
   default-XI/named lineups, and the settled §3 exclusions. Draft seasons
   still participate in create-time resolution (no caller filter was added — the
   Draft-overlap open item below stands). 19 tests in `SeasonStampingTests`.
