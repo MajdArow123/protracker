@@ -55,11 +55,13 @@ export interface AssessmentPeriod {
   seasonId?: number | null;
 }
 
-// Phase 10 S3: attached to a create response when season resolution was Ambiguous —
-// the record saved fine (seasonId null on it); this is a non-blocking nudge to fix the
-// overlapping season dates. Absent/null on reads and clean resolutions.
+// Phase 10 S3/S3+: attached to a create or update response when season resolution was
+// Ambiguous ("AmbiguousSeason", candidates listed) or when a date-changing update moved
+// a previously stamped record outside all seasons ("SeasonUnstamped"). The record saved
+// fine (seasonId null on it); non-blocking nudge. Absent/null on reads and clean
+// resolutions.
 export interface SeasonResolutionNotice {
-  code: string; // "AmbiguousSeason"
+  code: string; // "AmbiguousSeason" | "SeasonUnstamped"
   candidateSeasonIds: number[];
 }
 

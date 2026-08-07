@@ -169,6 +169,7 @@ public class MatchService : IMatchService
             throw new ConflictApiException(
                 "This match has recorded player ratings — remove them before reverting it to a scheduled fixture.");
 
+        var dateChanged = match.MatchDate != dto.MatchDate;
         match.OpponentName = dto.OpponentName.Trim();
         match.MatchDate = dto.MatchDate;
         match.Status = dto.Status;
@@ -186,8 +187,39 @@ public class MatchService : IMatchService
         match.Notes = dto.Notes;
         match.OpponentFormation = NormalizeOptional(dto.OpponentFormation);
         match.ScoutingNotes = NormalizeOptional(dto.ScoutingNotes);
+
+        // Date-changing update: re-resolve and restamp the season (metadata, never
+        // blocks; a resolver failure keeps the current stamp). Untouched dates never
+        // re-resolve — no silent restamping on unrelated edits.
+        SeasonResolutionNoticeDto? seasonNotice = null;
+        if (dateChanged)
+        {
+            var day = DateOnly.FromDateTime(dto.MatchDate);
+            var restamp = match.PlayerId != null
+                ? await _seasons.RestampForPlayerAsync(match.PlayerId.Value, day, match.SeasonId)
+                : await _seasons.RestampForTeamAsync(match.TeamId!.Value, day, match.SeasonId);
+            match.SeasonId = restamp.SeasonId;
+            seasonNotice = restamp.Notice;
+
+            // Cascade: a match lineup's SeasonId was stamped from this match's date.
+            // Server metadata, not tactical content — restamped silently even when
+            // Published, with no Version bump and no audit row.
+            if (match.TeamId != null)
+            {
+                var lineups = await _context.Lineups
+                    .Where(l => l.MatchResultId == match.Id).ToListAsync();
+                foreach (var lineup in lineups)
+                {
+                    var lineupRestamp = await _seasons.RestampForTeamAsync(match.TeamId.Value, day, lineup.SeasonId);
+                    lineup.SeasonId = lineupRestamp.SeasonId;
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
-        return ToDto(match);
+        var result = ToDto(match);
+        result.SeasonNotice = seasonNotice;
+        return result;
     }
 
     public async Task DeleteAsync(ClaimsPrincipal user, int matchId)

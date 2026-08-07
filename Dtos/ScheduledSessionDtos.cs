@@ -5,8 +5,9 @@ namespace ProTracker.Dtos;
 public class ScheduledSessionDto
 {
     public int Id { get; set; }
-    // Set only on a CREATE response when season resolution was Ambiguous — a
-    // non-blocking nudge (Phase 10 S3); null on reads and on clean resolutions.
+    // Set only on a CREATE/UPDATE response when season resolution was Ambiguous, or
+    // when a date-changing update unstamped a previously stamped record — a
+    // non-blocking nudge (Phase 10 S3/S3+); null on reads and on clean resolutions.
     public SeasonResolutionNoticeDto? SeasonNotice { get; set; }
     // Null for a solo athlete's personal session.
     public int? TeamId { get; set; }

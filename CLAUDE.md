@@ -1025,10 +1025,45 @@ History (one line each; full detail in git history + blueprint):
   default-XI/named lineups, and the settled §3 exclusions. Draft seasons
   still participate in create-time resolution (no caller filter was added — the
   Draft-overlap open item below stands). 19 tests in `SeasonStampingTests`.
-- **Open for S3+ — stale SeasonId on date-changing updates (ruling recorded)**:
-  updates that change a record's date (e.g. editing a match's MatchDate) leave a
-  stale SeasonId. DECIDED: re-resolve on date-changing updates, scheduled as its
-  own step AFTER S3 — S3 stays creates-only as specified.
+- **S3+ (landed): re-resolution on date-changing updates.** RULINGS (binding): an
+  update never fails because of season resolution (same principle as creates —
+  the record is the user's data, the stamp is metadata). When an update changes
+  the driving date: re-resolve and restamp — Resolved → new SeasonId;
+  NoCoveringSeason → null **plus a `SeasonUnstamped` notice ONLY on a
+  non-null→null transition, never on null→null**; Ambiguous → null + the existing
+  AmbiguousSeason notice (one mechanism — `SeasonResolutionNoticeDto`, new Code
+  only). An update that does NOT touch the driving date must not re-resolve and
+  leaves SeasonId exactly as it was (test-asserted resolver-NOT-invoked, not just
+  the value). Thrown resolver on update → LogError + SeasonId **UNCHANGED** (differs
+  from create's null — on update, unchanged is the safer failure mode), save
+  proceeds. "Changed" = **exact stored-value vs DTO inequality** (scheduled
+  sessions compare StartTime — LocalDate isn't stored, and a UTC-day comparison
+  could miss a local-midnight crossing; a same-day time edit harmlessly re-resolves
+  to the same answer). `SeasonStamper.RestampForTeamAsync`/`RestampForPlayerAsync`
+  (taking `currentSeasonId`) are the only sanctioned update-path consumers — still
+  no second resolver consumer. Wired (5 methods / 6 create paths):
+  `MatchService.UpdateAsync` (team+solo branch), `AssessmentService.
+  UpdateAssessmentAsync`, `MatchPerformanceService.UpdateAsync`,
+  `TrainingSessionService.UpdateAsync`, `ScheduledSessionService.UpdateAsync`
+  (reuses the DTO's `LocalDate` — the frontend edit path already sends it; zero
+  frontend changes). **CASCADE**: a team match's date edit restamps its lineup(s)
+  in the same update (team context, silently — INCLUDING Published lineups:
+  SeasonId is server metadata, not tactical content — no Version bump, no audit
+  row, no notice for the lineup); solo matches never cascade. No-ops by
+  construction (deliberately not wired): objective tests (no update endpoint),
+  evidence scores (the engine's upsert already restamps per the "records WHEN
+  computed" ruling), lineup upsert (its match key is immutable — the cascade covers
+  it), improvement plans manual+AI (CreatedDate never changes; the AI path has no
+  update endpoint). Season-date edits invalidating stamps en masse → deferred to
+  the S7 backfill. **Nullable-driving-date ruling — decided but currently
+  UNREACHABLE**: clearing a nullable driving date sets SeasonId null + the unstamp
+  notice; no wired update path has a nullable driving date today (`TestedAt` is
+  nullable but objective tests have no update endpoint) — if one is ever added,
+  this ruling already applies. 17 tests in `SeasonRestampingTests` (per-path
+  journeys asserting final DB state incl. the S2.2 local-date-wins case ON update,
+  ambiguous-on-update notice, per-path resolver-not-invoked + throwing-resolver
+  survival via direct service construction, 3 lineup-cascade tests incl. the
+  Published version/audit invariants, solo no-cascade).
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1054,8 +1089,8 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Phase 10 S1a landed** (account-owned seasons — see the Phase 10 section
-  above). S1b NOT started.
+- **Latest: Phase 10 S3+ landed** (re-resolve season on date-changing updates +
+  match→lineup cascade — see the Phase 10 section above). S4 NOT started.
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with

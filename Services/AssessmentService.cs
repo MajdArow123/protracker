@@ -267,11 +267,25 @@ public class AssessmentService : IAssessmentService
             ?? throw new NotFoundApiException($"Assessment {id} was not found.");
         await _access.EnsureCanAccessPlayerAsync(user, assessment.PlayerId);
 
+        var dateChanged = assessment.DateRecorded != dto.DateRecorded;
         assessment.DateRecorded = dto.DateRecorded;
         assessment.Notes = dto.Notes;
+
+        // Date-changing update: re-resolve via SeasonRoster (player context) and restamp.
+        // Metadata, never blocks; untouched dates never re-resolve.
+        SeasonResolutionNoticeDto? seasonNotice = null;
+        if (dateChanged)
+        {
+            var restamp = await _seasons.RestampForPlayerAsync(
+                assessment.PlayerId, DateOnly.FromDateTime(dto.DateRecorded), assessment.SeasonId);
+            assessment.SeasonId = restamp.SeasonId;
+            seasonNotice = restamp.Notice;
+        }
         await _context.SaveChangesAsync();
 
-        return await GetAssessmentByIdAsync(user, id);
+        var result = await GetAssessmentByIdAsync(user, id);
+        result.SeasonNotice = seasonNotice;
+        return result;
     }
 
     public async Task DeleteAssessmentAsync(ClaimsPrincipal user, int id)

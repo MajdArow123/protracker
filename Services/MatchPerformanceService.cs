@@ -66,13 +66,27 @@ public class MatchPerformanceService : IMatchPerformanceService
             ?? throw new NotFoundApiException($"Match performance {id} was not found.");
         await _access.EnsureCanAccessPlayerAsync(user, match.PlayerId);
 
+        var dateChanged = match.MatchDate != dto.MatchDate;
         match.MatchDate = dto.MatchDate;
         match.Opponent = dto.Opponent;
         match.PerformanceRating = dto.PerformanceRating;
         match.Notes = dto.Notes;
         match.SportSpecificStats = dto.SportSpecificStats;
+
+        // Date-changing update: re-resolve (player context) and restamp. Metadata,
+        // never blocks; untouched dates never re-resolve.
+        SeasonResolutionNoticeDto? seasonNotice = null;
+        if (dateChanged)
+        {
+            var restamp = await _seasons.RestampForPlayerAsync(
+                match.PlayerId, DateOnly.FromDateTime(dto.MatchDate), match.SeasonId);
+            match.SeasonId = restamp.SeasonId;
+            seasonNotice = restamp.Notice;
+        }
         await _context.SaveChangesAsync();
-        return ToDto(match);
+        var result = ToDto(match);
+        result.SeasonNotice = seasonNotice;
+        return result;
     }
 
     public async Task DeleteAsync(ClaimsPrincipal user, int id)

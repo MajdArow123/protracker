@@ -76,12 +76,26 @@ public class TrainingSessionService : ITrainingSessionService
             ?? throw new NotFoundApiException($"Training session {id} was not found.");
         await _access.EnsureCanAccessTeamAsync(user, session.TeamId);
 
+        var dateChanged = session.Date != dto.Date;
         session.Date = dto.Date;
         session.DurationMinutes = dto.DurationMinutes;
         session.Notes = dto.Notes;
         session.AttendanceStatus = dto.AttendanceStatus;
+
+        // Date-changing update: re-resolve on the session's own TeamId (immutable on
+        // update) and restamp. Metadata, never blocks; untouched dates never re-resolve.
+        SeasonResolutionNoticeDto? seasonNotice = null;
+        if (dateChanged)
+        {
+            var restamp = await _seasons.RestampForTeamAsync(
+                session.TeamId, DateOnly.FromDateTime(dto.Date), session.SeasonId);
+            session.SeasonId = restamp.SeasonId;
+            seasonNotice = restamp.Notice;
+        }
         await _context.SaveChangesAsync();
-        return ToDto(session);
+        var result = ToDto(session);
+        result.SeasonNotice = seasonNotice;
+        return result;
     }
 
     public async Task DeleteAsync(ClaimsPrincipal user, int id)

@@ -145,6 +145,7 @@ public class ScheduledSessionService : IScheduledSessionService
         var session = await LoadAsync(id);
         await EnsureCanManageSessionAsync(user, session);
 
+        var startChanged = session.StartTime != dto.StartTime;
         session.Title = dto.Title.Trim();
         session.SessionType = dto.SessionType;
         session.StartTime = dto.StartTime;
@@ -152,8 +153,27 @@ public class ScheduledSessionService : IScheduledSessionService
         session.Location = dto.Location;
         session.Focus = dto.Focus;
         session.Notes = dto.Notes;
+
+        // StartTime-changing update: re-resolve on the client's LOCAL date of the new
+        // StartTime (S2.2 — the stored row has no local date to compare, so any StartTime
+        // change re-resolves; a local-midnight crossing invisible to the UTC day is then
+        // never missed) and restamp. Metadata, never blocks; untouched StartTime never
+        // re-resolves.
+        SeasonResolutionNoticeDto? seasonNotice = null;
+        if (startChanged)
+        {
+            var sessionDate = ClientLocalDate.Resolve(dto.LocalDate,
+                DateOnly.FromDateTime(dto.StartTime), "the session's start date");
+            var restamp = session.PlayerId != null
+                ? await _seasons.RestampForPlayerAsync(session.PlayerId.Value, sessionDate, session.SeasonId)
+                : await _seasons.RestampForTeamAsync(session.TeamId!.Value, sessionDate, session.SeasonId);
+            session.SeasonId = restamp.SeasonId;
+            seasonNotice = restamp.Notice;
+        }
         await _context.SaveChangesAsync();
-        return ToDto(session);
+        var result = ToDto(session);
+        result.SeasonNotice = seasonNotice;
+        return result;
     }
 
     public async Task DeleteAsync(ClaimsPrincipal user, int id)
