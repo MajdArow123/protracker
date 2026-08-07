@@ -1,5 +1,8 @@
 import api from './axiosInstance';
-import type { Season, CreateSeasonInput, SeasonSummary, SeasonStampedCounts } from '../types';
+import type {
+  Season, CreateSeasonInput, SeasonSummary, SeasonStampedCounts,
+  SeasonRosterStint, SaveSeasonRosterStintInput, SeasonRosterSaveResult,
+} from '../types';
 import { localDateString } from '../utils/localDate';
 
 export const seasonsApi = {
@@ -30,4 +33,13 @@ export const seasonsApi = {
     api.post(`/api/seasons/${id}/periods/${periodId}`).then(r => r.data),
   unlinkPeriod: (id: number, periodId: number) =>
     api.delete(`/api/seasons/${id}/periods/${periodId}`).then(r => r.data),
+  // S6 roster history. Save responses carry unstampedInWindow (never a retro-stamp).
+  getRoster: (seasonId: number) =>
+    api.get<SeasonRosterStint[]>(`/api/seasons/${seasonId}/roster`).then(r => r.data),
+  addStint: (seasonId: number, data: SaveSeasonRosterStintInput) =>
+    api.post<SeasonRosterSaveResult>(`/api/seasons/${seasonId}/roster`, data).then(r => r.data),
+  updateStint: (stintId: number, data: SaveSeasonRosterStintInput) =>
+    api.put<SeasonRosterSaveResult>(`/api/season-roster/${stintId}`, data).then(r => r.data),
+  deleteStint: (stintId: number) =>
+    api.delete(`/api/season-roster/${stintId}`).then(r => r.data),
 };

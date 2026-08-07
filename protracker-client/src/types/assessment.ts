@@ -111,6 +111,42 @@ export interface SeasonStampedCounts {
   total: number;
 }
 
+// Phase 10 S6: one roster stint — a player's membership window on a team within a
+// season. Multiple non-overlapping stints per (player, season) are legal (mid-season
+// transfers, leave-and-rejoin); overlap within one season is a server-side 400.
+export interface SeasonRosterStint {
+  id: number;
+  seasonId: number;
+  teamId: number;
+  teamName: string;
+  playerId: number;
+  playerName: string;
+  jerseyNumber?: number | null;
+  positionId?: number | null;
+  positionName?: string | null;
+  joinedAt: string;
+  leftAt?: string | null;
+}
+
+export interface SaveSeasonRosterStintInput {
+  playerId: number;
+  teamId: number;
+  // Required by ruling (an undated stint resolves nothing); the UI defaults it to the
+  // season's start date, editable.
+  joinedAt: string;
+  leftAt?: string | null;
+  jerseyNumber?: number | null;
+  positionId?: number | null;
+}
+
+// Save response (S6 ruling): saving a stint NEVER retroactively assigns existing
+// records — unstampedInWindow is the count of the player's unassigned records inside
+// the stint's effective window, surfaced so the UI can point at S7 backfill tooling.
+export interface SeasonRosterSaveResult {
+  stint: SeasonRosterStint;
+  unstampedInWindow: number;
+}
+
 export interface SeasonPeriodPoint {
   periodId: number;
   periodName: string;

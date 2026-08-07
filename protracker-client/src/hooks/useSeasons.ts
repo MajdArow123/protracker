@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { seasonsApi } from '../api/seasonsApi';
-import type { Season, CreateSeasonInput, SeasonSummary } from '../types';
+import type {
+  Season, CreateSeasonInput, SeasonSummary, SeasonRosterStint, SaveSeasonRosterStintInput,
+} from '../types';
 
 export function useSeasons(teamId: number | undefined) {
   return useQuery<Season[]>({
@@ -87,6 +89,40 @@ export function useLinkPeriod() {
   return useMutation({
     mutationFn: ({ seasonId, periodId, link }: { seasonId: number; periodId: number; link: boolean }) =>
       link ? seasonsApi.linkPeriod(seasonId, periodId) : seasonsApi.unlinkPeriod(seasonId, periodId),
+    onSuccess: invalidate,
+  });
+}
+
+// ── S6 roster history ────────────────────────────────────────────────────────
+
+export function useSeasonRoster(seasonId: number | undefined) {
+  return useQuery<SeasonRosterStint[]>({
+    queryKey: ['season-roster', seasonId],
+    queryFn: () => seasonsApi.getRoster(seasonId!),
+    enabled: !!seasonId,
+  });
+}
+
+// Roster mutations touch only the roster list — stamps on existing records are
+// deliberately NOT invalidated because saving a stint never changes them (ruling).
+function useInvalidateSeasonRoster() {
+  const qc = useQueryClient();
+  return () => qc.invalidateQueries({ queryKey: ['season-roster'] });
+}
+
+export function useSaveStint() {
+  const invalidate = useInvalidateSeasonRoster();
+  return useMutation({
+    mutationFn: ({ seasonId, stintId, data }: { seasonId: number; stintId?: number; data: SaveSeasonRosterStintInput }) =>
+      stintId != null ? seasonsApi.updateStint(stintId, data) : seasonsApi.addStint(seasonId, data),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteStint() {
+  const invalidate = useInvalidateSeasonRoster();
+  return useMutation({
+    mutationFn: (stintId: number) => seasonsApi.deleteStint(stintId),
     onSuccess: invalidate,
   });
 }

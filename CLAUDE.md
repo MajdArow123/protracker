@@ -1167,6 +1167,80 @@ History (one line each; full detail in git history + blueprint):
   IsActive + 2 new (full-lifecycle incl. absent-status-unchanged + unknown-400;
   stamped-counts owner-only). Frontend: `seasonOverlap.test.ts` (7 cases incl.
   boundary-day inclusive, ISO-datetime input, empty-date never-claims).
+- **S6 (landed): roster history — the SeasonRoster write path + UI.** The first phase
+  where player-context resolution produces non-null values. RULINGS (binding):
+  (1) **at most ONE stint per (player, season) covering any date** — sequential
+  non-overlapping stints ARE legal (mid-season transfers, leave-and-rejoin); enforced
+  in the SERVICE layer (range overlap can't be a unique index) as a 400 naming the
+  conflicting stint's team and dates. Day-granular: leave day and join day both count
+  wholly, so rejoining ON the leave day is an overlap; the day after is legal.
+  Cross-SEASON overlap stays legal (the documented Ambiguous state). (2) **JoinedAt
+  REQUIRED** (`SaveSeasonRosterStintDto.JoinedAt` is nullable so absence 400s
+  explicitly, never binds to 0001-01-01); the UI defaults it to the season's
+  StartDate, editable. LeftAt optional (null = still on); **LeftAt >= JoinedAt is
+  validated here (§5b — nothing validated it before S6)**. (3) **saving a stint NEVER
+  retroactively stamps** — the save response (`SeasonRosterSaveResultDto`) carries
+  `UnstampedInWindow`: the player's unstamped records inside the stint window CLAMPED
+  to the season window (assessments, objective tests, match performances, improvement
+  plans, solo matches; **EvidenceBasedScores excluded by ruling** — their SeasonId is
+  computation provenance, not backfillable history); the UI shows a post-save modal
+  naming the count and that backfill tooling ships in S7. (4) **participation guard**:
+  the stint's TeamId must have a SeasonTeam row in that season (400) — the resolver
+  ignores stint TeamId, so an unguarded roster row on a non-participating team would
+  still resolve. (5) **§5g fixed: stint write permission = CanManagePlayers on the
+  STINT's team, never Player.TeamId** — ending/fixing/deleting a departed player's
+  stint keeps working (test-pinned with TeamId nulled after create); a coach not on
+  the stint's team gets the same 404 as a missing stint (no id enumeration). Create
+  additionally requires `EnsureCanAccessPlayerAsync` (the app-wide player contract —
+  403, unlike the season 404 rule), so departed players can't be rostered until S7.
+- **S6 RESOLVER CLAMP (§5a — changes S2-frozen code by explicit ruling):**
+  `ResolveForPlayerAsync` now ALSO requires the date inside the season's own
+  [StartDate, EndDate] window, matching `ResolveForTeamAsync`. The asymmetry existed
+  since S2 and was invisible only because SeasonRosters had zero production rows —
+  unclamped, the common open-ended stint (LeftAt null, the UI default) would resolve
+  its season for every later date FOREVER, silently stamping off-season records into a
+  finished season. The invariant deliberately lives in the resolver, NOT in stint-date
+  validation (resolver correctness must not depend on validation elsewhere). Two
+  regression tests pin it: open-ended stint past EndDate → NoCoveringSeason; stint
+  joined before StartDate → NoCoveringSeason before the window opens.
+- **S6 endpoints/UI**: `GET/POST /api/seasons/{id}/roster` (read = uniform season 404
+  via `EnsureCanAccessSeasonAsync`; athletes on participating teams can read),
+  `PUT/DELETE /api/season-roster/{stintId}`. Stint identity (player, team) is
+  IMMUTABLE on update — a mismatch 400s (delete + re-add), never a silent ignore.
+  Jersey 0–999; position must belong to the team's sport. **Roster 400s use
+  `BadRequestApiException`** (message verbatim on the wire — `ValidationApiException`
+  swaps in its generic message; ruling 5 requires renderable rejections, and the UI
+  toasts the server message). UI: `SeasonRosterSection`
+  (`components/seasons/`, the dir S5 emptied) is the THIRD SeasonDetail section on
+  /seasons, grouped per participating team via pure `groupStintsByTeam`
+  (`utils/seasonRoster.ts`, vitest: a participating team with zero stints renders as
+  an honest empty group; a stint on an unlisted team is never dropped). Player picker
+  = current team members only. Roster load failure renders error + Retry, never "no
+  players" (FINDING-009). **Season-scoped ONLY by ruling — no team-side surface.**
+  Backend tests: `SeasonRosterTests` (10, HTTP-level); +27 i18n keys ×5 locales.
+- **S6 findings — NAMED follow-ons, not unremarked gaps**:
+  - **§5d — roster population stays MANUAL by ruling**: join-code redemption
+    (`AuthService`) and player create/update (`PlayerService`) do NOT auto-write
+    stints — a membership change silently writing season history is the same
+    invisible mutation ruling 3 exists to prevent. Consequence: every future
+    join/add produces a roster-less player until an explicit auto-stint feature is
+    designed (follow-on).
+  - **§5e**: objective-test create's `TestedAt` fallback is bare `DateTime.UtcNow`
+    (`EvidenceService`) — a record timestamp rather than a "today" lookup, but the
+    one player-context driving date not routed through `ClientLocalDate` (follow-on).
+  - **§5f**: the player report's season dropdown keys off `report.player.teamId`
+    (current team) — a transferred player can't select their old team's seasons;
+    visible now that history exists (follow-on).
+  - **Team report still uses the CURRENT roster** when season-filtered
+    (`RosterIsCurrentNotHistorical` unchanged). Scoped in S6 Part A: `playerIds` at
+    `ReportService.GetTeamReportAsync` + 7 consumers (including a
+    `team.Players.First(...)` that would throw for departed players), a
+    window-semantics decision, a Season fetch, and the flag/banner/test updates —
+    deferred with S7.
+  - Consequences now live: stamped-counts (the S5 edit-dates warning number) includes
+    player-context rows; the first-ever player-context AmbiguousSeason/SeasonUnstamped
+    toasts can fire (including on the AI improvement-plan path); solo athletes remain
+    permanently unaffected (no rosters by design).
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1192,11 +1266,13 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Phase 10 S5 landed** (account-level /seasons page, DTO shim removal
-  with full lifecycle unlock, the three plumbed signals now rendering, season
-  filters on reports + team matches — see the Phase 10 section above). S6
-  (roster history) and S7 (backfill tooling) NOT started; multi-team season
-  management is a named open item.
+- **Latest: Phase 10 S6 landed** (SeasonRoster write path + season-scoped roster
+  UI, the §5a resolver clamp, §5b/§5g fixes, ruling-3 unstamped-count on save —
+  see the Phase 10 section above). S7 (backfill tooling) NOT started; named S6
+  follow-ons: §5d auto-stint, §5e, §5f, historical team report. Multi-team
+  season management remains a named open item. Phase 10 S5 before it: account-level
+  /seasons page, DTO shim removal with full lifecycle unlock, the three plumbed
+  signals rendering, season filters on reports + team matches.
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with

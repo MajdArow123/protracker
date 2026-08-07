@@ -41,7 +41,7 @@ public class SeasonResolverTests : IClassFixture<ProTrackerWebApplicationFactory
         public CapturingLogger Logger = null!;
         public int TeamAlphaId, TeamBetaId;
         public int SeasonAId, SeasonBId, SeasonArchivedId, SeasonOverlap1Id, SeasonOverlap2Id, SeasonOddHoursId;
-        public int PlayerSingleId, PlayerTransferId, PlayerLeftId, PlayerRejoinId, PlayerDoubleId, PlayerLateJoinId;
+        public int PlayerSingleId, PlayerTransferId, PlayerLeftId, PlayerRejoinId, PlayerDoubleId, PlayerLateJoinId, PlayerEarlyJoinId;
     }
 
     private static DateTime D(int y, int m, int d) => new(y, m, d, 0, 0, 0, DateTimeKind.Utc);
@@ -104,6 +104,8 @@ public class SeasonResolverTests : IClassFixture<ProTrackerWebApplicationFactory
             var pDouble = MkPlayer("RSV Double", alpha.Id);
             // o: JoinedAt carries a late-hour time component.
             var pLateJoin = MkPlayer("RSV LateJoin", alpha.Id);
+            // p (S6 clamp): stint starts BEFORE its season's StartDate.
+            var pEarlyJoin = MkPlayer("RSV EarlyJoin", beta.Id);
             await db.SaveChangesAsync();
 
             db.SeasonRosters.AddRange(
@@ -122,7 +124,9 @@ public class SeasonResolverTests : IClassFixture<ProTrackerWebApplicationFactory
                     TeamId = alpha.Id,
                     JoinedAt = new DateTime(2030, 3, 10, 18, 0, 0, DateTimeKind.Utc),
                     LeftAt = null,
-                });
+                },
+                // Joined a month before season B's window opens, never left.
+                new SeasonRoster { PlayerId = pEarlyJoin.Id, SeasonId = sB.Id, TeamId = beta.Id, JoinedAt = D(2030, 6, 1), LeftAt = null });
             await db.SaveChangesAsync();
         }
 
@@ -140,6 +144,7 @@ public class SeasonResolverTests : IClassFixture<ProTrackerWebApplicationFactory
         f.PlayerRejoinId = (await db.Players.SingleAsync(p => p.FullName == "RSV Rejoin")).Id;
         f.PlayerDoubleId = (await db.Players.SingleAsync(p => p.FullName == "RSV Double")).Id;
         f.PlayerLateJoinId = (await db.Players.SingleAsync(p => p.FullName == "RSV LateJoin")).Id;
+        f.PlayerEarlyJoinId = (await db.Players.SingleAsync(p => p.FullName == "RSV EarlyJoin")).Id;
         return f;
     }
 
@@ -368,6 +373,34 @@ public class SeasonResolverTests : IClassFixture<ProTrackerWebApplicationFactory
         AssertResolved(await f.Resolver.ResolveForTeamAsync(f.TeamAlphaId, Day(2034, 6, 30)), f.SeasonOddHoursId);
         // And the day after the end is outside.
         AssertNoCoveringSeason(await f.Resolver.ResolveForTeamAsync(f.TeamAlphaId, Day(2034, 7, 1)));
+    }
+
+    // (S6 CLAMP, regression 1): an open-ended stint (LeftAt null — the UI default)
+    // must NOT resolve its season for dates after the season's own EndDate. Before the
+    // clamp this returned Resolved(SeasonB) — the asymmetry with the team path was
+    // invisible only because SeasonRosters had zero production rows.
+    [Fact]
+    public async Task Player_open_ended_stint_does_not_resolve_past_the_seasons_end()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var f = await ArrangeAsync(scope);
+        // pTransfer's season-B stint is open-ended; season B ended 2030-12-31.
+        AssertNoCoveringSeason(await f.Resolver.ResolveForPlayerAsync(f.PlayerTransferId, Day(2031, 1, 15)));
+        // Control: the same stint still resolves inside the window.
+        AssertResolved(await f.Resolver.ResolveForPlayerAsync(f.PlayerTransferId, Day(2030, 12, 31)), f.SeasonBId);
+    }
+
+    // (S6 CLAMP, regression 2): a stint starting before the season's StartDate must not
+    // resolve dates before the window opens — the stint covers them, the season doesn't.
+    [Fact]
+    public async Task Player_stint_starting_before_the_season_does_not_resolve_before_season_start()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var f = await ArrangeAsync(scope);
+        // Joined 2030-06-01; season B opens 2030-07-01. June is outside the season.
+        AssertNoCoveringSeason(await f.Resolver.ResolveForPlayerAsync(f.PlayerEarlyJoinId, Day(2030, 6, 15)));
+        // Control: inside the season window the same stint resolves.
+        AssertResolved(await f.Resolver.ResolveForPlayerAsync(f.PlayerEarlyJoinId, Day(2030, 8, 15)), f.SeasonBId);
     }
 
     // GUARD: a nonexistent team id (e.g. a playerId passed by mistake — both methods

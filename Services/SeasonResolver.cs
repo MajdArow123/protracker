@@ -54,9 +54,10 @@ public interface ISeasonResolver
     Task<SeasonResolution> ResolveForTeamAsync(int teamId, DateOnly date);
 
     // PLAYER CONTEXT: resolves via SeasonRoster ONLY — the roster row whose
-    // [JoinedAt, LeftAt] (LeftAt null = still on) covers the day. NEVER routes
-    // through Player.TeamId: that field is "where are they now", and using it for a
-    // historical record is the exact bug SeasonRoster exists to prevent.
+    // [JoinedAt, LeftAt] (LeftAt null = still on) covers the day, AND whose season's
+    // own [StartDate, EndDate] window covers it too (S6 clamp — see below). NEVER
+    // routes through Player.TeamId: that field is "where are they now", and using it
+    // for a historical record is the exact bug SeasonRoster exists to prevent.
     Task<SeasonResolution> ResolveForPlayerAsync(int playerId, DateOnly date);
 }
 
@@ -114,10 +115,21 @@ public class SeasonResolver : ISeasonResolver
         // when Player.TeamId currently points at a team with a covering season.
         // Two roster rows in the SAME season covering one date (e.g. data written
         // around a rejoin) are still unambiguously that season — hence Distinct.
+        //
+        // S6 CLAMP: the date must fall inside the SEASON's own window too, exactly
+        // like the team path. Until S6 this method checked only the stint dates —
+        // an asymmetry that was invisible while SeasonRosters had zero rows. With
+        // real rows it would have been live: the common open-ended stint (LeftAt
+        // null, the UI default) would resolve its season for every later date
+        // FOREVER, so an off-season record after EndDate would silently stamp the
+        // finished season instead of honestly staying unassigned. The invariant
+        // lives here, not in stint-date validation — resolver correctness must not
+        // depend on validation elsewhere staying perfect.
         var (dayStart, nextDay) = DayWindow(date);
         var candidateIds = await _context.SeasonRosters
             .Where(r => r.PlayerId == playerId
                 && r.JoinedAt < nextDay && (r.LeftAt == null || r.LeftAt >= dayStart)
+                && r.Season.StartDate < nextDay && r.Season.EndDate >= dayStart
                 && r.Season.Status != SeasonStatus.Archived)
             .Select(r => r.SeasonId)
             .Distinct()

@@ -19,6 +19,7 @@ import { useAssessmentPeriods } from '../../hooks/useAssessmentPeriods';
 import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { seasonsApi } from '../../api/seasonsApi';
 import { findOverlappingSeasons } from '../../utils/seasonOverlap';
+import { SeasonRosterSection } from '../../components/seasons/SeasonRosterSection';
 import type { Season, CreateSeasonInput, SeasonStatus } from '../../types';
 
 const STATUS_STYLES: Record<SeasonStatus, string> = {
@@ -353,6 +354,9 @@ function SeasonDetail({ season }: { season: Season }) {
         )}
         <p className="text-[11px] text-gray-400 mt-2">{tr('seasons.tapToLink', 'Tap a period to link or unlink it from this season.')}</p>
       </div>
+
+      {/* S6: roster history — who was on which team during this season. */}
+      <SeasonRosterSection season={season} />
     </div>
   );
 }

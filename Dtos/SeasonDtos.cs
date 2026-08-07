@@ -91,6 +91,49 @@ public class SeasonCategoryTrendDto
     public double Improvement { get; set; }
 }
 
+// Phase 10 S6: one roster stint — a player's membership window on a team within a
+// season. Multiple non-overlapping stints per (player, season) are legal (mid-season
+// transfers, leave-and-rejoin); overlap within one season is a 400 (service-enforced).
+public class SeasonRosterStintDto
+{
+    public int Id { get; set; }
+    public int SeasonId { get; set; }
+    public int TeamId { get; set; }
+    public string TeamName { get; set; } = "";
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public int? JerseyNumber { get; set; }
+    public int? PositionId { get; set; }
+    public string? PositionName { get; set; }
+    public DateTime JoinedAt { get; set; }
+    public DateTime? LeftAt { get; set; }
+}
+
+public class SaveSeasonRosterStintDto
+{
+    // Identity fields — set on create, immutable on update (a mismatch 400s; changing
+    // who/where a stint was is delete + re-add, never a silent rewrite).
+    public int PlayerId { get; set; }
+    public int TeamId { get; set; }
+    // REQUIRED (S6 ruling): an undated stint can never resolve, so allowing one creates
+    // data that silently does nothing. Nullable so an absent value is an explicit 400,
+    // not a bindable 0001-01-01.
+    public DateTime? JoinedAt { get; set; }
+    public DateTime? LeftAt { get; set; }
+    public int? JerseyNumber { get; set; }
+    public int? PositionId { get; set; }
+}
+
+// Save response (S6 ruling 3): saving a stint NEVER retroactively stamps existing
+// records — but the expectation is real, so the count of this player's unstamped
+// records inside the stint's effective window rides back with the save and the UI says
+// backfill tooling arrives in S7.
+public class SeasonRosterSaveResultDto
+{
+    public SeasonRosterStintDto Stint { get; set; } = null!;
+    public int UnstampedInWindow { get; set; }
+}
+
 // Phase 10 S3/S3+: attached to a create or update RESPONSE when season resolution was
 // Ambiguous ("AmbiguousSeason", candidates listed), or when a date-changing update moved
 // a previously stamped record outside all seasons ("SeasonUnstamped", no candidates).
