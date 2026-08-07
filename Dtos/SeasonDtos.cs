@@ -1,19 +1,21 @@
 namespace ProTracker.Dtos;
 
+// A season's participating team (S5: the honest multi-team representation that
+// replaced the single-team TeamId/TeamName wire shim).
+public class SeasonTeamRefDto
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = "";
+}
+
 public class SeasonDto
 {
     public int Id { get; set; }
-    // TEMPORARY wire-compat shim (TeamId/TeamName/IsActive) for the single-team-era UI —
-    // remove in Phase 10 S5 when the Seasons UI moves to account level. TeamId/TeamName
-    // derive from the season's SINGLE SeasonTeam row and are null when it has more than
-    // one (never "the first row"); IsActive derives from Status == Active.
-    public int? TeamId { get; set; }
-    public string? TeamName { get; set; }
+    public List<SeasonTeamRefDto> Teams { get; set; } = new();
     public string Name { get; set; } = "";
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
     public string Status { get; set; } = "";
-    public bool IsActive { get; set; }
     public string? Goals { get; set; }
     public int LinkedPeriodCount { get; set; }
 }
@@ -23,8 +25,31 @@ public class CreateSeasonDto
     public string Name { get; set; } = "";
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public bool IsActive { get; set; }
+    // Full lifecycle (Draft/Active/Completed/Archived). Replaced the IsActive shim,
+    // which could only ever produce Active/Draft — Completed and Archived were
+    // unreachable through the API before S5. Null/empty = Draft on create, unchanged
+    // on update; an unknown value is a 400, never silently ignored.
+    public string? Status { get; set; }
     public string? Goals { get; set; }
+}
+
+// Phase 10 S5: how many rows are currently STAMPED to this season (row-level SeasonId,
+// the S3/S4 mechanism — NOT the period-linkage summary). Powers the edit-dates warning:
+// stamps are not re-resolved when a season's window changes until S7 backfill tooling.
+public class SeasonStampedCountsDto
+{
+    public int SeasonId { get; set; }
+    public int Matches { get; set; }
+    public int Assessments { get; set; }
+    public int ObjectiveTests { get; set; }
+    public int EvidenceScores { get; set; }
+    public int MatchPerformances { get; set; }
+    public int Lineups { get; set; }
+    public int TrainingSessions { get; set; }
+    public int ScheduledSessions { get; set; }
+    public int ImprovementPlans { get; set; }
+    public int Total => Matches + Assessments + ObjectiveTests + EvidenceScores
+        + MatchPerformances + Lineups + TrainingSessions + ScheduledSessions + ImprovementPlans;
 }
 
 // One assessment period's team-wide average, used inside a season summary.

@@ -26,6 +26,16 @@ export function useActiveSeasons(enabled = true) {
   });
 }
 
+// Account-level list (S5): every season the caller owns, all statuses. Coach-only
+// endpoint — gate with `enabled` on surfaces athletes can reach.
+export function useAllSeasons(enabled = true) {
+  return useQuery<Season[]>({
+    queryKey: ['seasons-all'],
+    queryFn: seasonsApi.getAll,
+    enabled,
+  });
+}
+
 export function useSeasonSummary(seasonId: number | undefined) {
   return useQuery<SeasonSummary>({
     queryKey: ['season-summary', seasonId],
@@ -34,44 +44,46 @@ export function useSeasonSummary(seasonId: number | undefined) {
   });
 }
 
-// Any season mutation can shift the active season / linked counts / summaries, so refresh broadly.
-function useInvalidateSeasons(teamId: number | undefined) {
+// Any season mutation can shift the active season / linked counts / summaries, so refresh
+// broadly — the ['seasons'] root covers every per-team list.
+function useInvalidateSeasons() {
   const qc = useQueryClient();
   return () => {
-    qc.invalidateQueries({ queryKey: ['seasons', teamId] });
-    qc.invalidateQueries({ queryKey: ['season-current', teamId] });
+    qc.invalidateQueries({ queryKey: ['seasons'] });
+    qc.invalidateQueries({ queryKey: ['season-current'] });
     qc.invalidateQueries({ queryKey: ['seasons-active'] });
+    qc.invalidateQueries({ queryKey: ['seasons-all'] });
     qc.invalidateQueries({ queryKey: ['season-summary'] });
     qc.invalidateQueries({ queryKey: ['assessmentPeriods'] });
   };
 }
 
-export function useCreateSeason(teamId: number) {
-  const invalidate = useInvalidateSeasons(teamId);
+export function useCreateSeason() {
+  const invalidate = useInvalidateSeasons();
   return useMutation({
-    mutationFn: (data: CreateSeasonInput) => seasonsApi.create(teamId, data),
+    mutationFn: ({ teamId, data }: { teamId: number; data: CreateSeasonInput }) => seasonsApi.create(teamId, data),
     onSuccess: invalidate,
   });
 }
 
-export function useUpdateSeason(teamId: number) {
-  const invalidate = useInvalidateSeasons(teamId);
+export function useUpdateSeason() {
+  const invalidate = useInvalidateSeasons();
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateSeasonInput }) => seasonsApi.update(id, data),
     onSuccess: invalidate,
   });
 }
 
-export function useDeleteSeason(teamId: number) {
-  const invalidate = useInvalidateSeasons(teamId);
+export function useDeleteSeason() {
+  const invalidate = useInvalidateSeasons();
   return useMutation({
     mutationFn: (id: number) => seasonsApi.remove(id),
     onSuccess: invalidate,
   });
 }
 
-export function useLinkPeriod(teamId: number) {
-  const invalidate = useInvalidateSeasons(teamId);
+export function useLinkPeriod() {
+  const invalidate = useInvalidateSeasons();
   return useMutation({
     mutationFn: ({ seasonId, periodId, link }: { seasonId: number; periodId: number; link: boolean }) =>
       link ? seasonsApi.linkPeriod(seasonId, periodId) : seasonsApi.unlinkPeriod(seasonId, periodId),

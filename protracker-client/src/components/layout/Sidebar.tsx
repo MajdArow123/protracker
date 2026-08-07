@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Shield, BarChart3, Activity, Salad,
   TrendingUp, X, LogOut, User, ChevronRight, CheckSquare, MessageSquare, Heart, CreditCard,
   ClipboardList, Dumbbell, Trophy, Target, BookOpen, Library, NotebookPen, Handshake, Medal, Bell,
+  CalendarRange,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/useAuth';
@@ -26,6 +27,7 @@ interface NavItem {
 const coachNav: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', labelKey: 'nav.dashboard', icon: LayoutDashboard, end: true },
   { to: '/teams', label: 'Teams', labelKey: 'nav.teams', icon: Shield },
+  { to: '/seasons', label: 'Seasons', labelKey: 'nav.seasons', icon: CalendarRange },
   { to: '/players', label: 'Players', labelKey: 'nav.players', icon: Users },
   { to: '/goals', label: 'Player Goals', labelKey: 'nav.playerGoals', icon: Target },
   { to: '/tasks', label: 'Tasks', labelKey: 'nav.tasks', icon: CheckSquare },

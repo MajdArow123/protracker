@@ -23,6 +23,8 @@ import { LineChartWrapper } from '../../components/charts/LineChartWrapper';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
 import { usePlayerReport } from '../../hooks/useReports';
+import { useSeasons } from '../../hooks/useSeasons';
+import { SeasonFilterSelect } from '../../components/reports/SeasonFilterSelect';
 import { useSportMetrics, usePlayerEvidenceScores, usePlayerObjectiveTests } from '../../hooks/useEvidence';
 import { EvidenceBreakdownModal } from '../../components/evidence/EvidenceBreakdownModal';
 import { AIDataSourcesNote } from '../../components/evidence/AIDataSourcesNote';
@@ -64,7 +66,12 @@ export function PlayerReportPage() {
   const { data: billing } = useBilling();
   const { addToast } = useToast();
   const playerId = id ? parseInt(id) : undefined;
-  const { data: report, isLoading, isError, refetch } = usePlayerReport(playerId);
+  // S4 opt-in season filter — undefined = career-wide, exactly the pre-S4 report.
+  // Player-context rows are unstamped until S6 lands rosters, so old seasons will
+  // honestly show little; the control defaults to "All time".
+  const [seasonId, setSeasonId] = useState<number | undefined>(undefined);
+  const { data: report, isLoading, isError, refetch } = usePlayerReport(playerId, seasonId);
+  const { data: seasons = [] } = useSeasons(report?.player?.teamId ?? undefined);
   // undefined = user hasn't touched the focus chips yet (the chart then defaults
   // to the weakest stat — 8 simultaneous lines is unreadable); null = "Show all".
   const [focusPick, setFocusPick] = useState<string | null | undefined>(undefined);
@@ -243,7 +250,8 @@ export function PlayerReportPage() {
     <PageWrapper
       title={player.fullName}
       actions={
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <SeasonFilterSelect seasons={seasons} value={seasonId} onChange={setSeasonId} />
           <Button variant="secondary" size="sm" onClick={() => navigate('/reports')}>
             <ArrowLeft size={16} /> {tr('common.back', 'Back')}
           </Button>

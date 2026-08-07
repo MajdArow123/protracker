@@ -3,18 +3,18 @@ import { reportsApi } from '../api/reportsApi';
 import { foodAlternativesApi } from '../api/foodAlternativesApi';
 import type { PlayerReport, TeamReport, FoodAlternative, EquivalentFood, PlannedMealItem } from '../types';
 
-export function usePlayerReport(playerId: number | undefined) {
+export function usePlayerReport(playerId: number | undefined, seasonId?: number) {
   return useQuery<PlayerReport>({
-    queryKey: ['report-player', playerId],
-    queryFn: () => reportsApi.getPlayerReport(playerId!),
+    queryKey: ['report-player', playerId, seasonId ?? null],
+    queryFn: () => reportsApi.getPlayerReport(playerId!, seasonId),
     enabled: !!playerId,
   });
 }
 
-export function useTeamReport(teamId: number | undefined) {
+export function useTeamReport(teamId: number | undefined, seasonId?: number) {
   return useQuery<TeamReport>({
-    queryKey: ['report-team', teamId],
-    queryFn: () => reportsApi.getTeamReport(teamId!),
+    queryKey: ['report-team', teamId, seasonId ?? null],
+    queryFn: () => reportsApi.getTeamReport(teamId!, seasonId),
     enabled: !!teamId,
   });
 }

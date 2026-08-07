@@ -210,7 +210,8 @@
     "sectionFamily": "Famille",
     "sectionMyProfile": "Mon profil",
     "collapseSidebar": "Réduire la barre latérale",
-    "expandSidebar": "Développer la barre latérale"
+    "expandSidebar": "Développer la barre latérale",
+    "seasons": "Saisons"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -2157,7 +2158,8 @@
     "categoryBreakdown": "Répartition par catégorie",
     "bestAt": "Meilleur en",
     "scoreComparison": "Comparaison des scores",
-    "playerName": "Joueur {{id}}"
+    "playerName": "Joueur {{id}}",
+    "rosterCaveat": "Ceci montre les données de l'effectif actuel pour cette saison — pas le groupe qui l'a réellement jouée."
   },
   "register": {
     "codeExpired": "Ce code a expiré. Demandez-en un nouveau à votre entraîneur.",
@@ -2666,7 +2668,9 @@
     "previousMeetings": "Confrontations précédentes",
     "noPreviousMeetings": "Aucune confrontation précédente enregistrée contre cet adversaire.",
     "meetingsRecordOne": "1 joué — {{wins}}V · {{draws}}N · {{losses}}D",
-    "meetingsRecordOther": "{{count}} joués — {{wins}}V · {{draws}}N · {{losses}}D"
+    "meetingsRecordOther": "{{count}} joués — {{wins}}V · {{draws}}N · {{losses}}D",
+    "noMatchesInSeason": "Aucun match rattaché à cette saison",
+    "noMatchesInSeasonDesc": "Les matchs enregistrés avant l'existence des saisons ne sont rattachés à aucune."
   },
   "seasons": {
     "assessmentPeriods": "Périodes d'évaluation",
@@ -2703,7 +2707,33 @@
     "setActive": "Définir comme saison actuelle (active)",
     "startDate": "Date de début",
     "tapToLink": "Touchez une période pour l'associer ou la dissocier de cette saison.",
-    "title": "Saisons"
+    "title": "Saisons",
+    "defaultName": "Saison {{year}}",
+    "team": "Équipe",
+    "pickTeam": "Choisissez une équipe…",
+    "errTeamRequired": "Choisissez l'équipe concernée par cette saison.",
+    "windowExplainer": "Les dates de début et de fin déterminent quels enregistrements — matchs, séances, évaluations — sont rattachés à cette saison.",
+    "status": "Statut",
+    "statusDraft": "Brouillon",
+    "statusActive": "Active",
+    "statusCompleted": "Terminée",
+    "statusArchived": "Archivée",
+    "overlapTitle": "Saisons qui se chevauchent",
+    "overlapMsg": "Ces dates chevauchent : {{names}}. Les chevauchements sont autorisés, mais un enregistrement daté dans les deux fenêtres ne peut être rattaché automatiquement à aucune des deux.",
+    "createAnyway": "Enregistrer quand même",
+    "stampsTitle": "Enregistrements déjà rattachés",
+    "stampsMsg": "{{num}} enregistrements sont actuellement rattachés à cette saison. Modifier ses dates ne les rattachera PAS à nouveau — les rattachements existants restent tels quels jusqu'à l'arrivée des outils de reprise.",
+    "stampsMsgUnknown": "Impossible de compter pour l'instant les enregistrements rattachés à cette saison. Modifier ses dates ne les rattachera PAS à nouveau — les rattachements existants restent tels quels jusqu'à l'arrivée des outils de reprise.",
+    "saveDates": "Enregistrer les nouvelles dates",
+    "onboardTitle": "Organisez votre travail en saisons",
+    "onboardBody": "Une saison est une fenêtre de dates nommée — une année de championnat, un hiver en salle, un tournoi d'été. Les matchs, séances et évaluations enregistrés dans la fenêtre y sont rattachés, pour comparer une saison à la suivante.",
+    "createFirst": "Créez votre première saison",
+    "noPeriodsForTeams": "Les équipes de cette saison n'ont pas encore de périodes d'évaluation.",
+    "noticeAmbiguous": "Enregistré — mais la date tombe dans {{num}} saisons qui se chevauchent, donc il n'a été rattaché à aucune.",
+    "noticeUnstamped": "Enregistré — la nouvelle date est en dehors de toutes les saisons, donc cet enregistrement ne compte plus pour aucune saison.",
+    "filterLabel": "Filtrer par saison",
+    "allTime": "Toute la période",
+    "mechanismExplainer": "Les chiffres couvrent les enregistrements rattachés à la saison par leur date, ce qui peut différer des totaux du résumé de saison liés aux périodes."
   },
   "sessions": {
     "allCaughtUp": "Vous êtes à jour — vous avez noté vos séances récentes.",

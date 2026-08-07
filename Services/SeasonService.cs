@@ -14,6 +14,9 @@ public interface ISeasonService
     // GetCurrentForTeamAsync. Null falls back to UTC today.
     Task<SeasonDto?> GetCurrentForTeamAsync(ClaimsPrincipal user, int teamId, string? date = null);
     Task<List<SeasonDto>> GetActiveForOwnerAsync(ClaimsPrincipal user);
+    // The account-level list (S5): every season the caller owns, all statuses.
+    Task<List<SeasonDto>> GetAllForOwnerAsync(ClaimsPrincipal user);
+    Task<SeasonStampedCountsDto> GetStampedCountsAsync(ClaimsPrincipal user, int seasonId);
     Task<SeasonDto> CreateAsync(ClaimsPrincipal user, int teamId, CreateSeasonDto dto);
     Task<SeasonDto> UpdateAsync(ClaimsPrincipal user, int seasonId, CreateSeasonDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int seasonId);
@@ -99,7 +102,7 @@ public class SeasonService : ISeasonService
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
             // Overlapping Active seasons are allowed — activating one never deactivates others.
-            Status = dto.IsActive ? SeasonStatus.Active : SeasonStatus.Draft,
+            Status = ParseStatus(dto.Status) ?? SeasonStatus.Draft,
             Goals = string.IsNullOrWhiteSpace(dto.Goals) ? null : dto.Goals.Trim(),
         };
         // The team's current default profile becomes this season's starting profile.
@@ -122,16 +125,49 @@ public class SeasonService : ISeasonService
         season.EndDate = dto.EndDate;
         season.Goals = string.IsNullOrWhiteSpace(dto.Goals) ? null : dto.Goals.Trim();
 
-        // "Set active" only promotes THIS season; unchecking an Active season demotes it
-        // to Draft, and other statuses (Completed/Archived) are left alone.
-        if (dto.IsActive)
-            season.Status = SeasonStatus.Active;
-        else if (season.Status == SeasonStatus.Active)
-            season.Status = SeasonStatus.Draft;
+        // Full lifecycle since S5 (the IsActive shim could only reach Active/Draft).
+        // Absent status = unchanged; overlap of Active seasons stays allowed.
+        if (ParseStatus(dto.Status) is SeasonStatus newStatus)
+            season.Status = newStatus;
 
         await _context.SaveChangesAsync();
         var count = await _context.AssessmentPeriods.CountAsync(p => p.SeasonId == season.Id);
         return ToDto(season, count);
+    }
+
+    public async Task<List<SeasonDto>> GetAllForOwnerAsync(ClaimsPrincipal user)
+    {
+        var userId = _access.RequireUserId(user);
+        var seasons = await _context.Seasons
+            .Include(s => s.SeasonTeams).ThenInclude(st => st.Team)
+            .Where(s => s.OwnerId == userId)
+            .OrderByDescending(s => s.Status == SeasonStatus.Active).ThenByDescending(s => s.StartDate)
+            .ToListAsync();
+        var counts = await LinkedPeriodCountsAsync(seasons.Select(s => s.Id).ToList());
+        return seasons.Select(s => ToDto(s, counts.GetValueOrDefault(s.Id))).ToList();
+    }
+
+    // Row-stamp counts (S3/S4 mechanism), owner-only. Deliberately NOT the period-linkage
+    // summary — the two can disagree; this one exists for the edit-dates warning, where
+    // "records stamped to this season" is exactly the number that will NOT be re-resolved
+    // until S7 backfill tooling ships.
+    public async Task<SeasonStampedCountsDto> GetStampedCountsAsync(ClaimsPrincipal user, int seasonId)
+    {
+        var season = await LoadSeasonAsync(seasonId);
+        EnsureOwner(user, season);
+        return new SeasonStampedCountsDto
+        {
+            SeasonId = seasonId,
+            Matches = await _context.MatchResults.CountAsync(m => m.SeasonId == seasonId),
+            Assessments = await _context.PlayerAssessments.CountAsync(a => a.SeasonId == seasonId),
+            ObjectiveTests = await _context.ObjectiveTestResults.CountAsync(t => t.SeasonId == seasonId),
+            EvidenceScores = await _context.EvidenceBasedScores.CountAsync(s => s.SeasonId == seasonId),
+            MatchPerformances = await _context.MatchPerformances.CountAsync(m => m.SeasonId == seasonId),
+            Lineups = await _context.Lineups.CountAsync(l => l.SeasonId == seasonId),
+            TrainingSessions = await _context.TrainingSessions.CountAsync(s => s.SeasonId == seasonId),
+            ScheduledSessions = await _context.ScheduledSessions.CountAsync(s => s.SeasonId == seasonId),
+            ImprovementPlans = await _context.ImprovementPlans.CountAsync(p => p.SeasonId == seasonId),
+        };
     }
 
     public async Task DeleteAsync(ClaimsPrincipal user, int seasonId)
@@ -327,24 +363,27 @@ public class SeasonService : ISeasonService
             throw new ValidationApiException("End date must be on or after the start date.");
     }
 
-    // TeamId/TeamName are the temporary wire-compat shim (see SeasonDto): derived from
-    // the season's single SeasonTeam row, explicitly null when the season spans more
-    // than one team — never a silently-picked first row. Removed in Phase 10 S5.
-    private static SeasonDto ToDto(Season s, int linkedCount)
+    // Null/empty = "not specified" (create defaults Draft, update keeps the current
+    // status); an unknown value 400s — deliberately NOT a silent ignore (ParseFoot rule).
+    private static SeasonStatus? ParseStatus(string? status)
     {
-        var st = s.SeasonTeams.Count == 1 ? s.SeasonTeams[0] : null;
-        return new SeasonDto
-        {
-            Id = s.Id,
-            TeamId = st?.TeamId,
-            TeamName = st?.Team?.Name,
-            Name = s.Name,
-            StartDate = s.StartDate,
-            EndDate = s.EndDate,
-            Status = s.Status.ToString(),
-            IsActive = s.Status == SeasonStatus.Active,
-            Goals = s.Goals,
-            LinkedPeriodCount = linkedCount,
-        };
+        if (string.IsNullOrWhiteSpace(status)) return null;
+        if (Enum.TryParse<SeasonStatus>(status, ignoreCase: true, out var parsed)) return parsed;
+        throw new ValidationApiException($"Unknown season status '{status}'.");
     }
+
+    private static SeasonDto ToDto(Season s, int linkedCount) => new()
+    {
+        Id = s.Id,
+        Teams = s.SeasonTeams
+            .OrderBy(st => st.Team?.Name)
+            .Select(st => new SeasonTeamRefDto { Id = st.TeamId, Name = st.Team?.Name ?? "" })
+            .ToList(),
+        Name = s.Name,
+        StartDate = s.StartDate,
+        EndDate = s.EndDate,
+        Status = s.Status.ToString(),
+        Goals = s.Goals,
+        LinkedPeriodCount = linkedCount,
+    };
 }

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 import {
   evidenceApi,
   type CreateObjectiveTestInput, type CreateMatchStatInput,
@@ -58,13 +59,15 @@ export function usePlayerSelfAssessments(playerId: number | null | undefined, en
 // score can drive the live preview, then invalidates the cached score list.
 export function useAddObjectiveTest() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: async (data: CreateObjectiveTestInput) => {
       const test = await evidenceApi.addObjectiveTest(data);
       const score = await evidenceApi.recalculateMetric(data.playerId, data.metricDefinitionId);
       return { test, score };
     },
-    onSuccess: (_res, vars) => {
+    onSuccess: (res, vars) => {
+      notifySeason(res.test);
       qc.invalidateQueries({ queryKey: ['evidence', 'tests', vars.playerId] });
       qc.invalidateQueries({ queryKey: ['evidence', 'scores', vars.playerId] });
     },

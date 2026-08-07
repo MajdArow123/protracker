@@ -1113,19 +1113,60 @@ History (one line each; full detail in git history + blueprint):
   Archived-by-id readable, 404 missing+foreign on a list AND an aggregate, ratings
   via parent match, suppressed-index-type lists, team-report flag+filtered averages,
   player-report injury window overlap, dashboard totals).
-- **S5 must render these** (consolidated obligation — three server-side signals are
-  plumbed end-to-end but render NOWHERE; each was deferred separately and correctly,
-  and if S5 ships a seasons UI without them, the plumbing is decoration):
-  1. **AmbiguousSeason notice** — `seasonNotice` on CREATE and UPDATE responses of
-     every stamped path (8 TS types + `LineupDto`): season resolution hit overlapping
-     candidate seasons, record saved with SeasonId null, `CandidateSeasonIds` names
-     them. UI: non-blocking nudge to fix overlapping season dates.
-  2. **SeasonUnstamped notice** — `seasonNotice` on UPDATE responses: a date-changing
-     edit moved a previously stamped record outside all seasons (non-null→null only).
-     UI: tell the user the record no longer counts toward any season.
-  3. **RosterIsCurrentNotHistorical flag** — on every season-filtered team report
-     (`GET /api/reports/team/{id}?seasonId=`): the player set is TODAY's roster, not
-     that season's squad. UI: caveat the report until S6 roster history replaces it.
+- **S5 (landed): account-level Seasons UI + DTO shim removal.** RULINGS (binding):
+  (1) **Overlapping seasons are ALLOWED** — create/edit shows a non-blocking warning
+  naming the overlapping season(s) (client-side `utils/seasonOverlap.ts`
+  `findOverlappingSeasons`, pure + vitest-pinned), proceeds on confirm; blocking would
+  assert real overlaps (league season + summer tournament) are invalid. (2) **Season
+  date edits are allowed after records are stamped, never silent** — the edit-dates
+  confirm shows the count from `GET /api/seasons/{id}/stamped-counts` (owner-only,
+  row-stamp-based) and states stamps will NOT be re-resolved until S7 backfill; a
+  failed count still warns (unknown-count wording), never silently proceeds.
+  (3) **Empty state is the PRIMARY path** — `/seasons` renders onboarding (what
+  seasons do + create action); per ruling the form prefills the NAME only
+  (`{{year}} Season`), dates stay EMPTY with an explainer line — a confidently wrong
+  window prefill is worse than none (the Aug–May school-year default was explicitly
+  rejected; Toronto seasons don't follow it). (4) The three plumbed signals now
+  RENDER: **AmbiguousSeason** + **SeasonUnstamped** via `hooks/useSeasonNotice.ts`
+  (`useSeasonNoticeToast`, wired into the create/update mutation hooks of all 8
+  stamped features incl. lineup save + AI plan; Ambiguous wording states what
+  happened and links coaches to /seasons WITHOUT prescribing a fix — overlaps are
+  legal; toasts with links persist 8s vs 4s), and **RosterIsCurrentNotHistorical**
+  as an amber banner on the season-filtered team report. (5) **Two-mechanism
+  discoverability**: stamp counts appear ONLY inside the edit-dates dialog (never
+  beside the period-linkage summary averages), and the report season filter shows an
+  info tooltip (`seasons.mechanismExplainer`, ×5 locales) stating figures cover
+  records assigned by date, which can differ from the summary's period-linked totals.
+  **Shim removal (both sides)**: `SeasonDto` `TeamId`/`TeamName`/`IsActive` →
+  `Teams: [{Id,Name}]` list + `Status` string; `CreateSeasonDto.IsActive` →
+  `Status` (null = Draft on create / unchanged on update; unknown value 400s via
+  `ParseStatus` — deliberately NOT a silent ignore). **FINDING: the IsActive write
+  shim made Completed and Archived UNREACHABLE through the API** — Status replacing
+  it unlocks the full lifecycle the resolver already supported (a capability fix,
+  not just a refactor). **FINDING: `POST /api/seasons/{id}/set-current` writes
+  `ApplicationUser.CurrentSeasonId`, which NOTHING reads** (resolver has no
+  fallback to it; stamping never consults it) — dormant endpoint awaiting a
+  consumer, deliberately NOT surfaced in S5 (surfacing it would be decoration).
+  New endpoints: `GET /api/seasons` (owner, all statuses), `GET /api/seasons/{id}/
+  stamped-counts`. UI: `/seasons` (`pages/seasons/SeasonsPage.tsx`) in the coach
+  sidebar after Teams (not in the phone BottomNav); TeamDetailPage's seasons tab +
+  `TeamSeasonsSection` REMOVED (account page absorbed list/create/edit/delete/
+  summary/period-linking — period picker scopes to the season's participating
+  teams); dashboard strip shows `teams` names and navigates to /seasons. **Season
+  filters added ONLY to**: team report + player report (`SeasonFilterSelect`, with
+  the caveat banner on team) and the team Matches tab (with a filtered-empty state
+  distinct from "nothing recorded") — player-detail tabs/evidence/solo/parent
+  surfaces deliberately excluded (S6 gap / permanent-null / S4 exclusions).
+  Create stays single-team (team picker → existing POST); **multi-team season
+  management (add/remove SeasonTeam rows, per-season benchmark overrides) is a
+  NAMED OPEN ITEM** — needs new endpoints + UI. `useSeasons` mutation hooks no
+  longer take teamId (invalidate the ['seasons'] root). Toast component gained
+  optional link support (`ToastOptions.linkTo/linkLabel`). +30 i18n keys ×5
+  locales, appended preserving file order (a re-sort was reverted — 336-line diffs
+  per locale for nothing). Backend tests: `SeasonScopingTests` migrated off
+  IsActive + 2 new (full-lifecycle incl. absent-status-unchanged + unknown-400;
+  stamped-counts owner-only). Frontend: `seasonOverlap.test.ts` (7 cases incl.
+  boundary-day inclusive, ISO-datetime input, empty-date never-claims).
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1151,9 +1192,11 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Phase 10 S4 landed** (opt-in `?seasonId=` read filters, uniform 404
-  contract, per-season report/dashboard aggregates — see the Phase 10 section
-  above). S5 NOT started.
+- **Latest: Phase 10 S5 landed** (account-level /seasons page, DTO shim removal
+  with full lifecycle unlock, the three plumbed signals now rendering, season
+  filters on reports + team matches — see the Phase 10 section above). S6
+  (roster history) and S7 (backfill tooling) NOT started; multi-team season
+  management is a named open item.
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with

@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 import { improvementApi } from '../api/improvementApi';
 
 export function usePlayerImprovementPlans(playerId: number | null | undefined) {
@@ -10,10 +11,14 @@ export function usePlayerImprovementPlans(playerId: number | null | undefined) {
 }
 
 export function useCreateImprovementPlan() {
+  const notifySeason = useSeasonNoticeToast();
   const qc = useQueryClient();
   return useMutation({
     mutationFn: improvementApi.createPlan,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['improvement'] }),
+    onSuccess: created => {
+      notifySeason(created);
+      qc.invalidateQueries({ queryKey: ['improvement'] });
+    },
   });
 }
 

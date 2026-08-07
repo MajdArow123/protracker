@@ -22,7 +22,6 @@ import type { PlayerReport } from '../../types';
 import { TeamMatchesSection } from '../../components/matches/TeamMatchesSection';
 import { TeamScheduleSection } from '../../components/sessions/TeamScheduleSection';
 import { TeamAnnouncementsSection } from '../../components/announcements/TeamAnnouncementsSection';
-import { TeamSeasonsSection } from '../../components/seasons/TeamSeasonsSection';
 import { TeamInviteSection } from '../../components/teams/TeamInviteSection';
 import { CoachingStaffSection } from '../../components/teams/CoachingStaffSection';
 import { useMyCoachPermissions } from '../../hooks/useTeamCoaches';
@@ -37,12 +36,12 @@ import { PlayerAvatar } from '../../components/players/PlayerAvatar';
 import { clsx } from 'clsx';
 import {
   ArrowLeft, Edit, Trash2, Plus, Users, ShieldAlert, ClipboardCheck,
-  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, CalendarRange, ShieldCheck, Shirt,
+  Trophy, Medal, AlertTriangle, Calendar, BarChart3, Star, ShieldCheck, Shirt,
 } from 'lucide-react';
 
-type TeamTab = 'overview' | 'lineup' | 'schedule' | 'matches' | 'seasons' | 'evidence';
+type TeamTab = 'overview' | 'lineup' | 'schedule' | 'matches' | 'evidence';
 
-const TEAM_TABS: TeamTab[] = ['overview', 'lineup', 'schedule', 'matches', 'seasons', 'evidence'];
+const TEAM_TABS: TeamTab[] = ['overview', 'lineup', 'schedule', 'matches', 'evidence'];
 const COACH_ONLY_TABS: TeamTab[] = ['lineup', 'evidence'];
 
 // Deep-link support (?tab=lineup), read once on mount — same pattern as PlayerDetailPage.
@@ -359,7 +358,6 @@ export function TeamDetailPage() {
             ...(isCoach ? [['lineup', t('teams.tabLineup', 'Lineup'), Shirt] as [TeamTab, string, typeof Users]] : []),
             ['schedule', t('teams.tabSchedule', 'Schedule'), Calendar],
             ['matches', t('teams.tabMatches', 'Matches'), Star],
-            ['seasons', t('teams.tabSeasons', 'Seasons'), CalendarRange],
             ...(isCoach ? [['evidence', t('teams.tabEvidence', 'Evidence'), ShieldCheck] as [TeamTab, string, typeof Users]] : []),
           ] as [TeamTab, string, typeof Users][]).map(([id, label, Icon]) => (
             <button
@@ -397,11 +395,6 @@ export function TeamDetailPage() {
         </div>
       )}
 
-      {teamTab === 'seasons' && (
-        <div className="p-4 lg:p-6">
-          <TeamSeasonsSection teamId={teamId} isCoach={isCoach} />
-        </div>
-      )}
 
       {teamTab === 'evidence' && (
         <div className="p-4 lg:p-6">

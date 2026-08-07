@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 import { sessionsApi, type CreateSessionInput } from '../api/sessionsApi';
 
 export function useTeamSessions(teamId: number | null | undefined) {
@@ -19,17 +20,25 @@ export function useMySessions(enabled = true) {
 
 export function useCreateSession() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: ({ teamId, data }: { teamId: number; data: CreateSessionInput }) => sessionsApi.create(teamId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
+    onSuccess: created => {
+      notifySeason(created);
+      qc.invalidateQueries({ queryKey: ['sessions'] });
+    },
   });
 }
 
 export function useUpdateSession() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateSessionInput }) => sessionsApi.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
+    onSuccess: updated => {
+      notifySeason(updated);
+      qc.invalidateQueries({ queryKey: ['sessions'] });
+    },
   });
 }
 

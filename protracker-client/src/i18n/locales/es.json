@@ -210,7 +210,8 @@
     "sectionFamily": "Familia",
     "sectionMyProfile": "Mi perfil",
     "collapseSidebar": "Contraer la barra lateral",
-    "expandSidebar": "Expandir la barra lateral"
+    "expandSidebar": "Expandir la barra lateral",
+    "seasons": "Temporadas"
   },
   "auth": {
     "signIn": "Iniciar sesión",
@@ -2157,7 +2158,8 @@
     "categoryBreakdown": "Desglose por categoría",
     "bestAt": "Mejor en",
     "scoreComparison": "Comparación de puntuaciones",
-    "playerName": "Jugador {{id}}"
+    "playerName": "Jugador {{id}}",
+    "rosterCaveat": "Esto muestra los datos de la plantilla actual para esa temporada — no la plantilla que realmente la jugó."
   },
   "register": {
     "codeExpired": "Ese código ha caducado. Pídele uno nuevo a tu entrenador.",
@@ -2666,7 +2668,9 @@
     "previousMeetings": "Enfrentamientos anteriores",
     "noPreviousMeetings": "No hay enfrentamientos anteriores registrados contra este rival.",
     "meetingsRecordOne": "1 jugado — {{wins}}V · {{draws}}E · {{losses}}D",
-    "meetingsRecordOther": "{{count}} jugados — {{wins}}V · {{draws}}E · {{losses}}D"
+    "meetingsRecordOther": "{{count}} jugados — {{wins}}V · {{draws}}E · {{losses}}D",
+    "noMatchesInSeason": "No hay partidos asignados a esta temporada",
+    "noMatchesInSeasonDesc": "Los partidos registrados antes de que existieran las temporadas no están asignados a ninguna."
   },
   "seasons": {
     "assessmentPeriods": "Períodos de evaluación",
@@ -2703,7 +2707,33 @@
     "setActive": "Establecer como temporada actual (activa)",
     "startDate": "Fecha de inicio",
     "tapToLink": "Toca un período para vincularlo o desvincularlo de esta temporada.",
-    "title": "Temporadas"
+    "title": "Temporadas",
+    "defaultName": "Temporada {{year}}",
+    "team": "Equipo",
+    "pickTeam": "Elige un equipo…",
+    "errTeamRequired": "Elige el equipo al que pertenece esta temporada.",
+    "windowExplainer": "Las fechas de inicio y fin determinan qué registros — partidos, sesiones, evaluaciones — se asignan a esta temporada.",
+    "status": "Estado",
+    "statusDraft": "Borrador",
+    "statusActive": "Activa",
+    "statusCompleted": "Completada",
+    "statusArchived": "Archivada",
+    "overlapTitle": "Temporadas superpuestas",
+    "overlapMsg": "Estas fechas se superponen con: {{names}}. Las temporadas superpuestas están permitidas, pero un registro fechado dentro de ambas ventanas no puede asignarse automáticamente a ninguna.",
+    "createAnyway": "Guardar de todos modos",
+    "stampsTitle": "Registros ya asignados",
+    "stampsMsg": "{{num}} registros están asignados actualmente a esta temporada. Cambiar sus fechas NO los reasignará — las asignaciones existentes se mantienen hasta que lleguen las herramientas de reproceso.",
+    "stampsMsgUnknown": "No se pudieron contar ahora los registros asignados a esta temporada. Cambiar sus fechas NO los reasignará — las asignaciones existentes se mantienen hasta que lleguen las herramientas de reproceso.",
+    "saveDates": "Guardar las nuevas fechas",
+    "onboardTitle": "Organiza tu trabajo en temporadas",
+    "onboardBody": "Una temporada es una ventana de fechas con nombre — un año de liga, un invierno en pista cubierta, un torneo de verano. Los partidos, sesiones y evaluaciones registrados dentro de la ventana se asignan a ella, para comparar una temporada con la siguiente.",
+    "createFirst": "Crea tu primera temporada",
+    "noPeriodsForTeams": "Los equipos de esta temporada aún no tienen períodos de evaluación.",
+    "noticeAmbiguous": "Guardado — pero la fecha cae dentro de {{num}} temporadas superpuestas, así que no se asignó a ninguna.",
+    "noticeUnstamped": "Guardado — la nueva fecha está fuera de todas las temporadas, así que este registro ya no cuenta para ninguna temporada.",
+    "filterLabel": "Filtrar por temporada",
+    "allTime": "Todo el historial",
+    "mechanismExplainer": "Las cifras cubren los registros asignados a la temporada por su fecha, lo que puede diferir de los totales del resumen de temporada vinculados a períodos."
   },
   "sessions": {
     "allCaughtUp": "Todo al día: ya valoraste tus sesiones recientes.",

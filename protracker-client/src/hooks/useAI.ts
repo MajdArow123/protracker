@@ -1,11 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { aiApi } from '../api/aiApi';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 
 export function useGenerateImprovementPlan() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: (playerId: number) => aiApi.generateImprovementPlan(playerId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['improvement'] }),
+    onSuccess: created => {
+      notifySeason(created);
+      qc.invalidateQueries({ queryKey: ['improvement'] });
+    },
   });
 }
 

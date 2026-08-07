@@ -28,7 +28,7 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
         Name = name,
         StartDate = DateTime.Parse(start).ToUniversalTime(),
         EndDate = DateTime.Parse(end).ToUniversalTime(),
-        IsActive = active,
+        Status = active ? "Active" : "Draft",
     };
 
     private static async Task<SeasonDto> CreateAsync(HttpClient client, int teamId, CreateSeasonDto dto)
@@ -49,8 +49,8 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
         // Activating B must NOT have deactivated A — overlap is allowed.
         var list = (await coach.GetFromJsonAsync<TestApiResponse<List<SeasonDto>>>(
             $"/api/teams/{TestAuth.SoccerTeamId}/seasons"))!.Data!;
-        Assert.True(list.Single(s => s.Id == a.Id).IsActive);
-        Assert.True(list.Single(s => s.Id == b.Id).IsActive);
+        Assert.Equal("Active", list.Single(s => s.Id == a.Id).Status);
+        Assert.Equal("Active", list.Single(s => s.Id == b.Id).Status);
         Assert.Equal("Active", list.Single(s => s.Id == a.Id).Status);
 
         (await coach.DeleteAsync($"/api/seasons/{a.Id}")).EnsureSuccessStatusCode();
@@ -89,7 +89,7 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
             Name = "Final Day Probe",
             StartDate = today.AddDays(-30),
             EndDate = today, // midnight this morning — the bug shape
-            IsActive = false,
+            Status = "Draft",
         });
 
         var current = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
@@ -114,7 +114,7 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
             Name = "Tomorrow-Only Probe",
             StartDate = tomorrow,
             EndDate = tomorrow,
-            IsActive = false,
+            Status = "Draft",
         });
 
         var withDate = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
@@ -142,7 +142,7 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
             Name = "Evening User Probe",
             StartDate = localToday.AddDays(-30),
             EndDate = localToday,
-            IsActive = false,
+            Status = "Draft",
         });
 
         var current = (await coach.GetFromJsonAsync<TestApiResponse<SeasonDto>>(
@@ -258,6 +258,75 @@ public class SeasonScopingTests : IClassFixture<ProTrackerWebApplicationFactory>
             var owner = await db.Users.SingleAsync(u => u.Email == TestAuth.SoccerCoachEmail);
             Assert.Null(owner.CurrentSeasonId);
         }
+    }
+
+    // ── Phase 10 S5: account-level list, full lifecycle, stamped counts ──────
+
+    // The IsActive shim could only produce Active/Draft — Completed and Archived were
+    // unreachable through the API before S5. Status must reach all four.
+    [Fact]
+    public async Task Status_reaches_the_full_lifecycle_and_get_all_returns_every_status()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+
+        var season = await CreateAsync(coach, TestAuth.SoccerTeamId, Dto("Lifecycle Probe", "2026-01-01", "2026-06-30", active: false));
+        Assert.Equal("Draft", season.Status);
+        Assert.Equal(new[] { TestAuth.SoccerTeamId }, season.Teams.Select(t => t.Id));
+
+        foreach (var status in new[] { "Active", "Completed", "Archived" })
+        {
+            var update = await coach.PutAsJsonAsync($"/api/seasons/{season.Id}", new CreateSeasonDto
+            { Name = "Lifecycle Probe", StartDate = season.StartDate, EndDate = season.EndDate, Status = status });
+            update.EnsureSuccessStatusCode();
+            var all = (await coach.GetFromJsonAsync<TestApiResponse<List<SeasonDto>>>("/api/seasons"))!.Data!;
+            Assert.Equal(status, all.Single(s => s.Id == season.Id).Status);
+        }
+
+        // Absent status on update = unchanged; unknown status = 400, never a silent ignore.
+        var keep = await coach.PutAsJsonAsync($"/api/seasons/{season.Id}", new CreateSeasonDto
+        { Name = "Lifecycle Probe", StartDate = season.StartDate, EndDate = season.EndDate });
+        keep.EnsureSuccessStatusCode();
+        var kept = (await coach.GetFromJsonAsync<TestApiResponse<List<SeasonDto>>>("/api/seasons"))!.Data!;
+        Assert.Equal("Archived", kept.Single(s => s.Id == season.Id).Status);
+        var bogus = await coach.PutAsJsonAsync($"/api/seasons/{season.Id}", new CreateSeasonDto
+        { Name = "Lifecycle Probe", StartDate = season.StartDate, EndDate = season.EndDate, Status = "SortOfActive" });
+        Assert.Equal(HttpStatusCode.BadRequest, bogus.StatusCode);
+
+        (await coach.DeleteAsync($"/api/seasons/{season.Id}")).EnsureSuccessStatusCode();
+    }
+
+    [Fact]
+    public async Task Stamped_counts_are_owner_only_and_count_row_stamps()
+    {
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+        var season = await CreateAsync(coach, TestAuth.SoccerTeamId, Dto("Stamp Count Probe", "2026-01-01", "2026-06-30"));
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.MatchResults.Add(new ProTracker.Models.MatchResult
+        {
+            TeamId = TestAuth.SoccerTeamId,
+            OpponentName = "Stamp Count Opp",
+            MatchDate = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc),
+            ScoreFormat = ProTracker.Models.ScoreFormat.Goals,
+            SeasonId = season.Id,
+        });
+        await db.SaveChangesAsync();
+
+        var counts = (await coach.GetFromJsonAsync<TestApiResponse<SeasonStampedCountsDto>>(
+            $"/api/seasons/{season.Id}/stamped-counts"))!.Data!;
+        Assert.Equal(1, counts.Matches);
+        Assert.Equal(1, counts.Total);
+        Assert.Equal(0, counts.Assessments);
+
+        // Owner-only: another coach never sees the numbers.
+        var other = await TestAuth.LoginAsync(_factory, TestAuth.BasketballCoachEmail, TestAuth.SeedPassword);
+        var refused = await other.GetAsync($"/api/seasons/{season.Id}/stamped-counts");
+        Assert.False(refused.IsSuccessStatusCode);
+
+        db.MatchResults.RemoveRange(db.MatchResults.Where(m => m.OpponentName == "Stamp Count Opp"));
+        await db.SaveChangesAsync();
+        (await coach.DeleteAsync($"/api/seasons/{season.Id}")).EnsureSuccessStatusCode();
     }
 }
 

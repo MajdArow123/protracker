@@ -25,6 +25,7 @@ export const CoachDashboardPage = named(() => import('../pages/dashboard/CoachDa
 export const TeamsPage = named(() => import('../pages/teams/TeamsPage'), 'TeamsPage');
 export const TeamDetailPage = named(() => import('../pages/teams/TeamDetailPage'), 'TeamDetailPage');
 export const TeamFormPage = named(() => import('../pages/teams/TeamFormPage'), 'TeamFormPage');
+export const SeasonsPage = named(() => import('../pages/seasons/SeasonsPage'), 'SeasonsPage');
 export const PlayersPage = named(() => import('../pages/players/PlayersPage'), 'PlayersPage');
 export const PlayerDetailPage = named(() => import('../pages/players/PlayerDetailPage'), 'PlayerDetailPage');
 export const PlayerFormPage = named(() => import('../pages/players/PlayerFormPage'), 'PlayerFormPage');

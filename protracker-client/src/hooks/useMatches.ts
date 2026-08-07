@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchesApi, type CreateMatchInput, type RatingInput } from '../api/matchesApi';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 
-export function useTeamMatches(teamId: number | null | undefined) {
+export function useTeamMatches(teamId: number | null | undefined, seasonId?: number) {
   return useQuery({
-    queryKey: ['matches', 'team', teamId],
-    queryFn: () => matchesApi.getForTeam(teamId!),
+    queryKey: ['matches', 'team', teamId, seasonId ?? null],
+    queryFn: () => matchesApi.getForTeam(teamId!, seasonId),
     enabled: !!teamId,
   });
 }
@@ -19,17 +20,25 @@ export function usePlayerMatchRatings(playerId: number | null | undefined) {
 
 export function useCreateMatch() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: ({ teamId, data }: { teamId: number; data: CreateMatchInput }) => matchesApi.create(teamId, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['matches'] }),
+    onSuccess: created => {
+      notifySeason(created);
+      qc.invalidateQueries({ queryKey: ['matches'] });
+    },
   });
 }
 
 export function useUpdateMatch() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: CreateMatchInput }) => matchesApi.update(id, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['matches'] }),
+    onSuccess: updated => {
+      notifySeason(updated);
+      qc.invalidateQueries({ queryKey: ['matches'] });
+    },
   });
 }
 

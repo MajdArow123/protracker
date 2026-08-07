@@ -25,8 +25,9 @@ export interface RatingInput {
 }
 
 export const matchesApi = {
-  getForTeam: (teamId: number) =>
-    api.get<MatchResult[]>(`/api/teams/${teamId}/matches`).then(r => r.data),
+  // seasonId (S4, opt-in): only rows stamped to that season; omitted = all rows.
+  getForTeam: (teamId: number, seasonId?: number) =>
+    api.get<MatchResult[]>(`/api/teams/${teamId}/matches`, { params: { seasonId } }).then(r => r.data),
   create: (teamId: number, data: CreateMatchInput) =>
     api.post<MatchResult>(`/api/teams/${teamId}/matches`, data).then(r => r.data),
   update: (id: number, data: CreateMatchInput) =>

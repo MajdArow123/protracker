@@ -10,6 +10,7 @@ import { SkeletonCard } from '../ui/Skeleton';
 import { ConfirmModal } from '../ui/Modal';
 import { useToast } from '../../context/useToast';
 import { useTeamMatches, useCreateMatch, useUpdateMatch, useDeleteMatch, useSaveMatchRatings } from '../../hooks/useMatches';
+import { useSeasons } from '../../hooks/useSeasons';
 import type { MatchResult, MatchOutcome, MatchStatus, PlayerMatchRating } from '../../types';
 import { SourceBadge } from '../ui/SourceBadge';
 import type { RatingInput } from '../../api/matchesApi';
@@ -304,7 +305,11 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
   const L = useDynamicLabels();
   const { formatDate } = useLocaleFormat();
   const fmtDate = (s: string) => formatDate(s, { month: 'short', day: 'numeric', year: 'numeric' });
-  const { data: matches = [], isLoading } = useTeamMatches(teamId);
+  // S4 opt-in season filter: no selection = every match (today's behaviour); a season
+  // shows only rows stamped to it (never the unstamped ones).
+  const [seasonId, setSeasonId] = useState<number | undefined>(undefined);
+  const { data: teamSeasons = [] } = useSeasons(teamId);
+  const { data: matches = [], isLoading } = useTeamMatches(teamId, seasonId);
   const deleteMatch = useDeleteMatch();
   const { addToast } = useToast();
   const fields = statFieldsForSport(sportName);
@@ -324,23 +329,43 @@ export function TeamMatchesSection({ teamId, sportName, sportId, players, isCoac
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2"><Star size={16} className="text-indigo-400" /> {tr('matches.matchResults', 'Match Results')}</h3>
-        {isCoach && (
-          <button onClick={() => { setEditMatch(null); setLogOpen(true); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
-            <Plus size={13} /> {tr('matches.logMatch', 'Log Match')}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {teamSeasons.length > 0 && (
+            <select
+              value={seasonId ?? ''}
+              onChange={e => setSeasonId(e.target.value === '' ? undefined : Number(e.target.value))}
+              aria-label={tr('seasons.filterLabel', 'Filter by season')}
+              className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs font-medium text-gray-700 dark:text-gray-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">{tr('seasons.allTime', 'All time')}</option>
+              {teamSeasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          )}
+          {isCoach && (
+            <button onClick={() => { setEditMatch(null); setLogOpen(true); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all cursor-pointer">
+              <Plus size={13} /> {tr('matches.logMatch', 'Log Match')}
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <SkeletonCard key={i} />)}</div>
       ) : matches.length === 0 ? (
+        seasonId != null ? (
+          // A filtered empty is a different claim than "nothing recorded" — say so.
+          <EmptyState icon={<Trophy size={40} />} title={tr('matches.noMatchesInSeason', 'No matches assigned to this season')}
+            description={tr('matches.noMatchesInSeasonDesc', 'Matches recorded before seasons existed are not assigned to one.')}
+            size="sm" />
+        ) : (
         <EmptyState icon={<Trophy size={40} />} title={tr('matches.noMatches', 'No matches recorded yet')}
           description={isCoach ? tr('matches.noMatchesCoach', 'Log your first match result to start tracking performances.') : tr('matches.noMatchesAthlete', "Your coach hasn't logged any matches yet.")}
           size="sm"
           action={isCoach ? { label: tr('matches.logFirstMatch', 'Log First Match'), onClick: () => { setEditMatch(null); setLogOpen(true); } } : undefined} />
+        )
       ) : (
         <div className="space-y-3">
           {matches.map(m => {

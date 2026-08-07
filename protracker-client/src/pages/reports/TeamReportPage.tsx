@@ -6,7 +6,7 @@ import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   ArrowLeft, Trophy, Zap, Sparkles,
-  Users, ShieldAlert, BarChart3, Download,
+  Users, ShieldAlert, BarChart3, Download, AlertTriangle,
 } from 'lucide-react';
 import { AIInsightsList } from '../../components/reports/AIInsightsList';
 import { StatCard } from '../../components/dashboard/StatCard';
@@ -23,6 +23,8 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { BarChartWrapper } from '../../components/charts/BarChartWrapper';
 import { RadarChartWrapper } from '../../components/charts/RadarChartWrapper';
 import { useTeamReport } from '../../hooks/useReports';
+import { useSeasons } from '../../hooks/useSeasons';
+import { SeasonFilterSelect } from '../../components/reports/SeasonFilterSelect';
 import { clsx } from 'clsx';
 
 const SEVERITY_COLORS: Record<string, string> = {
@@ -50,7 +52,10 @@ export function TeamReportPage() {
   const { data: billing } = useBilling();
   const { addToast } = useToast();
   const teamId = id ? parseInt(id) : undefined;
-  const { data: report, isLoading, isError, refetch } = useTeamReport(teamId);
+  // S4 opt-in season filter — undefined = career-wide, exactly the pre-S4 report.
+  const [seasonId, setSeasonId] = useState<number | undefined>(undefined);
+  const { data: seasons = [] } = useSeasons(teamId);
+  const { data: report, isLoading, isError, refetch } = useTeamReport(teamId, seasonId);
   const [aiInsights, setAiInsights] = useState<string[] | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -144,13 +149,16 @@ export function TeamReportPage() {
             >
               <ArrowLeft size={16} /> {t('reports.title', 'Reports')}
             </button>
-            <button
-              onClick={handleExportPdf}
-              disabled={exporting}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-semibold transition-all cursor-pointer border border-white/20 disabled:opacity-60"
-            >
-              <Download size={15} /> {exporting ? t('reports.generatingPdf', 'Generating PDF…') : t('reports.exportPdf', 'Export PDF')}
-            </button>
+            <div className="flex items-center gap-2">
+              <SeasonFilterSelect seasons={seasons} value={seasonId} onChange={setSeasonId} />
+              <button
+                onClick={handleExportPdf}
+                disabled={exporting}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-sm font-semibold transition-all cursor-pointer border border-white/20 disabled:opacity-60"
+              >
+                <Download size={15} /> {exporting ? t('reports.generatingPdf', 'Generating PDF…') : t('reports.exportPdf', 'Export PDF')}
+              </button>
+            </div>
           </div>
 
           <h1 className="text-3xl font-black text-white tracking-tight">{team.name}</h1>
@@ -167,6 +175,14 @@ export function TeamReportPage() {
       </div>
 
       <div className="p-4 lg:p-6 space-y-6">
+        {/* Season-filtered reports show TODAY's roster's data, not that season's squad
+            (RosterIsCurrentNotHistorical — S6 roster history will replace this). */}
+        {report.rosterIsCurrentNotHistorical && (
+          <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
+            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
+            <p>{t('reports.rosterCaveat', "This shows today's roster's data for that season — not the squad that actually played it.")}</p>
+          </div>
+        )}
         {/* Metric cards — glass morphism, matching the dashboards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <StatCard

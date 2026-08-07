@@ -25,7 +25,7 @@ import {
   CoachDashboardPage, TeamsPage, TeamDetailPage, TeamFormPage,
   PlayersPage, PlayerDetailPage, PlayerFormPage,
   AssessmentPage, BulkAssessmentPage, ImprovementPage, NutritionPage, FoodAlternativesPage,
-  ReportsPage, PlayerReportPage, TeamReportPage, ComparePlayersPage,
+  ReportsPage, PlayerReportPage, TeamReportPage, ComparePlayersPage, SeasonsPage,
   TasksPage, TaskAnalyticsPage, CoachProfilePage, BillingPage,
   PlayerDashboardPage, PlayerStatsPage, PlayerNutritionDashPage,
   PlayerImprovementDashPage, MyTasksPage, AthleteProfilePage,
@@ -109,6 +109,7 @@ function AppRoutes() {
               path="/players/:id/nutrition"
               element={<NutritionPage />}
             />
+            <Route path="/seasons" element={<SeasonsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/reports/player/:id" element={<PlayerReportPage />} />
             <Route path="/reports/team/:id" element={<TeamReportPage />} />

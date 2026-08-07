@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 import { lineupApi, tacticalPresetApi, type SaveLineupInput, type SaveTacticalPresetInput } from '../api/lineupApi';
 import {
   contextKey, contextRequestParams, type LineupContext,
@@ -34,9 +35,11 @@ export function useTeamLineups(teamId: number | null | undefined, enabled = true
 
 export function useSaveLineup(teamId: number) {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: (data: SaveLineupInput) => lineupApi.save(teamId, data),
     onSuccess: saved => {
+      notifySeason(saved);
       qc.setQueryData(contextKey(teamId, contextOfDto(saved)), saved);
       void qc.invalidateQueries({ queryKey: ['lineups', teamId] });
       void qc.invalidateQueries({ queryKey: ['lineupAudit', teamId] });

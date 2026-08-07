@@ -29,6 +29,17 @@ public class SeasonsController : ApiControllerBase
     [Authorize(Roles = "Coach,Admin")]
     public async Task<ActionResult> GetActiveForOwner() => Success(await _service.GetActiveForOwnerAsync(User));
 
+    // Every season the caller owns, all statuses — the S5 account-level Seasons page.
+    [HttpGet("seasons")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetAllForOwner() => Success(await _service.GetAllForOwnerAsync(User));
+
+    // Row-stamp counts for the edit-dates warning (owner-only). Stamp-based, NOT the
+    // period-linkage summary — see SeasonService.GetStampedCountsAsync.
+    [HttpGet("seasons/{id}/stamped-counts")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetStampedCounts(int id) => Success(await _service.GetStampedCountsAsync(User, id));
+
     [HttpPost("teams/{teamId}/seasons")]
     [Authorize(Roles = "Coach,Admin")]
     public async Task<ActionResult> Create(int teamId, CreateSeasonDto dto) => Created(await _service.CreateAsync(User, teamId, dto));

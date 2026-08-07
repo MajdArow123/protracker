@@ -1,10 +1,14 @@
 import api from './axiosInstance';
-import type { Season, CreateSeasonInput, SeasonSummary } from '../types';
+import type { Season, CreateSeasonInput, SeasonSummary, SeasonStampedCounts } from '../types';
 import { localDateString } from '../utils/localDate';
 
 export const seasonsApi = {
   getForTeam: (teamId: number) =>
     api.get<Season[]>(`/api/teams/${teamId}/seasons`).then(r => r.data),
+  // Account-level: every season the caller owns, all statuses (S5).
+  getAll: () => api.get<Season[]>('/api/seasons').then(r => r.data),
+  getStampedCounts: (id: number) =>
+    api.get<SeasonStampedCounts>(`/api/seasons/${id}/stamped-counts`).then(r => r.data),
   // "Current" is relative to the USER'S local date (Phase 10 ruling) — the server's
   // UTC today is only a fallback for callers that omit the param.
   getCurrent: (teamId: number) =>

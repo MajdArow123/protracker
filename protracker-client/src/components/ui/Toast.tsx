@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 import { useToast } from '../../context/useToast';
 import type { ToastType } from '../../context/useToast';
@@ -38,7 +39,18 @@ export function ToastContainer() {
               className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg backdrop-blur-md min-w-72 max-w-sm ${colors[toast.type]}`}
             >
               <Icon size={18} className="flex-shrink-0" />
-              <p className="text-sm font-medium flex-1">{toast.message}</p>
+              <p className="text-sm font-medium flex-1">
+                {toast.message}
+                {toast.linkTo && (
+                  <Link
+                    to={toast.linkTo}
+                    onClick={() => removeToast(toast.id)}
+                    className="ms-1.5 underline font-semibold hover:opacity-80"
+                  >
+                    {toast.linkLabel ?? toast.linkTo}
+                  </Link>
+                )}
+              </p>
               <button
                 onClick={() => removeToast(toast.id)}
                 className="opacity-60 hover:opacity-100 transition-opacity"

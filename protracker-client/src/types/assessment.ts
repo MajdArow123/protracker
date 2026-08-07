@@ -65,20 +65,22 @@ export interface SeasonResolutionNotice {
   candidateSeasonIds: number[];
 }
 
+export type SeasonStatus = 'Draft' | 'Active' | 'Completed' | 'Archived';
+
+export interface SeasonTeamRef {
+  id: number;
+  name: string;
+}
+
+// Account-owned; can span several teams (S5 removed the single-team wire shim).
+// Overlapping Active seasons are allowed.
 export interface Season {
   id: number;
-  // TEMPORARY wire-compat shim (teamId/teamName/isActive) — removed in Phase 10 S5 when
-  // the Seasons UI moves to account level. Seasons are account-owned and can span several
-  // teams: teamId/teamName come from the season's SINGLE participating team and are null
-  // when it has more than one; isActive derives from status === 'Active' (overlapping
-  // active seasons are allowed).
-  teamId: number | null;
-  teamName: string | null;
+  teams: SeasonTeamRef[];
   name: string;
   startDate: string;
   endDate: string;
-  status: 'Draft' | 'Active' | 'Completed' | 'Archived';
-  isActive: boolean;
+  status: SeasonStatus;
   goals?: string | null;
   linkedPeriodCount: number;
 }
@@ -87,8 +89,26 @@ export interface CreateSeasonInput {
   name: string;
   startDate: string;
   endDate: string;
-  isActive: boolean;
+  // Omitted = Draft on create / unchanged on update. Full lifecycle reachable since S5
+  // (the old isActive shim could only produce Active/Draft).
+  status?: SeasonStatus;
   goals?: string | null;
+}
+
+// Rows currently STAMPED to a season (row-level seasonId — the S3/S4 mechanism, NOT the
+// period-linkage summary). Powers the edit-dates warning.
+export interface SeasonStampedCounts {
+  seasonId: number;
+  matches: number;
+  assessments: number;
+  objectiveTests: number;
+  evidenceScores: number;
+  matchPerformances: number;
+  lineups: number;
+  trainingSessions: number;
+  scheduledSessions: number;
+  improvementPlans: number;
+  total: number;
 }
 
 export interface SeasonPeriodPoint {
