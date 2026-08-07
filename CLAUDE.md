@@ -1113,6 +1113,19 @@ History (one line each; full detail in git history + blueprint):
   Archived-by-id readable, 404 missing+foreign on a list AND an aggregate, ratings
   via parent match, suppressed-index-type lists, team-report flag+filtered averages,
   player-report injury window overlap, dashboard totals).
+- **S5 must render these** (consolidated obligation — three server-side signals are
+  plumbed end-to-end but render NOWHERE; each was deferred separately and correctly,
+  and if S5 ships a seasons UI without them, the plumbing is decoration):
+  1. **AmbiguousSeason notice** — `seasonNotice` on CREATE and UPDATE responses of
+     every stamped path (8 TS types + `LineupDto`): season resolution hit overlapping
+     candidate seasons, record saved with SeasonId null, `CandidateSeasonIds` names
+     them. UI: non-blocking nudge to fix overlapping season dates.
+  2. **SeasonUnstamped notice** — `seasonNotice` on UPDATE responses: a date-changing
+     edit moved a previously stamped record outside all seasons (non-null→null only).
+     UI: tell the user the record no longer counts toward any season.
+  3. **RosterIsCurrentNotHistorical flag** — on every season-filtered team report
+     (`GET /api/reports/team/{id}?seasonId=`): the player set is TODAY's roster, not
+     that season's squad. UI: caveat the report until S6 roster history replaces it.
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
