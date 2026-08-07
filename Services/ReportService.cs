@@ -9,8 +9,8 @@ namespace ProTracker.Services;
 
 public interface IReportService
 {
-    Task<PlayerReportDto> GetPlayerReportAsync(ClaimsPrincipal user, int playerId);
-    Task<TeamReportDto> GetTeamReportAsync(ClaimsPrincipal user, int teamId);
+    Task<PlayerReportDto> GetPlayerReportAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
+    Task<TeamReportDto> GetTeamReportAsync(ClaimsPrincipal user, int teamId, int? seasonId = null);
 }
 
 public class ReportService : IReportService
@@ -24,7 +24,7 @@ public class ReportService : IReportService
         _access = access;
     }
 
-    public async Task<PlayerReportDto> GetPlayerReportAsync(ClaimsPrincipal user, int playerId)
+    public async Task<PlayerReportDto> GetPlayerReportAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
 
@@ -32,17 +32,41 @@ public class ReportService : IReportService
             .FirstOrDefaultAsync(p => p.Id == playerId)
             ?? throw new NotFoundApiException($"Player {playerId} was not found.");
 
-        var assessments = await _context.PlayerAssessments
+        Season? season = null;
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            season = await _context.Seasons.FirstAsync(s => s.Id == sid);
+        }
+
+        var assessmentQuery = _context.PlayerAssessments
             .Include(a => a.AssessmentPeriod)
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
-            .Where(a => a.PlayerId == playerId)
+            .Where(a => a.PlayerId == playerId);
+        if (season != null)
+            assessmentQuery = assessmentQuery.Where(a => a.SeasonId == season.Id);
+        var assessments = await assessmentQuery
             .OrderByDescending(a => a.DateRecorded)
             .ToListAsync();
 
-        var injuries = await _context.InjuryRecords.Where(i => i.PlayerId == playerId)
+        // Injuries are span-bearing records (settled exclusion ruling): they have no
+        // SeasonId and are season-scoped by WINDOW OVERLAP at read time — an injury
+        // counts if it was open at any point inside the season (day-granular, same
+        // half-open pattern as SeasonResolver; open injuries have no end).
+        var injuryQuery = _context.InjuryRecords.Where(i => i.PlayerId == playerId);
+        if (season != null)
+        {
+            var seasonEndNextDay = season.EndDate.Date.AddDays(1);
+            injuryQuery = injuryQuery.Where(i => i.InjuryDate < seasonEndNextDay
+                && (i.RecoveredDate == null || i.RecoveredDate >= season.StartDate));
+        }
+        var injuries = await injuryQuery
             .OrderByDescending(i => i.InjuryDate).ToListAsync();
 
-        var matches = await _context.MatchPerformances.Where(m => m.PlayerId == playerId)
+        var matchQuery = _context.MatchPerformances.Where(m => m.PlayerId == playerId);
+        if (season != null)
+            matchQuery = matchQuery.Where(m => m.SeasonId == season.Id);
+        var matches = await matchQuery
             .OrderByDescending(m => m.MatchDate).Take(10).ToListAsync();
 
         var allScores = assessments.SelectMany(a => a.StatScores).ToList();
@@ -95,7 +119,7 @@ public class ReportService : IReportService
         };
     }
 
-    public async Task<TeamReportDto> GetTeamReportAsync(ClaimsPrincipal user, int teamId)
+    public async Task<TeamReportDto> GetTeamReportAsync(ClaimsPrincipal user, int teamId, int? seasonId = null)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
 
@@ -105,10 +129,15 @@ public class ReportService : IReportService
 
         var playerIds = team.Players.Select(p => p.Id).ToList();
 
-        var allAssessments = await _context.PlayerAssessments
+        var assessmentQuery = _context.PlayerAssessments
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
-            .Where(a => playerIds.Contains(a.PlayerId))
-            .ToListAsync();
+            .Where(a => playerIds.Contains(a.PlayerId));
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            assessmentQuery = assessmentQuery.Where(a => a.SeasonId == sid);
+        }
+        var allAssessments = await assessmentQuery.ToListAsync();
 
         var scores = allAssessments.SelectMany(a => a.StatScores).ToList();
 
@@ -147,6 +176,10 @@ public class ReportService : IReportService
                 CoachId = team.CoachId,
                 PlayerCount = team.Players.Count
             },
+            // Until S6 lands roster history, a season-filtered team report is
+            // "TODAY's roster ∩ that season's assessments" — a plausible-looking
+            // wrong answer for squads that changed. The flag lets the UI caveat it.
+            RosterIsCurrentNotHistorical = seasonId != null,
             PlayerCount = team.Players.Count,
             AverageScoreByCategory = averages,
             Players = team.Players.Select(PlayerService.ToDto).ToList(),

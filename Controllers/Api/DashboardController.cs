@@ -18,5 +18,5 @@ public class DashboardController : ApiControllerBase
     public async Task<ActionResult> Coach() => Success(await _service.GetCoachDashboardAsync(User));
 
     [HttpGet("player/{playerId}")]
-    public async Task<ActionResult> Player(int playerId) => Success(await _service.GetPlayerDashboardAsync(User, playerId));
+    public async Task<ActionResult> Player(int playerId, [FromQuery] int? seasonId = null) => Success(await _service.GetPlayerDashboardAsync(User, playerId, seasonId));
 }

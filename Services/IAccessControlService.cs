@@ -17,6 +17,12 @@ public interface IAccessControlService
 
     Task<List<int>> GetAccessibleTeamIdsAsync(ClaimsPrincipal user);
 
+    // Phase 10 S4 ?seasonId= contract: a season that doesn't exist OR that the caller
+    // can't read both throw NotFound (404, same message — no existence enumeration).
+    // Never 403 and never an empty result: an empty list would be indistinguishable
+    // from "no data in this season" and would hide authorization failures.
+    Task EnsureCanAccessSeasonAsync(ClaimsPrincipal user, int seasonId);
+
     // Players a Parent-role user is linked to (their children). Empty for other roles.
     Task<List<int>> GetParentPlayerIdsAsync(ClaimsPrincipal user);
 

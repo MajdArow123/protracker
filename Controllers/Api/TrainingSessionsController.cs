@@ -16,10 +16,10 @@ public class TrainingSessionsController : ApiControllerBase
     }
 
     [HttpGet("team/{teamId}")]
-    public async Task<ActionResult> GetForTeam(int teamId) => Success(await _service.GetForTeamAsync(User, teamId));
+    public async Task<ActionResult> GetForTeam(int teamId, [FromQuery] int? seasonId = null) => Success(await _service.GetForTeamAsync(User, teamId, seasonId));
 
     [HttpGet("player/{playerId}")]
-    public async Task<ActionResult> GetForPlayer(int playerId) => Success(await _service.GetForPlayerAsync(User, playerId));
+    public async Task<ActionResult> GetForPlayer(int playerId, [FromQuery] int? seasonId = null) => Success(await _service.GetForPlayerAsync(User, playerId, seasonId));
 
     [HttpPost]
     [Authorize(Roles = "Coach,Admin")]

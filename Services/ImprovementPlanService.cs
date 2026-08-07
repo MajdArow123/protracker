@@ -9,7 +9,7 @@ namespace ProTracker.Services;
 
 public interface IImprovementPlanService
 {
-    Task<List<ImprovementPlanDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId);
+    Task<List<ImprovementPlanDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
     Task<ImprovementPlanDto> CreateAsync(ClaimsPrincipal user, CreateImprovementPlanDto dto);
     Task<ImprovementPlanDto> UpdateAsync(ClaimsPrincipal user, int id, CreateImprovementPlanDto dto);
 }
@@ -28,11 +28,16 @@ public class ImprovementPlanService : IImprovementPlanService
         _seasons = seasons;
     }
 
-    public async Task<List<ImprovementPlanDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId)
+    public async Task<List<ImprovementPlanDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
-        var plans = await _context.ImprovementPlans.Where(p => p.PlayerId == playerId)
-            .OrderByDescending(p => p.CreatedDate).ToListAsync();
+        var query = _context.ImprovementPlans.Where(p => p.PlayerId == playerId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(p => p.SeasonId == sid);
+        }
+        var plans = await query.OrderByDescending(p => p.CreatedDate).ToListAsync();
         return plans.Select(ToDto).ToList();
     }
 

@@ -9,8 +9,8 @@ namespace ProTracker.Services;
 
 public interface ITrainingSessionService
 {
-    Task<List<TrainingSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId);
-    Task<List<TrainingSessionDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId);
+    Task<List<TrainingSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId, int? seasonId = null);
+    Task<List<TrainingSessionDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
     Task<TrainingSessionDto> CreateAsync(ClaimsPrincipal user, CreateTrainingSessionDto dto);
     Task<TrainingSessionDto> UpdateAsync(ClaimsPrincipal user, int id, CreateTrainingSessionDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int id);
@@ -29,19 +29,30 @@ public class TrainingSessionService : ITrainingSessionService
         _seasons = seasons;
     }
 
-    public async Task<List<TrainingSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
+    public async Task<List<TrainingSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId, int? seasonId = null)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
-        var sessions = await _context.TrainingSessions.Where(s => s.TeamId == teamId)
+        var query = _context.TrainingSessions.Where(s => s.TeamId == teamId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(s => s.SeasonId == sid);
+        }
+        var sessions = await query
             .OrderByDescending(s => s.Date).ToListAsync();
         return sessions.Select(ToDto).ToList();
     }
 
-    public async Task<List<TrainingSessionDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId)
+    public async Task<List<TrainingSessionDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
-        var sessions = await _context.TrainingSessions.Where(s => s.PlayerId == playerId)
-            .OrderByDescending(s => s.Date).ToListAsync();
+        var query = _context.TrainingSessions.Where(s => s.PlayerId == playerId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(s => s.SeasonId == sid);
+        }
+        var sessions = await query.OrderByDescending(s => s.Date).ToListAsync();
         return sessions.Select(ToDto).ToList();
     }
 

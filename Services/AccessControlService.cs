@@ -66,6 +66,27 @@ public class AccessControlService : IAccessControlService
         throw new ForbiddenApiException();
     }
 
+    // Season READ access (S1a): owner, or membership of any participating team
+    // (SeasonTeam -> accessible teams — covers assistants and team athletes). Status is
+    // deliberately ignored: Archived seasons are readable when explicitly requested by
+    // id, and reads never fail because of season state.
+    public async Task EnsureCanAccessSeasonAsync(ClaimsPrincipal user, int seasonId)
+    {
+        if (user.IsInRole("Admin"))
+        {
+            if (!await _context.Seasons.AnyAsync(s => s.Id == seasonId))
+                throw new NotFoundApiException($"Season {seasonId} was not found.");
+            return;
+        }
+
+        var userId = RequireUserId(user);
+        var teamIds = await GetAccessibleTeamIdsAsync(user);
+        var accessible = await _context.Seasons.AnyAsync(s => s.Id == seasonId
+            && (s.OwnerId == userId || s.SeasonTeams.Any(st => teamIds.Contains(st.TeamId))));
+        if (!accessible)
+            throw new NotFoundApiException($"Season {seasonId} was not found.");
+    }
+
     public async Task EnsureCanAccessPlayerAsync(ClaimsPrincipal user, int playerId)
     {
         if (user.IsInRole("Admin"))

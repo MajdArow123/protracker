@@ -33,8 +33,8 @@ public class EvidenceController : ApiControllerBase
         => Created(await _service.AddObjectiveTestAsync(User, dto));
 
     [HttpGet("players/{playerId}/objective-tests")]
-    public async Task<ActionResult> GetObjectiveTests(int playerId, [FromQuery] int? metricId = null)
-        => Success(await _service.GetObjectiveTestsAsync(User, playerId, metricId));
+    public async Task<ActionResult> GetObjectiveTests(int playerId, [FromQuery] int? metricId = null, [FromQuery] int? seasonId = null)
+        => Success(await _service.GetObjectiveTestsAsync(User, playerId, metricId, seasonId));
 
     // ─── Match stats ─────────────────────────────────────────────────────────
 

@@ -9,7 +9,7 @@ namespace ProTracker.Services;
 
 public interface IScheduledSessionService
 {
-    Task<List<ScheduledSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId);
+    Task<List<ScheduledSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId, int? seasonId = null);
     Task<List<ScheduledSessionDto>> GetUpcomingForMeAsync(ClaimsPrincipal user);
     Task<ScheduledSessionDto> CreateAsync(ClaimsPrincipal user, int teamId, CreateScheduledSessionDto dto);
     Task<ScheduledSessionDto> UpdateAsync(ClaimsPrincipal user, int id, CreateScheduledSessionDto dto);
@@ -32,12 +32,18 @@ public class ScheduledSessionService : IScheduledSessionService
         _seasons = seasons;
     }
 
-    public async Task<List<ScheduledSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
+    public async Task<List<ScheduledSessionDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId, int? seasonId = null)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
-        var sessions = await _context.ScheduledSessions
+        var query = _context.ScheduledSessions
             .Include(s => s.Team)
-            .Where(s => s.TeamId == teamId)
+            .Where(s => s.TeamId == teamId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(s => s.SeasonId == sid);
+        }
+        var sessions = await query
             .OrderBy(s => s.StartTime)
             .ToListAsync();
         return sessions.Select(ToDto).ToList();

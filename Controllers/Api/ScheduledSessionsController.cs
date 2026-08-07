@@ -16,7 +16,7 @@ public class ScheduledSessionsController : ApiControllerBase
     }
 
     [HttpGet("teams/{teamId}/sessions")]
-    public async Task<ActionResult> GetForTeam(int teamId) => Success(await _service.GetForTeamAsync(User, teamId));
+    public async Task<ActionResult> GetForTeam(int teamId, [FromQuery] int? seasonId = null) => Success(await _service.GetForTeamAsync(User, teamId, seasonId));
 
     [HttpGet("sessions/mine")]
     public async Task<ActionResult> GetUpcomingForMe() => Success(await _service.GetUpcomingForMeAsync(User));

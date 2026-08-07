@@ -16,7 +16,7 @@ public class PlayerAssessmentsController : ApiControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult> GetAll() => Success(await _assessmentService.GetAccessibleAssessmentsAsync(User));
+    public async Task<ActionResult> GetAll([FromQuery] int? seasonId = null) => Success(await _assessmentService.GetAccessibleAssessmentsAsync(User, seasonId));
 
     [HttpGet("{id}")]
     public async Task<ActionResult> GetById(int id) => Success(await _assessmentService.GetAssessmentByIdAsync(User, id));
@@ -43,5 +43,5 @@ public class PlayerAssessmentsController : ApiControllerBase
     }
 
     [HttpGet("player/{playerId}")]
-    public async Task<ActionResult> GetForPlayer(int playerId) => Success(await _assessmentService.GetAssessmentsForPlayerAsync(User, playerId));
+    public async Task<ActionResult> GetForPlayer(int playerId, [FromQuery] int? seasonId = null) => Success(await _assessmentService.GetAssessmentsForPlayerAsync(User, playerId, seasonId));
 }

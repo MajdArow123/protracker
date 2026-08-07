@@ -15,9 +15,9 @@ public interface IAssessmentService
     Task<AssessmentPeriodDto> UpdatePeriodAsync(ClaimsPrincipal user, int id, CreateAssessmentPeriodDto dto);
     Task DeletePeriodAsync(ClaimsPrincipal user, int id);
 
-    Task<List<PlayerAssessmentDto>> GetAccessibleAssessmentsAsync(ClaimsPrincipal user);
+    Task<List<PlayerAssessmentDto>> GetAccessibleAssessmentsAsync(ClaimsPrincipal user, int? seasonId = null);
     Task<PlayerAssessmentDto> GetAssessmentByIdAsync(ClaimsPrincipal user, int id);
-    Task<List<PlayerAssessmentDto>> GetAssessmentsForPlayerAsync(ClaimsPrincipal user, int playerId);
+    Task<List<PlayerAssessmentDto>> GetAssessmentsForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
     Task<PlayerAssessmentDto> CreateAssessmentAsync(ClaimsPrincipal user, CreatePlayerAssessmentDto dto);
     Task<List<PlayerAssessmentDto>> BulkCreateAssessmentsAsync(ClaimsPrincipal user, BulkCreateAssessmentDto dto);
     Task<PlayerAssessmentDto> UpdateAssessmentAsync(ClaimsPrincipal user, int id, CreatePlayerAssessmentDto dto);
@@ -126,21 +126,26 @@ public class AssessmentService : IAssessmentService
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<PlayerAssessmentDto>> GetAccessibleAssessmentsAsync(ClaimsPrincipal user)
+    public async Task<List<PlayerAssessmentDto>> GetAccessibleAssessmentsAsync(ClaimsPrincipal user, int? seasonId = null)
     {
         if (_access.IsSoloAthlete(user))
         {
             var player = await _access.RequireOwnPlayerAsync(user);
-            return await GetAssessmentsForPlayerAsync(user, player.Id);
+            return await GetAssessmentsForPlayerAsync(user, player.Id, seasonId);
         }
 
         var teamIds = await _access.GetAccessibleTeamIdsAsync(user);
-        var assessments = await _context.PlayerAssessments
+        var query = _context.PlayerAssessments
             .Include(a => a.AssessmentPeriod)
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
             .Include(a => a.Player)
-            .Where(a => a.Player.TeamId != null && teamIds.Contains(a.Player.TeamId.Value))
-            .ToListAsync();
+            .Where(a => a.Player.TeamId != null && teamIds.Contains(a.Player.TeamId.Value));
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(a => a.SeasonId == sid);
+        }
+        var assessments = await query.ToListAsync();
         return assessments.Select(ToAssessmentDto).ToList();
     }
 
@@ -151,14 +156,20 @@ public class AssessmentService : IAssessmentService
         return ToAssessmentDto(assessment);
     }
 
-    public async Task<List<PlayerAssessmentDto>> GetAssessmentsForPlayerAsync(ClaimsPrincipal user, int playerId)
+    public async Task<List<PlayerAssessmentDto>> GetAssessmentsForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
 
-        var assessments = await _context.PlayerAssessments
+        var query = _context.PlayerAssessments
             .Include(a => a.AssessmentPeriod)
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
-            .Where(a => a.PlayerId == playerId)
+            .Where(a => a.PlayerId == playerId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(a => a.SeasonId == sid);
+        }
+        var assessments = await query
             .OrderByDescending(a => a.DateRecorded)
             .ToListAsync();
         return assessments.Select(ToAssessmentDto).ToList();

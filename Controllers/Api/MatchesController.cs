@@ -16,7 +16,7 @@ public class MatchesController : ApiControllerBase
     }
 
     [HttpGet("teams/{teamId}/matches")]
-    public async Task<ActionResult> GetForTeam(int teamId) => Success(await _service.GetForTeamAsync(User, teamId));
+    public async Task<ActionResult> GetForTeam(int teamId, [FromQuery] int? seasonId = null) => Success(await _service.GetForTeamAsync(User, teamId, seasonId));
 
     [HttpPost("teams/{teamId}/matches")]
     [Authorize(Roles = "Coach,Admin")]
@@ -39,5 +39,5 @@ public class MatchesController : ApiControllerBase
     public async Task<ActionResult> SaveRatings(int id, SaveMatchRatingsDto dto) => Success(await _service.SaveRatingsAsync(User, id, dto));
 
     [HttpGet("players/{id}/match-ratings")]
-    public async Task<ActionResult> GetPlayerRatings(int id) => Success(await _service.GetPlayerRatingsAsync(User, id));
+    public async Task<ActionResult> GetPlayerRatings(int id, [FromQuery] int? seasonId = null) => Success(await _service.GetPlayerRatingsAsync(User, id, seasonId));
 }

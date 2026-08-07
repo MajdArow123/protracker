@@ -1064,6 +1064,55 @@ History (one line each; full detail in git history + blueprint):
   ambiguous-on-update notice, per-path resolver-not-invoked + throwing-resolver
   survival via direct service construction, 3 lineup-cascade tests incl. the
   Published version/audit invariants, solo no-cascade).
+- **S4 (landed): season-filtered reads.** RULINGS (binding): filtering is **OPT-IN**
+  via `?seasonId=` — no read endpoint changed its default behaviour; a read without
+  the parameter returns exactly what it returned before. Null-stamped rows are
+  INCLUDED unfiltered and EXCLUDED filtered — no "unscoped" bucket. **404 contract
+  (uniform, `AccessControlService.EnsureCanAccessSeasonAsync` is the single check)**:
+  a season id that doesn't exist OR that the caller can't read → 404 with the same
+  message (no existence enumeration), never 403 and never an empty list (an empty
+  list is indistinguishable from "no data this season" and would hide authorization
+  failures). Season read access = owner or any participating team accessible to the
+  caller; **status ignored — Archived seasons are readable by explicit id; reads
+  never fail because of season state**. Wired (13 endpoints): team matches,
+  player match-ratings (rating rows follow their parent match's SeasonId), both
+  assessment lists, objective-tests (composes with `?metricId=`), match-performance,
+  improvement-plans, training-sessions team+player, team scheduled-sessions, player
+  report, team report, player dashboard. **Aggregate semantics**: player report
+  filters assessments + match performances by stamp and **injuries by WINDOW OVERLAP**
+  (span-bearing ruling — no FK; day-granular half-open vs the season window, open
+  injuries have no end); team report filters assessments only and sets
+  **`RosterIsCurrentNotHistorical: true`** on every filtered response — until S6
+  lands roster history it shows TODAY's roster ∩ that season's assessments, a
+  plausible-looking wrong answer for changed squads (**S6 must revisit**; no UI for
+  the flag yet); team-report active injuries stay unfiltered (an "active now" fact).
+  **Excluded by ruling**: ALL EvidenceBasedScore reads (SeasonId = WHEN computed —
+  filtering would present computation provenance as per-season performance; the
+  blended aggregates evidence-status/performance/reminders mix scores with test
+  counts, and filtering only the test half would produce a chimera — the honest
+  path to per-season evidence is the still-open composite-score snapshot trending,
+  not these reads); **solo endpoints** (`/api/solo/matches`, `/api/solo/sessions` —
+  solo athletes have no team rosters, so their stamps can never match ANY season;
+  not an S6 gap but a permanent one unless a solo-season concept ever ships);
+  **lineup list** (Default XI/named lineups are deliberately unstamped templates — a
+  filter would render them as "no lineups"; match lineups are reached via the match
+  list); public profile + marketplace aggregates (career-scope by design, anonymous
+  rate-limited surface); upcoming-session reads (already now-scoped); parent
+  aggregates; single-record fetches. **Two season-scoping mechanisms now coexist and
+  can disagree**: `GET /api/seasons/{id}/summary` stays on AssessmentPeriod.SeasonId
+  linkage (+date-window fallback), while S4 row-stamp filters serve entity lists and
+  aggregates — a hand-linked period straddling seasons vs roster-resolved stamps can
+  answer differently; that's accepted and documented, don't unify silently.
+  **No-index ruling**: ImprovementPlan/TrainingSession/ScheduledSession list filters
+  ship WITHOUT SeasonId indexes and `SkipSeasonIdIndexConvention` is untouched —
+  every wired query is `PlayerId/TeamId = x AND SeasonId = y` and the existing FK
+  indexes carry the selectivity. S6-gap consequence (correct behaviour, not a
+  defect): every player-context record is unstamped until S6 lands rosters, so
+  season-filtered player-context reads return little or nothing until then.
+  9 tests in `SeasonFilteredReadsTests` (opt-in default unchanged, null-exclusion,
+  Archived-by-id readable, 404 missing+foreign on a list AND an aggregate, ratings
+  via parent match, suppressed-index-type lists, team-report flag+filtered averages,
+  player-report injury window overlap, dashboard totals).
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1089,8 +1138,9 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Phase 10 S3+ landed** (re-resolve season on date-changing updates +
-  match→lineup cascade — see the Phase 10 section above). S4 NOT started.
+- **Latest: Phase 10 S4 landed** (opt-in `?seasonId=` read filters, uniform 404
+  contract, per-season report/dashboard aggregates — see the Phase 10 section
+  above). S5 NOT started.
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with

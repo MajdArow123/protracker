@@ -16,7 +16,7 @@ public class ImprovementPlansController : ApiControllerBase
     }
 
     [HttpGet("player/{playerId}")]
-    public async Task<ActionResult> GetForPlayer(int playerId) => Success(await _service.GetForPlayerAsync(User, playerId));
+    public async Task<ActionResult> GetForPlayer(int playerId, [FromQuery] int? seasonId = null) => Success(await _service.GetForPlayerAsync(User, playerId, seasonId));
 
     [HttpPost]
     [Authorize(Roles = "Coach,Admin")]

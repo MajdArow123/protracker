@@ -9,7 +9,7 @@ namespace ProTracker.Services;
 
 public interface IMatchPerformanceService
 {
-    Task<List<MatchPerformanceDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId);
+    Task<List<MatchPerformanceDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
     Task<MatchPerformanceDto> CreateAsync(ClaimsPrincipal user, CreateMatchPerformanceDto dto);
     Task<MatchPerformanceDto> UpdateAsync(ClaimsPrincipal user, int id, CreateMatchPerformanceDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int id);
@@ -29,11 +29,16 @@ public class MatchPerformanceService : IMatchPerformanceService
         _access = access;
     }
 
-    public async Task<List<MatchPerformanceDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId)
+    public async Task<List<MatchPerformanceDto>> GetForPlayerAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
-        var matches = await _context.MatchPerformances.Where(m => m.PlayerId == playerId)
-            .OrderByDescending(m => m.MatchDate).ToListAsync();
+        var query = _context.MatchPerformances.Where(m => m.PlayerId == playerId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(m => m.SeasonId == sid);
+        }
+        var matches = await query.OrderByDescending(m => m.MatchDate).ToListAsync();
         return matches.Select(ToDto).ToList();
     }
 

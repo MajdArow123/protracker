@@ -20,6 +20,9 @@ export interface PlayerReport {
 
 export interface TeamReport {
   team: Team;
+  // True only on season-filtered reports (Phase 10 S4): the player set is TODAY's
+  // roster, not that season's actual squad — the UI must caveat it (S6 revisits).
+  rosterIsCurrentNotHistorical?: boolean;
   playerCount: number;
   averageScoreByCategory: Record<string, number>;
   players: Player[];

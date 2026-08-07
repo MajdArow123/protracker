@@ -8,7 +8,7 @@ namespace ProTracker.Services;
 public interface IDashboardService
 {
     Task<CoachDashboardDto> GetCoachDashboardAsync(ClaimsPrincipal user);
-    Task<PlayerDashboardDto> GetPlayerDashboardAsync(ClaimsPrincipal user, int playerId);
+    Task<PlayerDashboardDto> GetPlayerDashboardAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
 }
 
 public class DashboardService : IDashboardService
@@ -46,7 +46,7 @@ public class DashboardService : IDashboardService
         };
     }
 
-    public async Task<PlayerDashboardDto> GetPlayerDashboardAsync(ClaimsPrincipal user, int playerId)
+    public async Task<PlayerDashboardDto> GetPlayerDashboardAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
 
@@ -54,10 +54,16 @@ public class DashboardService : IDashboardService
             .FirstOrDefaultAsync(p => p.Id == playerId)
             ?? throw new Common.NotFoundApiException($"Player {playerId} was not found.");
 
-        var assessments = await _context.PlayerAssessments
+        var query = _context.PlayerAssessments
             .Include(a => a.AssessmentPeriod)
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
-            .Where(a => a.PlayerId == playerId)
+            .Where(a => a.PlayerId == playerId);
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(a => a.SeasonId == sid);
+        }
+        var assessments = await query
             .OrderByDescending(a => a.DateRecorded)
             .ToListAsync();
 

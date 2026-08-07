@@ -13,8 +13,8 @@ public class ReportsController : ApiControllerBase
     }
 
     [HttpGet("player/{playerId}")]
-    public async Task<ActionResult> PlayerReport(int playerId) => Success(await _service.GetPlayerReportAsync(User, playerId));
+    public async Task<ActionResult> PlayerReport(int playerId, [FromQuery] int? seasonId = null) => Success(await _service.GetPlayerReportAsync(User, playerId, seasonId));
 
     [HttpGet("team/{teamId}")]
-    public async Task<ActionResult> TeamReport(int teamId) => Success(await _service.GetTeamReportAsync(User, teamId));
+    public async Task<ActionResult> TeamReport(int teamId, [FromQuery] int? seasonId = null) => Success(await _service.GetTeamReportAsync(User, teamId, seasonId));
 }

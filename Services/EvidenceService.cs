@@ -16,7 +16,7 @@ public interface IEvidenceService
     Task<List<SportMetricDefinitionDto>> GetMetricDefinitionsAsync(int sportId);
 
     Task<ObjectiveTestResultDto> AddObjectiveTestAsync(ClaimsPrincipal user, CreateObjectiveTestDto dto);
-    Task<List<ObjectiveTestResultDto>> GetObjectiveTestsAsync(ClaimsPrincipal user, int playerId, int? metricDefinitionId = null);
+    Task<List<ObjectiveTestResultDto>> GetObjectiveTestsAsync(ClaimsPrincipal user, int playerId, int? metricDefinitionId = null, int? seasonId = null);
 
     Task<MatchStatEntryDto> AddMatchStatsAsync(ClaimsPrincipal user, CreateMatchStatDto dto);
     Task<List<MatchStatEntryDto>> GetMatchStatsAsync(ClaimsPrincipal user, int playerId);
@@ -101,7 +101,7 @@ public class EvidenceService : IEvidenceService
         return result;
     }
 
-    public async Task<List<ObjectiveTestResultDto>> GetObjectiveTestsAsync(ClaimsPrincipal user, int playerId, int? metricDefinitionId = null)
+    public async Task<List<ObjectiveTestResultDto>> GetObjectiveTestsAsync(ClaimsPrincipal user, int playerId, int? metricDefinitionId = null, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
         var query = _context.ObjectiveTestResults
@@ -109,6 +109,13 @@ public class EvidenceService : IEvidenceService
             .Where(t => t.PlayerId == playerId);
         if (metricDefinitionId is int metricId)
             query = query.Where(t => t.MetricDefinitionId == metricId);
+        // Tests are dated events — their SeasonId is honest provenance (unlike
+        // EvidenceBasedScore, which is deliberately NOT season-filterable).
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(t => t.SeasonId == sid);
+        }
 
         var tests = await query.OrderByDescending(t => t.TestedAt).ToListAsync();
         var overrides = await _engine.GetBenchmarkOverridesAsync(playerId);

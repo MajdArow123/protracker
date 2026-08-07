@@ -10,12 +10,12 @@ namespace ProTracker.Services;
 
 public interface IMatchService
 {
-    Task<List<MatchResultDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId);
+    Task<List<MatchResultDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId, int? seasonId = null);
     Task<MatchResultDto> CreateAsync(ClaimsPrincipal user, int teamId, CreateMatchResultDto dto);
     Task<MatchResultDto> UpdateAsync(ClaimsPrincipal user, int matchId, CreateMatchResultDto dto);
     Task DeleteAsync(ClaimsPrincipal user, int matchId);
     Task<MatchResultDto> SaveRatingsAsync(ClaimsPrincipal user, int matchId, SaveMatchRatingsDto dto);
-    Task<List<PlayerMatchRatingDto>> GetPlayerRatingsAsync(ClaimsPrincipal user, int playerId);
+    Task<List<PlayerMatchRatingDto>> GetPlayerRatingsAsync(ClaimsPrincipal user, int playerId, int? seasonId = null);
     // Solo athletes: personal (player-scoped, team-less) match log.
     Task<List<MatchResultDto>> GetMySoloMatchesAsync(ClaimsPrincipal user);
     Task<MatchResultDto> CreateForSelfAsync(ClaimsPrincipal user, CreateMatchResultDto dto);
@@ -39,15 +39,21 @@ public class MatchService : IMatchService
         _logger = logger;
     }
 
-    public async Task<List<MatchResultDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId)
+    public async Task<List<MatchResultDto>> GetForTeamAsync(ClaimsPrincipal user, int teamId, int? seasonId = null)
     {
         await _access.EnsureCanAccessTeamAsync(user, teamId);
-        var matches = await _context.MatchResults
+        var query = _context.MatchResults
             .Include(m => m.Team)
             .Include(m => m.Ratings).ThenInclude(r => r.Player)
-            .Where(m => m.TeamId == teamId)
-            .OrderByDescending(m => m.MatchDate)
-            .ToListAsync();
+            .Where(m => m.TeamId == teamId);
+        // S4 opt-in season filter: unfiltered reads are unchanged (null-stamped rows
+        // included); a filter excludes them — there is no "unscoped" bucket.
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(m => m.SeasonId == sid);
+        }
+        var matches = await query.OrderByDescending(m => m.MatchDate).ToListAsync();
         return matches.Select(ToDto).ToList();
     }
 
@@ -375,13 +381,20 @@ public class MatchService : IMatchService
             await _evidence.RecalculateAllAsync(playerId);
     }
 
-    public async Task<List<PlayerMatchRatingDto>> GetPlayerRatingsAsync(ClaimsPrincipal user, int playerId)
+    public async Task<List<PlayerMatchRatingDto>> GetPlayerRatingsAsync(ClaimsPrincipal user, int playerId, int? seasonId = null)
     {
         await _access.EnsureCanAccessPlayerAsync(user, playerId);
-        var ratings = await _context.PlayerMatchRatings
+        var query = _context.PlayerMatchRatings
             .Include(r => r.Player)
             .Include(r => r.MatchResult)
-            .Where(r => r.PlayerId == playerId)
+            .Where(r => r.PlayerId == playerId);
+        // Rating rows aren't stamped; they follow their parent match's season.
+        if (seasonId is int sid)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid);
+            query = query.Where(r => r.MatchResult.SeasonId == sid);
+        }
+        var ratings = await query
             .OrderByDescending(r => r.MatchResult.MatchDate)
             .ToListAsync();
         return ratings.Select(r =>
