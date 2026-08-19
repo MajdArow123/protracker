@@ -2159,7 +2159,11 @@
     "bestAt": "הטוב ביותר ב-",
     "scoreComparison": "השוואת ציונים",
     "playerName": "שחקן {{id}}",
-    "rosterCaveat": "זה מציג את הנתונים של הסגל הנוכחי עבור אותה עונה — לא הסגל ששיחק בה בפועל."
+    "seasonRosterTitle": "סגל העונה",
+    "seasonRecordsLine": "רשומות העונה: {{matches}} משחקים · {{training}} אימונים · {{scheduled}} אימונים מתוכננים",
+    "seasonRosterEmpty": "אין עדיין רשומות סגל לעונה זו — אשרו את הסגל ההיסטורי בעמוד העונות.",
+    "stampedCounts": "{{assessments}} הערכות · {{tests}} מבחנים · {{performances}} ביצועי משחק",
+    "unassignedDisclosure": "{{count}} מרשומות הקבוצה אינן משויכות לאף עונה — אשרו היסטוריית סגל והריצו שיוך בעמוד העונות כדי לשייך את מה ששייך לכאן."
   },
   "register": {
     "codeExpired": "תוקף הקוד פג. בקשו מהמאמן קוד חדש.",

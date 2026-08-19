@@ -6,7 +6,7 @@ import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { useDynamicLabels } from '../../i18n/dynamicLabels';
 import {
   ArrowLeft, Trophy, Zap, Sparkles,
-  Users, ShieldAlert, BarChart3, Download, AlertTriangle,
+  Users, ShieldAlert, BarChart3, Download,
 } from 'lucide-react';
 import { AIInsightsList } from '../../components/reports/AIInsightsList';
 import { StatCard } from '../../components/dashboard/StatCard';
@@ -175,12 +175,61 @@ export function TeamReportPage() {
       </div>
 
       <div className="p-4 lg:p-6 space-y-6">
-        {/* Season-filtered reports show TODAY's roster's data, not that season's squad
-            (RosterIsCurrentNotHistorical — S6 roster history will replace this). */}
-        {report.rosterIsCurrentNotHistorical && (
-          <div className="flex items-start gap-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20 px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
-            <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-            <p>{t('reports.rosterCaveat', "This shows today's roster's data for that season — not the squad that actually played it.")}</p>
+        {/* §5h: the filtered report is HISTORICAL — stint roster + stamped records.
+            The roster listing comes from stints (Q2); per-player counts are stamps.
+            The Q4 disclosure names what remains unassigned; nothing is hidden. */}
+        {report.seasonRoster && (
+          <div className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                {t('reports.seasonRosterTitle', 'Season roster')}
+              </p>
+              {report.seasonRecords && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {t('reports.seasonRecordsLine', 'Season records: {{matches}} matches · {{training}} training sessions · {{scheduled}} scheduled sessions', {
+                    matches: report.seasonRecords.matches,
+                    training: report.seasonRecords.trainingSessions,
+                    scheduled: report.seasonRecords.scheduledSessions,
+                  })}
+                </p>
+              )}
+            </div>
+            {report.seasonRoster.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {t('reports.seasonRosterEmpty', 'No roster entries for this season yet — confirm the historical roster on the Seasons page.')}
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {report.seasonRoster.map(stint => {
+                  const counts = playerAverageScores.find(p => p.playerId === stint.playerId);
+                  return (
+                    <div key={stint.id} className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 dark:bg-gray-800/60 px-3 py-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{stint.playerName}</span>
+                        {stint.positionName && <span className="text-xs text-gray-500 dark:text-gray-400">{stint.positionName}</span>}
+                        <span className="text-xs text-gray-400">
+                          {formatDate(stint.joinedAt, { month: 'short', day: 'numeric', year: 'numeric' })} – {stint.leftAt ? formatDate(stint.leftAt, { month: 'short', day: 'numeric', year: 'numeric' }) : t('seasons.present', 'present')}
+                        </span>
+                      </div>
+                      {counts && (
+                        <span className="text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+                          {t('reports.stampedCounts', '{{assessments}} assessments · {{tests}} tests · {{performances}} match performances', {
+                            assessments: counts.assessmentCount ?? 0,
+                            tests: counts.objectiveTestCount ?? 0,
+                            performances: counts.matchPerformanceCount ?? 0,
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {(report.unassignedCount ?? 0) > 0 && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                {t('reports.unassignedDisclosure', "{{count}} of this team's records are not assigned to any season — confirm roster history and run Backfill on the Seasons page to assign what belongs here.", { count: report.unassignedCount ?? 0 })}
+              </p>
+            )}
           </div>
         )}
         {/* Metric cards — glass morphism, matching the dashboards */}

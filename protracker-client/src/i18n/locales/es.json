@@ -2159,7 +2159,11 @@
     "bestAt": "Mejor en",
     "scoreComparison": "Comparación de puntuaciones",
     "playerName": "Jugador {{id}}",
-    "rosterCaveat": "Esto muestra los datos de la plantilla actual para esa temporada — no la plantilla que realmente la jugó."
+    "seasonRosterTitle": "Plantilla de la temporada",
+    "seasonRecordsLine": "Registros de la temporada: {{matches}} partidos · {{training}} sesiones de entrenamiento · {{scheduled}} sesiones programadas",
+    "seasonRosterEmpty": "Aún no hay entradas de plantilla para esta temporada — confirma la plantilla histórica en la página de Temporadas.",
+    "stampedCounts": "{{assessments}} evaluaciones · {{tests}} pruebas · {{performances}} rendimientos de partido",
+    "unassignedDisclosure": "{{count}} registros de este equipo no están asignados a ninguna temporada — confirma el historial de plantilla y ejecuta la asignación en la página de Temporadas para asignar lo que pertenece aquí."
   },
   "register": {
     "codeExpired": "Ese código ha caducado. Pídele uno nuevo a tu entrenador.",

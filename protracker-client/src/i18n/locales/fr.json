@@ -2159,7 +2159,11 @@
     "bestAt": "Meilleur en",
     "scoreComparison": "Comparaison des scores",
     "playerName": "Joueur {{id}}",
-    "rosterCaveat": "Ceci montre les données de l'effectif actuel pour cette saison — pas le groupe qui l'a réellement jouée."
+    "seasonRosterTitle": "Effectif de la saison",
+    "seasonRecordsLine": "Données de la saison : {{matches}} matchs · {{training}} séances d'entraînement · {{scheduled}} séances planifiées",
+    "seasonRosterEmpty": "Aucune entrée d'effectif pour cette saison — confirmez l'effectif historique sur la page Saisons.",
+    "stampedCounts": "{{assessments}} évaluations · {{tests}} tests · {{performances}} performances en match",
+    "unassignedDisclosure": "{{count}} données de cette équipe ne sont assignées à aucune saison — confirmez l'historique d'effectif et lancez le rattachement sur la page Saisons pour assigner ce qui appartient ici."
   },
   "register": {
     "codeExpired": "Ce code a expiré. Demandez-en un nouveau à votre entraîneur.",

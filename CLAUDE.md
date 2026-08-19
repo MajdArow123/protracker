@@ -1524,6 +1524,34 @@ History (one line each; full detail in git history + blueprint):
     his 2026 Season data is known truth (backfill run 1: 14 matches /
     6 assessments / 58 objective tests / 4 match performances /
     2 improvement plans / 78 training sessions / 21 scheduled sessions).
+- **§5h IMPLEMENTED.** Key facts:
+  - `Services/SeasonPopulationService.cs` is THE population semantics
+    (arm 1 stint roster by direct season-keyed query; narrowed arm 2;
+    `CountUnassignedAsync` = Q4's N) — §5f must consume it, never re-derive.
+  - The filtered `GetTeamReportAsync` branch takes player identity from the
+    population (the `team.Players.First()` departed-player crash is gone by
+    construction); active injuries stay CURRENT-squad even filtered (S4
+    "active now" pin). The report previously contained NO match/session data —
+    the pinned Q2 team-context rule materialized as filtered-only additions:
+    `TeamReportDto.SeasonRecords` (stamped matches/training/scheduled counts),
+    `SeasonRoster` (arm-1 stint rows — "stints decide the roster listing"),
+    `UnassignedCount`, and per-player stamped counts on `PlayerAverageScoreDto`
+    (all null career-wide; the unfiltered report is byte-unchanged, Q6).
+  - `RosterIsCurrentNotHistorical` + the amber banner are GONE (clean removal,
+    both sides); the filtered UI instead renders the Season roster section
+    (stint dates + per-player counts), the season-records line, and the Q4
+    disclosure (N > 0 only).
+  - **PDF branch taken**: `TeamReportPDF` consumes the same filtered DTO, so
+    exported numbers cannot contradict the screen; the NEW §5h sections
+    (roster listing / records line / disclosure) are not yet in the PDF —
+    named follow-on: **PDF parity for the §5h season sections**.
+  - E2e note: the harness never touches prod, so `season-report.spec.ts`
+    builds a Lucas-SHAPED fixture (pre-season records → stint → backfill
+    execute → filtered report) with known counts; the real Lucas numbers are
+    asserted in prod verification instead.
+  - Tests: 6 in `SeasonHistoricalReportTests` (+S4 flag-test rewrite);
+    suite 319 backend / 298 vitest / 7 e2e; +5 i18n keys ×5,
+    `reports.rosterCaveat` deleted ×5.
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1559,12 +1587,13 @@ History (one line each; full detail in git history + blueprint):
   unstamped-count on save). **§5d is IMPLEMENTED** (rulings pinned in the §5d
   RULINGS block, implementation facts in the §5d IMPLEMENTED block — Q4 is
   decided-but-unreachable, no removal/transfer operation exists). **§5e is DONE**
-  (TestedAt fallback through ClientLocalDate, `d270350`). **§5h rulings are
-  PINNED** (historical team report — see the §5h RULINGS block; implementation
-  not started; §5h closes Phase 10's last honesty gap, then Phase 11/Stripe).
-  Still open: §5f (bundled with the future removal/transfer + Q4 section),
-  multi-team season management. Also landed with S6: the
-  `Models/pplicationUser.cs` filename typo fix (chore commit — the file had
+  (TestedAt fallback through ClientLocalDate, `d270350`). **§5h is IMPLEMENTED**
+  (historical team report — see the §5h RULINGS + IMPLEMENTED blocks). **Phase
+  10's named honesty gaps are all CLOSED**; what remains for the future bundle:
+  §5f (player-report season dropdown, bundled with removal/transfer + §5d Q4
+  wiring), multi-team season management, PDF parity for the §5h season sections.
+  Phase 11 (Stripe) opens with the season story complete. Also landed with S6:
+  the `Models/pplicationUser.cs` filename typo fix (chore commit — the file had
   carried the typo since creation).
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via

@@ -2159,7 +2159,11 @@
     "bestAt": "Best At",
     "scoreComparison": "Score Comparison",
     "playerName": "Player {{id}}",
-    "rosterCaveat": "This shows today's roster's data for that season — not the squad that actually played it."
+    "seasonRosterTitle": "Season roster",
+    "seasonRecordsLine": "Season records: {{matches}} matches · {{training}} training sessions · {{scheduled}} scheduled sessions",
+    "seasonRosterEmpty": "No roster entries for this season yet — confirm the historical roster on the Seasons page.",
+    "stampedCounts": "{{assessments}} assessments · {{tests}} tests · {{performances}} match performances",
+    "unassignedDisclosure": "{{count}} of this team's records are not assigned to any season — confirm roster history and run Backfill on the Seasons page to assign what belongs here."
   },
   "register": {
     "codeExpired": "That code has expired. Ask your coach for a new one.",
