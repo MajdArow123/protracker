@@ -1379,7 +1379,21 @@ History (one line each; full detail in git history + blueprint):
     account. Other demo coaches stay thin and unstamped deliberately; real
     accounts run their own when their rosters exist. When the coach.soccer run
     happens (in the §5d prompt's closing gate — not before), its
-    SeasonBackfillRun id gets recorded here.
+    SeasonBackfillRun id gets recorded here. **DONE 2026-08-19: SeasonBackfillRun
+    id 1** (owner coach.soccer, RanAt 2026-08-19T12:23:09Z) — 183 stamped into
+    "2026 Season" (prod season id 1): 14 matchResults, 6 playerAssessments,
+    58 objectiveTests, 4 matchPerformances, 2 improvementPlans,
+    78 trainingSessions, 21 scheduledSessions; 742 honestly gap (skipped demo
+    players + records outside Lucas's stint), 0 ambiguous. Execute counts were
+    per-entity IDENTICAL to the preview; audit-payload id-array lengths sum to
+    183; all 58 stamped tests belong to Lucas (player 5), zero foreign stamps.
+    The dogfood stint behind it: SeasonRoster id 2 — Lucas Ward, season 1,
+    JoinedAt 2026-02-03 (seeder-derived: training arc start; first objective
+    test Feb 7), Source CoachConfirmed, created through the real Q1 flow in the
+    browser. ALL other players were SKIPPED by the no-approximation rule: both
+    demo seeders are UtcNow-relative, so their arc starts are not determinable
+    from seeder sources — their remaining gap is the honesty story working, not
+    a defect.
 - **§5d IMPLEMENTED (Q1/Q2/Q3/Q5/Q8; Q4 decided-but-unreachable).** Landed as
   migration + feature commits after the rulings pin. Key implementation facts:
   - **Q4 has ZERO wiring sites — the operations do not exist in this codebase.**
