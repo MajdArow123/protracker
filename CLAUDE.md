@@ -1240,8 +1240,9 @@ History (one line each; full detail in git history + blueprint):
     (`RosterIsCurrentNotHistorical` unchanged). Scoped in S6 Part A: `playerIds` at
     `ReportService.GetTeamReportAsync` + 7 consumers (including a
     `team.Players.First(...)` that would throw for departed players), a
-    window-semantics decision, a Season fetch, and the flag/banner/test updates —
-    deferred with S7.
+    window-semantics decision, a Season fetch, and the flag/banner/test updates.
+    **Rulings for the fix are now PINNED as §5h (see the §5h RULINGS block
+    below) — implementation not started.**
   - Consequences now live: stamped-counts (the S5 edit-dates warning number) includes
     player-context rows; the first-ever player-context AmbiguousSeason/SeasonUnstamped
     toasts can fire (including on the AI improvement-plan path); solo athletes remain
@@ -1449,6 +1450,80 @@ History (one line each; full detail in git history + blueprint):
     predecessor; future migration tests must do the same.
   - Tests: 10 in `SeasonStintCreationTests` (+`SeasonRosterStintSourceMigrationTests`);
     e2e `season-roster-confirm.spec.ts`. Suite 312 backend / 298 vitest / 6 e2e.
+- **§5h RULINGS (pinned 2026-08-19 — decided, NOT yet implemented; docs-only
+  commit): HISTORICAL TEAM REPORT.** The section closing the
+  `RosterIsCurrentNotHistorical` gap. NAMING: the ledger proposed §5g, but §5g
+  is TAKEN (the S6 stint-write-permission fix) — repo numbering wins, this is
+  **§5h**. (§5f — player-report season dropdown — stays bundled with the future
+  removal/transfer + Q4 section.)
+  - **Q1 — the roster for season X is STINT-DRIVEN, by direct query**: distinct
+    players `WHERE SeasonRoster.SeasonId = X AND TeamId = T`. Stints are
+    season-KEYED — no date-overlap math exists or is needed; do not re-implement
+    window logic. `Player.TeamId` is banned from season-filtered report logic,
+    with exactly ONE stated exception (Q2 arm 2).
+  - **Q2 — stamps decide record inclusion; stints decide the roster listing.**
+    Team-context records (matches, training/scheduled sessions) carry
+    TeamId + SeasonId → pure stamp inclusion. Player-context records
+    (assessments, objective tests, match performances, improvement plans) carry
+    NO TeamId → included via the per-player POPULATION for (X, T):
+    **arm 1** = the Q1 stint roster; **arm 2** = current members
+    (`Player.TeamId = T`) with season-X-stamped records **AND no SeasonRoster
+    row for season X on ANY team** — the narrowing is load-bearing: without it a
+    post-season transferee's old-team stamps leak into the new team's report and
+    double-count across both. Arm 2 exists ONLY to honor the point-in-time edge
+    (stint deleted after stamping) and is the pinned exception to the
+    Player.TeamId ban. A stint-rostered player with zero stamped records gets an
+    honest empty row ("no data recorded" is a fact). No badge/asterisk on
+    edge-case records — the stamp is the truth of record. DOCUMENTED
+    CONSEQUENCES (accepted, not defects): (1) a stamped-but-stintless player who
+    also LEFT the team is unreachable from any team report — their records still
+    exist and count in player-level surfaces, but no team can claim them (the
+    honest cost of the Q6 point-in-time ruling); (2) a MID-SEASON transferee
+    (stints on two teams in one season) contributes player-context records to
+    BOTH teams' reports — stamps don't record which stint resolved them, and
+    re-deriving would violate Q3; (3) the doubly-orphaned transferee (stint
+    deleted + team changed) shares consequence (1)'s unreachability.
+  - **Q3 — NO additional time-windowing.** The resolver applied the stint
+    window at stamp time; the stamps ARE the windowed truth. Re-windowing in the
+    report would double-apply the rule and diverge from every other
+    stamp-filtered surface (S4 reads, matches tab). Report = trust the stamps,
+    full stop.
+  - **Q4 — unassigned-records disclosure**: one line in the season-filtered view
+    ("N of this team's records are not assigned to any season"), S5-notice
+    styling, hinting toward confirm-roster + backfill; rendered only when a
+    season filter is active AND N > 0. **N = the team's unstamped team-context
+    records (matches + sessions, `TeamId = T AND SeasonId IS NULL`) + unstamped
+    player-context records of the Q2 (narrowed) population.** This section ALSO
+    RETIRES the S4 `RosterIsCurrentNotHistorical` flag and the S5 amber banner —
+    once the report is historical, the banner's claim stops being true and
+    keeping it would be the inverse dishonesty (wire flag removed or hard-false,
+    banner deleted, S4/S5 tests updated).
+  - **Q5 — season selector stays PARTICIPATION-driven** (seasons with a
+    SeasonTeam row for this team). This is already the implemented behavior
+    (`GET /api/teams/{id}/seasons` feeds both the report filter and the
+    matches-tab selector) — pinned so nobody "fixes" it toward all-account
+    seasons, which would only offer filters that return emptiness.
+  - **Q6 — the unfiltered ("all time") report is UNCHANGED**: current-roster,
+    all-records — "who is this team today" is a different true statement, not a
+    dishonest one. Small copy sharpening allowed; anything larger out of scope.
+  - **Q7 — scope fences.** IN: the team report's roster listing, aggregates,
+    per-player breakdowns and charts under a season filter; the Q5 selector; the
+    Q4 disclosure; the flag/banner retirement; and fixing the
+    `team.Players.First(...)` departed-player crash in the report consumers
+    (named ACCEPTANCE CRITERION — it throws today for departed players). OUT:
+    the player report (§5f), any resolver/stamping changes, any new backfill
+    tooling. PDF/export: at implementation, VERIFY whether the export renders
+    the filtered state — if it bypasses the filter, ship report-only and name
+    the follow-on rather than silently shipping a PDF that contradicts the
+    screen.
+  - **Tests the implementation prompt must require**: the two-population test
+    (stint player with zero records + stamped stintless current member, both
+    sides of Q2); the arm-2 narrowing test (post-season transferee's old-team
+    stamps do NOT leak into the new team's report); the point-in-time edge; the
+    partial-stint no-double-window test (Q3); e2e against the Lucas fixture —
+    his 2026 Season data is known truth (backfill run 1: 14 matches /
+    6 assessments / 58 objective tests / 4 match performances /
+    2 improvement plans / 78 training sessions / 21 scheduled sessions).
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1483,9 +1558,12 @@ History (one line each; full detail in git history + blueprint):
   season-scoped roster UI, the §5a resolver clamp, §5b/§5g fixes, ruling-3
   unstamped-count on save). **§5d is IMPLEMENTED** (rulings pinned in the §5d
   RULINGS block, implementation facts in the §5d IMPLEMENTED block — Q4 is
-  decided-but-unreachable, no removal/transfer operation exists). Named
-  follow-ons still open: §5e, §5f, historical team report. Multi-team season
-  management remains a named open item. Also landed with S6: the
+  decided-but-unreachable, no removal/transfer operation exists). **§5e is DONE**
+  (TestedAt fallback through ClientLocalDate, `d270350`). **§5h rulings are
+  PINNED** (historical team report — see the §5h RULINGS block; implementation
+  not started; §5h closes Phase 10's last honesty gap, then Phase 11/Stripe).
+  Still open: §5f (bundled with the future removal/transfer + Q4 section),
+  multi-team season management. Also landed with S6: the
   `Models/pplicationUser.cs` filename typo fix (chore commit — the file had
   carried the typo since creation).
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
