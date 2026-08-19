@@ -1219,12 +1219,12 @@ History (one line each; full detail in git history + blueprint):
   players" (FINDING-009). **Season-scoped ONLY by ruling — no team-side surface.**
   Backend tests: `SeasonRosterTests` (10, HTTP-level); +27 i18n keys ×5 locales.
 - **S6 findings — NAMED follow-ons, not unremarked gaps**:
-  - **§5d — roster population stays MANUAL by ruling**: join-code redemption
-    (`AuthService`) and player create/update (`PlayerService`) do NOT auto-write
-    stints — a membership change silently writing season history is the same
-    invisible mutation ruling 3 exists to prevent. Consequence: every future
-    join/add produces a roster-less player until an explicit auto-stint feature is
-    designed (follow-on).
+  - **§5d — [SUPERSEDED by the §5d rulings block below, Q3/Q4]** the original S6
+    ruling was "roster population stays MANUAL" (join-code redemption and player
+    create/update do NOT auto-write stints). The §5d Q3/Q4 rulings replace it:
+    forward-path roster EVENTS (joins/removals/transfers) are recorded facts and
+    ARE auto-written; only HISTORICAL stints stay human-asserted (Q1). Kept here
+    so the two pins never read as contradictory.
   - **§5e**: objective-test create's `TestedAt` fallback is bare `DateTime.UtcNow`
     (`EvidenceService`) — a record timestamp rather than a "today" lookup, but the
     one player-context driving date not routed through `ClientLocalDate` (follow-on).
@@ -1299,6 +1299,87 @@ History (one line each; full detail in git history + blueprint):
     its season.
   - Tests: 6 in `SeasonBackfillTests` (+migration class); suite 302 backend / 298
     vitest / 5 e2e.
+- **§5d RULINGS (pinned 2026-08-19 — decided, NOT yet implemented; docs-only
+  commit).** Two halves with different integrity profiles: the FORWARD path
+  (joins/removals/transfers are recorded facts → the system acts automatically)
+  and the HISTORICAL path (pre-Phase-10 memberships were never dated → only a
+  human can supply them; this is where fabrication risk lives).
+  - **Q1 — historical stint start dates come from COACH ASSERTION.** A "Confirm
+    historical roster" flow (owner/head-coach) on the season-scoped roster UI:
+    lists current team members with no stint covering the selected season; coach
+    multi-selects and supplies an effective-from date. The date field defaults to
+    BLANK — season start and earliest-activity dates may be shown as LABELED
+    reference hints but never pre-filled. Bulk "apply date to selected" is
+    allowed (still an explicit assertion). LeftAt stays optional/null — the S6
+    clamp keeps open-ended stints safe. Clarifying notes: (a) using
+    `Player.TeamId` to build the CANDIDATE LIST is permitted — the pinned "never
+    route through Player.TeamId" rule bans it as a RESOLUTION input; listing
+    members for a human to assert about is not resolution. (b) The prefill
+    asymmetry with S6 is CHOSEN, not accidental: S6's single-stint add prefills
+    JoinedAt to season start; this bulk flow defaults to blank, because a prefill
+    amplified across a multi-select is exactly the "confidently wrong" window the
+    S5 date-prefill ruling rejects.
+  - **Q2 — `StintSource` provenance enum on SeasonRoster**: Manual /
+    CoachConfirmed / SystemOnJoin / Seeded. Server-stamped only, never
+    client-settable, immutable on update (same shape as the S6 identity-fields
+    rule). Additive migration; existing rows default Manual (factually correct —
+    all existing stints came via the S6 manual path). Not rendered in
+    coach-facing UI.
+  - **Q3 — auto-open stint on join (forward path)**: on join-code redemption,
+    coach player-create/team-assign, and solo connect-to-coach, resolve the join
+    date via `SeasonResolver` (post-clamp); exactly one season → open stint
+    (start = join date, end = null, SystemOnJoin). Binding amendments: the join
+    date is "today" → **the S2.2 local-date ruling applies — these paths send
+    ClientLocalDate, never bare UtcNow** (the §5e trap). Gap (NoCoveringSeason)
+    → SILENT no-op per S3 precedent (off-season signing is routine); Ambiguous →
+    the existing notice mechanism. `ResolveForTeamAsync` already conditions on
+    SeasonTeam participation — no separate participation clause. If the S6
+    overlap rule would reject the auto-stint, no-op silently — **an overlap 400
+    must never surface through a join**. This ruling SUPERSEDES the S6 "roster
+    population stays MANUAL" pin (marked above).
+  - **Q4 — auto-close on removal/transfer**: removal closes **ALL** open stints
+    for that player+team (cross-season overlapping open stints are legal),
+    end = removal date (ClientLocalDate per S2.2). Transfer = close-all + Q3
+    logic against the new team. Same-day join-and-remove yields
+    LeftAt = JoinedAt, permitted per §5b.
+  - **Q5 — permissions**: the bulk historical-confirmation flow is
+    owner/head-coach only. Pinned FRAMING: this is NOT "asserting history is
+    ownership-level" (an assistant with CanManagePlayers can create identical
+    stints singly via the S6 path) — it is "the bulk affordance is gated tighter
+    than the single-record path," per the CanPublishLineup precedent. Q3/Q4
+    forward path fires as a side effect of whoever legitimately performs the
+    roster action, including self-enrollment.
+  - **Q6 — stamps are point-in-time**: editing/deleting a stint does not
+    re-stamp or un-stamp records — matches the pinned semantics for season-date
+    edits (S5 warning) and EvidenceBasedScore. Re-stamp tooling is a NAMED
+    DEFERRAL; `SeasonBackfillRun.StampedIdsJson` remains the mechanical revert
+    path.
+  - **Q7 — demo stints via DOGFOODING, not a seeder.** No seeder vehicle exists
+    (stints need a live SeasonId; DemoDataSeeder predates the coach-created
+    "2026 Season"; DemoShowcaseSeeder's endpoint is dead by design). Ruling:
+    during §5d prod verification, run the real Q1 flow as coach.soccer for the
+    City FC / Lucas Ward arc, per-player dates aligned to each player's seeded
+    activity (Lucas: 2026-02-03). Provenance will be CoachConfirmed by
+    construction — building a special Seeded write path just to label this run
+    would violate Q2's server-stamped-by-path rule. `Seeded` stays in the enum,
+    unused, for a possible future scripted vehicle. POSITION, not backlog: the
+    remaining thin demo accounts staying unstamped is the honesty story working
+    as intended; a full-showcase stint script stays deferred unless a concrete
+    demo need appears.
+  - **Q8 — post-confirmation handoff to S7**: after the Q1 flow completes, show
+    a one-line pointer deep-linking to the existing S7 backfill preview modal on
+    /seasons. NO auto-execute — the preview→confirm gate stays singular.
+  - **Isolation ruling (implementation-binding)**: Q3/Q4 stint writes are
+    best-effort and transactionally isolated from the join/removal itself — a
+    stint failure never fails or rolls back the primary action. In-repo
+    precedent if a pattern is needed: the `NotificationService.CreateAsync`
+    isolated-scope pattern.
+  - **Prod execute semantics**: S7 execute is per-account by design. "The single
+    prod execute run" = ONE run, as coach.soccer, after the §5d dogfood on that
+    account. Other demo coaches stay thin and unstamped deliberately; real
+    accounts run their own when their rosters exist. When the coach.soccer run
+    happens (in the §5d prompt's closing gate — not before), its
+    SeasonBackfillRun id gets recorded here.
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1331,10 +1412,12 @@ History (one line each; full detail in git history + blueprint):
   provenance ruling; revert endpoint deliberately NOT built — stored stamped ids
   are the revert path). S6 landed just before it (SeasonRoster write path +
   season-scoped roster UI, the §5a resolver clamp, §5b/§5g fixes, ruling-3
-  unstamped-count on save). Named S6 follow-ons still open: §5d auto-stint, §5e,
-  §5f, historical team report. Multi-team season management remains a named open
-  item. Also landed with S6: the `Models/pplicationUser.cs` filename typo fix
-  (chore commit — the file had carried the typo since creation).
+  unstamped-count on save). **§5d rulings Q1–Q8 are PINNED (docs-only, see the
+  §5d RULINGS block above) — implementation NOT started**; other named
+  follow-ons still open: §5e, §5f, historical team report. Multi-team season
+  management remains a named open item. Also landed with S6: the
+  `Models/pplicationUser.cs` filename typo fix (chore commit — the file had
+  carried the typo since creation).
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with
