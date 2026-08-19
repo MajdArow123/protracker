@@ -1225,9 +1225,14 @@ History (one line each; full detail in git history + blueprint):
     forward-path roster EVENTS (joins/removals/transfers) are recorded facts and
     ARE auto-written; only HISTORICAL stints stay human-asserted (Q1). Kept here
     so the two pins never read as contradictory.
-  - **§5e**: objective-test create's `TestedAt` fallback is bare `DateTime.UtcNow`
-    (`EvidenceService`) — a record timestamp rather than a "today" lookup, but the
-    one player-context driving date not routed through `ClientLocalDate` (follow-on).
+  - **§5e — DONE**: the objective-test `TestedAt` fallback now routes through
+    `ClientLocalDate.ResolveToday(dto.LocalDate)` (midnight UTC of the client's
+    local date); an explicit TestedAt always wins untouched; stored values were
+    NOT migrated (historical facts). `CreateObjectiveTestDto.LocalDate` added,
+    frontend sends `localDateString()`. Other bare-UtcNow DATE fallbacks
+    spotted and deliberately left (none are SeasonId-driving dates):
+    `EvidenceService` StatDate/EvalDate×2, `PersonalGoalService`
+    StartDate/AchievedAt/RecordedAt.
   - **§5f**: the player report's season dropdown keys off `report.player.teamId`
     (current team) — a transferred player can't select their old team's seasons;
     visible now that history exists (follow-on).

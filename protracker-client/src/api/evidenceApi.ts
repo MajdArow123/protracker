@@ -1,4 +1,5 @@
 import api from './axiosInstance';
+import { localDateString } from '../utils/localDate';
 import type {
   SportMetricDefinition, ObjectiveTestResult, MatchStatEntry, PlayerEvidenceScores,
   CoachEvaluationEntry, SelfAssessmentEvidence, EvidenceBasedScore,
@@ -46,7 +47,8 @@ export const evidenceApi = {
     api.get<SportMetricDefinition[]>(`/api/sport-metrics/${sportId}`).then(r => r.data),
 
   addObjectiveTest: (data: CreateObjectiveTestInput) =>
-    api.post<ObjectiveTestResult>('/api/objective-tests', data).then(r => r.data),
+    // §5e/S2.2: localDate is the TestedAt FALLBACK only — an explicit testedAt wins.
+    api.post<ObjectiveTestResult>('/api/objective-tests', { ...data, localDate: localDateString() }).then(r => r.data),
   getObjectiveTests: (playerId: number, metricId?: number) =>
     api.get<ObjectiveTestResult[]>(`/api/players/${playerId}/objective-tests${metricId ? `?metricId=${metricId}` : ''}`).then(r => r.data),
 

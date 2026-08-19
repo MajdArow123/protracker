@@ -42,6 +42,9 @@ public class CreateObjectiveTestDto
     public DateTime? TestedAt { get; set; }
     public string? Notes { get; set; }
     public int? AssessmentId { get; set; }
+    // §5e/S2.2: the client's local calendar date (yyyy-MM-dd) — used ONLY as the
+    // TestedAt fallback when TestedAt is absent. An explicit TestedAt always wins.
+    public string? LocalDate { get; set; }
 }
 
 public class ObjectiveTestResultDto

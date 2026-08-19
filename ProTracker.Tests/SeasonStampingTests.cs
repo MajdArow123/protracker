@@ -336,6 +336,42 @@ public class SeasonStampingTests : IClassFixture<ProTrackerWebApplicationFactory
         Assert.Null((await db.ObjectiveTestResults.AsNoTracking().SingleAsync(t => t.Id == trapDto.Id)).SeasonId);
     }
 
+    // §5e: an ABSENT TestedAt falls back to the CLIENT's local calendar date (S2.2),
+    // not bare UtcNow — a late-evening tester west of UTC keeps their own date. An
+    // explicit TestedAt always wins and is stored untouched.
+    [Fact]
+    public async Task Objective_test_TestedAt_fallback_uses_client_local_date_and_explicit_still_wins()
+    {
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var metricId = (await db.SportMetricDefinitions.FirstAsync(d => d.SportId == 1)).Id;
+        var coach = await TestAuth.LoginAsync(_factory, TestAuth.SoccerCoachEmail, TestAuth.SeedPassword);
+
+        // The S2.2 shape: the client's local date differs from the UTC date (evening
+        // west of UTC) — within the ±1-day cap, so it must be honored verbatim.
+        var clientDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+        var fallback = await coach.PostAsJsonAsync("/api/objective-tests", new
+        { playerId = TestAuth.LucasWardPlayerId, metricDefinitionId = metricId, value = 5.0, localDate = clientDate.ToString("yyyy-MM-dd") });
+        fallback.EnsureSuccessStatusCode();
+        var fallbackId = (await fallback.Content.ReadFromJsonAsync<TestApiResponse<CreatedWithNotice>>())!.Data!.Id;
+        Assert.Equal(
+            clientDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
+            (await db.ObjectiveTestResults.AsNoTracking().SingleAsync(t => t.Id == fallbackId)).TestedAt);
+
+        // Explicit TestedAt (an arbitrary past instant) wins over the fallback.
+        var instant = new DateTime(DateTime.UtcNow.Year, 1, 5, 14, 30, 0, DateTimeKind.Utc);
+        var explicitResponse = await coach.PostAsJsonAsync("/api/objective-tests", new
+        {
+            playerId = TestAuth.LucasWardPlayerId, metricDefinitionId = metricId, value = 5.0,
+            testedAt = instant.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+            localDate = clientDate.ToString("yyyy-MM-dd"),
+        });
+        explicitResponse.EnsureSuccessStatusCode();
+        var explicitId = (await explicitResponse.Content.ReadFromJsonAsync<TestApiResponse<CreatedWithNotice>>())!.Data!.Id;
+        Assert.Equal(instant,
+            (await db.ObjectiveTestResults.AsNoTracking().SingleAsync(t => t.Id == explicitId)).TestedAt);
+    }
+
     // ── Path 5: evidence scores (engine, UTC-today fallback by design) ───────
 
     [Fact]

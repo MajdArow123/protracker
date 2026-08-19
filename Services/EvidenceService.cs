@@ -84,7 +84,11 @@ public class EvidenceService : IEvidenceService
             MetricDefinitionId = def.Id,
             Value = dto.Value,
             Unit = dto.Unit ?? def.Unit ?? "",
-            TestedAt = dto.TestedAt ?? DateTime.UtcNow,
+            // §5e: the fallback is the CLIENT's local calendar date per S2.2 (a
+            // late-evening tester west of UTC would otherwise get tomorrow's date) —
+            // an explicit TestedAt always wins and is stored untouched.
+            TestedAt = dto.TestedAt ?? ClientLocalDate.ResolveToday(dto.LocalDate)
+                .ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc),
             TestedBy = isAthlete ? TestedByType.Athlete : TestedByType.Coach,
             Notes = dto.Notes,
             AssessmentId = dto.AssessmentId,
