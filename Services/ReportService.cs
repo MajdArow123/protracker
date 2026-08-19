@@ -17,9 +17,12 @@ public class ReportService : IReportService
 {
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
+    private readonly ISeasonPopulationService _population;
 
-    public ReportService(ApplicationDbContext context, IAccessControlService access)
+    public ReportService(ApplicationDbContext context, IAccessControlService access,
+        ISeasonPopulationService population)
     {
+        _population = population;
         _context = context;
         _access = access;
     }
@@ -127,16 +130,29 @@ public class ReportService : IReportService
             .FirstOrDefaultAsync(t => t.Id == teamId)
             ?? throw new NotFoundApiException($"Team {teamId} was not found.");
 
-        var playerIds = team.Players.Select(p => p.Id).ToList();
+        // §5h: the season-filtered report is HISTORICAL — player identity comes from
+        // the population service (stint roster ∪ the narrowed point-in-time arm),
+        // never team.Players, which cannot know departed players. The unfiltered
+        // report stays the current-roster "who is this team today" view (Q6).
+        List<Player> reportPlayers;
+        SeasonTeamPopulation? population = null;
+        if (seasonId is int sid0)
+        {
+            await _access.EnsureCanAccessSeasonAsync(user, sid0);
+            population = await _population.GetTeamPopulationAsync(teamId, sid0);
+            reportPlayers = population.Players;
+        }
+        else
+        {
+            reportPlayers = team.Players.ToList();
+        }
+        var playerIds = reportPlayers.Select(p => p.Id).ToList();
 
         var assessmentQuery = _context.PlayerAssessments
             .Include(a => a.StatScores).ThenInclude(s => s.SportStatCategory)
             .Where(a => playerIds.Contains(a.PlayerId));
-        if (seasonId is int sid)
-        {
-            await _access.EnsureCanAccessSeasonAsync(user, sid);
-            assessmentQuery = assessmentQuery.Where(a => a.SeasonId == sid);
-        }
+        if (seasonId is int sid1)
+            assessmentQuery = assessmentQuery.Where(a => a.SeasonId == sid1);
         var allAssessments = await assessmentQuery.ToListAsync();
 
         var scores = allAssessments.SelectMany(a => a.StatScores).ToList();
@@ -145,25 +161,73 @@ public class ReportService : IReportService
             .GroupBy(s => s.SportStatCategory.Name)
             .ToDictionary(g => g.Key, g => (double)g.Average(s => s.Score));
 
-        var playerAverages = playerIds.Select(pid =>
+        // §5h filtered-only per-player stamped counts (Q2 record inclusion = stamps;
+        // Q3: no stint-date windowing — the stamps are the windowed truth).
+        Dictionary<int, int> testCounts = new(), perfCounts = new();
+        if (seasonId is int sid2 && playerIds.Count > 0)
         {
-            var playerScores = allAssessments
-                .Where(a => a.PlayerId == pid)
-                .SelectMany(a => a.StatScores)
-                .ToList();
-            var player = team.Players.First(p => p.Id == pid);
+            testCounts = await _context.ObjectiveTestResults
+                .Where(t => t.SeasonId == sid2 && playerIds.Contains(t.PlayerId))
+                .GroupBy(t => t.PlayerId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
+            perfCounts = await _context.MatchPerformances
+                .Where(m => m.SeasonId == sid2 && playerIds.Contains(m.PlayerId))
+                .GroupBy(m => m.PlayerId)
+                .Select(g => new { g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Key, x => x.Count);
+        }
+
+        var playerAverages = reportPlayers.Select(player =>
+        {
+            var playerAssessments = allAssessments.Where(a => a.PlayerId == player.Id).ToList();
+            var playerScores = playerAssessments.SelectMany(a => a.StatScores).ToList();
             return new PlayerAverageScoreDto
             {
-                PlayerId = pid,
+                PlayerId = player.Id,
                 PlayerName = player.FullName,
-                AverageScore = playerScores.Count != 0 ? (double)playerScores.Average(s => s.Score) : 0
+                AverageScore = playerScores.Count != 0 ? (double)playerScores.Average(s => s.Score) : 0,
+                AssessmentCount = seasonId != null ? playerAssessments.Count : null,
+                ObjectiveTestCount = seasonId != null ? testCounts.GetValueOrDefault(player.Id) : null,
+                MatchPerformanceCount = seasonId != null ? perfCounts.GetValueOrDefault(player.Id) : null,
             };
         }).OrderByDescending(p => p.AverageScore).ToList();
 
+        // Active injuries stay an "active now" fact about the CURRENT squad even when
+        // filtered (pinned S4 ruling — deliberately not the historical population).
+        var currentIds = team.Players.Select(p => p.Id).ToList();
         var activeInjuries = await _context.InjuryRecords
-            .Where(i => playerIds.Contains(i.PlayerId) && i.RecoveryStatus != RecoveryStatus.FullyRecovered)
+            .Where(i => currentIds.Contains(i.PlayerId) && i.RecoveryStatus != RecoveryStatus.FullyRecovered)
             .OrderByDescending(i => i.InjuryDate)
             .ToListAsync();
+
+        SeasonRecordCountsDto? seasonRecords = null;
+        List<SeasonRosterStintDto>? seasonRoster = null;
+        int? unassigned = null;
+        if (seasonId is int sid3)
+        {
+            seasonRecords = new SeasonRecordCountsDto
+            {
+                Matches = await _context.MatchResults.CountAsync(m => m.TeamId == teamId && m.SeasonId == sid3),
+                TrainingSessions = await _context.TrainingSessions.CountAsync(s => s.TeamId == teamId && s.SeasonId == sid3),
+                ScheduledSessions = await _context.ScheduledSessions.CountAsync(s => s.TeamId == teamId && s.SeasonId == sid3),
+            };
+            seasonRoster = population!.RosterStints.Select(r => new SeasonRosterStintDto
+            {
+                Id = r.Id,
+                SeasonId = r.SeasonId,
+                TeamId = r.TeamId,
+                TeamName = team.Name,
+                PlayerId = r.PlayerId,
+                PlayerName = r.Player.FullName,
+                JerseyNumber = r.JerseyNumber,
+                PositionId = r.PositionId,
+                PositionName = r.Position?.Name,
+                JoinedAt = r.JoinedAt,
+                LeftAt = r.LeftAt,
+            }).ToList();
+            unassigned = await _population.CountUnassignedAsync(teamId, playerIds);
+        }
 
         return new TeamReportDto
         {
@@ -176,14 +240,13 @@ public class ReportService : IReportService
                 CoachId = team.CoachId,
                 PlayerCount = team.Players.Count
             },
-            // Until S6 lands roster history, a season-filtered team report is
-            // "TODAY's roster ∩ that season's assessments" — a plausible-looking
-            // wrong answer for squads that changed. The flag lets the UI caveat it.
-            RosterIsCurrentNotHistorical = seasonId != null,
-            PlayerCount = team.Players.Count,
+            PlayerCount = reportPlayers.Count,
             AverageScoreByCategory = averages,
-            Players = team.Players.Select(PlayerService.ToDto).ToList(),
+            Players = reportPlayers.Select(PlayerService.ToDto).ToList(),
             PlayerAverageScores = playerAverages,
+            SeasonRecords = seasonRecords,
+            SeasonRoster = seasonRoster,
+            UnassignedCount = unassigned,
             ActiveInjuryCount = activeInjuries.Count(),
             ActiveInjuries = activeInjuries.Select(i => new InjuryRecordDto
             {

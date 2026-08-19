@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ProTracker.Data;
+using ProTracker.Dtos;
 using ProTracker.Models;
 using Xunit;
 
@@ -14,8 +15,8 @@ namespace ProTracker.Tests;
 // access, is 404 on every filtered endpoint — never an empty list (an empty list would
 // be indistinguishable from "no data this season" and hide authorization failures).
 // Archived seasons are readable when explicitly requested by id. The season-filtered
-// team report flags RosterIsCurrentNotHistorical (today's roster ∩ that season's
-// assessments, until S6 roster history).
+// team report is historical since §5h (stint roster + arm-2 edge; it formerly
+// filtered assessments over TODAY's roster and flagged RosterIsCurrentNotHistorical).
 public class SeasonFilteredReadsTests : IClassFixture<ProTrackerWebApplicationFactory>
 {
     private readonly ProTrackerWebApplicationFactory _factory;
@@ -261,31 +262,41 @@ public class SeasonFilteredReadsTests : IClassFixture<ProTrackerWebApplicationFa
 
     private sealed class TeamReportSlim
     {
-        public bool RosterIsCurrentNotHistorical { get; set; }
         public Dictionary<string, double> AverageScoreByCategory { get; set; } = new();
+        public int? UnassignedCount { get; set; }
+        public SeasonRecordCountsDto? SeasonRecords { get; set; }
+        public List<SeasonRosterStintDto>? SeasonRoster { get; set; }
     }
 
+    // §5h retired the RosterIsCurrentNotHistorical flag: the filtered report is now
+    // genuinely historical (stint roster ∪ the arm-2 edge + stamped records). The
+    // fixture player has stamped season-A records and no stint anywhere, so arm 2
+    // keeps them in the filtered population — averages unchanged from S4.
     [Fact]
-    public async Task Team_report_filters_averages_and_flags_current_roster()
+    public async Task Team_report_filters_averages_and_is_historical_not_flagged()
     {
         using var scope = _factory.Services.CreateScope();
         var f = await ArrangeAsync(scope);
         var coach = await CoachAsync();
 
-        // Unfiltered: both assessments (8.0 and 2.0) -> average 5.0, no flag.
+        // Unfiltered: both assessments (8.0 and 2.0) -> average 5.0; no §5h fields.
         var allResponse = await coach.GetAsync($"/api/reports/team/{f.TeamId}");
         allResponse.EnsureSuccessStatusCode();
         var all = (await allResponse.Content.ReadFromJsonAsync<TestApiResponse<TeamReportSlim>>())!.Data!;
-        Assert.False(all.RosterIsCurrentNotHistorical);
         Assert.Equal(5.0, all.AverageScoreByCategory.Values.Single());
+        Assert.Null(all.UnassignedCount);
+        Assert.Null(all.SeasonRecords);
+        Assert.Null(all.SeasonRoster);
 
-        // Season A only: just the 8.0 assessment feeds the average — and the report
-        // says out loud that the roster is today's, not that season's.
+        // Season A only: just the 8.0 assessment feeds the average (via arm 2), and
+        // the §5h season sections are present.
         var filteredResponse = await coach.GetAsync($"/api/reports/team/{f.TeamId}?seasonId={f.SeasonAId}");
         filteredResponse.EnsureSuccessStatusCode();
         var filtered = (await filteredResponse.Content.ReadFromJsonAsync<TestApiResponse<TeamReportSlim>>())!.Data!;
-        Assert.True(filtered.RosterIsCurrentNotHistorical);
         Assert.Equal(8.0, filtered.AverageScoreByCategory.Values.Single());
+        Assert.NotNull(filtered.UnassignedCount);
+        Assert.NotNull(filtered.SeasonRecords);
+        Assert.NotNull(filtered.SeasonRoster);
     }
 
     [Fact]
