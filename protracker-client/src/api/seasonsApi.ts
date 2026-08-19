@@ -2,6 +2,7 @@ import api from './axiosInstance';
 import type {
   Season, CreateSeasonInput, SeasonSummary, SeasonStampedCounts,
   SeasonRosterStint, SaveSeasonRosterStintInput, SeasonRosterSaveResult,
+  SeasonBackfillPreview, SeasonBackfillResult,
 } from '../types';
 import { localDateString } from '../utils/localDate';
 
@@ -42,4 +43,10 @@ export const seasonsApi = {
     api.put<SeasonRosterSaveResult>(`/api/season-roster/${stintId}`, data).then(r => r.data),
   deleteStint: (stintId: number) =>
     api.delete(`/api/season-roster/${stintId}`).then(r => r.data),
+  // S7 backfill. Preview is a POST but writes NOTHING (a genuine dry run); execute
+  // performs the assignment and returns what actually happened.
+  backfillPreview: () =>
+    api.post<SeasonBackfillPreview>('/api/seasons/backfill/preview').then(r => r.data),
+  backfillExecute: () =>
+    api.post<SeasonBackfillResult>('/api/seasons/backfill/execute').then(r => r.data),
 };

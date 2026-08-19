@@ -2760,7 +2760,32 @@
     "errJoinRequired": "Se requiere una fecha de alta.",
     "errLeftBeforeJoin": "La fecha de baja debe ser igual o posterior a la de alta.",
     "errRosterLoad": "No se pudo cargar la plantilla de la temporada.",
-    "rosterExplainer": "El historial de plantilla determina a qué temporada se asignan los nuevos registros de un jugador. Los registros existentes no se reasignan — la herramienta de asignación retroactiva llegará en una próxima actualización."
+    "rosterExplainer": "El historial de plantilla determina a qué temporada se asignan los nuevos registros de un jugador. Los registros existentes no se reasignan — la herramienta de asignación retroactiva llegará en una próxima actualización.",
+    "backfill": {
+      "action": "Asignar registros históricos",
+      "title": "Asignar registros históricos",
+      "intro": "Los registros creados antes de que existieran las temporadas están sin asignar. Esta herramienta los asigna según su fecha, usando tus temporadas y el historial de plantilla. No se escribe nada hasta que confirmes abajo.",
+      "nothing": "Nada que asignar — no hay registros sin asignar en tu cuenta.",
+      "errExecute": "No se pudo ejecutar la asignación.",
+      "done": "Asignación completada",
+      "willAssign": "Se asignarán a una temporada",
+      "assigned": "Asignados a una temporada",
+      "willRemain": "Seguirán sin asignar",
+      "remained": "Quedaron sin asignar",
+      "bySeason": "Por temporada:",
+      "gapHint": "{{count}} registros tienen fechas que ninguna temporada (ni periodo de plantilla) cubre. Amplía una temporada o añade historial de plantilla y vuelve a ejecutar — nunca se asignan por conjetura.",
+      "ambiguousHint": "{{count}} registros tienen fechas cubiertas por más de una temporada (las superposiciones están permitidas). Quedan sin asignar en lugar de elegir una por ti.",
+      "confirm": "Asignar {{count}} registros",
+      "entMatches": "Partidos",
+      "entAssessments": "Evaluaciones",
+      "entTests": "Pruebas objetivas",
+      "entPerformances": "Rendimientos de partido",
+      "entImprovementPlans": "Planes de mejora",
+      "entLineups": "Alineaciones de partido",
+      "entTrainingSessions": "Sesiones de entrenamiento",
+      "entScheduledSessions": "Sesiones programadas",
+      "entTrainingPlans": "Planes de entrenamiento antiguos"
+    }
   },
   "sessions": {
     "allCaughtUp": "Todo al día: ya valoraste tus sesiones recientes.",

@@ -584,6 +584,10 @@ public class SeasonStampingTests : IClassFixture<ProTrackerWebApplicationFactory
             throw new InvalidOperationException("resolver exploded");
         public Task<SeasonResolution> ResolveForPlayerAsync(int playerId, DateOnly date) =>
             throw new InvalidOperationException("resolver exploded");
+        public Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForTeamBatchAsync(int teamId, IReadOnlyCollection<DateOnly> dates) =>
+            throw new InvalidOperationException("resolver exploded");
+        public Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForPlayerBatchAsync(int playerId, IReadOnlyCollection<DateOnly> dates) =>
+            throw new InvalidOperationException("resolver exploded");
     }
 
     [Fact]

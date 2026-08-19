@@ -144,3 +144,41 @@ public class SeasonResolutionNoticeDto
     public string Code { get; set; } = "AmbiguousSeason";
     public List<int> CandidateSeasonIds { get; set; } = new();
 }
+
+// ---- Phase 10 S7: backfill tooling ----
+
+public class SeasonBackfillSeasonCountDto
+{
+    public int SeasonId { get; set; }
+    public string SeasonName { get; set; } = "";
+    public int Count { get; set; }
+}
+
+// One row per scoped entity type. Preview and execute share the shape: for preview the
+// numbers are "would"; for execute they are what actually happened. Gap/Ambiguous are
+// as prominent as the stamped counts by design — "will remain unassigned" is a first-
+// class answer, not an error footnote.
+public class SeasonBackfillEntityDto
+{
+    public string EntityType { get; set; } = "";
+    public int TotalCandidates { get; set; }
+    public List<SeasonBackfillSeasonCountDto> BySeason { get; set; } = new();
+    public int Stamped { get; set; }
+    public int Gap { get; set; }
+    public int Ambiguous { get; set; }
+}
+
+public class SeasonBackfillPreviewDto
+{
+    public List<SeasonBackfillEntityDto> Entities { get; set; } = new();
+    public int TotalCandidates { get; set; }
+    public int TotalStamped { get; set; }
+    public int TotalGap { get; set; }
+    public int TotalAmbiguous { get; set; }
+}
+
+public class SeasonBackfillResultDto : SeasonBackfillPreviewDto
+{
+    public int RunId { get; set; }
+    public DateTime RanAt { get; set; }
+}

@@ -222,6 +222,7 @@ builder.Services.AddScoped<ISeasonRosterService, SeasonRosterService>();
 // Phase 10 S2: registered but not yet consumed — the S3 create paths wire it in.
 builder.Services.AddScoped<ISeasonResolver, SeasonResolver>();
 builder.Services.AddScoped<ISeasonStamper, SeasonStamper>();
+builder.Services.AddScoped<ISeasonBackfillService, SeasonBackfillService>();
 builder.Services.AddScoped<IParentService, ParentService>();
 builder.Services.AddScoped<IJoinCodeService, JoinCodeService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();

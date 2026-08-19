@@ -2760,7 +2760,32 @@
     "errJoinRequired": "A join date is required.",
     "errLeftBeforeJoin": "The leave date must be on or after the join date.",
     "errRosterLoad": "Couldn't load the season roster.",
-    "rosterExplainer": "Roster history decides which season a player’s new records are assigned to. Existing records are not re-assigned — backfill tooling is coming in a future update."
+    "rosterExplainer": "Roster history decides which season a player’s new records are assigned to. Existing records are not re-assigned — backfill tooling is coming in a future update.",
+    "backfill": {
+      "action": "Backfill historical records",
+      "title": "Backfill historical records",
+      "intro": "Records created before seasons existed are unassigned. This assigns them by their date, using your seasons and roster history. Nothing is written until you confirm below.",
+      "nothing": "Nothing to backfill — there are no unassigned records in your account.",
+      "errExecute": "Could not run the backfill.",
+      "done": "Backfill complete",
+      "willAssign": "Will be assigned to a season",
+      "assigned": "Assigned to a season",
+      "willRemain": "Will stay unassigned",
+      "remained": "Stayed unassigned",
+      "bySeason": "By season:",
+      "gapHint": "{{count}} records fall on dates no season (or roster stint) covers. Extend a season or add roster history, then run backfill again — they are never assigned by guesswork.",
+      "ambiguousHint": "{{count}} records fall on dates covered by more than one season (overlapping seasons are allowed). They stay unassigned rather than picking one for you.",
+      "confirm": "Assign {{count}} records",
+      "entMatches": "Matches",
+      "entAssessments": "Assessments",
+      "entTests": "Objective tests",
+      "entPerformances": "Match performances",
+      "entImprovementPlans": "Improvement plans",
+      "entLineups": "Match lineups",
+      "entTrainingSessions": "Training sessions",
+      "entScheduledSessions": "Scheduled sessions",
+      "entTrainingPlans": "Legacy training plans"
+    }
   },
   "sessions": {
     "allCaughtUp": "All caught up — you've rated your recent sessions.",

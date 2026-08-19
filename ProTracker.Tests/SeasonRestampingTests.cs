@@ -155,6 +155,10 @@ public class SeasonRestampingTests : IClassFixture<ProTrackerWebApplicationFacto
             throw new InvalidOperationException("resolver exploded");
         public Task<SeasonResolution> ResolveForPlayerAsync(int playerId, DateOnly date) =>
             throw new InvalidOperationException("resolver exploded");
+        public Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForTeamBatchAsync(int teamId, IReadOnlyCollection<DateOnly> dates) =>
+            throw new InvalidOperationException("resolver exploded");
+        public Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForPlayerBatchAsync(int playerId, IReadOnlyCollection<DateOnly> dates) =>
+            throw new InvalidOperationException("resolver exploded");
     }
 
     private sealed class FixedResolver : ISeasonResolver
@@ -162,6 +166,10 @@ public class SeasonRestampingTests : IClassFixture<ProTrackerWebApplicationFacto
         public SeasonResolution Next;
         public Task<SeasonResolution> ResolveForTeamAsync(int teamId, DateOnly date) => Task.FromResult(Next);
         public Task<SeasonResolution> ResolveForPlayerAsync(int playerId, DateOnly date) => Task.FromResult(Next);
+        public Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForTeamBatchAsync(int teamId, IReadOnlyCollection<DateOnly> dates) =>
+            Task.FromResult<IReadOnlyDictionary<DateOnly, SeasonResolution>>(dates.Distinct().ToDictionary(d => d, _ => Next));
+        public Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForPlayerBatchAsync(int playerId, IReadOnlyCollection<DateOnly> dates) =>
+            Task.FromResult<IReadOnlyDictionary<DateOnly, SeasonResolution>>(dates.Distinct().ToDictionary(d => d, _ => Next));
     }
 
     private static ISeasonStamper ThrowingStamper() =>

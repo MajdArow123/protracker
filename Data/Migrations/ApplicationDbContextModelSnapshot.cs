@@ -3685,6 +3685,36 @@ namespace ProTracker.Data.Migrations
                     b.ToTable("Seasons");
                 });
 
+            modelBuilder.Entity("ProTracker.Models.SeasonBackfillRun", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CountsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<string>("OwnerId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("RanAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("StampedIdsJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("SeasonBackfillRuns");
+                });
+
             modelBuilder.Entity("ProTracker.Models.SeasonRoster", b =>
                 {
                     b.Property<int>("Id")
@@ -5607,6 +5637,17 @@ namespace ProTracker.Data.Migrations
                 });
 
             modelBuilder.Entity("ProTracker.Models.Season", b =>
+                {
+                    b.HasOne("ProTracker.Models.ApplicationUser", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("ProTracker.Models.SeasonBackfillRun", b =>
                 {
                     b.HasOne("ProTracker.Models.ApplicationUser", "Owner")
                         .WithMany()

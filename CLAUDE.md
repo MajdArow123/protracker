@@ -1241,6 +1241,64 @@ History (one line each; full detail in git history + blueprint):
     player-context rows; the first-ever player-context AmbiguousSeason/SeasonUnstamped
     toasts can fire (including on the AI improvement-plan path); solo athletes remain
     permanently unaffected (no rosters by design).
+- **S7 (landed): backfill tooling for retroactive season stamping.** RULINGS D1–D7
+  (binding):
+  - **D1 — resolver reuse, no guessing**: every record's driving date resolves through
+    `SeasonResolver` (post-clamp) with identical semantics — gap and ambiguous dates
+    stay NULL; never nearest-season, never an invented "Legacy" season. Batch variants
+    `ResolveForTeamBatchAsync`/`ResolveForPlayerBatchAsync` were ADDED to
+    `ISeasonResolver` (one query per context, same day-granular comparisons in memory);
+    batch ≡ single is test-pinned date-by-date across the boundary matrix in
+    `SeasonBackfillTests` — any divergence is a forked-resolution bug.
+  - **D2 — idempotent, NULL-only**: candidates are `SeasonId IS NULL` rows; execute
+    re-guards IS NULL inside each batch transaction, so a non-NULL stamp is NEVER
+    overwritten (whatever its origin) and a re-run stamps zero (still audits itself).
+  - **D3 — scope**: the S1b stamp columns EXCEPT `EvidenceBasedScore` — deliberate
+    deviation from the spec's "all ten": the pinned S6 ruling ("computation
+    provenance, not backfillable history") wins, and the S6 unstamped-in-window count
+    already excludes EBS precisely so it matches what S7 stamps; the engine restamps
+    current rows on every recalc anyway. Lineup candidates are MATCH lineups only
+    (Default-XI/named are unassignable templates, never counted as "gap").
+    `SeasonRoster` stints are §5d's problem, out of scope. `AssessmentPeriod.SeasonId`
+    is the hand-linkage mechanism, not a stamp column — untouched. Per-entity driving
+    dates mirror S3 exactly (TrainingSession = team ctx; ScheduledSession = StartTime's
+    UTC date part — no client-local info exists for historical rows; legacy
+    `TrainingPlan` = StartDate via `AthleteId→Player.UserId` mapping, unmappable rows
+    honestly report gap).
+  - **D4 — no provenance backfill**: `BenchmarkProfileId` snapshot columns stay NULL
+    on backfilled rows — "the profile in effect at creation time" cannot be honestly
+    reconstructed after the fact.
+  - **D5 — owner-only**: `POST /api/seasons/backfill/preview|execute`,
+    `[Authorize(Roles="Coach,Admin")]`; candidates scope to the caller's OWN graph
+    (teams they head-coach; players currently on those teams ∪ players with a stint
+    on them — the §5g departed-player lesson; legacy plans via their own CoachId).
+    A caller owning ZERO seasons gets a 404 ("No seasons were found for this
+    account.") — this IS the assistant-coach exclusion (assistants own no seasons);
+    athletes stop at the role gate. Cross-owner isolation is test-pinned.
+  - **D6 — preview + audit**: preview computes everything and writes NOTHING
+    (row-for-row DB-equality test). Execute writes ONE `SeasonBackfillRun` row
+    (OwnerId, RanAt UTC, CountsJson + StampedIdsJson — jsonb on Postgres, TEXT on the
+    SQLite rig; PK + owner index only per the S1b "nothing exotic" judgment). The
+    stored stamped-id payload is the mechanical revert path; **NO revert endpoint in
+    S7 by ruling**. Migration `SeasonBackfillRuns`, pinned in
+    `SeasonBackfillRunsMigrationTests`.
+  - **D7 — operational shape**: set-based `ExecuteUpdateAsync` per (entity, season) in
+    chunks of 500, each in its own transaction — only SeasonId moves (no UpdatedAt
+    churn, no Lineup.Version bump, published lineups stamped silently — mirrors the
+    S3+ cascade ruling). Measured: preview over 737 candidates on the dev seed =
+    0.10s — request-timeout risk is nil at current scale, no async job infrastructure
+    (deliberately not built).
+  - **UI**: "Backfill historical records" (secondary button on /seasons, hidden until
+    a season exists) → preview modal where "will stay unassigned" (gap + ambiguous,
+    with reason hints) renders as prominently as "will be assigned" — that prominence
+    is a ruling, not styling. Explicit confirm ("Assign N records"), then the actual
+    result; execute success invalidates the whole query cache (rare mass operation).
+    +23 i18n keys ×5 locales (`seasons.backfill.*`, no plural-suffix keys — the ar/he
+    `_one/_other` gotcha). E2e `season-backfill.spec.ts`: match created before any
+    season → filtered view honestly empty → preview → confirm → match appears under
+    its season.
+  - Tests: 6 in `SeasonBackfillTests` (+migration class); suite 302 backend / 298
+    vitest / 5 e2e.
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1266,13 +1324,17 @@ History (one line each; full detail in git history + blueprint):
 
 ## Current status
 
-- **Latest: Phase 10 S6 landed** (SeasonRoster write path + season-scoped roster
-  UI, the §5a resolver clamp, §5b/§5g fixes, ruling-3 unstamped-count on save —
-  see the Phase 10 section above). S7 (backfill tooling) NOT started; named S6
-  follow-ons: §5d auto-stint, §5e, §5f, historical team report. Multi-team
-  season management remains a named open item. Phase 10 S5 before it: account-level
-  /seasons page, DTO shim removal with full lifecycle unlock, the three plumbed
-  signals rendering, season filters on reports + team matches.
+- **Latest: Phase 10 S7 landed** (backfill tooling — preview/execute endpoints,
+  `SeasonBackfillRun` audit table, batch resolver variants, /seasons UI with
+  equal-prominence unassigned counts; D1–D7 rulings recorded in the Phase 10
+  section above; EvidenceBasedScore deliberately excluded per the pinned S6
+  provenance ruling; revert endpoint deliberately NOT built — stored stamped ids
+  are the revert path). S6 landed just before it (SeasonRoster write path +
+  season-scoped roster UI, the §5a resolver clamp, §5b/§5g fixes, ruling-3
+  unstamped-count on save). Named S6 follow-ons still open: §5d auto-stint, §5e,
+  §5f, historical team report. Multi-team season management remains a named open
+  item. Also landed with S6: the `Models/pplicationUser.cs` filename typo fix
+  (chore commit — the file had carried the typo since creation).
 - **Phase 9 structural cleanup COMPLETE** — see its section above.
   AIController split (§1), frontend splits + oxlint 0 (§2), lint gate real via
   `--deny-warnings` proven red+green (§3), migration squash decided against with

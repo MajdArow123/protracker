@@ -2760,7 +2760,32 @@
     "errJoinRequired": "Une date d'arrivée est requise.",
     "errLeftBeforeJoin": "La date de départ doit être égale ou postérieure à la date d'arrivée.",
     "errRosterLoad": "Impossible de charger l'effectif de la saison.",
-    "rosterExplainer": "L'historique d'effectif détermine la saison à laquelle les nouvelles données d'un joueur sont rattachées. Les données existantes ne sont pas re-rattachées — un outil de rattachement arrivera dans une prochaine mise à jour."
+    "rosterExplainer": "L'historique d'effectif détermine la saison à laquelle les nouvelles données d'un joueur sont rattachées. Les données existantes ne sont pas re-rattachées — un outil de rattachement arrivera dans une prochaine mise à jour.",
+    "backfill": {
+      "action": "Rattacher les données historiques",
+      "title": "Rattacher les données historiques",
+      "intro": "Les données créées avant l'existence des saisons ne sont rattachées à aucune saison. Cette opération les rattache selon leur date, à partir de vos saisons et de l'historique d'effectif. Rien n'est écrit avant votre confirmation ci-dessous.",
+      "nothing": "Rien à rattacher — aucune donnée non assignée dans votre compte.",
+      "errExecute": "Impossible d'exécuter le rattachement.",
+      "done": "Rattachement terminé",
+      "willAssign": "Seront assignées à une saison",
+      "assigned": "Assignées à une saison",
+      "willRemain": "Resteront non assignées",
+      "remained": "Restées non assignées",
+      "bySeason": "Par saison :",
+      "gapHint": "{{count}} données ont une date qu'aucune saison (ou période d'effectif) ne couvre. Étendez une saison ou complétez l'historique d'effectif, puis relancez — rien n'est jamais assigné au hasard.",
+      "ambiguousHint": "{{count}} données ont une date couverte par plusieurs saisons (les chevauchements sont autorisés). Elles restent non assignées plutôt que d'en choisir une à votre place.",
+      "confirm": "Assigner {{count}} données",
+      "entMatches": "Matchs",
+      "entAssessments": "Évaluations",
+      "entTests": "Tests objectifs",
+      "entPerformances": "Performances en match",
+      "entImprovementPlans": "Plans de progression",
+      "entLineups": "Compositions de match",
+      "entTrainingSessions": "Séances d'entraînement",
+      "entScheduledSessions": "Séances planifiées",
+      "entTrainingPlans": "Anciens plans d'entraînement"
+    }
   },
   "sessions": {
     "allCaughtUp": "Vous êtes à jour — vous avez noté vos séances récentes.",

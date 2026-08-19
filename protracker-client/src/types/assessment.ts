@@ -176,3 +176,35 @@ export interface SeasonSummary {
   categoryTrends: SeasonCategoryTrend[];
   points: SeasonPeriodPoint[];
 }
+
+// Phase 10 S7: backfill preview/result. Preview and execute share the shape — for
+// preview the numbers are "would", for execute they are what actually happened. Gap
+// (no covering season) and ambiguous (overlap) counts are first-class answers the UI
+// must render as prominently as the assigned counts.
+export interface SeasonBackfillSeasonCount {
+  seasonId: number;
+  seasonName: string;
+  count: number;
+}
+
+export interface SeasonBackfillEntity {
+  entityType: string;
+  totalCandidates: number;
+  bySeason: SeasonBackfillSeasonCount[];
+  stamped: number;
+  gap: number;
+  ambiguous: number;
+}
+
+export interface SeasonBackfillPreview {
+  entities: SeasonBackfillEntity[];
+  totalCandidates: number;
+  totalStamped: number;
+  totalGap: number;
+  totalAmbiguous: number;
+}
+
+export interface SeasonBackfillResult extends SeasonBackfillPreview {
+  runId: number;
+  ranAt: string;
+}

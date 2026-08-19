@@ -59,6 +59,16 @@ public interface ISeasonResolver
     // routes through Player.TeamId: that field is "where are they now", and using it
     // for a historical record is the exact bug SeasonRoster exists to prevent.
     Task<SeasonResolution> ResolveForPlayerAsync(int playerId, DateOnly date);
+
+    // Phase 10 S7: batch variants for the backfill sweep — one query loads every
+    // candidate window for the context, then each date is classified with the SAME
+    // day-granular comparisons as the single methods (equivalence is test-pinned
+    // across the S2/S6 boundary matrix in SeasonBackfillTests). Single-record
+    // semantics above are untouched. Returns one entry per DISTINCT input date.
+    Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForTeamBatchAsync(
+        int teamId, IReadOnlyCollection<DateOnly> dates);
+    Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForPlayerBatchAsync(
+        int playerId, IReadOnlyCollection<DateOnly> dates);
 }
 
 public class SeasonResolver : ISeasonResolver
@@ -136,6 +146,82 @@ public class SeasonResolver : ISeasonResolver
             .ToListAsync();
 
         return Classify(candidateIds, $"player {playerId}", date);
+    }
+
+    public async Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForTeamBatchAsync(
+        int teamId, IReadOnlyCollection<DateOnly> dates)
+    {
+        var result = new Dictionary<DateOnly, SeasonResolution>();
+        if (dates.Count == 0) return result;
+
+        if (!await _context.Teams.AnyAsync(t => t.Id == teamId))
+        {
+            _logger.LogWarning(
+                "ResolveForTeamBatchAsync called with team id {TeamId}, which does not exist — wrong id type?",
+                teamId);
+            foreach (var date in dates.Distinct()) result[date] = SeasonResolution.NoCoveringSeason();
+            return result;
+        }
+
+        // One query for the context, dates classified in memory — the comparisons are
+        // byte-for-byte the single method's (StartDate < nextDay && EndDate >= dayStart).
+        var windows = await _context.Seasons
+            .Where(s => s.Status != SeasonStatus.Archived
+                && s.SeasonTeams.Any(st => st.TeamId == teamId))
+            .Select(s => new { s.Id, s.StartDate, s.EndDate })
+            .ToListAsync();
+
+        foreach (var date in dates.Distinct())
+        {
+            var (dayStart, nextDay) = DayWindow(date);
+            var candidateIds = windows
+                .Where(w => w.StartDate < nextDay && w.EndDate >= dayStart)
+                .Select(w => w.Id)
+                .ToList();
+            result[date] = Classify(candidateIds, $"team {teamId}", date);
+        }
+        return result;
+    }
+
+    public async Task<IReadOnlyDictionary<DateOnly, SeasonResolution>> ResolveForPlayerBatchAsync(
+        int playerId, IReadOnlyCollection<DateOnly> dates)
+    {
+        var result = new Dictionary<DateOnly, SeasonResolution>();
+        if (dates.Count == 0) return result;
+
+        if (!await _context.Players.AnyAsync(p => p.Id == playerId))
+        {
+            _logger.LogWarning(
+                "ResolveForPlayerBatchAsync called with player id {PlayerId}, which does not exist — wrong id type?",
+                playerId);
+            foreach (var date in dates.Distinct()) result[date] = SeasonResolution.NoCoveringSeason();
+            return result;
+        }
+
+        var stints = await _context.SeasonRosters
+            .Where(r => r.PlayerId == playerId && r.Season.Status != SeasonStatus.Archived)
+            .Select(r => new
+            {
+                r.SeasonId,
+                r.JoinedAt,
+                r.LeftAt,
+                SeasonStart = r.Season.StartDate,
+                SeasonEnd = r.Season.EndDate,
+            })
+            .ToListAsync();
+
+        foreach (var date in dates.Distinct())
+        {
+            var (dayStart, nextDay) = DayWindow(date);
+            var candidateIds = stints
+                .Where(s => s.JoinedAt < nextDay && (s.LeftAt == null || s.LeftAt >= dayStart)
+                    && s.SeasonStart < nextDay && s.SeasonEnd >= dayStart)
+                .Select(s => s.SeasonId)
+                .Distinct()
+                .ToList();
+            result[date] = Classify(candidateIds, $"player {playerId}", date);
+        }
+        return result;
     }
 
     private static (DateTime DayStart, DateTime NextDay) DayWindow(DateOnly date)

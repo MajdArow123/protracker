@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   CalendarRange, Plus, Pencil, Trash2, Star, ArrowRight, TrendingUp, TrendingDown,
-  Minus, Link2, ChevronDown, Target, Shield,
+  Minus, Link2, ChevronDown, Target, Shield, History,
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,7 @@ import { useLocaleFormat } from '../../hooks/useLocaleFormat';
 import { seasonsApi } from '../../api/seasonsApi';
 import { findOverlappingSeasons } from '../../utils/seasonOverlap';
 import { SeasonRosterSection } from '../../components/seasons/SeasonRosterSection';
+import { SeasonBackfillModal } from '../../components/seasons/SeasonBackfillModal';
 import type { Season, CreateSeasonInput, SeasonStatus } from '../../types';
 
 const STATUS_STYLES: Record<SeasonStatus, string> = {
@@ -375,6 +376,7 @@ export function SeasonsPage() {
   const [editing, setEditing] = useState<Season | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Season | null>(null);
+  const [showBackfill, setShowBackfill] = useState(false);
 
   function openNew() { setEditing(null); setShowForm(true); }
   function openEdit(s: Season) { setEditing(s); setShowForm(true); }
@@ -396,9 +398,14 @@ export function SeasonsPage() {
       title={tr('seasons.title', 'Seasons')}
       actions={
         seasons.length > 0 ? (
-          <Button size="sm" onClick={openNew}>
-            <Plus size={14} /> {tr('seasons.newSeason', 'New Season')}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={() => setShowBackfill(true)}>
+              <History size={14} /> {tr('seasons.backfill.action', 'Backfill historical records')}
+            </Button>
+            <Button size="sm" onClick={openNew}>
+              <Plus size={14} /> {tr('seasons.newSeason', 'New Season')}
+            </Button>
+          </div>
         ) : undefined
       }
     >
@@ -485,6 +492,7 @@ export function SeasonsPage() {
       )}
 
       {showForm && <SeasonFormModal editing={editing} seasons={seasons} onClose={() => setShowForm(false)} />}
+      {showBackfill && <SeasonBackfillModal onClose={() => setShowBackfill(false)} />}
       <ConfirmModal
         isOpen={!!confirmDelete}
         onClose={() => setConfirmDelete(null)}
