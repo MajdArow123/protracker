@@ -129,6 +129,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Season> Seasons => Set<Season>();
     public DbSet<SeasonTeam> SeasonTeams => Set<SeasonTeam>();
     public DbSet<SeasonRoster> SeasonRosters => Set<SeasonRoster>();
+    public DbSet<SeasonBackfillRun> SeasonBackfillRuns => Set<SeasonBackfillRun>();
     public DbSet<ParentLink> ParentLinks => Set<ParentLink>();
     public DbSet<ParentInvite> ParentInvites => Set<ParentInvite>();
     public DbSet<TeamJoinCode> TeamJoinCodes => Set<TeamJoinCode>();
@@ -500,6 +501,23 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             .HasIndex(r => new { r.PlayerId, r.SeasonId });
         builder.Entity<SeasonRoster>()
             .HasIndex(r => new { r.SeasonId, r.TeamId });
+
+        // Phase 10 S7: backfill audit. Same S1b judgment call — nothing exotic, just
+        // PK + owner index. jsonb on Postgres (SQLite stores TEXT, which is fine for
+        // the test rig). Owner cascade matches Season's owner cascade.
+        builder.Entity<SeasonBackfillRun>()
+            .HasOne(r => r.Owner)
+            .WithMany()
+            .HasForeignKey(r => r.OwnerId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Entity<SeasonBackfillRun>()
+            .HasIndex(r => r.OwnerId);
+        builder.Entity<SeasonBackfillRun>()
+            .Property(r => r.CountsJson)
+            .HasColumnType("jsonb");
+        builder.Entity<SeasonBackfillRun>()
+            .Property(r => r.StampedIdsJson)
+            .HasColumnType("jsonb");
 
         // --- Phase 10 S1b: season scoping columns (additive, nullable, no reads/writes
         // yet — the S2 resolver populates them). All FK -> Season with SET NULL so
