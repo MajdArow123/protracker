@@ -29,6 +29,9 @@ public class PlayerDto
 // Full detail view for a single player's profile page.
 public class PlayerProfileDto : PlayerDto
 {
+    // §5d Q3: set only on a CREATE response when the auto-stint's season resolution
+    // was Ambiguous — the coach-facing surface of the existing notice mechanism.
+    public SeasonResolutionNoticeDto? SeasonNotice { get; set; }
     public string? InjuryNotes { get; set; }
     public string? Goals { get; set; }
     public string? CoachNotes { get; set; }
@@ -53,6 +56,9 @@ public class PlayerCreateDto
     public string? Goals { get; set; }
     public string? CoachNotes { get; set; }
     public string? ProfileImageUrl { get; set; }
+    // §5d/S2.2: the client's local calendar date (yyyy-MM-dd) — the join date the
+    // auto-stint records. Absent -> UTC today.
+    public string? LocalDate { get; set; }
 }
 
 public class PlayerUpdateDto

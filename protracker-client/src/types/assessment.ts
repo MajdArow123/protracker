@@ -208,3 +208,28 @@ export interface SeasonBackfillResult extends SeasonBackfillPreview {
   runId: number;
   ranAt: string;
 }
+
+// ---- Phase 10 §5d: historical roster confirmation ----
+
+// A current team member with no stint in the selected season. earliestActivity is a
+// LABELED REFERENCE HINT — the UI must never pre-fill a date from it (Q1).
+export interface RosterCandidate {
+  playerId: number;
+  playerName: string;
+  teamId: number;
+  teamName: string;
+  jerseyNumber?: number | null;
+  positionName?: string | null;
+  earliestActivity?: string | null;
+}
+
+export interface ConfirmRosterEntry {
+  playerId: number;
+  joinedAt: string;
+}
+
+export interface ConfirmRosterResult {
+  createdCount: number;
+  skippedAlreadyCovered: number;
+  unstampedInWindow: number;
+}

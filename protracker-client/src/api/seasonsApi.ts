@@ -3,6 +3,7 @@ import type {
   Season, CreateSeasonInput, SeasonSummary, SeasonStampedCounts,
   SeasonRosterStint, SaveSeasonRosterStintInput, SeasonRosterSaveResult,
   SeasonBackfillPreview, SeasonBackfillResult,
+  RosterCandidate, ConfirmRosterEntry, ConfirmRosterResult,
 } from '../types';
 import { localDateString } from '../utils/localDate';
 
@@ -43,6 +44,11 @@ export const seasonsApi = {
     api.put<SeasonRosterSaveResult>(`/api/season-roster/${stintId}`, data).then(r => r.data),
   deleteStint: (stintId: number) =>
     api.delete(`/api/season-roster/${stintId}`).then(r => r.data),
+  // §5d Q1: bulk historical confirmation (owner-only, uniform 404).
+  getRosterCandidates: (seasonId: number) =>
+    api.get<RosterCandidate[]>(`/api/seasons/${seasonId}/roster/candidates`).then(r => r.data),
+  confirmRoster: (seasonId: number, entries: ConfirmRosterEntry[]) =>
+    api.post<ConfirmRosterResult>(`/api/seasons/${seasonId}/roster/confirm`, { entries }).then(r => r.data),
   // S7 backfill. Preview is a POST but writes NOTHING (a genuine dry run); execute
   // performs the assignment and returns what actually happened.
   backfillPreview: () =>

@@ -65,6 +65,9 @@ public class SoloSportOptionDto
 public class ConnectCoachRequest
 {
     public string Code { get; set; } = "";
+    // §5d/S2.2: the client's local calendar date (yyyy-MM-dd) — the join date the
+    // auto-stint records. Absent -> UTC today.
+    public string? LocalDate { get; set; }
 }
 
 // The role changes SoloAthlete → Athlete, so fresh tokens are issued (like a login).

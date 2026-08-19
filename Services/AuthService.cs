@@ -19,6 +19,7 @@ public class AuthService : IAuthService
     private readonly IConfiguration _config;
     private readonly ILogger<AuthService> _logger;
     private readonly INotificationService _notifications;
+    private readonly IRosterStintRecorder _stints;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -27,8 +28,10 @@ public class AuthService : IAuthService
         IEmailService email,
         IConfiguration config,
         ILogger<AuthService> logger,
-        INotificationService notifications)
+        INotificationService notifications,
+        IRosterStintRecorder stints)
     {
+        _stints = stints;
         _userManager = userManager;
         _tokenService = tokenService;
         _context = context;
@@ -170,6 +173,11 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
         await tx.CommitAsync();
+
+        // §5d Q3: join committed — best-effort auto-stint on an isolated scope. The
+        // actor is the athlete, so ambiguity has no coach-facing response to ride on;
+        // the resolver's warning log covers it (pinned audience decision).
+        await _stints.RecordJoinAsync(player.Id, joinCode.TeamId, request.LocalDate);
 
         // Notify the coach (in-app bell also derives from JoinedViaCodeAt).
         await _notifications.CreateAsync(joinCode.Team.CoachId,
@@ -374,6 +382,10 @@ public class AuthService : IAuthService
             await _userManager.AddToRoleAsync(user, "Athlete");
 
         await tx.CommitAsync();
+
+        // §5d Q3: same contract as the register-athlete path — committed join, isolated
+        // best-effort stint, athlete-actor so log-only on ambiguity.
+        await _stints.RecordJoinAsync(player.Id, joinCode.TeamId, request.LocalDate);
 
         await _notifications.CreateAsync(joinCode.Team.CoachId,
             "New athlete joined",

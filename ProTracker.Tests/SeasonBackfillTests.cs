@@ -457,11 +457,10 @@ public class SeasonBackfillRunsMigrationTests : IClassFixture<ProTrackerWebAppli
         Assert.True(await TableExistsAsync(db, "SeasonBackfillRuns"));
         Assert.True(await IndexExistsAsync(db, "SeasonBackfillRuns", "IX_SeasonBackfillRuns_OwnerId"));
 
-        // Down to the previous migration: the table goes away, nothing else moves.
-        var previous = (await db.Database.GetAppliedMigrationsAsync())
-            .Where(m => !m.EndsWith("_SeasonBackfillRuns"))
-            .OrderBy(m => m)
-            .Last();
+        // Down to the migration immediately BEFORE this one (not "newest excluding it" —
+        // that silently no-ops once any later migration exists).
+        var applied = (await db.Database.GetAppliedMigrationsAsync()).OrderBy(m => m).ToList();
+        var previous = applied[applied.FindIndex(m => m.EndsWith("_SeasonBackfillRuns")) - 1];
         await migrator.MigrateAsync(previous);
         Assert.False(await TableExistsAsync(db, "SeasonBackfillRuns"));
         Assert.True(await TableExistsAsync(db, "SeasonRosters"));

@@ -251,7 +251,7 @@ function SeasonFormModal({ editing, seasons, onClose }: {
 // NOTE (two-mechanisms ruling): everything in here is the PERIOD-LINKAGE view. The
 // stamp-based counts appear ONLY inside the edit-dates confirm dialog, deliberately
 // never beside these averages.
-function SeasonDetail({ season }: { season: Season }) {
+function SeasonDetail({ season, onOpenBackfill }: { season: Season; onOpenBackfill: () => void }) {
   const { t: tr } = useTranslation();
   const { formatDate } = useLocaleFormat();
   const fmtDate = (iso: string) => formatDate(iso, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -357,7 +357,7 @@ function SeasonDetail({ season }: { season: Season }) {
       </div>
 
       {/* S6: roster history — who was on which team during this season. */}
-      <SeasonRosterSection season={season} />
+      <SeasonRosterSection season={season} onOpenBackfill={onOpenBackfill} />
     </div>
   );
 }
@@ -484,7 +484,7 @@ export function SeasonsPage() {
                   </div>
                 </div>
 
-                {expanded && <SeasonDetail season={s} />}
+                {expanded && <SeasonDetail season={s} onOpenBackfill={() => setShowBackfill(true)} />}
               </div>
             );
           })}

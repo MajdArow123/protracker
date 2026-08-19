@@ -1380,6 +1380,56 @@ History (one line each; full detail in git history + blueprint):
     accounts run their own when their rosters exist. When the coach.soccer run
     happens (in the §5d prompt's closing gate — not before), its
     SeasonBackfillRun id gets recorded here.
+- **§5d IMPLEMENTED (Q1/Q2/Q3/Q5/Q8; Q4 decided-but-unreachable).** Landed as
+  migration + feature commits after the rulings pin. Key implementation facts:
+  - **Q4 has ZERO wiring sites — the operations do not exist in this codebase.**
+    Confirmed by sweeping every `Player.TeamId` assignment: `PlayerUpdateDto`
+    carries no TeamId (no transfers), no unlink-from-team operation exists
+    anywhere (`ProfileService.DeleteAccountAsync` nulls `Player.UserId`, never
+    TeamId), "removal" is `PlayerService.DeleteAsync` — a hard delete whose FK
+    cascade removes the stints themselves (nothing to close), and team delete
+    refuses while players exist. Q4 therefore follows the S3+ nullable-driving-
+    date precedent: decided, pinned, applies the moment a removal/transfer
+    operation ever ships. No dead close-stint machinery was built.
+  - **Q3 wiring: exactly 3 join sites** — `PlayerService.CreateAsync`,
+    `AuthService.RegisterAthleteAsync`, `AuthService.ConnectCoachAsync` — all
+    calling `RosterStintRecorder.RecordJoinAsync` AFTER their primary commit.
+    The recorder (`Services/RosterStintRecorder.cs`) is the isolation boundary:
+    own DI scope, NEVER throws (an `ExplodingScopeFactory` test pins it), a
+    malformed localDate falls back to UTC today rather than 400ing a committed
+    join. `LocalDate` fields added to `PlayerCreateDto`/`RegisterAthleteRequest`/
+    `ConnectCoachRequest`; the frontend sends `localDateString()` on all three.
+    Auto-stints copy the player's current jersey/position (facts at join time).
+  - **Ambiguity audience decision**: the coach-facing path (player create)
+    carries the notice — `PlayerProfileDto.SeasonNotice`, rendered by the
+    existing `useSeasonNoticeToast` in `useCreatePlayer`. The two ATHLETE-actor
+    joins (register-athlete, connect-coach) are log-only: there is no coach in
+    the loop to act on a season-ambiguity notice, and attaching it to an
+    athlete's response would be a new audience, not "the existing mechanism".
+  - **Q1 flow**: `GET /api/seasons/{id}/roster/candidates` + `POST .../confirm`
+    (SeasonRosterController; owner-only via `RequireOwnedSeasonAsync` — uniform
+    404 for nonexistent AND not-owned, the S7 contract, deliberately NOT
+    SeasonService.EnsureOwner's 403). Candidates = current members of
+    participating teams with zero stints in the season, with per-player
+    earliest-activity (min over assessments/tests/match-performances) as the
+    labeled hint. Confirm is all-or-nothing (bulk-assessment precedent; a bad
+    entry 400s naming the offender) EXCEPT already-covered players, which are
+    skips; per-entry JoinedAt required; created stints are open-ended
+    CoachConfirmed rows copying current jersey/position. Response carries
+    createdCount/skippedAlreadyCovered/unstampedInWindow (the S6 counting helper,
+    refactored shared). UI: `SeasonRosterConfirmModal` (blank dates, labeled
+    season-window + earliest-activity hints, bulk apply-to-selected, Q8 pointer
+    button opening the S7 backfill modal via prop-drilled `onOpenBackfill`).
+  - The stale S6-era "backfill tooling is coming in a future update" strings
+    (`rosterExplainer`, `unstampedMsg`, `unstampedMsgOne`) were reworded to point
+    at the live "Backfill historical records" action, ×5 locales.
+  - **Migration-test gotcha (bit for real)**: computing "previous migration" as
+    newest-excluding-self silently no-ops once any LATER migration exists — the
+    S7 `SeasonBackfillRunsMigrationTests` broke the moment `SeasonRosterStintSource`
+    landed. Both tests now index into the ordered applied list for the true
+    predecessor; future migration tests must do the same.
+  - Tests: 10 in `SeasonStintCreationTests` (+`SeasonRosterStintSourceMigrationTests`);
+    e2e `season-roster-confirm.spec.ts`. Suite 312 backend / 298 vitest / 6 e2e.
 - **Open for S3 — midnight-dependent Season comparisons**: `SeasonService`'s
   summary fallback (`GetSummaryAsync`: period StartDate vs the season window) and
   create/update validation (`Validate`: `dto.EndDate < dto.StartDate`) compare
@@ -1412,8 +1462,9 @@ History (one line each; full detail in git history + blueprint):
   provenance ruling; revert endpoint deliberately NOT built — stored stamped ids
   are the revert path). S6 landed just before it (SeasonRoster write path +
   season-scoped roster UI, the §5a resolver clamp, §5b/§5g fixes, ruling-3
-  unstamped-count on save). **§5d rulings Q1–Q8 are PINNED (docs-only, see the
-  §5d RULINGS block above) — implementation NOT started**; other named
+  unstamped-count on save). **§5d is IMPLEMENTED** (rulings pinned in the §5d
+  RULINGS block, implementation facts in the §5d IMPLEMENTED block — Q4 is
+  decided-but-unreachable, no removal/transfer operation exists). Named
   follow-ons still open: §5e, §5f, historical team report. Multi-team season
   management remains a named open item. Also landed with S6: the
   `Models/pplicationUser.cs` filename typo fix (chore commit — the file had

@@ -22,9 +22,12 @@ public class PlayerService : IPlayerService
     private readonly ApplicationDbContext _context;
     private readonly IAccessControlService _access;
     private readonly IBillingService _billing;
+    private readonly IRosterStintRecorder _stints;
 
-    public PlayerService(ApplicationDbContext context, IAccessControlService access, IBillingService billing)
+    public PlayerService(ApplicationDbContext context, IAccessControlService access, IBillingService billing,
+        IRosterStintRecorder stints)
     {
+        _stints = stints;
         _context = context;
         _access = access;
         _billing = billing;
@@ -110,9 +113,16 @@ public class PlayerService : IPlayerService
         _context.Players.Add(player);
         await _context.SaveChangesAsync();
 
+        // §5d Q3: the join is committed; the auto-stint is best-effort metadata on an
+        // isolated scope — it can never fail this create. Ambiguity rides back as the
+        // existing coach-facing notice.
+        var seasonNotice = await _stints.RecordJoinAsync(player.Id, player.TeamId!.Value, dto.LocalDate);
+
         await _context.Entry(player).Reference(p => p.Team).LoadAsync();
         await _context.Entry(player).Reference(p => p.Position).LoadAsync();
-        return ToProfileDto(player);
+        var result = ToProfileDto(player);
+        result.SeasonNotice = seasonNotice;
+        return result;
     }
 
     public async Task<PlayerProfileDto> UpdateAsync(ClaimsPrincipal user, int id, PlayerUpdateDto dto)

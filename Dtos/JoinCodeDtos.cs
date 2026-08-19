@@ -65,6 +65,9 @@ public class RegisterAthleteRequest
     public string? EmergencyContactRelationship { get; set; }
     public List<DietaryRestrictionInputDto> DietaryRestrictions { get; set; } = new();
     public string? Preferences { get; set; }
+    // §5d/S2.2: the client's local calendar date (yyyy-MM-dd) — the join date the
+    // auto-stint records. Absent -> UTC today.
+    public string? LocalDate { get; set; }
 }
 
 public class RegisterAthleteResponse

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, ClipboardCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { clsx } from 'clsx';
 import { Button } from '../ui/Button';
@@ -11,6 +11,7 @@ import { usePositions } from '../../hooks/useSports';
 import { useTeams } from '../../hooks/useTeams';
 import { useSeasonRoster, useSaveStint, useDeleteStint } from '../../hooks/useSeasons';
 import { groupStintsByTeam } from '../../utils/seasonRoster';
+import { SeasonRosterConfirmModal } from './SeasonRosterConfirmModal';
 import type { Season, SeasonRosterStint, SeasonRosterSaveResult, SeasonTeamRef } from '../../types';
 
 const inputClass = 'w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
@@ -161,7 +162,7 @@ function StintFormModal({ season, team, editing, onClose, onSaved }: {
 }
 
 // ── The per-season roster section (inside SeasonDetail) ──────────────────────
-export function SeasonRosterSection({ season }: { season: Season }) {
+export function SeasonRosterSection({ season, onOpenBackfill }: { season: Season; onOpenBackfill: () => void }) {
   const { t: tr } = useTranslation();
   const { formatDate } = useLocaleFormat();
   const fmtDate = (iso: string) => formatDate(iso, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -170,6 +171,7 @@ export function SeasonRosterSection({ season }: { season: Season }) {
   const del = useDeleteStint();
 
   const [formTarget, setFormTarget] = useState<{ team: SeasonTeamRef; editing: SeasonRosterStint | null } | null>(null);
+  const [showConfirmFlow, setShowConfirmFlow] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<SeasonRosterStint | null>(null);
   const [unstamped, setUnstamped] = useState<{ count: number; playerName: string } | null>(null);
 
@@ -201,9 +203,16 @@ export function SeasonRosterSection({ season }: { season: Season }) {
 
   return (
     <div>
-      <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2 flex items-center gap-1.5">
-        <Users size={13} /> {tr('seasons.rosterTitle', 'Season Roster')}
-      </p>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-xs font-bold uppercase tracking-wide text-gray-400 flex items-center gap-1.5">
+          <Users size={13} /> {tr('seasons.rosterTitle', 'Season Roster')}
+        </p>
+        {/* §5d Q1: bulk historical confirmation — owner-only server-side (this page
+            already only lists the caller's own seasons). */}
+        <Button type="button" size="sm" variant="secondary" onClick={() => setShowConfirmFlow(true)}>
+          <ClipboardCheck size={13} /> {tr('seasons.confirmRoster.action', 'Confirm historical roster')}
+        </Button>
+      </div>
 
       {isLoading ? (
         <p className="text-sm text-gray-400">{tr('common.loading', 'Loading...')}</p>
@@ -273,9 +282,17 @@ export function SeasonRosterSection({ season }: { season: Season }) {
             </div>
           ))}
           <p className="text-[11px] text-gray-400">
-            {tr('seasons.rosterExplainer', 'Roster history decides which season a player’s new records are assigned to. Existing records are not re-assigned — backfill tooling is coming in a future update.')}
+            {tr('seasons.rosterExplainer', 'Roster history decides which season a player’s new records are assigned to. Existing records are not re-assigned here — use "Backfill historical records" on this page to assign them.')}
           </p>
         </div>
+      )}
+
+      {showConfirmFlow && (
+        <SeasonRosterConfirmModal
+          season={season}
+          onClose={() => setShowConfirmFlow(false)}
+          onOpenBackfill={onOpenBackfill}
+        />
       )}
 
       {formTarget && (
@@ -309,12 +326,12 @@ export function SeasonRosterSection({ season }: { season: Season }) {
               {unstamped.count === 1
                 ? tr(
                     'seasons.unstampedMsgOne',
-                    'Roster entry saved. One existing record of {{name}}’s falls inside these dates but stays unassigned — adding a roster entry never rewrites history. Backfill tooling is coming in a future update.',
+                    'Roster entry saved. One existing record of {{name}}’s falls inside these dates but stays unassigned — adding a roster entry never rewrites history. Run "Backfill historical records" to assign it.',
                     { name: unstamped.playerName },
                   )
                 : tr(
                     'seasons.unstampedMsg',
-                    'Roster entry saved. {{num}} existing records of {{name}}’s fall inside these dates but stay unassigned — adding a roster entry never rewrites history. Backfill tooling is coming in a future update.',
+                    'Roster entry saved. {{num}} existing records of {{name}}’s fall inside these dates but stay unassigned — adding a roster entry never rewrites history. Run "Backfill historical records" to assign them.',
                     { num: unstamped.count, name: unstamped.playerName },
                   )}
             </p>

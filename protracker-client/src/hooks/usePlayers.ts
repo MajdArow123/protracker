@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSeasonNoticeToast } from './useSeasonNotice';
 import { playersApi } from '../api/playersApi';
 import type { Player } from '../types';
 
@@ -31,9 +32,14 @@ export function usePlayer(id: number | undefined) {
 
 export function useCreatePlayer() {
   const qc = useQueryClient();
+  const notifySeason = useSeasonNoticeToast();
   return useMutation({
     mutationFn: playersApi.createPlayer,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['players'] }),
+    onSuccess: created => {
+      qc.invalidateQueries({ queryKey: ['players'] });
+      // §5d Q3: the join committed either way; ambiguity is a non-blocking nudge.
+      notifySeason(created);
+    },
   });
 }
 

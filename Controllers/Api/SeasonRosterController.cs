@@ -22,6 +22,18 @@ public class SeasonRosterController : ApiControllerBase
     public async Task<ActionResult> GetForSeason(int seasonId) =>
         Success(await _service.GetForSeasonAsync(User, seasonId));
 
+    // §5d Q1: bulk historical confirmation — owner-only in the service (uniform 404,
+    // the S7 backfill contract; deliberately tighter than the single-stint path).
+    [HttpGet("seasons/{seasonId}/roster/candidates")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> GetConfirmCandidates(int seasonId) =>
+        Success(await _service.GetConfirmCandidatesAsync(User, seasonId));
+
+    [HttpPost("seasons/{seasonId}/roster/confirm")]
+    [Authorize(Roles = "Coach,Admin")]
+    public async Task<ActionResult> ConfirmHistorical(int seasonId, ConfirmRosterRequestDto dto) =>
+        Success(await _service.ConfirmHistoricalAsync(User, seasonId, dto));
+
     [HttpPost("seasons/{seasonId}/roster")]
     [Authorize(Roles = "Coach,Admin")]
     public async Task<ActionResult> Create(int seasonId, SaveSeasonRosterStintDto dto) =>

@@ -182,3 +182,41 @@ public class SeasonBackfillResultDto : SeasonBackfillPreviewDto
     public int RunId { get; set; }
     public DateTime RanAt { get; set; }
 }
+
+// ---- Phase 10 §5d: historical roster confirmation (Q1) ----
+
+// A current team member with no stint in the selected season. EarliestActivity is a
+// LABELED REFERENCE HINT only (Q1) — the UI must never pre-fill a date from it.
+public class RosterCandidateDto
+{
+    public int PlayerId { get; set; }
+    public string PlayerName { get; set; } = "";
+    public int TeamId { get; set; }
+    public string TeamName { get; set; } = "";
+    public int? JerseyNumber { get; set; }
+    public string? PositionName { get; set; }
+    public DateTime? EarliestActivity { get; set; }
+}
+
+public class ConfirmRosterEntryDto
+{
+    public int PlayerId { get; set; }
+    // Required per entry (nullable so absence is an explicit 400, never 0001-01-01) —
+    // the coach's assertion IS the data's provenance.
+    public DateTime? JoinedAt { get; set; }
+}
+
+public class ConfirmRosterRequestDto
+{
+    public List<ConfirmRosterEntryDto> Entries { get; set; } = new();
+}
+
+public class ConfirmRosterResultDto
+{
+    public int CreatedCount { get; set; }
+    // Entries whose player already has a stint in this season — skipped, never rewritten.
+    public int SkippedAlreadyCovered { get; set; }
+    // Q8: total unstamped records inside the created stints' effective windows — the
+    // number behind the "run Backfill preview" pointer.
+    public int UnstampedInWindow { get; set; }
+}

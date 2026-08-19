@@ -1,4 +1,5 @@
 import api from './axiosInstance';
+import { localDateString } from '../utils/localDate';
 import type { DietaryRestrictionInput, PositionOption } from './joinApi';
 import type { ScheduledSession, MatchResult } from '../types';
 import type { CreateSessionInput } from './sessionsApi';
@@ -105,7 +106,7 @@ export const soloApi = {
   // Converts the solo account into a coach-managed athlete. The role changes, so the
   // backend issues fresh tokens — the caller must store them and re-bootstrap auth.
   connectCoach: async (code: string): Promise<ConnectCoachResult & { accessToken: string; refreshToken: string }> => {
-    const res = await api.post<ConnectCoachResult & { accessToken: string; refreshToken: string }>('/api/solo/connect-coach', { code });
+    const res = await api.post<ConnectCoachResult & { accessToken: string; refreshToken: string }>('/api/solo/connect-coach', { code, localDate: localDateString() });
     return res.data;
   },
 };

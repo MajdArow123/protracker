@@ -1,5 +1,6 @@
 import api from './axiosInstance';
 import type { Player } from '../types';
+import { localDateString } from '../utils/localDate';
 
 export const playersApi = {
   getPlayers: async (): Promise<Player[]> => {
@@ -15,7 +16,8 @@ export const playersApi = {
     return res.data;
   },
   createPlayer: async (data: Partial<Player>): Promise<Player> => {
-    const res = await api.post<Player>('/api/players', data);
+    // §5d/S2.2: the client's local calendar date — the join date the auto-stint records.
+    const res = await api.post<Player>('/api/players', { ...data, localDate: localDateString() });
     return res.data;
   },
   updatePlayer: async (id: number, data: Partial<Player>): Promise<Player> => {

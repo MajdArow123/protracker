@@ -1,8 +1,13 @@
 export type PlayerStatus = 'Active' | 'Injured' | 'Suspended' | 'Inactive';
 
+import type { SeasonResolutionNotice } from './assessment';
+
 export interface Player {
   id: number;
   userId?: string;   // UUID — only on detail endpoint
+  // §5d Q3: present only on a CREATE response when the auto-stint's season
+  // resolution was Ambiguous (coach-facing notice; null on reads).
+  seasonNotice?: SeasonResolutionNotice | null;
   fullName: string;
   age?: number;
   height?: number;

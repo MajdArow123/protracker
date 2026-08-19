@@ -1,4 +1,5 @@
 import api from './axiosInstance';
+import { localDateString } from '../utils/localDate';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,7 +85,11 @@ export const joinApi = {
   // Creates the athlete account + player record. The caller follows up with a normal
   // login() so AuthContext/session handling stays on the single existing path.
   registerAthlete: async (payload: RegisterAthletePayload): Promise<RegisterAthleteResult> => {
-    const res = await api.post<RegisterAthleteResult>('/api/auth/register-athlete', payload);
+    const res = await api.post<RegisterAthleteResult>('/api/auth/register-athlete', {
+      ...payload,
+      // §5d/S2.2: the client's local calendar date — the join date the auto-stint records.
+      localDate: localDateString(),
+    });
     return res.data;
   },
 
