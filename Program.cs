@@ -243,6 +243,12 @@ builder.Services.AddScoped<ILineupService, LineupService>();
 builder.Services.AddScoped<ITacticalPresetService, TacticalPresetService>();
 builder.Services.AddScoped<IBenchmarkService, BenchmarkService>();
 builder.Services.AddScoped<IMealSuggestionService, MealSuggestionService>();
+// Phase 11 B0 containment for the public Vora endpoint: static app token (fail closed
+// when unconfigured) + global daily stop-loss cap. See MealSuggestionContainment.cs.
+builder.Services.AddSingleton(new MealSuggestionOptions(
+    builder.Configuration["MealSuggestion:AppToken"],
+    builder.Configuration.GetValue<int?>("MealSuggestion:DailyCap") ?? 200));
+builder.Services.AddSingleton<MealSuggestionDailyCounter>();
 // AI domain services (Phase 9 split of the former AIController) — shared evidence
 // context + one service per AI controller.
 builder.Services.AddScoped<IAIEvidenceContextService, AIEvidenceContextService>();

@@ -1716,6 +1716,26 @@ History (one line each; full detail in git history + blueprint):
     (Q8, Q9) → **B7** test-mode end-to-end verification → go-live gate
     (Q10). Each section: usual push-approval gates, tests, i18n, CI, both
     deploys.
+- **B0 IMPLEMENTED (Q0 containment).** `Services/MealSuggestionContainment.cs`:
+  `MealSuggestionOptions` (singleton built from config in Program.cs) +
+  `MealSuggestionDailyCounter` — an in-memory UTC-day stop-loss counter.
+  In-memory is BY DESIGN: a redeploy reset only errs toward allowing a few
+  more calls; the real usage ledger is Q6's AiUsage table. Controller order:
+  token unconfigured → 503 fail-closed for EVERYONE (never fail-open);
+  missing/wrong `X-App-Token` → 401 (constant-time compare); daily cap
+  exhausted → 503 with the AI never called; success path logs
+  `[MealSuggestion] call N/cap today.` Error bodies stay bare
+  `ApiErrorResponse` (the Vora contract — never the {success,data} envelope);
+  FluentValidation 400s still fire before the token check (harmless, spends
+  nothing). Config: `MealSuggestion:AppToken` / `MealSuggestion:DailyCap`
+  (default 200; appsettings placeholder empty = loud 503). Railway env var
+  `MealSuggestion__AppToken` was set BEFORE the code push so the deploy came
+  up configured. The 10/hr/IP rate limiter is unchanged on top. 4 new tests
+  in `MealSuggestionTests` (401 spends nothing, wrong token 401, fail-closed
+  503 even with a header, cap 503 with stub-call count pinned). **Vora must
+  ship the `X-App-Token` header — older builds get 401 (accepted by the Q0
+  ruling).** Token rotation = `railway variables --set` with a new value +
+  update the Vora build.
 - The memo-pinned first chore commit — CI actions off Node 20
   (checkout/setup-node/setup-dotnet to current majors; warning on all four
   jobs since S7) — landed as `ac0c5f6`, CI green on all four jobs.

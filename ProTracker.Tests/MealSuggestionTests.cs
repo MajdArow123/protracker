@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using ProTracker.Controllers.Api;
 using ProTracker.Services;
 
 namespace ProTracker.Tests;
@@ -39,12 +40,27 @@ public class MealSuggestionTests : IClassFixture<ProTrackerWebApplicationFactory
             Task.FromResult(OnGenerate());
     }
 
+    private const string TestToken = "test-app-token";
+
     // Fresh host per test: the stub is swapped in AND the rate-limiter window resets,
-    // so tests can't starve each other's 10/hour budget.
-    private HttpClient CreateClient(StubAIService stub) =>
-        _factory.WithWebHostBuilder(builder =>
-            builder.ConfigureTestServices(services => services.AddSingleton<IAIService>(stub)))
-        .CreateClient();
+    // so tests can't starve each other's 10/hour budget. The B0 containment options
+    // are overridden at the DI level (last singleton registration wins) — the
+    // ConfigureAppConfiguration route is unreliable per the factory's own comment.
+    private HttpClient CreateClient(
+        StubAIService stub, string? configuredToken = TestToken, int dailyCap = 1000,
+        string? sendToken = TestToken)
+    {
+        var client = _factory.WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+            {
+                services.AddSingleton<IAIService>(stub);
+                services.AddSingleton(new MealSuggestionOptions(configuredToken, dailyCap));
+            }))
+            .CreateClient();
+        if (sendToken is not null)
+            client.DefaultRequestHeaders.Add(MealSuggestionController.TokenHeader, sendToken);
+        return client;
+    }
 
     private static Dictionary<string, object?> ValidRequest() => new()
     {
@@ -258,6 +274,68 @@ public class MealSuggestionTests : IClassFixture<ProTrackerWebApplicationFactory
 
         var limited = await client.PostAsJsonAsync("/api/v1/meal-suggestion", ValidRequest());
         Assert.Equal(HttpStatusCode.TooManyRequests, limited.StatusCode);
+    }
+
+    // --- B0 containment: app token + global daily cap (Phase 11 Q0 ruling) ---
+
+    [Fact]
+    public async Task Post_WithoutToken_Returns401_AndSpendsNothing()
+    {
+        var calls = 0;
+        var stub = new StubAIService { OnGenerate = () => { calls++; return ValidMealJson; } };
+        var client = CreateClient(stub, sendToken: null);
+
+        var response = await client.PostAsJsonAsync("/api/v1/meal-suggestion", ValidRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<TestApiError>();
+        Assert.Equal("A valid app token is required.", error!.Message);
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    public async Task Post_WrongToken_Returns401()
+    {
+        var client = CreateClient(new StubAIService(), sendToken: "not-the-token");
+
+        var response = await client.PostAsJsonAsync("/api/v1/meal-suggestion", ValidRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_TokenUnconfigured_FailsClosed503_EvenWithAHeader()
+    {
+        // No configured token must mean nobody gets through — not everybody.
+        var calls = 0;
+        var stub = new StubAIService { OnGenerate = () => { calls++; return ValidMealJson; } };
+        var client = CreateClient(stub, configuredToken: "");
+
+        var response = await client.PostAsJsonAsync("/api/v1/meal-suggestion", ValidRequest());
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.Equal(0, calls);
+    }
+
+    [Fact]
+    public async Task Post_OverDailyCap_Returns503_AndStopsSpending()
+    {
+        var calls = 0;
+        var stub = new StubAIService { OnGenerate = () => { calls++; return ValidMealJson; } };
+        var client = CreateClient(stub, dailyCap: 3);
+
+        for (var i = 0; i < 3; i++)
+        {
+            var ok = await client.PostAsJsonAsync("/api/v1/meal-suggestion", ValidRequest());
+            Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        }
+
+        var capped = await client.PostAsJsonAsync("/api/v1/meal-suggestion", ValidRequest());
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, capped.StatusCode);
+        var error = await capped.Content.ReadFromJsonAsync<TestApiError>();
+        Assert.Equal("Daily capacity reached. Try again tomorrow.", error!.Message);
+        Assert.Equal(3, calls); // the capped call never reached the AI service
     }
 
     // --- ParseMealJson (pure) ---
