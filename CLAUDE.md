@@ -1575,9 +1575,61 @@ History (one line each; full detail in git history + blueprint):
   derives its season from PlayerAssessmentId — a column would create two answers to
   one question.
 
+## Phase 11 — Stripe billing (opened; pillars pinned, ledger not yet drafted)
+
+- **PILLARS (pinned 2026-08-20 — user-ruled, binding; docs-only commit).** The
+  four foundational rulings every Phase 11 decision is drafted against:
+  - **P1 — who pays**: coach accounts and solo athletes pay. Roster athletes
+    (athletes under a coach) and parents NEVER pay — free under the paying
+    coach; that asymmetry is the growth loop (coach pays, invites the whole
+    roster). The account owner is the billing entity — Stripe customer maps to
+    `ApplicationUser`, matching how seasons/teams/rosters already hang off
+    ownership.
+  - **P2 — free tier**: FREEMIUM, not trial-then-paywall — a permanent capped
+    free coach tier + free solo tier, each with a small metered AI allowance,
+    PLUS a 14-day full-featured trial of paid tiers. Free users keep the
+    marketplace and self-enrollment loops alive. Shape rule: core tracking is
+    generous, AI is metered — the Anthropic API is the one real marginal cost,
+    and "unlimited AI" on a cheap tier is the one way pricing loses money.
+  - **P3 — shape**: flat monthly tiers with athlete caps — NO per-athlete
+    metering (no proration-on-roster-change edge cases). Working baseline =
+    the memo strawman: Free $0 (1 team / 10 athletes / ~20 AI actions/mo),
+    Starter ~$15–19 (3 teams / 40 / ~150), Pro ~$39–49 (unlimited teams / 150 /
+    ~600 + leagues), Solo ~$5–7 (~100), annual = 2 months free. Caps and tier
+    shape are the pinned part; EXACT price points are TBD in the ledger.
+  - **P4 — scope**: real paying customers — the full funnel (pricing page,
+    upgrade flows, dunning, tax, refund policy) is in scope — with a
+    **MANDATORY GO-LIVE GATE**: everything is built and verified in Stripe
+    TEST MODE; live keys go in only on explicit user approval at a named
+    checkpoint (the S7 prod-execute pattern). No real-money surface ships
+    silently.
+- **DOWNGRADE/LAPSE PRINCIPLE (standing rule — same weight as FINDING-009):
+  over-cap data is NEVER deleted or held hostage.** Lapsed or downgraded
+  accounts go READ-ONLY above their cap — full view and export of everything,
+  no adds above cap; the AI allowance drops to tier level. AI-allowance
+  exhaustion SOFT-BLOCKS with a clear message — it never surprise-bills. No
+  dark patterns. This is the billing face of the app's integrity rule: never
+  display data that didn't happen, never destroy data that did.
+- **Next**: the Phase 11 ledger, drafted Qn-with-recommendation against these
+  pillars (Checkout vs Payment Links, webhook + entitlement architecture, an
+  `EntitlementService` as the single enforcement home per the
+  SeasonPopulationService pattern, trial mechanics, grace periods, Stripe Tax,
+  refund policy, AI-allowance metering, test/e2e strategy) — reconciling the
+  existing undocumented billing system (`CoachSubscription`, Free/Pro/Team
+  `PlanLimits`, `AiBillingGateAttribute`, landing pricing section) with the P3
+  tier lineup. Landing pricing must track whatever P3 finalizes (pinned Design
+  Sprint rule).
+- The memo-pinned first chore commit — CI actions off Node 20
+  (checkout/setup-node/setup-dotnet to current majors; warning on all four
+  jobs since S7) — lands immediately after this docs commit.
+
 ## Current status
 
-- **Latest: Phase 10 S7 landed** (backfill tooling — preview/execute endpoints,
+- **Latest: Phase 11 opened** — the four pillars + the downgrade/lapse standing
+  rule are pinned in the Phase 11 section above (docs-only commit); the ledger
+  is the next deliverable. CI actions bumped off Node 20 in the follow-up chore
+  commit.
+- **Phase 10 S7 landed** (backfill tooling — preview/execute endpoints,
   `SeasonBackfillRun` audit table, batch resolver variants, /seasons UI with
   equal-prominence unassigned counts; D1–D7 rulings recorded in the Phase 10
   section above; EvidenceBasedScore deliberately excluded per the pinned S6
