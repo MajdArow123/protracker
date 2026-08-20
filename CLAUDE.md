@@ -1575,7 +1575,7 @@ History (one line each; full detail in git history + blueprint):
   derives its season from PlayerAssessmentId — a column would create two answers to
   one question.
 
-## Phase 11 — Stripe billing (opened; pillars pinned, ledger not yet drafted)
+## Phase 11 — Stripe billing (pillars + ledger rulings pinned; B0 next)
 
 - **PILLARS (pinned 2026-08-20 — user-ruled, binding; docs-only commit).** The
   four foundational rulings every Phase 11 decision is drafted against:
@@ -1610,25 +1610,123 @@ History (one line each; full detail in git history + blueprint):
   exhaustion SOFT-BLOCKS with a clear message — it never surprise-bills. No
   dark patterns. This is the billing face of the app's integrity rule: never
   display data that didn't happen, never destroy data that did.
-- **Next**: the Phase 11 ledger, drafted Qn-with-recommendation against these
-  pillars (Checkout vs Payment Links, webhook + entitlement architecture, an
-  `EntitlementService` as the single enforcement home per the
-  SeasonPopulationService pattern, trial mechanics, grace periods, Stripe Tax,
-  refund policy, AI-allowance metering, test/e2e strategy) — reconciling the
-  existing undocumented billing system (`CoachSubscription`, Free/Pro/Team
-  `PlanLimits`, `AiBillingGateAttribute`, landing pricing section) with the P3
-  tier lineup. Landing pricing must track whatever P3 finalizes (pinned Design
-  Sprint rule).
+- **LEDGER RULINGS (pinned 2026-08-20 — user-ruled, binding; docs-only
+  commit).** The Phase 11 decisions ledger (Q0–Q11), drafted against the
+  pillars + the billing audit, is fully ruled:
+  - **Q0 (HOTFIX — ships as B0 ahead of everything): Vora is ALIVE — contain,
+    don't remove.** The anonymous `/api/v1/meal-suggestion` endpoint (the Vora
+    iOS integration, prod's largest uncapped Anthropic cost surface) gets a
+    static app token (header check, secret via env var, fail CLOSED when
+    unconfigured), a server-side global daily cap as stop-loss (hard 503 past
+    it), and usage logging. Full metering integration waits for Q6 — this is
+    containment, not design. Consequence accepted by ruling: existing Vora
+    builds break (401) until the app ships the token header.
+  - **Q1 — PlanCatalog**: a single code-defined, strongly-typed catalog is
+    the ONLY definition of tiers, caps, AI allowances, and Stripe
+    Price/Product IDs; `PlanLimits`, BillingPage, LandingPage, and i18n all
+    derive from it (i18n keys carry copy, never numbers — numbers interpolate
+    from the catalog). The old Free/Pro/Team lineup is replaced by the pinned
+    P3 lineup — no live subscribers ever existed (Stripe was dead at
+    runtime), so it's a rename + re-cap, not a migration. The two seeders
+    (audit: boot seeder Pro / showcase seeder Team, different status +
+    upgrade semantics) are unified on identical plan + status semantics.
+  - **Q2 — prices**: Starter **$15/mo**, Pro **$39/mo**, Solo **$5/mo**;
+    annual = 2 months free ($150/$390/$50/yr); USD only at launch
+    (multi-currency = named non-goal); caps exactly per the pinned P3 table.
+  - **Q3 — Stripe objects**: dashboard-created Products per tier + Prices per
+    (tier × monthly/annual), IDs in config → PlanCatalog (the inline
+    `price_data` checkout dies). Checkout Sessions for purchase/upgrade;
+    Billing Portal for card/plan/cancel self-service. Trial =
+    `trial_period_days: 14` on Checkout, CARD REQUIRED upfront (no custom
+    app-side trial state machine). Subscription state derives from Stripe
+    subscription objects; metadata carries the userId linkage ONLY, never
+    the plan (kills the audit's mutable-metadata plan derivation).
+  - **Q4 — EntitlementService**: one service (the SeasonPopulationService
+    pattern — a single semantic home consumed everywhere) answers every
+    "can this account do X / add another Y" question server-side. Everything
+    advertised is enforced or removed from marketing — no third option.
+    **Assistant-coach roles = Starter and above** (Free = none). **"Priority
+    support" is DROPPED from marketing entirely** (not kept as copy). PDF
+    export gains a server-side gate (client gate stays as UX only). Parent
+    portal gated at ACCESS, not just invite. Caps enforced at creation paths
+    via the service, never inline.
+  - **Q5 — webhooks**: signature verification REQUIRED always — no secret,
+    no processing (fail closed; the unsigned-parse fallback dies).
+    `StripeEventLog` table for idempotency (event id unique; duplicates
+    no-op). Handled events: checkout.session.completed,
+    customer.subscription.updated/.deleted, invoice.payment_failed/.paid.
+    Stripe is the source of truth; the local subscription row is a cache
+    updated only by verified webhooks + an on-login lazy reconcile. Payment
+    failure → Stripe Smart Retries + the Q7 grace state.
+  - **Q6 — AI metering** (greenfield): `AiUsage` table (userId, actionType,
+    timestamp; token counts logged for cost telemetry but NOT the billing
+    unit). Billing unit = "AI action" (one user-triggered generation) counted
+    against the tier allowance; window = CALENDAR MONTH for all tiers.
+    `AiBillingGateTests` extends to assert metering, not just plan gates.
+    Exhaustion UX: clear message + reset date + upgrade pointer; no overage
+    purchase at launch (named non-goal). **USER AMENDMENT (binding): Vora's
+    calls through the contained endpoint must be explicitly accounted for in
+    the metering design — either counted against the owner's own account
+    allowance or given a NAMED internal exemption with its own logged cap.
+    Silently unmetered is not an option.**
+  - **Q7 — downgrade/lapse/grace** (implements the standing rule precisely):
+    over-cap after downgrade/lapse = ALL data visible + exportable forever,
+    no forced selection of which athletes "survive", creation of capped
+    entity types blocked while over cap, everything else (viewing, reports,
+    exports, messaging) works. Payment failure: 7-day grace with full
+    entitlements + in-app notice while Smart Retries run; after grace, the
+    account drops to Free-tier entitlements (NOT locked out) until resolved.
+    Cancel-at-period-end = Stripe standard (paid until period end, then
+    Free). Trial expiry without conversion → straight to Free entitlements,
+    data untouched (the standing rule applies to trials identically).
+  - **Q8 — tax**: Stripe Tax ON from day one (IL merchant, likely EU
+    customers — VAT by configuration, not code); automatic invoices +
+    receipts via Stripe emails. Merchant-side registrations/thresholds are
+    the user's offline business task — explicitly out of Claude's lane.
+  - **Q9 — funnel**: pricing page rebuilt from PlanCatalog (kills copy
+    drift); in-app upgrade prompts ONLY at the moments EntitlementService
+    says no (cap hit, AI exhausted, gated feature) — honest, dismissible, no
+    dark patterns. Billing page = current plan + usage meters (AI actions,
+    athlete count vs cap) + Billing Portal link. Dunning comms =
+    Stripe-hosted emails at launch (custom emails = named non-goal). All ×5
+    locales, RTL-safe.
+  - **Q10 — env wiring + go-live gate (P4)**: Stripe config wired through env
+    vars exactly like every other secret (the audit found ZERO `STRIPE_*`
+    env wiring — Railway can't currently receive keys). The entire phase
+    runs on TEST MODE: Stripe CLI webhook forwarding locally, test-clock e2e
+    for trial expiry + payment failure, full funnel walked with test cards.
+    **GO-LIVE IS A MANDATORY STOP** (S7-checkpoint pattern): a written
+    checklist (live webhook endpoint registered, live Price IDs in config,
+    Tax enabled, one real card transaction + refund performed by the user)
+    presented for explicit approval before live keys touch Railway. No
+    auto-flip, ever.
+  - **Q11 — scope fences**: OUT of Phase 11 — Stripe Connect / marketplace
+    payments (its own future phase; "marketplace" must not scope-creep in),
+    per-athlete pricing, coupons/promos, overage purchases, multi-currency,
+    custom dunning emails, in-app refunds (manual via dashboard only; policy
+    copy on the pricing page), and any change to what roster athletes/
+    parents can do free (P1 pinned). IN: Q0–Q10, seeder unification, and
+    removal of the dead/contradicting billing copy the audit found.
+  - **Section plan**: **B0** Q0 hotfix (immediately, ahead of everything) →
+    **B1** env wiring + PlanCatalog + seeder unification (Q1, Q10-env) →
+    **B2** Stripe objects + Checkout/Portal/trial rebuild (Q2, Q3) →
+    **B3** EntitlementService + server-side gates (Q4) → **B4** webhook
+    hardening + subscription cache (Q5) → **B5** AI metering (Q6) +
+    downgrade/grace mechanics (Q7) → **B6** funnel surfaces + Stripe Tax
+    (Q8, Q9) → **B7** test-mode end-to-end verification → go-live gate
+    (Q10). Each section: usual push-approval gates, tests, i18n, CI, both
+    deploys.
 - The memo-pinned first chore commit — CI actions off Node 20
   (checkout/setup-node/setup-dotnet to current majors; warning on all four
-  jobs since S7) — lands immediately after this docs commit.
+  jobs since S7) — landed as `ac0c5f6`, CI green on all four jobs.
 
 ## Current status
 
-- **Latest: Phase 11 opened** — the four pillars + the downgrade/lapse standing
-  rule are pinned in the Phase 11 section above (docs-only commit); the ledger
-  is the next deliverable. CI actions bumped off Node 20 in the follow-up chore
-  commit.
+- **Latest: Phase 11 fully ruled** — the four pillars, the downgrade/lapse
+  standing rule, AND the complete ledger rulings Q0–Q11 (incl. the Q6 Vora
+  metering amendment) are pinned in the Phase 11 section above. Next: B0 (Q0
+  Vora containment hotfix), then B1–B7 per the section plan. CI actions
+  bumped off Node 20 (`ac0c5f6`, CI green).
 - **Phase 10 S7 landed** (backfill tooling — preview/execute endpoints,
   `SeasonBackfillRun` audit table, batch resolver variants, /seasons UI with
   equal-prominence unassigned counts; D1–D7 rulings recorded in the Phase 10
